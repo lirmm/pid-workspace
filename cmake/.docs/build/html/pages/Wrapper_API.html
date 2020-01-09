@@ -1,0 +1,2326 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Wrapper API &mdash; PID CMake API documentation master documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../_static/css/cmake.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="PID CMake API documentation master documentation" href="../index.html"/>
+        <link rel="next" title="External API" href="External_API.html"/>
+        <link rel="prev" title="Package API" href="Package_API.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> PID CMake API documentation
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Package_API.html">Package API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#pid-package">PID_Package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#set-pid-package-version">set_PID_Package_Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#pid-author">PID_Author</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#pid-reference">PID_Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#pid-category">PID_Category</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#pid-publishing">PID_Publishing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#pid-documentation">PID_Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#check-pid-platform">check_PID_Platform</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#get-pid-platform-info">get_PID_Platform_Info</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#build-pid-package">build_PID_Package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#pid-component">PID_Component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#pid-dependency">PID_Dependency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#used-pid-dependency">used_PID_Dependency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#pid-component-dependency">PID_Component_Dependency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#run-pid-test">run_PID_Test</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_API.html#advanced-functions">Advanced functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Package_API.html#external-pid-package-path">external_PID_Package_Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Package_API.html#create-pid-install-symlink">create_PID_Install_Symlink</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Wrapper API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pid-wrapper">PID_Wrapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pid-original-project">PID_Original_Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pid-wrapper-author">PID_Wrapper_Author</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pid-wrapper-category">PID_Wrapper_Category</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pid-wrapper-option">PID_Wrapper_Option</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pid-wrapper-publishing">PID_Wrapper_Publishing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#build-pid-wrapper">build_PID_Wrapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pid-wrapper-version">PID_Wrapper_Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pid-wrapper-configuration">PID_Wrapper_Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pid-wrapper-dependency">PID_Wrapper_Dependency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pid-wrapper-component">PID_Wrapper_Component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pid-wrapper-component-dependency">PID_Wrapper_Component_Dependency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#script-functions">Script functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#get-external-dependencies-info">get_External_Dependencies_Info</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#get-user-option-info">get_User_Option_Info</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#get-environment-info">get_Environment_Info</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#get-target-platform-info">get_Target_Platform_Info</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-external-project">install_External_Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#return-external-project-error">return_External_Project_Error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-b2-external-project">build_B2_External_Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-autotools-external-project">build_Autotools_External_Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-waf-external-project">build_Waf_External_Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-cmake-external-project">build_CMake_External_Project</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="External_API.html">External API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="External_API.html#declare-pid-external-package">declare_PID_External_Package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="External_API.html#check-pid-external-package-platform">check_PID_External_Package_Platform</a></li>
+<li class="toctree-l2"><a class="reference internal" href="External_API.html#declare-pid-external-package-dependency">declare_PID_External_Package_Dependency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="External_API.html#declare-pid-external-component">declare_PID_External_Component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="External_API.html#declare-pid-external-component-dependency">declare_PID_External_Component_Dependency</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Framework_API.html">Framework API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Framework_API.html#pid-framework">PID_Framework</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Framework_API.html#pid-framework-author">PID_Framework_Author</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Framework_API.html#pid-framework-category">PID_Framework_Category</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Framework_API.html#build-pid-framework">build_PID_Framework</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Environment_API.html">Environment API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Environment_API.html#pid-environment">PID_Environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Environment_API.html#pid-environment-author">PID_Environment_Author</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Environment_API.html#pid-environment-platform">PID_Environment_Platform</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Environment_API.html#pid-environment-constraints">PID_Environment_Constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Environment_API.html#pid-environment-solution">PID_Environment_Solution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Environment_API.html#build-pid-environment">build_PID_Environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Environment_API.html#script-functions">Script functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Environment_API.html#configure-environment-tool">configure_Environment_Tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Environment_API.html#return-environment-check">return_Environment_Check</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Environment_API.html#return-environment-configured">return_Environment_Configured</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Environment_API.html#get-environment-target-platform">get_Environment_Target_Platform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Environment_API.html#get-environment-host-platform">get_Environment_Host_Platform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Environment_API.html#execute-os-command">execute_OS_Command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Environment_API.html#get-environment-target-abi-flags">get_Environment_Target_ABI_Flags</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Environment_API.html#evaluate-host-platform">evaluate_Host_Platform</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Configuration_API.html">Configuration API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Configuration_API.html#found-pid-configuration">found_PID_Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Configuration_API.html#installable-pid-configuration">installable_PID_Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Configuration_API.html#execute-os-configuration-command">execute_OS_Configuration_Command</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Configuration_API.html#convert-pid-libraries-into-system-links">convert_PID_Libraries_Into_System_Links</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Configuration_API.html#convert-pid-libraries-into-library-directories">convert_PID_Libraries_Into_Library_Directories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Configuration_API.html#declare-pid-configuration-variables">declare_PID_Configuration_Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Configuration_API.html#pid-configuration-constraints">PID_Configuration_Constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Configuration_API.html#pid-configuration-dependencies">PID_Configuration_Dependencies</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Use_PID_From_CMake_API.html">API for using PID from CMake</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Use_PID_From_CMake_API.html#import-pid-workspace">import_PID_Workspace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Use_PID_From_CMake_API.html#import-pid-package">import_PID_Package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Use_PID_From_CMake_API.html#bind-pid-components">bind_PID_Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Use_PID_From_CMake_API.html#bind-local-component">bind_Local_Component</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Package_Files.html">Package files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Package_Files.html#reference-file">Reference file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_Files.html#find-file">Find file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Package_Files.html#use-file">Use file</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal functions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#package-description">Package Description</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-package">declare_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-documentation-target">create_Documentation_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-current-version">set_Current_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-platform-constraints">check_Platform_Constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#build-package">build_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-library-component">declare_Library_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-application-component">declare_Application_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-python-component">declare_Python_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-native-package-dependency">declare_Native_Package_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-external-package-dependency">declare_External_Package_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-internal-component-dependency">declare_Internal_Component_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-package-component-dependency">declare_Package_Component_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-system-component-dependency">declare_System_Component_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-external-package-component-dependency">declare_External_Package_Component_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-external-component-dependency">declare_External_Component_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-package-install-script">generate_Package_Install_Script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-global-build-command">create_Global_Build_Command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#initialize-build-system">initialize_Build_System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-component-language">resolve_Component_Language</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-compile-options-for-targets">resolve_Compile_Options_For_Targets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#filter-compiler-options">filter_Compiler_Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#manage-python-scripts">manage_Python_Scripts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-module-lib-target">create_Module_Lib_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-shared-lib-target">create_Shared_Lib_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-static-lib-target">create_Static_Lib_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-header-lib-target">create_Header_Lib_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-executable-target">create_Executable_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-testunit-target">create_TestUnit_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#collect-links-and-flags-for-external-component">collect_Links_And_Flags_For_External_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#manage-additional-component-exported-flags">manage_Additional_Component_Exported_Flags</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#manage-additional-component-internal-flags">manage_Additional_Component_Internal_Flags</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#manage-additional-component-inherited-flags">manage_Additional_Component_Inherited_Flags</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#fill-component-target-with-internal-dependency">fill_Component_Target_With_Internal_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#fill-component-target-with-package-dependency">fill_Component_Target_With_Package_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#fill-component-target-with-external-dependency">fill_Component_Target_With_External_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-all-imported-dependency-targets">create_All_Imported_Dependency_Targets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-external-dependency-target">create_External_Dependency_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-dependency-target">create_Dependency_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#manage-additional-imported-component-flags">manage_Additional_Imported_Component_Flags</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-imported-target-mode">get_Imported_Target_Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-imported-header-library-target">create_Imported_Header_Library_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-imported-static-library-target">create_Imported_Static_Library_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-imported-shared-library-target">create_Imported_Shared_Library_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-imported-module-library-target">create_Imported_Module_Library_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-imported-executable-target">create_Imported_Executable_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-standard-before-linking">resolve_Standard_Before_Linking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#bind-target">bind_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#bind-internal-target">bind_Internal_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#bind-imported-target">bind_Imported_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#fill-component-target-with-dependency">fill_Component_Target_With_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-native-global-cache-options">declare_Native_Global_Cache_Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#manage-parrallel-build-option">manage_Parrallel_Build_Option</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-mode-specific-options-from-global">set_Mode_Specific_Options_From_Global</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-option-line-info">get_Option_Line_Info</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#find-option-into-list">find_Option_Into_List</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-option-value-from-list">get_Option_Value_From_List</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-global-options-from-mode-specific">set_Global_Options_From_Mode_Specific</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-mode-cache-options">reset_Mode_Cache_Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#first-called-build-mode">first_Called_Build_Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-component">print_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-component-variables">print_Component_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#init-standard-path-cache-variables">init_Standard_Path_Cache_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-install-cache-variables">set_Install_Cache_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-version-cache-variables">set_Version_Cache_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-version-cache-variables">reset_Version_Cache_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-platform-constraint-set">add_Platform_Constraint_Set</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#package-has-nothing-to-build">package_Has_Nothing_To_Build</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#package-has-nothing-to-install">package_Has_Nothing_To_Install</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-python-module">is_Python_Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#configure-install-variables">configure_Install_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-package-dependency">is_Package_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-package-dependency-to-cache">add_Package_Dependency_To_Cache</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-external-package-dependency-to-cache">add_External_Package_Dependency_To_Cache</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-component-cached-variables">reset_Component_Cached_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#init-component-cached-variables-for-export">init_Component_Cached_Variables_For_Export</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-build-info-cached-variables-from-use">reset_Build_Info_Cached_Variables_From_Use</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-native-package-dependency-cached-variables-from-use">reset_Native_Package_Dependency_Cached_Variables_From_Use</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-external-package-dependency-cached-variables-from-use">reset_External_Package_Dependency_Cached_Variables_From_Use</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-package-description-cached-variables">reset_Package_Description_Cached_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-dependency-complete-description">set_Dependency_Complete_Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#init-component-description">init_Component_Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#mark-as-declared">mark_As_Declared</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-declared">is_Declared</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-declared">reset_Declared</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#export-component">export_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-headerfree-component">is_HeaderFree_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-runtime-component">is_Runtime_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-executable-component">is_Executable_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-built-component">is_Built_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#will-be-built">will_be_Built</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#will-be-installed">will_be_Installed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-externally-usable">is_Externally_Usable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#build-option-for-example">build_Option_For_Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-removed-examples-build-option">reset_Removed_Examples_Build_Option</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#register-component-binary">register_Component_Binary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-component-exporting-other-components">is_Component_Exporting_Other_Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#find-packages-containing-component">find_Packages_Containing_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#write-use-file">write_Use_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-use-file">create_Use_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-info-file">generate_Info_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-find-file">generate_Find_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-use-file">generate_Use_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#current-native-dependencies-for-package">current_Native_Dependencies_For_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#current-external-dependencies-for-package">current_External_Dependencies_For_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-dependencies-file">generate_Dependencies_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-coverage">generate_Coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-static-check">add_Static_Check</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-static-checks">generate_Static_Checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#list-closed-source-dependency-packages">list_Closed_Source_Dependency_Packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-closed-source-dependency-package">is_Closed_Source_Dependency_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#list-public-includes">list_Public_Includes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#list-public-links">list_Public_Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#list-public-definitions">list_Public_Definitions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#list-public-options">list_Public_Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-binary-location">get_Binary_Location</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#list-private-links">list_Private_Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-language-standards">get_Language_Standards</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#manage-language-standards">manage_Language_Standards</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-bin-component-direct-runtime-resources-dependencies">get_Bin_Component_Direct_Runtime_Resources_Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-bin-component-runtime-resources-dependencies">get_Bin_Component_Runtime_Resources_Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-bin-component-direct-internal-runtime-dependencies">get_Bin_Component_Direct_Internal_Runtime_Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-bin-component-direct-runtime-links-dependencies">get_Bin_Component_Direct_Runtime_Links_Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-bin-component-runtime-dependencies">get_Bin_Component_Runtime_Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#find-dependent-private-shared-libraries">find_Dependent_Private_Shared_Libraries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-bin-component-direct-runtime-privatelinks-dependencies">get_Bin_Component_Direct_Runtime_PrivateLinks_Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-source-component-linktime-dependencies">resolve_Source_Component_Linktime_Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-package-runtime-dependencies">resolve_Package_Runtime_Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-bin-component-runtime-dependencies">resolve_Bin_Component_Runtime_Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-bin-component-symlinks">create_Bin_Component_Symlinks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-bin-component-python-symlinks">create_Bin_Component_Python_Symlinks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-source-component-python-symlinks">create_Source_Component_Python_Symlinks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-source-component-symlinks">create_Source_Component_Symlinks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-source-component-runtime-dependencies">resolve_Source_Component_Runtime_Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-source-component-direct-runtime-resources-dependencies">get_Source_Component_Direct_Runtime_Resources_Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-source-component-runtime-resources-dependencies">get_Source_Component_Runtime_Resources_Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-source-component-symlinks-build-tree">create_Source_Component_Symlinks_Build_Tree</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-source-component-runtime-dependencies-build-tree">resolve_Source_Component_Runtime_Dependencies_Build_Tree</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#clean-install-dir">clean_Install_Dir</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#locate-external-package-used-in-component">locate_External_Package_Used_In_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-external-packages-used-in-component">get_External_Packages_Used_In_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-packages-used-in-component">get_Packages_Used_In_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#collect-local-exported-dependencies">collect_Local_Exported_Dependencies</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#wrapper-description">Wrapper Description</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reconfigure-wrapper-build">reconfigure_Wrapper_Build</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-wrapper-description-cached-variables">reset_Wrapper_Description_Cached_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-wrapper">declare_Wrapper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-wrapper-global-cache-options">declare_Wrapper_Global_Cache_Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-wrapper-option">set_Wrapper_Option</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#define-wrapped-project">define_Wrapped_Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-wrapper-site-address">get_Wrapper_Site_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-external-version-compatibility">check_External_Version_Compatibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-wrapper-find-file">generate_Wrapper_Find_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-wrapper-build-file">generate_Wrapper_Build_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-wrapper-documentation-target">create_Wrapper_Documentation_Target</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#build-wrapped-project">build_Wrapped_Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#belongs-to-known-versions">belongs_To_Known_Versions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-known-version">add_Known_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-wrapped-configuration">declare_Wrapped_Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-external-package-dependency-to-wrapper">add_External_Package_Dependency_To_Wrapper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-wrapped-external-dependency">declare_Wrapped_External_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-wrapped-component">declare_Wrapped_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-wrapped-component-dependency-to-explicit-component">declare_Wrapped_Component_Dependency_To_Explicit_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-wrapped-component-dependency-to-implicit-components">declare_Wrapped_Component_Dependency_To_Implicit_Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-wrapped-component-internal-dependency">declare_Wrapped_Component_Internal_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-wrapped-component-system-dependency">declare_Wrapped_Component_System_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#install-external-use-file-for-version">install_External_Use_File_For_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#install-external-find-file-for-version">install_External_Find_File_For_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-external-use-file-for-version">generate_External_Use_File_For_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-description-for-external-component-internal-dependency">generate_Description_For_External_Component_Internal_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-description-for-external-component-dependency">generate_Description_For_External_Component_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-description-for-external-component-system-dependency">generate_Description_For_External_Component_System_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-description-for-external-component-dependencies">generate_Description_For_External_Component_Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-description-for-external-component">generate_Description_For_External_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-os-variant-symlinks">generate_OS_Variant_Symlinks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-os-variant-symlink-for-path">generate_OS_Variant_Symlink_For_Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#define-wrapper-framework-contribution">define_Wrapper_Framework_Contribution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#agregate-all-build-info-for-component">agregate_All_Build_Info_For_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-build-info-for-dependency">set_Build_Info_For_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-build-info-for-component">set_Build_Info_For_Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#configure-wrapper-build-variables">configure_Wrapper_Build_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-wrapper-configuration">resolve_Wrapper_Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-wrapper-dependency">resolve_Wrapper_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-wrapper-dependencies">resolve_Wrapper_Dependencies</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#framework-description">Framework Description</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-pid-site">declare_PID_Site</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-site-readme-file">generate_Site_Readme_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-site-data">generate_Site_Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-site-binary-references">generate_Site_Binary_References</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-site">declare_Site</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-framework">declare_Framework</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-framework-image">declare_Framework_Image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-framework-author">add_Framework_Author</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-framework-category">add_Framework_Category</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-framework-readme-file">generate_Framework_Readme_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-framework-license-file">generate_Framework_License_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-framework-data">generate_Framework_Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-framework-reference-file">generate_Framework_Reference_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#update-environment-ci-config-file">update_Environment_CI_Config_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-framework-binary-references">generate_Framework_Binary_References</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-package-page-binaries-in-framework">generate_Package_Page_Binaries_In_Framework</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-external-page-binaries-in-framework">generate_External_Page_Binaries_In_Framework</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-framework-binary-reference-for-package">generate_Framework_Binary_Reference_For_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#build-framework">build_Framework</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#environment-description">Environment Description</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-environment-description">reset_Environment_Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#declare-environment">declare_Environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#define-build-environment-platform">define_Build_Environment_Platform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#define-environment-constraints">define_Environment_Constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#define-environment-solution-procedure">define_Environment_Solution_Procedure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#build-environment-project">build_Environment_Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#manage-environment-dependency">manage_Environment_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#environment-reference-exists-in-workspace">environment_Reference_Exists_In_Workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#environment-project-exists">environment_Project_Exists</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#load-environment">load_Environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#evaluate-environment-from-configure">evaluate_Environment_From_Configure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#evaluate-environment">evaluate_Environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#prepare-environment-arguments">prepare_Environment_Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#prepare-platform-constraints-definitions">prepare_Platform_Constraints_Definitions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-environment-author">add_Environment_Author</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-environment-reference-file">generate_Environment_Reference_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-environment-inputs-description-file">generate_Environment_Inputs_Description_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-environment-readme-files">generate_Environment_Readme_Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-environment-license-file">generate_Environment_License_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#evaluate-generator">evaluate_Generator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#evaluate-environment-platform">evaluate_Environment_Platform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-environment-solution-eligible">is_Environment_Solution_Eligible</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#evaluate-environment-solution">evaluate_Environment_Solution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-environment-configuration-constraint">check_Environment_Configuration_Constraint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#evaluate-environment-constraints">evaluate_Environment_Constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-environment-toolchain-file">generate_Environment_Toolchain_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-environment-description-file">generate_Environment_Description_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-environment-solution-file">generate_Environment_Solution_File</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#workspace-utilities">Workspace Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#classify-packages">classify_Packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#classify-root-category">classify_Root_Category</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#classify-framework-root-category">classify_Framework_Root_Category</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#classify-framework-category">classify_Framework_Category</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-workspace-content-information">reset_Workspace_Content_Information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-all-categories">reset_All_Categories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-category">reset_Category</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-framework-category">reset_Framework_Category</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-root-categories">get_Root_Categories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-framework-root-categories">get_Framework_Root_Categories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#extract-root-categories">extract_Root_Categories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#classify-category">classify_Category</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#write-categories-file">write_Categories_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#write-category-in-file">write_Category_In_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#write-framework-root-categories-in-file">write_Framework_Root_Categories_In_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#write-framework-category-in-file">write_Framework_Category_In_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#find-in-categories">find_In_Categories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#find-category">find_Category</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-category-names">get_Category_Names</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-category">print_Category</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-framework-category">print_Framework_Category</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-framework-categories">print_Framework_Categories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-author">print_Author</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-package-contact">print_Package_Contact</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-package-info">print_Package_Info</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-external-package-info">print_External_Package_Info</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-external-package-contact">print_External_Package_Contact</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-package-binaries">print_Package_Binaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#exact-version-archive-exists">exact_Version_Archive_Exists</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#greatest-version-archive">greatest_Version_Archive</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-platform-compatible-binary">print_Platform_Compatible_Binary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-framework-info">print_Framework_Info</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-pid-environment">create_PID_Environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-pid-wrapper">create_PID_Wrapper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-pid-framework">create_PID_Framework</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-pid-package">create_PID_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deploy-pid-framework">deploy_PID_Framework</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deploy-pid-native-package">deploy_PID_Native_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deploy-pid-external-package">deploy_PID_External_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#connect-pid-wrapper">connect_PID_Wrapper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#connect-pid-environment">connect_PID_Environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#connect-pid-framework">connect_PID_Framework</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#connect-pid-package">connect_PID_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-connection-to-pid-package">add_Connection_To_PID_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-connection-to-pid-framework">add_Connection_To_PID_Framework</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#clear-pid-package">clear_PID_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#remove-pid-package">remove_PID_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#remove-pid-wrapper">remove_PID_Wrapper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#remove-pid-framework">remove_PID_Framework</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#remove-pid-environment">remove_PID_Environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#register-pid-package">register_PID_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#register-pid-wrapper">register_PID_Wrapper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#register-pid-framework">register_PID_Framework</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#register-pid-environment">register_PID_Environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#release-pid-package">release_PID_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#update-pid-source-package">update_PID_Source_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#update-pid-binary-package">update_PID_Binary_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#update-pid-external-package">update_PID_External_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#update-pid-all-packages">update_PID_All_Packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#upgrade-workspace">upgrade_Workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-available-licenses">print_Available_Licenses</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-license-info">print_License_Info</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#write-current-configuration-build-related-variables">write_Current_Configuration_Build_Related_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#write-platform-description">write_Platform_Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#write-current-configuration">write_Current_Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#manage-platforms">manage_Platforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#register-available-plugins">register_Available_Plugins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#write-plugins-info-file">write_Plugins_Info_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#manage-plugins">manage_Plugins</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#general-utilities">General Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-mode-variables">get_Mode_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-platform-variables">get_Platform_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-a-system-reference-path">is_A_System_Reference_Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#extract-info-from-platform">extract_Info_From_Platform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#extract-component-and-package-from-dependency-string">extract_Component_And_Package_From_Dependency_String</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#extract-all-words">extract_All_Words</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#extract-all-words-from-path">extract_All_Words_From_Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#fill-string-from-list">fill_String_From_List</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#extract-package-namespace-from-ssh-url">extract_Package_Namespace_From_SSH_URL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#format-pid-identifier-into-markdown-link">format_PID_Identifier_Into_Markdown_Link</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#normalize-version-string">normalize_Version_String</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-symlink">create_Symlink</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-runtime-symlink">create_Runtime_Symlink</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#install-runtime-symlink">install_Runtime_Symlink</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#install-additional-binary-symlink">install_Additional_Binary_Symlink</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-directory-exists">check_Directory_Exists</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-required-directories-exist">check_Required_Directories_Exist</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#parse-version-argument">parse_Version_Argument</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#parse-package-dependency-version-arguments">parse_Package_Dependency_Version_Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-version-string-numbers">get_Version_String_Numbers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#list-version-subdirectories">list_Version_Subdirectories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-greater-version">get_Greater_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#list-platform-symlinks">list_Platform_Symlinks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#list-platform-subdirectories">list_Platform_Subdirectories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#list-subdirectories">list_Subdirectories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#list-regular-files">list_Regular_Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-compatible-version">is_Compatible_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-exact-compatible-version">is_Exact_Compatible_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-full-author-string">generate_Full_Author_String</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-contact-string">generate_Contact_String</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-formatted-framework-contact-string">get_Formatted_Framework_Contact_String</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-formatted-string">generate_Formatted_String</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-formatted-author-string">get_Formatted_Author_String</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-formatted-package-contact-string">get_Formatted_Package_Contact_String</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#package-license-is-closed-source">package_License_Is_Closed_Source</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#activate-adequate-languages">activate_Adequate_Languages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-all-sources-relative">get_All_Sources_Relative</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-all-sources-absolute">get_All_Sources_Absolute</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-all-sources-absolute-from">get_All_Sources_Absolute_From</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-all-sources-relative-from">get_All_Sources_Relative_From</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#contains-python-code">contains_Python_Code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#contains-python-package-description">contains_Python_Package_Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-all-headers-relative">get_All_Headers_Relative</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-all-headers-absolute">get_All_Headers_Absolute</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-shared-lib-with-path">is_Shared_Lib_With_Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-library-dirs-for-links">get_Library_Dirs_For_Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-shared-lib-extension">create_Shared_Lib_Extension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#shared-library-needs-soname">shared_Library_Needs_Soname</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#convert-library-path-to-default-system-library-link">convert_Library_Path_To_Default_System_Library_Link</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#extract-elf-symbol-version">extract_ELF_Symbol_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-link-type">get_Link_Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-library-type">is_Library_Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-platform-related-binary-prefix-suffix">get_Platform_Related_Binary_Prefix_Suffix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-application-type">is_Application_Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-package-type">get_Package_Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-external-package-defined">is_External_Package_Defined</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#transform-external-link-into-absolute-path-expression">transform_External_Link_Into_Absolute_Path_Expression</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#transform-external-include-into-absolute-path-expression">transform_External_Include_Into_Absolute_Path_Expression</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#transform-external-path-into-absolute-path-expression">transform_External_Path_Into_Absolute_Path_Expression</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-external-libs-path">resolve_External_Libs_Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-external-includes-path">resolve_External_Includes_Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-external-resources-path">resolve_External_Resources_Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#evaluate-variables-in-list">evaluate_Variables_In_List</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#append-prefix-in-list">append_Prefix_In_List</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-package-repository-address">set_Package_Repository_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-package-repository-address">reset_Package_Repository_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-package-repository-address">get_Package_Repository_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#list-all-source-packages-in-workspace">list_All_Source_Packages_In_Workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#list-all-wrappers-in-workspace">list_All_Wrappers_In_Workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#list-all-binary-packages-in-workspace">list_All_Binary_Packages_In_Workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#package-already-built">package_Already_Built</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#test-modified-components">test_Modified_Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-version-number-and-repo-from-package">get_Version_Number_And_Repo_From_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-version-number-to-package">set_Version_Number_To_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-binary-package-version-in-development">is_Binary_Package_Version_In_Development</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#hard-clean-build-folder">hard_Clean_Build_Folder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#hard-clean-package">hard_Clean_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#hard-clean-package-debug">hard_Clean_Package_Debug</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#hard-clean-package-release">hard_Clean_Package_Release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reconfigure-package-build">reconfigure_Package_Build</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reconfigure-package-build-debug">reconfigure_Package_Build_Debug</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reconfigure-package-build-release">reconfigure_Package_Build_Release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-for-dependencies-version">check_For_Dependencies_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#hard-clean-wrapper">hard_Clean_Wrapper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-wrapper-repository-address">set_Wrapper_Repository_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-wrapper-repository-address">reset_Wrapper_Repository_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-framework-repository-address">set_Framework_Repository_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-framework-repository-address">reset_Framework_Repository_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-framework-repository-address">get_Framework_Repository_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-jekyll-urls">get_Jekyll_URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-environment-repository-address">set_Environment_Repository_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-environment-repository-address">reset_Environment_Repository_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-environment-repository-address">get_Environment_Repository_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#test-site-content-file">test_Site_Content_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#test-same-file-content">test_Same_File_Content</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#test-same-directory-content">test_Same_Directory_Content</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#translate-standard-into-option">translate_Standard_Into_Option</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-cxx-version-less">is_CXX_Version_Less</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-c-version-less">is_C_Version_Less</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-c-standard-option">is_C_Standard_Option</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-cxx-standard-option">is_CXX_Standard_Option</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#take-greater-c-standard-version">take_Greater_C_Standard_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#take-greater-cxx-standard-version">take_Greater_CXX_Standard_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#append-unique-in-cache">append_Unique_In_Cache</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#remove-duplicates-from-list">remove_Duplicates_From_List</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#define-parallel-jobs-flag">define_Parallel_Jobs_Flag</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#git-utilities">Git Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#configure-git">configure_Git</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#git-provides-geturl">git_Provides_GETURL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#prepare-repository-context-switch">prepare_Repository_Context_Switch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#checkout-to-commit">checkout_To_Commit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#go-to-commit">go_To_Commit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#go-to-integration">go_To_Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#go-to-master">go_To_Master</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#go-to-workspace-master">go_To_Workspace_Master</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#go-to-workspace-development">go_To_Workspace_Development</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#go-to-version">go_To_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-repository-version-tags">get_Repository_Version_Tags</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#normalize-version-tags">normalize_Version_Tags</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-repository-current-branch">get_Repository_Current_Branch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-repository-current-commit">get_Repository_Current_Commit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#save-repository-context">save_Repository_Context</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#restore-repository-context">restore_Repository_Context</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#save-workspace-repository-context">save_Workspace_Repository_Context</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#restore-workspace-repository-context">restore_Workspace_Repository_Context</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#merge-into-master">merge_Into_Master</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#tag-version">tag_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#merge-into-integration">merge_Into_Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#integrate-branch">integrate_Branch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#commit-current-repository-branch">commit_Current_Repository_Branch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#register-repository-address">register_Repository_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#register-repository-version">register_Repository_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#publish-package-references-in-workspace-repository">publish_Package_References_In_Workspace_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#publish-wrapper-references-in-workspace-repository">publish_Wrapper_References_In_Workspace_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#publish-framework-references-in-workspace-repository">publish_Framework_References_In_Workspace_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#publish-environment-references-in-workspace-repository">publish_Environment_References_In_Workspace_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#update-workspace-repository">update_Workspace_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#publish-repository-integration">publish_Repository_Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#publish-package-temporary-branch">publish_Package_Temporary_Branch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#delete-package-temporary-branch">delete_Package_Temporary_Branch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#publish-repository-master">publish_Repository_Master</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#publish-repository-version">publish_Repository_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#test-remote-connection">test_Remote_Connection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#update-repository-versions">update_Repository_Versions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#adjust-official-remote-address">adjust_Official_Remote_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#update-package-repository-from-remotes">update_Package_Repository_From_Remotes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#has-modifications">has_Modifications</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-for-new-commits-to-release">check_For_New_Commits_To_Release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-package-connected">is_Package_Connected</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#clone-repository">clone_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#track-repository-branch">track_Repository_Branch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#initialize-git-repository-push-address">initialize_Git_Repository_Push_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#test-package-remote-initialized">test_Package_Remote_Initialized</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#test-remote-initialized">test_Remote_Initialized</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#init-repository">init_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#connect-package-repository">connect_Package_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reconnect-repository">reconnect_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#connect-repository-remote">connect_Repository_Remote</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reconnect-repository-remote">reconnect_Repository_Remote</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#disconnect-repository-remote">disconnect_Repository_Remote</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#change-origin-repository">change_Origin_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-repository-name">get_Repository_Name</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-for-remote-respositories">check_For_Remote_Respositories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-for-wrapper-remote-respositories">check_For_Wrapper_Remote_Respositories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-remotes-to-update">get_Remotes_To_Update</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-remotes-address">get_Remotes_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#clone-wrapper-repository">clone_Wrapper_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#init-wrapper-repository">init_Wrapper_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#register-wrapper-repository-address">register_Wrapper_Repository_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#connect-wrapper-repository">connect_Wrapper_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reconnect-wrapper-repository">reconnect_Wrapper_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#initialize-wrapper-git-repository-push-address">initialize_Wrapper_Git_Repository_Push_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#update-wrapper-repository">update_Wrapper_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#publish-wrapper-repository-version">publish_Wrapper_Repository_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#clone-framework-repository">clone_Framework_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#init-framework-repository">init_Framework_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#update-framework-repository">update_Framework_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#publish-framework-repository">publish_Framework_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#register-framework-repository-address">register_Framework_Repository_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#connect-framework-repository">connect_Framework_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reconnect-framework-repository">reconnect_Framework_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-framework-connected">is_Framework_Connected</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#change-origin-framework-repository">change_Origin_Framework_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#clone-environment-repository">clone_Environment_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#init-environment-repository">init_Environment_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#update-environment-repository">update_Environment_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#publish-environment-repository">publish_Environment_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#register-environment-repository-address">register_Environment_Repository_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#connect-environment-repository">connect_Environment_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reconnect-environment-repository">reconnect_Environment_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-environment-connected">is_Environment_Connected</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#change-origin-environment-repository">change_Origin_Environment_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#clone-static-site-repository">clone_Static_Site_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#init-static-site-repository">init_Static_Site_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#update-static-site-repository">update_Static_Site_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#publish-static-site-repository">publish_Static_Site_Repository</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#platform-utilities">Platform Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#detect-current-platform">detect_Current_Platform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#manage-current-platform">manage_Current_Platform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#load-current-platform">load_Current_Platform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-package-platforms-variables">reset_Package_Platforms_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-compatible-with-current-abi">is_Compatible_With_Current_ABI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#parse-system-check-constraints">parse_System_Check_Constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-configuration-parameters">generate_Configuration_Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-configuration-constraints">generate_Configuration_Constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-system-configuration">check_System_Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-system-configuration-with-arguments">check_System_Configuration_With_Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#into-configuration-argument-list">into_Configuration_Argument_List</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-allowed-system-configuration">is_Allowed_System_Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#find-configuration">find_Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-configuration-installable">is_Configuration_Installable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#install-configuration">install_Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-configuration-cache-variables">reset_Configuration_Cache_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#extract-configuration-resulting-variables">extract_Configuration_Resulting_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-configuration-arguments">check_Configuration_Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#prepare-configuration-arguments">prepare_Configuration_Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-configuration-resulting-constraints">get_Configuration_Resulting_Constraints</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#finding-utilities">Finding Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-version-strings">set_Version_Strings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#set-external-version-strings">set_External_Version_Strings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#select-exact-native-version">select_Exact_Native_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#select-exact-external-version">select_Exact_External_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#select-best-native-version">select_Best_Native_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#select-best-external-version">select_Best_External_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#select-last-version">select_Last_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-exact-version">check_Exact_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-best-version">check_Best_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-last-version">check_Last_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-external-minimum-version">check_External_Minimum_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-external-last-version">check_External_Last_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-external-exact-version">check_External_Exact_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-component-elements-exist">check_Component_Elements_Exist</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#all-components">all_Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#select-components">select_Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-exact-version-compatible-with-previous-constraints">is_Exact_Version_Compatible_With_Previous_Constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-version-compatible-with-previous-constraints">is_Version_Compatible_With_Previous_Constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-compatible-external-version">is_Compatible_External_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-compatible-version">get_Compatible_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#find-best-compatible-version">find_Best_Compatible_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-exact-external-version-compatible-with-previous-constraints">is_Exact_External_Version_Compatible_With_Previous_Constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#is-external-version-compatible-with-previous-constraints">is_External_Version_Compatible_With_Previous_Constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-to-install-package-specification">add_To_Install_Package_Specification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-to-install-packages">reset_To_Install_Packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#need-install-native-packages">need_Install_Native_Packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#need-install-native-package">need_Install_Native_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-to-install-external-package-specification">add_To_Install_External_Package_Specification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-to-install-external-packages">reset_To_Install_External_Packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-found-external-packages">reset_Found_External_Packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-found-native-packages">reset_Found_Native_Packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#need-install-external-packages">need_Install_External_Packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#need-install-external-package">need_Install_External_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-packages-finding-variables">reset_Packages_Finding_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-native-package-dependency">resolve_Native_Package_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-external-package-dependency">resolve_External_Package_Dependency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#exitfindscript">exitFindScript</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#finding-package">finding_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#finding-external-package">finding_External_Package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#deployment-utilities">Deployment Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-package-reference-file">generate_Package_Reference_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-wrapper-reference-file">generate_Wrapper_Reference_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-package-dependencies">resolve_Package_Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#update-package-installed-version">update_Package_Installed_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-required-native-package-version">resolve_Required_Native_Package_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#package-source-exists-in-workspace">package_Source_Exists_In_Workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#package-reference-exists-in-workspace">package_Reference_Exists_In_Workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#install-native-package">install_Native_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#load-package-binary-references">load_Package_Binary_References</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deploy-package-repository">deploy_Package_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#build-and-install-source">build_And_Install_Source</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deploy-source-native-package">deploy_Source_Native_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deploy-source-native-package-from-branch">deploy_Source_Native_Package_From_Branch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#try-in-development-version">try_In_Development_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deploy-source-native-package-version">deploy_Source_Native_Package_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#build-and-install-package">build_And_Install_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-package-platform-against-current">check_Package_Platform_Against_Current</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-available-binary-package-versions">get_Available_Binary_Package_Versions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#select-platform-binary-for-version">select_Platform_Binary_For_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deploy-binary-native-package">deploy_Binary_Native_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deploy-binary-native-package-version">deploy_Binary_Native_Package_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-binary-package-name">generate_Binary_Package_Name</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#download-and-install-binary-native-package">download_And_Install_Binary_Native_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#load-and-configure-wrapper">load_And_Configure_Wrapper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-wrapper-known-versions">get_Wrapper_Known_Versions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#build-and-install-external-package-version">build_And_Install_External_Package_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deploy-wrapper-repository">deploy_Wrapper_Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deploy-source-external-package">deploy_Source_External_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deploy-source-external-package-version">deploy_Source_External_Package_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#resolve-required-external-package-version">resolve_Required_External_Package_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#uninstall-external-package">uninstall_External_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#memorize-external-binary-references">memorize_External_Binary_References</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#install-external-package">install_External_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deploy-binary-external-package">deploy_Binary_External_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deploy-binary-external-package-version">deploy_Binary_External_Package_Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#download-and-install-binary-external-package">download_And_Install_Binary_External_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#configure-binary-package">configure_Binary_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deploy-framework-repository">deploy_Framework_Repository</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#documentation-utilities">Documentation Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-static-site-jekyll-data-file">generate_Static_Site_Jekyll_Data_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-example-to-doc">add_Example_To_Doc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-api">generate_API</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-package-license-file">generate_Package_License_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-package-readme-files">generate_Package_Readme_Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-install-procedure-documentation">generate_Install_Procedure_Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-package-page-index-in-framework">generate_Package_Page_Index_In_Framework</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-package-static-site-page-introduction">generate_Package_Static_Site_Page_Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-package-static-site-page-install">generate_Package_Static_Site_Page_Install</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-package-static-site-page-use">generate_Package_Static_Site_Page_Use</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-package-static-site-page-contact">generate_Package_Static_Site_Page_Contact</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-package-static-site-page-license">generate_Package_Static_Site_Page_License</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#define-component-documentation-content">define_Component_Documentation_Content</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#define-documentation-content">define_Documentation_Content</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-package-static-site-pages">generate_Package_Static_Site_Pages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-wrapper-static-site-page-introduction">generate_Wrapper_Static_Site_Page_Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-wrapper-static-site-page-contact">generate_Wrapper_Static_Site_Page_Contact</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-wrapper-static-site-page-install">generate_Wrapper_Static_Site_Page_Install</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-component-site-for-wrapper">generate_Component_Site_For_Wrapper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-wrapper-static-site-page-use">generate_Wrapper_Static_Site_Page_Use</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-wrapper-static-site-page-license">generate_Wrapper_Static_Site_Page_License</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-wrapper-static-site-pages">generate_Wrapper_Static_Site_Pages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#configure-static-site-generation-variables">configure_Static_Site_Generation_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#configure-package-pages">configure_Package_Pages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-dependency-site">generate_Dependency_Site</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-external-dependency-site">generate_External_Dependency_Site</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-component-site-for-package">generate_Component_Site_For_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#produce-package-static-site-content">produce_Package_Static_Site_Content</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-package-site-address">get_Package_Site_Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-wrapper-readme-files">generate_Wrapper_Readme_Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-wrapper-license-file">generate_Wrapper_License_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-wrapper-page-index-in-framework">generate_Wrapper_Page_Index_In_Framework</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#configure-wrapper-pages">configure_Wrapper_Pages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#produce-wrapper-static-site-content">produce_Wrapper_Static_Site_Content</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-author">add_Author</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-category">add_Category</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-reference">add_Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-references-info">reset_References_Info</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#init-meta-info-cache-variables">init_Meta_Info_Cache_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#init-documentation-info-cache-variables">init_Documentation_Info_Cache_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-documentation-site-generated">check_Documentation_Site_Generated</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-documentation-info">reset_Documentation_Info</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#publish-binaries">publish_Binaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#publish-development-info">publish_Development_Info</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#static-site-utilities">Static site Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#create-local-static-site-project">create_Local_Static_Site_Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#update-local-static-site-project">update_Local_Static_Site_Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#static-site-project-exists">static_Site_Project_Exists</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#build-package-static-site">build_Package_Static_Site</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#framework-reference-exists-in-workspace">framework_Reference_Exists_In_Workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#framework-project-exists">framework_Project_Exists</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-framework-exists">check_Framework_Exists</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#load-framework">load_Framework</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-framework-site">get_Framework_Site</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#continuous-integration-utilities">Continuous integration Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-ci-variables">reset_CI_Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#allow-ci-for-platform">allow_CI_For_Platform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#verify-package-ci-content">verify_Package_CI_Content</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-package-ci-config-file">generate_Package_CI_Config_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-ci-config-file-runner-selection-by-platform">add_CI_Config_File_Runner_Selection_By_Platform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-ci-config-file-jobs-definitions-by-platform">add_CI_Config_File_Jobs_Definitions_By_Platform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#verify-wrapper-ci-content">verify_Wrapper_CI_Content</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-ci-config-file-jobs-definitions-by-platform-for-wrapper">add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#generate-wrapper-ci-config-file">generate_Wrapper_CI_Config_File</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#plugins-utilities">Plugins Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#manage-plugins-in-package">manage_Plugins_In_Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#activate-plugin">activate_Plugin</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#deactivate-plugin">deactivate_Plugin</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#dereference-residual-files">dereference_Residual_Files</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#process-progress-utilities">Process Progress Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#init-progress-file">init_Progress_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#reset-progress-file">reset_Progress_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-progress-file-last-modification-outdated">check_Progress_File_Last_Modification_Outdated</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#remove-progress-file">remove_Progress_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#update-progress-file">update_Progress_File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-managed-package-in-current-process">add_Managed_Package_In_Current_Process</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#add-chosen-package-version-in-current-process">add_Chosen_Package_Version_In_Current_Process</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-package-version-managed-in-current-process">check_Package_Version_Managed_In_Current_Process</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-package-version-state-in-current-process">check_Package_Version_State_In_Current_Process</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#check-package-managed-in-current-process">check_Package_Managed_In_Current_Process</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#get-chosen-version-in-current-process">get_Chosen_Version_In_Current_Process</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#begin-progress">begin_Progress</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#finish-progress">finish_Progress</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#some-packages-managed-last-time">some_Packages_Managed_Last_Time</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#print-managed-packages">print_Managed_Packages</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#policies">Policies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#script-for-setting-policies">script for setting policies</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="internal.html#pid-version-compatibility">PID Version Compatibility</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#init-pid-version-variable">init_PID_Version_Variable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#pid-package-is-with-development-info-in-use-files">PID_Package_Is_With_Development_Info_In_Use_Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#pid-package-is-with-site-info-in-use-files">PID_Package_Is_With_Site_Info_In_Use_Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="internal.html#pid-package-is-with-v2-platform-info-in-use-files">PID_Package_Is_With_V2_Platform_Info_In_Use_Files</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="developers.html">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="developers.html#update-the-doc">Update the doc</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="developers.html#generate-the-documentation-locally">Generate the documentation locally</a></li>
+<li class="toctree-l3"><a class="reference internal" href="developers.html#comment-the-cmake-files">Comment the CMake files</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="developers.html#to-do-s-list">To do’s list</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PID CMake API documentation</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Wrapper API</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/pages/Wrapper_API.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="wrapper-api">
+<h1>Wrapper API<a class="headerlink" href="#wrapper-api" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="pid-wrapper">
+<span id="id1"></span><h2>PID_Wrapper<a class="headerlink" href="#pid-wrapper" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="command">
+<dt id="command:pid_wrapper">
+<code class="descname">PID_Wrapper(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])</code><a class="headerlink" href="#command:pid_wrapper" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="command:declare_pid_wrapper">
+<code class="descname">declare_PID_Wrapper(AUTHOR ... YEAR ... LICENSE ... DESCRIPTION ... [OPTIONS])</code><a class="headerlink" href="#command:declare_pid_wrapper" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Declare the current CMake project as a PID wrapper for a given external package with specific meta-information passed as parameter.</div></blockquote>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">AUTHOR &lt;name&gt;:</th><td class="field-body">Defines the name of the reference author.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">YEAR &lt;dates&gt;:</th><td class="field-body">Reflects the lifetime of the wrapper, e.g. <code class="docutils literal notranslate"><span class="pre">YYYY-ZZZZ</span></code> where <code class="docutils literal notranslate"><span class="pre">YYYY</span></code> is the creation year and <code class="docutils literal notranslate"><span class="pre">ZZZZ</span></code> the latest modification date.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">LICENSE &lt;license name&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The name of the license applying to the wrapper. This must match one of the existing license file in the <code class="docutils literal notranslate"><span class="pre">licenses</span></code> directory of the workspace. This license applies to the wrapper and not to the original project.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">DESCRIPTION &lt;description&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">A short description of the package usage and utility.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">INSTITUTION &lt;institutions&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">Define the institution(s) to which the reference author belongs.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">MAIL &lt;e-mail&gt;:</th><td class="field-body">E-mail of the reference author.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">ADDRESS &lt;url&gt;:</th><td class="field-body">The url of the wrapper’s official repository. Must be set once the package is published.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">PUBLIC_ADDRESS &lt;url&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">Can be used to provide a public counterpart to the repository <cite>ADDRESS</cite></td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">README &lt;path relative to share folder&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">Used to define a user-defined README file for the package.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>This function must be called in the root <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code> file of the wrapper before any other call to the PID Wrapper API.</li>
+<li>It must be called <strong>exactly once</strong>.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<p class="last">Initialization of the wrapper’s internal state. After this call the its content can be defined.</p>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">PID_Wrapper</span><span class="p">(</span>
+  <span class="s">AUTHOR</span> <span class="s">Robin</span> <span class="s">Passama</span>
+  <span class="s">INSTITUTION</span> <span class="s">LIRMM</span>
+  <span class="s">YEAR</span> <span class="s">2013</span>
+  <span class="s">LICENSE</span> <span class="s">CeCILL-C</span>
+  <span class="s">ADDRESS</span> <span class="s">git@gite.lirmm.fr:passama/a-given-wrapper.git</span>
+  <span class="s">DESCRIPTION</span> <span class="s2">&quot;an example PID wrapper&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="pid-original-project">
+<span id="id2"></span><h2>PID_Original_Project<a class="headerlink" href="#pid-original-project" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="command">
+<dt id="command:pid_original_project">
+<code class="descname">PID_Original_Project(AUTHORS ... LICENSE ... URL ...)</code><a class="headerlink" href="#command:pid_original_project" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="command:define_pid_wrapper_original_project_info">
+<code class="descname">define_PID_Wrapper_Original_Project_Info(AUTHORS ... LICENSE ... URL ...)</code><a class="headerlink" href="#command:define_pid_wrapper_original_project_info" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Set the meta information about original project being wrapped by current project.</div></blockquote>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">AUTHORS &lt;string&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">Defines who are the authors of the original project.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">LICENSE &lt;string&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">The license that applies to the original project content.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">URL &lt;url&gt;:</th><td class="field-body">this is the index URL of the original project.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>This function must be called in the root CMakeLists.txt file of the wrapper, after declare_PID_Wrapper.</li>
+<li>It must be called <strong>exactly once</strong>.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<p class="last">Sets the meta-information about original project.</p>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">PID_Original_Project</span><span class="p">(</span>
+   <span class="s">AUTHORS</span> <span class="s2">&quot;Boost.org contributors&quot;</span>
+   <span class="s">LICENSES</span> <span class="s2">&quot;Boost license&quot;</span>
+   <span class="s">URL</span> <span class="s">http://www.boost.org</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="pid-wrapper-author">
+<span id="id3"></span><h2>PID_Wrapper_Author<a class="headerlink" href="#pid-wrapper-author" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="command">
+<dt id="command:pid_wrapper_author">
+<code class="descname">PID_Wrapper_Author(AUTHOR ... [INSTITUTION ...])</code><a class="headerlink" href="#command:pid_wrapper_author" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="command:add_pid_wrapper_author">
+<code class="descname">add_PID_Wrapper_Author(AUTHOR ... [INSTITUTION ...])</code><a class="headerlink" href="#command:add_pid_wrapper_author" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Add an author to the list of authors of the wrapper.</div></blockquote>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">[AUTHOR] &lt;string&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">Name of the author. The keyword AUTHOR can be avoided if the name is given as first argument.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">INSTITUTION &lt;institutions&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">the institution(s) to which the author belongs.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>This function must be called in the root CMakeLists.txt file of the package, after declare_PID_Wrapper and before build_PID_Wrapper.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<p class="last">Add another author to the list of authors of the wrapper.</p>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">PID_Wrapper_Author</span><span class="p">(</span><span class="s">AUTHOR</span> <span class="s">Another</span> <span class="s">Writter</span> <span class="s">INSTITUTION</span> <span class="s">LIRMM</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="pid-wrapper-category">
+<span id="id4"></span><h2>PID_Wrapper_Category<a class="headerlink" href="#pid-wrapper-category" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="command">
+<dt id="command:pid_wrapper_category">
+<code class="descname">PID_Wrapper_Category(...)</code><a class="headerlink" href="#command:pid_wrapper_category" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="command:add_pid_wrapper_category">
+<code class="descname">add_PID_Wrapper_Category(...)</code><a class="headerlink" href="#command:add_pid_wrapper_category" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Declare that the current wrapper generates external packages that belong to a given category.</div></blockquote>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">&lt;string&gt;:</th><td class="field-body">Name of the category</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>This function must be called in the root CMakeLists.txt file of the wrapper, after declare_PID_Wrapper and before build_PID_Wrapper.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<p class="last">Register the wrapper has being member of the given (sub)category. This information will be added to the wrapper reference file when it is generated.</p>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">PID_Wrapper_Category</span><span class="p">(</span><span class="s">example/packaging</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="pid-wrapper-option">
+<span id="id5"></span><h2>PID_Wrapper_Option<a class="headerlink" href="#pid-wrapper-option" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="command">
+<dt id="command:pid_wrapper_option">
+<code class="descname">PID_Wrapper_Option(OPTION ... TYPE ... DEFAULT ... [DESCRIPTION ...])</code><a class="headerlink" href="#command:pid_wrapper_option" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="command:define_pid_wrapper_user_option">
+<code class="descname">define_PID_Wrapper_User_Option(OPTION ... TYPE ... DEFAULT ... [DESCRIPTION ...])</code><a class="headerlink" href="#command:define_pid_wrapper_user_option" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Declare that the current wrapper generates external packages that belong to a given category.</div></blockquote>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">[OPTION] &lt;name&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">string defining the name of the user option. This name can then be used in deployment scripts. The option keyword can be omitted is name is given as first argument.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">TYPE &lt;type of the cmake option&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">type of the option, to be chosen between: FILEPATH (File chooser dialog), PATH (Directory chooser dialog), STRING (Arbitrary string), BOOL.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">DEFAULT …:</th><td class="field-body">Default value for the option.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">DESCRIPTION &lt;string&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">a string describing what this option is acting on.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>This function must be called in the root CMakeLists.txt file of the wrapper, after declare_PID_Wrapper and before build_PID_Wrapper.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<p class="last">Register a new user option into the wrapper. This user option will be used only in deployment scripts.</p>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">PID_Wrapper_Option</span><span class="p">(</span><span class="s">OPTION</span> <span class="s">BUILD_WITH_CUDA_SUPPORT</span>
+  <span class="s">TYPE</span> <span class="s">BOOL</span> <span class="s">DEFAULT</span> <span class="s">OFF</span>
+  <span class="s">DESCRIPTION</span> <span class="s2">&quot;set to ON to enable CUDA support during build&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="pid-wrapper-publishing">
+<span id="id6"></span><h2>PID_Wrapper_Publishing<a class="headerlink" href="#pid-wrapper-publishing" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="command">
+<dt id="command:pid_wrapper_publishing">
+<code class="descname">PID_Wrapper_Publishing(PROJECT ... GIT|FRAMEWORK ... [OPTIONS])</code><a class="headerlink" href="#command:pid_wrapper_publishing" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="command:declare_pid_wrapper_publishing">
+<code class="descname">declare_PID_Wrapper_Publishing(PROJECT ... GIT|FRAMEWORK ... [OPTIONS])</code><a class="headerlink" href="#command:declare_pid_wrapper_publishing" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Declare that the current wrapper generates external packages that belong to a given category.</div></blockquote>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">PROJECT &lt;url&gt;:</th><td class="field-body">This argument tells where to fing the official repository project page of the wrapper. This is used to reference the wrapper project into the static site.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">ALLOWED_PLATFORMS &lt;list of platforms&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">This argument limits the set of platforms used for CI, only platforms specified will be managed in the CI process. WARNING: Due to gitlab limitation (only one pipeline can be defined) only ONE platform is allowed at the moment.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">DESCRIPTION &lt;string&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">This is a long(er) description of the wrapper that will be used for its documentation in static site.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">PUBLISH_BINARIES:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">If this argument is used then the wrapper will automatically publish new binary versions to the publication site.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">FRAMEWORK &lt;name of the framework&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">If this argument is set, then it means that the wrapper belongs to a framework. It will so contribute to the framework site. You must use either this argument or GIT one.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">GIT &lt;repository address&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">This is the address of the lone static site repository for the wrapper. It is used to automatically clone/update the static site of the wrapper. With this option the wrapper will not contribute to a framework but will have its own isolated deployment. You must use either this argument or FRAMEWORK one.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">PAGE &lt;url&gt;:</th><td class="field-body">This is the online URL of the static site index page. Must be used if you use the GIT argument.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>This function must be called in the root CMakeLists.txt of the package, after declare_PID_Wrapper and before build_PID_Wrapper.</li>
+<li>This function must be called it has to be called after any other following functions: add_PID_Wrapper_Author, add_PID_Wrapper_Category and define_PID_Wrapper_Original_Project_Info.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<ul class="last simple">
+<li>Generate or update a static site for the project. This static site locally resides in a dedicated git repository. If the project belongs to no framework then it has its lone static site that can be found in &lt;pid-workspace&gt;/sites/packages/&lt;wrapper name&gt;. If it belongs to a framework, the framework repository can be found in &lt;pid-workspace&gt;/sites/frameworks/&lt;framework name&gt;. In this later case, the wrapper only contributes to its own related content not the overall content of the framework.</li>
+<li>Depending on options it can also deploy binaries for target platform into the static site repository (framework or lone static site).</li>
+</ul>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">PID_Wrapper_Publishing</span><span class="p">(</span>
+  <span class="s">PROJECT</span> <span class="s">https://gite.lirmm.fr/pid/boost</span>
+  <span class="s">FRAMEWORK</span> <span class="s">pid</span>
+  <span class="s">DESCRIPTION</span> <span class="s">boost</span> <span class="s">is</span> <span class="s">a</span> <span class="s">PID</span> <span class="s">wrapper</span> <span class="s">for</span> <span class="s">external</span> <span class="s">project</span> <span class="s">called</span> <span class="s">Boost.</span> <span class="s">Boost</span> <span class="s">provides</span> <span class="s">many</span> <span class="s">libraries</span> <span class="s">and</span> <span class="s">templates</span> <span class="s">to</span> <span class="s">ease</span> <span class="s">development</span> <span class="s">in</span> <span class="s">C++.</span>
+  <span class="s">PUBLISH_BINARIES</span>
+  <span class="s">ALLOWED_PLATFORMS</span> <span class="s">x86_64_linux_abi11</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="build-pid-wrapper">
+<span id="id7"></span><h2>build_PID_Wrapper<a class="headerlink" href="#build-pid-wrapper" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="command">
+<dt id="command:build_pid_wrapper">
+<code class="descname">build_PID_Wrapper()</code><a class="headerlink" href="#command:build_pid_wrapper" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Configure the PID wrapper according to overall information.</div></blockquote>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<p class="last">This function must be the last one called in the root CMakeList.txt file of the wrapper.</p>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<p class="last">This function generates configuration files, manage the generation of the global build process and call CMakeLists.txt files of version folders contained in subfolder src.</p>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">build_PID_Wrapper</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="pid-wrapper-version">
+<span id="id8"></span><h2>PID_Wrapper_Version<a class="headerlink" href="#pid-wrapper-version" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="command">
+<dt id="command:pid_wrapper_version">
+<code class="descname">PID_Wrapper_Version(VERSION ... DEPLOY ... [OPTIONS])</code><a class="headerlink" href="#command:pid_wrapper_version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="command:add_pid_wrapper_known_version">
+<code class="descname">add_PID_Wrapper_Known_Version(VERSION ... DEPLOY ... [OPTIONS])</code><a class="headerlink" href="#command:add_pid_wrapper_known_version" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Declare a new version of the original project wrapped into PID system.</div></blockquote>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">[VERSION] &lt;version string&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">tells which version of the external package is being wrapped. The version number must exactly match the name of the folder containing the CMakeLists.txt that does this call. The keyword version may be omitted is version is the first argument.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">DEPLOY &lt;path to deploy script&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">This is the path, relative to the current folder, to the deploy script used to build and install the external package version. Script must be a cmake module file.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">POSTINSTALL &lt;path to install script&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">This is the path, relative to the current folder, to the install script that will be run after external package version has been installed into the workspace, to perform additionnal configuration steps. Script is a cmake module file.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">COMPATIBILITY &lt;version number&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">define which previous version is compatible with this current version, if any. Compatible simply means that this current version can be used instead of the previous one without any restriction.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">SONAME &lt;version number&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">(useful on UNIX only) Specify which soname will be given by default to all shared libraries defined by the wrapper.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>This function must be the first one called in the CMakeList.txt file of a version folder.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<p class="last">Configure information about a specific version of the external package.</p>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">PID_Wrapper_Version</span><span class="p">(</span><span class="s">VERSION</span> <span class="s">1.55.0</span> <span class="s">DEPLOY</span> <span class="s">deploy.cmake</span>
+    <span class="s">SONAME</span> <span class="s">1.55.0</span> <span class="c">#define the extension name to use for shared objects</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="pid-wrapper-configuration">
+<span id="id9"></span><h2>PID_Wrapper_Configuration<a class="headerlink" href="#pid-wrapper-configuration" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="command">
+<dt id="command:pid_wrapper_configuration">
+<code class="descname">PID_Wrapper_Configuration(CONFIGURATION ... [PLATFORM ...])</code><a class="headerlink" href="#command:pid_wrapper_configuration" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="command:declare_pid_wrapper_platform_configuration">
+<code class="descname">declare_PID_Wrapper_Platform_Configuration(CONFIGURATION ... [PLATFORM ...])</code><a class="headerlink" href="#command:declare_pid_wrapper_platform_configuration" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Declare a platform configuration constraint for the current version of the external project being described.</div></blockquote>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">CONFIGURATION &lt;list of configurations&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">tells which version of the external package is being wrapped. The version number must exactly match the name of the folder containing the CMakeLists.txt that does this call.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">PLATFORM &lt;platform name&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">Use to apply the configuration constraints only to the target platform.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>This function must be called in the CMakeList.txt file of a version folder after add_PID_Wrapper_Known_Version.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>Configure the check of a set of platform configurations that will be perfomed when the given wrapper version is built.</li>
+</ul>
+</div></blockquote>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">PID_Wrapper_Configuration</span><span class="p">(</span><span class="s">CONFIGURATION</span> <span class="s">posix</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="pid-wrapper-dependency">
+<span id="id10"></span><h2>PID_Wrapper_Dependency<a class="headerlink" href="#pid-wrapper-dependency" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="command">
+<dt id="command:pid_wrapper_dependency">
+<code class="descname">PID_Wrapper_Dependency([PACKAGE] ... [[EXACT] VERSION ...]...)</code><a class="headerlink" href="#command:pid_wrapper_dependency" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="command:declare_pid_wrapper_external_dependency">
+<code class="descname">declare_PID_Wrapper_External_Dependency([PACKAGE] ... [[EXACT] VERSION ...]...)</code><a class="headerlink" href="#command:declare_pid_wrapper_external_dependency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Declare a dependency between the currently described version of the external package and another external package.</p>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">[PACKAGE] &lt;string&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">defines the unique identifier of the required package. The keyword PACKAGE may be omitted if name is the first argument.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">VERSION &lt;version string&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">dotted notation of a version, representing which version of the external package is required. May be use many times.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">EXACT:</th><td class="field-body">use to specify if the following version must be exac. May be used for earch VERSION specification.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">COMPONENTS &lt;list of components&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">Used to specify which components of the required external package will be used by local components. If not specified there will be no check for the presence of specific components in the required package.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>This function must be called in the CMakeList.txt file of a version folder after add_PID_Wrapper_Known_Version.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>Register the target package as a dependency of the current package.</li>
+</ul>
+</div></blockquote>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">PID_Wrapper_Dependency</span> <span class="p">(</span><span class="s">PACKAGE</span> <span class="s">boost</span> <span class="s">EXACT</span> <span class="s">VERSION</span> <span class="s">1.55.0</span> <span class="s">EXACT</span> <span class="s">VERSION</span> <span class="s">1.63.0</span> <span class="s">EXACT</span> <span class="s">VERSION</span> <span class="s">1.64.0</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="pid-wrapper-component">
+<span id="id11"></span><h2>PID_Wrapper_Component<a class="headerlink" href="#pid-wrapper-component" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="command">
+<dt id="command:pid_wrapper_component">
+<code class="descname">PID_Wrapper_Component([COMPONENT] ... [OPTIONS])</code><a class="headerlink" href="#command:pid_wrapper_component" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="command:declare_pid_wrapper_component">
+<code class="descname">declare_PID_Wrapper_Component([COMPONENT] ... [OPTIONS])</code><a class="headerlink" href="#command:declare_pid_wrapper_component" title="Permalink to this definition">¶</a></dt>
+<dd><p>Declare a new component for the current version of the external package.</p>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">[COMPONENT] &lt;string w/o withespaces&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">defines the unique identifier of the component. The COMPONENT keyword may be omnitted if name if the first argument.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">C_STANDARD &lt;number of standard&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">This argument is followed by the version of the C language standard to be used to build this component. The values may be 90, 99 or 11.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">CXX_STANDARD &lt;number of standard&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">This argument is followed by the version of the C++ language standard to be used to build this component. The values may be 98, 11, 14 or 17. If not specified the version 98 is used.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">SONAME &lt;version number&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">This argument allows to set the SONAME to use for that specific library instead of the default one.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">DEFINITIONS &lt;defs&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">These are the preprocessor definitions used in the component’s interface.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">INCLUDES &lt;folders&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">These are the include folder to pass to any component using the current component. Path are interpreted relative to the installed external package version root folder.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">SHARED_LINKS &lt;links&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">These are shared link flags. Path are interpreted relative to the installed external package version root folder.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">STATIC_LINKS &lt;links&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">These are static link flags. Path are interpreted relative to the installed external package version root folder.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">OPTIONS &lt;compile options&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">These are compiler options to be used whenever a third party code use this component. This should be used only for options bound to compiler usage, not definitions or include directories.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">RUNTIME_RESOURCES &lt;list of path&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">This argument is followed by a list of path relative to the installed external package version root folder.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">EXPORT …:</th><td class="field-body">list of components that are exported by the declared component. Each element has the pattern [&lt;package name&gt;/]&lt;component_name&gt;.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">DEPEND …:</th><td class="field-body">list of components that the declared component depends on. Each element has the pattern [&lt;package name&gt;/]&lt;component_name&gt;.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>Must be called in the CMakeList.txt file of a version folder after add_PID_Wrapper_Known_Version and before any call to declare_PID_Wrapper_Component_Dependency applied to the same declared component.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>Define a component for the current external package version, which is mainly usefull to register all compilation options relative to a component.</li>
+</ul>
+</div></blockquote>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">PID_Wrapper_Component</span><span class="p">(</span><span class="s">COMPONENT</span> <span class="s">libyaml</span> <span class="s">INCLUDES</span> <span class="s">include</span> <span class="s">SHARED_LINKS</span> <span class="o">${</span><span class="nv">posix_LINK_OPTIONS</span><span class="o">}</span> <span class="s">lib/libyaml-cpp</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="pid-wrapper-component-dependency">
+<span id="id12"></span><h2>PID_Wrapper_Component_Dependency<a class="headerlink" href="#pid-wrapper-component-dependency" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="command">
+<dt id="command:pid_wrapper_component_dependency">
+<code class="descname">PID_Wrapper_Component_Dependency([COMPONENT] ... [OPTIONS])</code><a class="headerlink" href="#command:pid_wrapper_component_dependency" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt id="command:declare_pid_wrapper_component_dependency">
+<code class="descname">declare_PID_Wrapper_Component_Dependency([COMPONENT] ... [OPTIONS])</code><a class="headerlink" href="#command:declare_pid_wrapper_component_dependency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Declare a dependency for a component defined in the current version of the current external package.</p>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">[COMPONENT] &lt;string w/o withespaces&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">defines the unique identifier of the component for which a dependency is described. The keyword COMPONENT may be omitted if name is given as first argument.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">EXPORT:</th><td class="field-body">Tells whether the component exports the required dependency. Exporting means that the reference to the dependency is contained in its interface (header files). This can be only the case for libraries, not for applications.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">DEPEND:</th><td class="field-body">Tells whether the component depends on but do not export the required dependency. Exporting means that the reference to the dependency is contained in its interface (header files).</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">[EXTERNAL] &lt;dependency&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">This is the name of the component whose component &lt;name&gt; depends on. EXTERNAL keyword may be omitted if EXPORT or DEPEND keyword are used.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">PACKAGE &lt;name&gt;:</th><td class="field-body">This is the name of the external package the dependency belongs to. This package must have been defined has a package dependency before this call. If this argument is not used, the dependency belongs to the current package (i.e. internal dependency).</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">DEFINITIONS &lt;definitions&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">List of definitions exported by the component. These definitions are supposed to be managed in the dependency’s heaedr files, but are set by current component.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>Must be called in the CMakeList.txt file of a version folder after add_PID_Wrapper_Known_Version and after any call to declare_PID_Wrapper_Component applied to the same declared component.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>Define and configure a dependency between a component in the current external package version and another component.</li>
+</ul>
+</div></blockquote>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">PID_Wrapper_Component_Dependency</span><span class="p">(</span><span class="s">COMPONENT</span> <span class="s">libyaml</span> <span class="s">EXPORT</span> <span class="s">EXTERNAL</span> <span class="s">boost-headers</span> <span class="s">PACKAGE</span> <span class="s">boost</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="script-functions">
+<h2>Script functions<a class="headerlink" href="#script-functions" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="get-external-dependencies-info">
+<span id="id13"></span><h3>get_External_Dependencies_Info<a class="headerlink" href="#get-external-dependencies-info" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><dl class="command">
+<dt id="command:get_external_dependencies_info">
+<code class="descname">get_External_Dependencies_Info([OPTIONS])</code><a class="headerlink" href="#command:get_external_dependencies_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allow to get info defined in description of the currenlty built version.</p>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">PACKAGE &lt;ext_package&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">Target external package that is a dependency of the currently built package, for which we want specific information. Used as a filter to limit information to those relative to the dependency.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">ROOT &lt;variable&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">The variable passed as argument will be filled with the path to the dependency external package version. Must be used together with PACKAGE.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">OPTIONS &lt;variable&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The variable passed as argument will be filled with compiler options for the external package version being built.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">INCLUDES &lt;variable&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">The variable passed as argument will be filled with include folders for the external package version being built.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">DEFINITIONS &lt;variable&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The variable passed as argument will be filled with all definitions for the external package version being built.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">LINKS &lt;variable&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">The variable passed as argument will be filled with all path to librairies and linker options for the external package version being built.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">LIBRARY_DIRS &lt;variable&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The variable passed as argument will be filled with all path to folders containing libraries.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">C_STANDARD &lt;variable&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">The variable passed as argument will be filled with the C language standard to use for the external package version, if any specified.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">CXX_STANDARD &lt;variable&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The variable passed as argument will be filled with the CXX language standard to use for the external package version, if any specified.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">FLAGS:</th><td class="field-body">option to get result of all preceeding arguments directly as compiler flags instead of CMake variables.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>Must be used in deploy scripts defined in a wrapper.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>This function has no side effect but simply allow the wrapper build process to get some information about the package it is trying to build. Indeed, building an external package may require to have precise information about package description in order to use adequate compilation flags.</li>
+</ul>
+</div></blockquote>
+</div>
+<p class="rubric">Example</p>
+<p>Example of deploy script used for the yaml-cpp wrapper:</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">get_External_Dependencies_Info</span><span class="p">(</span><span class="s">INCLUDES</span> <span class="s">all_includes</span><span class="p">)</span>
+<span class="nb">execute_process</span><span class="p">(</span><span class="s">COMMAND</span> <span class="o">${</span><span class="nv">CMAKE_COMMAND</span><span class="o">}</span> <span class="s">-DBUILD_SHARED_LIBS=ON</span> <span class="s">-DCMAKE_INSTALL_PREFIX=</span><span class="o">${</span><span class="nv">TARGET_INSTALL_DIR</span><span class="o">}</span> <span class="s">-DBoost_INCLUDE_DIR=</span><span class="o">${</span><span class="nv">all_includes</span><span class="o">}</span> <span class="s">..</span> <span class="s">WORKING_DIRECTORY</span> <span class="o">${</span><span class="nv">YAML_BUILD_DIR</span><span class="o">}</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="get-user-option-info">
+<span id="id14"></span><h3>get_User_Option_Info<a class="headerlink" href="#get-user-option-info" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><dl class="command">
+<dt id="command:get_user_option_info">
+<code class="descname">get_User_Option_Info(OPTION ... RESULT ...)</code><a class="headerlink" href="#command:get_user_option_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allow to get info defined and set by user of the wrapper into deploy script when a wrapper version is built.</p>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">OPTION &lt;variable&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">Target option we need to get the value into the deploy script.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">RESULT &lt;returned variable&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">The variable passed as argument will be filled with the value of the target user option’s value.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>Must be used in deploy scripts defined in a wrapper.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>This function has no side effect but simply allow the wrapper build process to get some information about the package it is trying to build. Indeed, building an external package may require additional configuration from the user in order to use adequate compilation flags.</li>
+</ul>
+</div></blockquote>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">get_User_Option_Info</span><span class="p">(</span><span class="s">OPTION</span> <span class="s">BUILD_WITH_CUDA_SUPPORT</span> <span class="s">RESULT</span> <span class="s">using_cuda</span><span class="p">)</span>
+<span class="nb">if</span><span class="p">(</span><span class="s">using_cuda</span><span class="p">)</span>
+  <span class="nb">build_process_using_CUDA</span><span class="p">(</span><span class="s">...</span><span class="p">)</span>
+<span class="nb">else</span><span class="p">()</span>
+  <span class="nb">build_process_without_CUDA</span><span class="p">(</span><span class="s">...</span><span class="p">)</span>
+<span class="nb">endif</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="get-environment-info">
+<span id="id15"></span><h3>get_Environment_Info<a class="headerlink" href="#get-environment-info" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><dl class="command">
+<dt id="command:get_environment_info">
+<code class="descname">get_Environment_Info([JOBS ...] [MAKE...])</code><a class="headerlink" href="#command:get_environment_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt>
+<code class="descname">get_Environment_Info(C|CXX|ASM [RELEASE|DEBUG] [CFLAGS...] [COMPILER ...] [AR ...] [LINKER...] [RANLIB...])</code></dt>
+<dd></dd></dl>
+
+<dl class="command">
+<dt>
+<code class="descname">get_Environment_Info(MODULE|SHARED|STATIC|EXE LDFLAGS...)</code></dt>
+<dd><p>Getting all options and flags (compiler in use, basic flags for each type of component, and so on) defined by the current environment, to be able to access them in the deploy script.</p>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">C|CXX|ASM:</th><td class="field-body">Specifies the type of information to get.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">MODULE|SHARED|STATIC|EXE:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">Specifies the type of binary to link.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">RELEASE|DEBUG:</th><td class="field-body">Used to specify which kind of flags you want (RELEASE by default)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">CFLAGS …:</th><td class="field-body">the output variable that contains the list of compilation flags used for specified compilation (e.g. C and DEBUG)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">LDFLAGS …:</th><td class="field-body">the output variable that contains the list of linker flags used for specified compilation (e.g. SHARED)</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">COMPILER &lt;path&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">the output variable that contains the path to the compiler used for specified compilation (e.g. C++ compiler)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">AR &lt;path&gt;:</th><td class="field-body">the output variable that contains the path to the ar tool.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">LINKER &lt;path&gt;:</th><td class="field-body">the output variable that contains the path to the linker.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">RANLIB &lt;path&gt;:</th><td class="field-body">the output variable that contains the path to the ranlib tool.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">JOBS flag:</th><td class="field-body">the output variable that contains the flag used for parallel build.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">MAKE &lt;path&gt;:</th><td class="field-body">the output variable that contains the path to the make tool.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>Must be used in deploy scripts defined in a wrapper.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>This function has no side effect but simply allow the wrapper build process to get some information about the package it is trying to build.</li>
+</ul>
+</div></blockquote>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">get_Environment_Info</span><span class="p">(</span><span class="s">MAKE</span> <span class="s">make_tool</span> <span class="s">JOBS</span> <span class="s">jobs-flag</span>
+                    <span class="s">CXX</span> <span class="s">COMPILER</span> <span class="s">compiler_used</span> <span class="s">CFLAGS</span> <span class="s">compile_flags</span>
+                    <span class="s">SHARED</span> <span class="s">LDFLAGS</span> <span class="s">linker_flags</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="get-target-platform-info">
+<span id="id16"></span><h3>get_Target_Platform_Info<a class="headerlink" href="#get-target-platform-info" title="Permalink to this headline">¶</a></h3>
+<dl class="command">
+<dt id="command:get_target_platform_info">
+<code class="descname">get_Target_Platform_Info([OPTIONS])</code><a class="headerlink" href="#command:get_target_platform_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get information about the target platform. This can be used to configure the build accordingly.</p>
+<p class="rubric">Optional parameters</p>
+<p>All arguments are optional but at least one must be provided. All properties are retrieved for the target platform.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">NAME &lt;VAR&gt;:</th><td class="field-body">Output the name of the target platform in <code class="docutils literal notranslate"><span class="pre">VAR</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">TYPE &lt;VAR&gt;:</th><td class="field-body">Ouptut the processor type in <code class="docutils literal notranslate"><span class="pre">VAR</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">OS &lt;VAR&gt;:</th><td class="field-body">Output the OS name in <code class="docutils literal notranslate"><span class="pre">VAR</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">ARCH &lt;VAR&gt;:</th><td class="field-body">Output the architecture in <code class="docutils literal notranslate"><span class="pre">VAR</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">ABI &lt;VAR&gt;:</th><td class="field-body">Output the ABI in <code class="docutils literal notranslate"><span class="pre">VAR</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">DISTRIBUTION &lt;VAR&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">Output the distribution in <code class="docutils literal notranslate"><span class="pre">VAR</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">PYTHON &lt;VAR&gt;:</th><td class="field-body">Output the Python version in <code class="docutils literal notranslate"><span class="pre">VAR</span></code></td>
+</tr>
+</tbody>
+</table>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<p class="last">After the call, the variables defined by the user will be set to the corresponding value. Then it can be used to control the configuration of the package.</p>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">get_Target_Platform_Info</span><span class="p">(</span><span class="s">OS</span> <span class="s">curr_os</span> <span class="s">ARCH</span> <span class="s">curr_proc</span> <span class="s">ABI</span> <span class="s">curr_abi</span> <span class="s">TYPE</span> <span class="s">curr_proc_type</span><span class="p">)</span>
+<span class="nb">message</span><span class="p">(</span><span class="s2">&quot;curr_os=${curr_os}&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="install-external-project">
+<span id="id17"></span><h3>install_External_Project<a class="headerlink" href="#install-external-project" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><dl class="command">
+<dt id="command:install_external_project">
+<code class="descname">install_External_Project(URL ... ARCHIVE ... FOLDER ... PATH ... [OPTIONS])</code><a class="headerlink" href="#command:install_external_project" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download and install the given archive and returns the path to the installed project.</p>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">URL &lt;url&gt;:</th><td class="field-body">The URL from where to download the archive.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">ARCHIVE &lt;string&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">The name of the archive downloaded.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">FOLDER &lt;string&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The folder resulting from archive extraction.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">PATH &lt;path&gt;:</th><td class="field-body">the output variable that contains the path to the installed project, empty if project cannot be installed</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">PROJECT &lt;string&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">the name of the project if you want to generate nice outputs about external package install process</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">VERSION &lt;version string&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">the version of the external project that is installed, only usefull together with PROJECT keyword.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>Must be used in deploy scripts defined in a wrapper.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>This function is used to download and install the archive of an external project.</li>
+</ul>
+</div></blockquote>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">install_External_Project</span><span class="p">(</span> <span class="s">PROJECT</span> <span class="s">yaml-cpp</span>
+                  <span class="s">VERSION</span> <span class="s">0.6.2</span>
+                  <span class="s">URL</span> <span class="s">https://github.com/jbeder/yaml-cpp/archive/yaml-cpp-0.6.2.tar.gz</span>
+                  <span class="s">ARCHIVE</span> <span class="s">yaml-cpp-0.6.2.tar.gz</span>
+                  <span class="s">FOLDER</span> <span class="s">yaml-cpp-yaml-cpp-0.6.2</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="return-external-project-error">
+<span id="id18"></span><h3>return_External_Project_Error<a class="headerlink" href="#return-external-project-error" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><dl class="command">
+<dt id="command:return_external_project_error">
+<code class="descname">return_External_Project_Error()</code><a class="headerlink" href="#command:return_external_project_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make the current wrapper script to return an error.</p>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>Must be used in deploy scripts defined in a wrapper.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>generates an error code for the current deploy script.</li>
+</ul>
+</div></blockquote>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">return_External_Project_Error</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="build-b2-external-project">
+<span id="id19"></span><h3>build_B2_External_Project<a class="headerlink" href="#build-b2-external-project" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><dl class="command">
+<dt id="command:build_b2_external_project">
+<code class="descname">build_B2_External_Project(PROJECT ... FOLDER ... MODE ... [OPTIONS])</code><a class="headerlink" href="#command:build_b2_external_project" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configure, build and install an external project defined with Boost build.</p>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">PROJECT &lt;string&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The name of the external project.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">FOLDER &lt;string&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">The name of the folder containing the project.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">MODE &lt;Release|Debug&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The build mode.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">QUIET:</th><td class="field-body">if used then the output of this command will be silent.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">COMMENT &lt;string&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">A string to append to message to inform about special thing you are doing. Usefull if you intend to buildmultiple time the same external project with different options.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">DEFINITIONS &lt;list of definitions&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">the CMake definitions you need to provide to the cmake build script.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>Must be used in deploy scripts defined in a wrapper.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>Build and install the external project into workspace install tree..</li>
+</ul>
+</div></blockquote>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">build_B2_External_Project</span><span class="p">(</span><span class="s">PROJECT</span> <span class="s">boost</span> <span class="s">FOLDER</span> <span class="s">boost_1_64_0</span> <span class="s">MODE</span> <span class="s">Release</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="build-autotools-external-project">
+<span id="id20"></span><h3>build_Autotools_External_Project<a class="headerlink" href="#build-autotools-external-project" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><dl class="command">
+<dt id="command:build_autotools_external_project">
+<code class="descname">build_Autotools_External_Project(PROJECT ... FOLDER ... MODE ... [OPTIONS])</code><a class="headerlink" href="#command:build_autotools_external_project" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configure, build and install an external project defined with GNU autotools.</p>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">PROJECT &lt;string&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The name of the external project.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">FOLDER &lt;string&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">The name of the folder containing the project.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">MODE &lt;Release|Debug&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The build mode.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">QUIET:</th><td class="field-body">if used then the output of this command will be silent.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">COMMENT &lt;string&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">A string to append to message to inform about special thing you are doing. Usefull if you intend to buildmultiple time the same external project with different options.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">DEFINITIONS &lt;list of definitions&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">the CMake definitions you need to provide to the cmake build script.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>Must be used in deploy scripts defined in a wrapper.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>Build and install the external project into workspace install tree..</li>
+</ul>
+</div></blockquote>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">build_Autotools_External_Project</span><span class="p">(</span><span class="s">PROJECT</span> <span class="s">aproject</span> <span class="s">FOLDER</span> <span class="s">a_project_v12</span> <span class="s">MODE</span> <span class="s">Release</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="build-waf-external-project">
+<span id="id21"></span><h3>build_Waf_External_Project<a class="headerlink" href="#build-waf-external-project" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><dl class="command">
+<dt id="command:build_waf_external_project">
+<code class="descname">build_Waf_External_Project(PROJECT ... FOLDER ... MODE ... [OPTIONS])</code><a class="headerlink" href="#command:build_waf_external_project" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configure, build and install an external project defined with python Waf tool.</p>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">PROJECT &lt;string&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The name of the external project.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">FOLDER &lt;string&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">The name of the folder containing the project.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">MODE &lt;Release|Debug&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The build mode.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">QUIET:</th><td class="field-body">if used then the output of this command will be silent.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">COMMENT &lt;string&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">A string to append to message to inform about special thing you are doing. Usefull if you intend to buildmultiple time the same external project with different options.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">DEFINITIONS &lt;list of definitions&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">the CMake definitions you need to provide to the cmake build script.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>Must be used in deploy scripts defined in a wrapper.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>Build and install the external project into workspace install tree..</li>
+</ul>
+</div></blockquote>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">build_Waf_External_Project</span><span class="p">(</span><span class="s">PROJECT</span> <span class="s">aproject</span> <span class="s">FOLDER</span> <span class="s">a_project_v12</span> <span class="s">MODE</span> <span class="s">Release</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="build-cmake-external-project">
+<span id="id22"></span><h3>build_CMake_External_Project<a class="headerlink" href="#build-cmake-external-project" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><dl class="command">
+<dt id="command:build_cmake_external_project">
+<code class="descname">build_CMake_External_Project(URL ... ARCHIVE ... FOLDER ... PATH ... [OPTIONS])</code><a class="headerlink" href="#command:build_cmake_external_project" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configure, build and install a Cmake external project.</p>
+<p class="rubric">Required parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">PROJECT &lt;string&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The name of the external project.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">FOLDER &lt;string&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">The name of the folder containing the project.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">Mode &lt;Release|Debug&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">The build mode.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Optional parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">QUIET:</th><td class="field-body">if used then the output of this command will be silent.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">COMMENT &lt;string&gt;:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">A string to append to message to inform about special thing you are doing. Usefull if you intend to buildmultiple time the same external project with different options.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">DEFINITIONS &lt;list of definitions&gt;:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">the CMake definitions you need to provide to the cmake build script.</td>
+</tr>
+</tbody>
+</table>
+<div class="warning admonition">
+<p class="first admonition-title">Constraints</p>
+<ul class="last simple">
+<li>Must be used in deploy scripts defined in a wrapper.</li>
+</ul>
+</div>
+<div class="important admonition">
+<p class="first admonition-title">Effects</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>Build and install the external project into workspace install tree..</li>
+</ul>
+</div></blockquote>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">build_CMake_External_Project</span><span class="p">(</span> <span class="s">PROJECT</span> <span class="s">yaml-cpp</span> <span class="s">FOLDER</span> <span class="s">yaml-cpp-yaml-cpp-0.6.2</span> <span class="s">MODE</span> <span class="s">Release</span>
+                      <span class="s">DEFINITIONS</span> <span class="s">BUILD_GMOCK=OFF</span> <span class="s">BUILD_GTEST=OFF</span> <span class="s">BUILD_SHARED_LIBS=ON</span> <span class="s">YAML_CPP_BUILD_TESTS=OFF</span> <span class="s">YAML_CPP_BUILD_TESTS=OFF</span> <span class="s">YAML_CPP_BUILD_TOOLS=OFF</span> <span class="s">YAML_CPP_BUILD_CONTRIB=OFF</span> <span class="s">gtest_force_shared_crt=OFF</span>
+                      <span class="s">COMMENT</span> <span class="s2">&quot;shared libraries&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div></blockquote>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="External_API.html" class="btn btn-neutral float-right" title="External API" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Package_API.html" class="btn btn-neutral" title="Package API" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017-2018, CNRS LIRMM / JRL.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Sphinx-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'master',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
