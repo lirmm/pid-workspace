@@ -399,15 +399,15 @@ endfunction(define_Wrapped_Project)
 #      :SITE_ADDRESS: the url of the wrapper static site.
 #
 function(get_Wrapper_Site_Address SITE_ADDRESS wrapper)
-set(${SITE_ADDRESS} PARENT_SCOPE)
-if(${wrapper}_FRAMEWORK) #package belongs to a framework
-	if(EXISTS ${WORKSPACE_DIR}/cmake/references/ReferFramework${${wrapper}_FRAMEWORK}.cmake)
-		include(${WORKSPACE_DIR}/cmake/references/ReferFramework${${wrapper}_FRAMEWORK}.cmake)
-		set(${SITE_ADDRESS} ${${${wrapper}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${wrapper} PARENT_SCOPE)
+	set(${SITE_ADDRESS} PARENT_SCOPE)
+	if(${wrapper}_FRAMEWORK) #package belongs to a framework
+		include_Framework_Reference_File(PATH_TO_FILE ${${wrapper}_FRAMEWORK})
+		if(PATH_TO_FILE)
+			set(${SITE_ADDRESS} ${${${wrapper}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${wrapper} PARENT_SCOPE)
+		endif()
+	elseif(${wrapper}_SITE_GIT_ADDRESS AND ${wrapper}_SITE_ROOT_PAGE)
+		set(${SITE_ADDRESS} ${${wrapper}_SITE_ROOT_PAGE} PARENT_SCOPE)
 	endif()
-elseif(${wrapper}_SITE_GIT_ADDRESS AND ${wrapper}_SITE_ROOT_PAGE)
-	set(${SITE_ADDRESS} ${${wrapper}_SITE_ROOT_PAGE} PARENT_SCOPE)
-endif()
 endfunction(get_Wrapper_Site_Address)
 
 #.rst:

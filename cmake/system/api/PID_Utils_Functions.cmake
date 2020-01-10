@@ -27,6 +27,7 @@ set(PID_UTILS_FUNCTIONS_INCLUDED TRUE)
 ##########################################################################################
 
 include(CMakeParseArguments)
+include(PID_Contribution_Spaces_Functions NO_POLICY_SCOPE)
 
 #.rst:
 #
@@ -891,11 +892,12 @@ endfunction(get_Versions_In_Interval)
 #
 function(collect_Versions_From_Constraints INTERVAL_VERSIONS package from_version to_version)
 get_Package_Type(${package} PACK_TYPE)
+set(${INTERVAL_VERSIONS} PARENT_SCOPE)
 
 #get the official known version (those published)
 if(NOT DEFINED ${package}_PID_KNOWN_VERSION)
   set(DO_NOT_FIND_${package} TRUE)
-  include(${WORKSPACE_DIR}/cmake/find/Find${package}.cmake)
+  include_Find_File(${package})#TODO check if no real problem when find file is NOT found
   unset(DO_NOT_FIND_${package})
 endif()
 set(ALL_VERSIONS ${${package}_PID_KNOWN_VERSION})
@@ -917,16 +919,16 @@ endif()
 list(APPEND ALL_VERSIONS ${MORE_VERSIONS})
 if(ALL_VERSIONS)
   list(REMOVE_DUPLICATES ALL_VERSIONS)
+  #some corrective actions before calling functions to get version in interval
+  if(NOT from_version)
+    set(from_version 0.0.0)
+  endif()
+  if(NOT to_version)
+    set(to_version 99999.99999.99999)
+  endif()
+  get_Versions_In_Interval(IN_VERSIONS ALL_VERSIONS ${from_version} ${to_version})
+  set(${INTERVAL_VERSIONS} ${IN_VERSIONS} PARENT_SCOPE)
 endif()
-#some corrective actions before calling functions to get version in interval
-if(NOT from_version)
-  set(from_version 0.0.0)
-endif()
-if(NOT to_version)
-  set(to_version 99999.99999.99999)
-endif()
-get_Versions_In_Interval(IN_VERSIONS ALL_VERSIONS ${from_version} ${to_version})
-set(${INTERVAL_VERSIONS} ${IN_VERSIONS} PARENT_SCOPE)
 endfunction(collect_Versions_From_Constraints)
 
 #.rst:
@@ -1551,16 +1553,14 @@ function(package_License_Is_Closed_Source CLOSED package is_external)
 	#first step determining if the dependent package provides its license in its use file (compatiblity with previous version of PID)
 	if(NOT ${package}_LICENSE)
     if(is_external)
-      if(EXISTS ${WORKSPACE_DIR}/cmake/references/ReferExternal${package}.cmake)
-  			include(${WORKSPACE_DIR}/cmake/references/ReferExternal${package}.cmake) #the reference file contains the license
-  		else()#we consider the package as having an opensource license
+      include_External_Reference_File(PATH_TO_FILE ${package})
+      if(NOT PATH_TO_FILE)#we consider the package as having an opensource license when no information provided
   			set(${CLOSED} FALSE PARENT_SCOPE)
   			return()
   		endif()
     else()
-  		if(EXISTS ${WORKSPACE_DIR}/cmake/references/Refer${package}.cmake)
-  			include(${WORKSPACE_DIR}/cmake/references/Refer${package}.cmake) #the reference file contains the license
-  		else()#we consider the package as having an opensource license
+      include_Package_Reference_File(PATH_TO_FILE ${package})
+  		if(NOT PATH_TO_FILE)#we consider the package as having an opensource license when no information provided
   			set(${CLOSED} FALSE PARENT_SCOPE)
   			return()
   		endif()
@@ -1575,13 +1575,12 @@ function(package_License_Is_Closed_Source CLOSED package is_external)
 	endif()#otherwise license is unknown for now
 	if(NOT found_license_description)
 		#trying to find that license
-    get_Path_To_License_File(PATH_TO_FILE ${${package}_LICENSE})
+    include_License_File(PATH_TO_FILE ${${package}_LICENSE})
   	if(NOT PATH_TO_FILE)
 			set(${CLOSED} TRUE PARENT_SCOPE)
 			message("[PID] ERROR : cannot find description file for license ${${package}_LICENSE}, specified for package ${package}. Package is supposed to be closed source.")
 			return()
 		endif()
-    include(${PATH_TO_FILE})
 		set(temp_list ${KNOWN_LICENSES} ${${package}_LICENSE} CACHE INTERNAL "")
 		list(REMOVE_DUPLICATES temp_list)
 		set(KNOWN_LICENSES ${temp_list} CACHE INTERNAL "")#adding the license to known licenses
@@ -2373,36 +2372,38 @@ endfunction(is_Application_Type)
 #     :PACK_TYPE: the output variable that contains the package type (NATIVE or EXTERNAL) if detected, UNKNOWN otherwise.
 #
 function(get_Package_Type package PACK_TYPE)
-get_Platform_Variables(BASENAME curr_platform_str)
-#try to simply find it in install tree
-if(EXISTS ${WORKSPACE_DIR}/external/${curr_platform_str}/${package}
-AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${curr_platform_str}/${package})
-	set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
-  return()
-elseif(EXISTS ${WORKSPACE_DIR}/install/${curr_platform_str}/${package}
-AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${curr_platform_str}/${package})
-	set(${PACK_TYPE} "NATIVE" PARENT_SCOPE)
-  return()
-endif()
-#try to find it in source tree
-if(EXISTS ${WORKSPACE_DIR}/wrappers/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package})
-	set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
-  return()
-elseif(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
-	set(${PACK_TYPE} "NATIVE" PARENT_SCOPE)
-  return()
-endif()
-# From here they are unknown in the local filesystem, finaly try to find references of this package
-if(EXISTS ${WORKSPACE_DIR}/cmake/find/Find${package}.cmake)
-  if(EXISTS ${WORKSPACE_DIR}/cmake/references/ReferExternal${package}.cmake)
-    set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
+  get_Platform_Variables(BASENAME curr_platform_str)
+  #try to simply find it in install tree
+  if(EXISTS ${WORKSPACE_DIR}/external/${curr_platform_str}/${package}
+  AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${curr_platform_str}/${package})
+  	set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
     return()
-  elseif(EXISTS ${WORKSPACE_DIR}/cmake/references/Refer${package}.cmake)
-    set(${PACK_TYPE} "NATIVE" PARENT_SCOPE)
+  elseif(EXISTS ${WORKSPACE_DIR}/install/${curr_platform_str}/${package}
+  AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${curr_platform_str}/${package})
+  	set(${PACK_TYPE} "NATIVE" PARENT_SCOPE)
     return()
   endif()
-endif()
-set(${PACK_TYPE} UNKNOWN PARENT_SCOPE)
+  #try to find it in source tree
+  if(EXISTS ${WORKSPACE_DIR}/wrappers/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package})
+  	set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
+    return()
+  elseif(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
+  	set(${PACK_TYPE} "NATIVE" PARENT_SCOPE)
+    return()
+  endif()
+  # From here they are unknown in the local filesystem, finaly try to find references of this package
+  get_Path_To_External_Reference_File(RESULT_PATH ${package})
+  if(RESULT_PATH)
+    set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
+    return()
+  else()
+    get_Path_To_Package_Reference_File(RESULT_PATH ${package})
+    if(RESULT_PATH)
+      set(${PACK_TYPE} "NATIVE" PARENT_SCOPE)
+      return()
+    endif()
+  endif()
+  set(${PACK_TYPE} UNKNOWN PARENT_SCOPE)
 endfunction(get_Package_Type)
 
 #.rst:
@@ -2903,8 +2904,9 @@ endfunction(get_Package_Repository_Address)
 #     :RES_PUBLIC_URL: the output variable that contains the public counterpart URL of package respotiry.
 #
 function(get_Package_Reference_Info package REF_EXISTS RES_URL RES_PUBLIC_URL)
-
-  if(NOT EXIST )
+  get_Path_To_Package_Reference_File(PATH_TO_FILE ${package})
+  if(NOT PATH_TO_FILE)
+    #TODO contrib => update contrib spaces
     set(${RES_URL} PARENT_SCOPE)
     set(${RES_PUBLIC_URL} PARENT_SCOPE)
     set(${REF_EXISTS} FALSE PARENT_SCOPE)
@@ -2929,7 +2931,9 @@ function(get_Package_Reference_Info package REF_EXISTS RES_URL RES_PUBLIC_URL)
   set(TEMP_${package}_CATEGORIES ${${package}_CATEGORIES})
   set(TEMP_${package}_REFERENCES ${${package}_REFERENCES})
   #then include (will modify these cache variables) and extract adequate values
-  include(${WORKSPACE_DIR}/cmake/references/Refer${package}.cmake)
+
+  include(${PATH_TO_FILE})
+
   set(${RES_URL} ${${package}_ADDRESS} PARENT_SCOPE)
   set(${RES_PUBLIC_URL} ${${package}_PUBLIC_ADDRESS} PARENT_SCOPE)
   #finally give to the variables their initial value

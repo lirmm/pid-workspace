@@ -187,32 +187,6 @@ endfunction(build_Package_Static_Site)
 #
 # .. ifmode:: internal
 #
-#  .. |framework_Reference_Exists_In_Workspace| replace:: ``framework_Reference_Exists_In_Workspace``
-#  .. _framework_Reference_Exists_In_Workspace:
-#
-#  framework_Reference_Exists_In_Workspace
-#  ---------------------------------------
-#
-#   .. command:: framework_Reference_Exists_In_Workspace(EXIST framework)
-#
-#     Tell whether the reference file of a given framework exists in workspace.
-#
-#      :framework: the name of the target framework.
-#
-#      :EXIST: the output variable that is TRUE if a reference file exists for the framework.
-#
-function(framework_Reference_Exists_In_Workspace EXIST framework)
-	if(EXISTS ${WORKSPACE_DIR}/cmake/references/ReferFramework${framework}.cmake)
-		set(${EXIST} TRUE PARENT_SCOPE)
-	else()
-		set(${EXIST} FALSE PARENT_SCOPE)
-	endif()
-endfunction(framework_Reference_Exists_In_Workspace)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
 #  .. |framework_Project_Exists| replace:: ``framework_Project_Exists``
 #  .. _framework_Project_Exists:
 #
@@ -258,9 +232,8 @@ endfunction(framework_Project_Exists)
 #      :CHECK_OK: the output variable that is TRUE if the framework exists (already install or installable).
 #
 function(check_Framework_Exists CHECK_OK framework)
-	framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
+  include_Framework_Reference_File(REF_EXIST ${framework})
 	if(REF_EXIST)
-		include(${WORKSPACE_DIR}/cmake/references/ReferFramework${framework}.cmake)
 		set(${CHECK_OK} TRUE PARENT_SCOPE)
 		return()
 	else()
@@ -268,9 +241,8 @@ function(check_Framework_Exists CHECK_OK framework)
 		if(FOLDER_EXISTS)#generate the reference file on demand
 			execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing
                       WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
-			framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
+			include_Framework_Reference_File(REF_EXIST ${framework})
 			if(REF_EXIST)
-				include(${WORKSPACE_DIR}/cmake/references/ReferFramework${framework}.cmake)
 				set(${CHECK_OK} TRUE PARENT_SCOPE)
 				return()
 			endif()
@@ -300,10 +272,7 @@ endfunction(check_Framework_Exists)
 function(load_Framework LOADED framework)
 	set(${LOADED} FALSE PARENT_SCOPE)
 	set(FOLDER_EXISTS FALSE)
-	framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
-	if(REF_EXIST)
-		include(${WORKSPACE_DIR}/cmake/references/ReferFramework${framework}.cmake)
-	endif()
+  include_Framework_Reference_File(REF_EXIST ${framework})
 
 	framework_Project_Exists(FOLDER_EXISTS PATH_TO_SITE ${framework})
 	if(FOLDER_EXISTS)
@@ -312,9 +281,8 @@ function(load_Framework LOADED framework)
 		if(NOT REF_EXIST) #if reference file does not exist we use the project present in the workspace. This way we may force it to generate references
 			execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing
                       WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
-			framework_Reference_Exists_In_Workspace(REF_EXIST ${framework})
+      include_Framework_Reference_File(REF_EXIST ${framework})
 			if(REF_EXIST)
-				include(${WORKSPACE_DIR}/cmake/references/ReferFramework${framework}.cmake)
 				set(${LOADED} TRUE PARENT_SCOPE)
 			endif()
 		else()

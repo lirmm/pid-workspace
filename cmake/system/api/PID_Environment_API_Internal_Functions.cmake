@@ -37,6 +37,7 @@ include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
+include(PID_Contribution_Spaces_Functions NO_POLICY_SCOPE)
 
 #.rst:
 #
@@ -441,33 +442,6 @@ evaluate_Environment(GEN_RESULT ${ENV_NAME} "${ENV_ARGS}")
 set(${MANAGE_RESULT} ${GEN_RESULT} PARENT_SCOPE)
 endfunction(manage_Environment_Dependency)
 
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |environment_Reference_Exists_In_Workspace| replace:: ``environment_Reference_Exists_In_Workspace``
-#  .. _environment_Reference_Exists_In_Workspace:
-#
-#  environment_Reference_Exists_In_Workspace
-#  -----------------------------------------
-#
-#   .. command:: environment_Reference_Exists_In_Workspace(EXIST environment)
-#
-#     Tell whether the reference file of a given environment exists in workspace.
-#
-#      :environment: the name of the target environment.
-#
-#      :EXIST: the output variable that is TRUE if a reference file exists for the environment.
-#
-function(environment_Reference_Exists_In_Workspace EXIST environment)
-	if(EXISTS ${WORKSPACE_DIR}/cmake/references/ReferEnvironment${environment}.cmake)
-		set(${EXIST} TRUE PARENT_SCOPE)
-	else()
-		set(${EXIST} FALSE PARENT_SCOPE)
-	endif()
-endfunction(environment_Reference_Exists_In_Workspace)
-
 #.rst:
 #
 # .. ifmode:: internal
@@ -520,10 +494,7 @@ function(load_Environment LOADED environment)
 
 set(${LOADED} FALSE PARENT_SCOPE)
 set(FOLDER_EXISTS FALSE)
-environment_Reference_Exists_In_Workspace(REF_EXIST ${environment})
-if(REF_EXIST)
-	include(${WORKSPACE_DIR}/cmake/references/ReferEnvironment${environment}.cmake)
-endif()
+include_Environment_Reference_File(REF_EXIST ${environment})
 
 environment_Project_Exists(FOLDER_EXISTS PATH_TO_SITE ${environment})
 if(FOLDER_EXISTS)
@@ -532,10 +503,9 @@ if(FOLDER_EXISTS)
 	if(NOT REF_EXIST) #if reference file does not exist we use the project present in the workspace.
     # This way we may force it to generate references
 		execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/environments/${environment}/build)
-		environment_Reference_Exists_In_Workspace(REF_EXIST ${environment})
+    include_Environment_Reference_File(REF_EXIST ${environment})
 		if(REF_EXIST)#should be the case anytime after a referencing command
-			include(${WORKSPACE_DIR}/cmake/references/ReferEnvironment${environment}.cmake)
-			set(${LOADED} TRUE PARENT_SCOPE)
+      set(${LOADED} TRUE PARENT_SCOPE)
 		endif()
 	else()
 		set(${LOADED} TRUE PARENT_SCOPE)
@@ -1053,7 +1023,7 @@ endfunction(generate_Environment_Readme_Files)
 function(generate_Environment_License_File)
 
   if(${PROJECT_NAME}_LICENSE)
-    get_Path_To_License_File(PATH_TO_FILE ${${PROJECT_NAME}_LICENSE})
+    include_License_File(PATH_TO_FILE ${${PROJECT_NAME}_LICENSE})
   	if(NOT PATH_TO_FILE)
   		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
   	else()
@@ -1065,8 +1035,6 @@ function(generate_Environment_License_File)
   			generate_Full_Author_String(${author} STRING_TO_APPEND)
   			set(${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE "${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE} ${STRING_TO_APPEND}")
   		endforeach()
-
-  		include(${PATH_TO_FILE})
   		file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
   	endif()
   endif()

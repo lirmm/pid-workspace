@@ -26,12 +26,11 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
 macro(check_license license_name)
-	get_Path_To_License_File(RESULT_PATH ${license_name})
-	if(NOT RESULT_PATH)
-		message("[PID] ERROR : License ${license_name} does not refer to any known license in the workspace.")
+	include_License_File(PATH_TO_FILE ${license_name})
+	if(NOT PATH_TO_FILE)
+		message("[PID] ERROR : License ${license_name} does not refer to any known license in contributions space of the workspace.")
 		return()
 	endif()
-	include(${RESULT_PATH})
 endmacro(check_license)
 
 #first check that commmand parameters are not passed as environment variables
@@ -75,8 +74,8 @@ endif()
 #now verify that arguments are consistent and perform adequate actions
 
 if(TARGET_ENVIRONMENT)# a framework is created
-	include(${WORKSPACE_DIR}/cmake/references/ReferEnvironment${TARGET_ENVIRONMENT}.cmake OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
-	if(NOT REQUIRED_STATUS STREQUAL NOTFOUND)
+	get_Path_To_Environment_Reference_File(RESULT_PATH ${TARGET_ENVIRONMENT})
+	if(RESULT_PATH)
 		message("[PID] ERROR : An environment with the same name ${TARGET_ENVIRONMENT} is already referenced in the workspace repository.")
 		return()
 	endif()
@@ -114,8 +113,8 @@ if(TARGET_ENVIRONMENT)# a framework is created
 	endif()
 
 elseif(TARGET_FRAMEWORK)# a framework is created
-	include(${WORKSPACE_DIR}/cmake/references/ReferFramework${TARGET_FRAMEWORK}.cmake OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
-	if(NOT REQUIRED_STATUS STREQUAL NOTFOUND)
+	get_Path_To_Framework_Reference_File(RESULT_PATH ${TARGET_FRAMEWORK})
+	if(RESULT_PATH)
 		message("[PID] ERROR : A framework with the same name ${TARGET_FRAMEWORK} is already referenced in the workspace repository.")
 		return()
 	endif()
@@ -152,8 +151,8 @@ elseif(TARGET_FRAMEWORK)# a framework is created
 	endif()
 
 elseif(TARGET_PACKAGE)
-	include(${WORKSPACE_DIR}/cmake/references/Refer${TARGET_PACKAGE}.cmake OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
-	if(NOT REQUIRED_STATUS STREQUAL NOTFOUND)
+	get_Path_To_Package_Reference_File(RESULT_PATH ${TARGET_PACKAGE})
+	if(RESULT_PATH)
 		message("[PID] ERROR : A package with the same name ${TARGET_PACKAGE} is already referenced in the workspace repository.")
 		return()
 	endif()
@@ -191,8 +190,8 @@ elseif(TARGET_PACKAGE)
 	endif()
 
 elseif(TARGET_WRAPPER)
-	include(${WORKSPACE_DIR}/cmake/references/ReferExternal${TARGET_WRAPPER}.cmake OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
-	if(NOT REQUIRED_STATUS STREQUAL NOTFOUND)
+	get_Path_To_External_Reference_File(RESULT_PATH ${TARGET_WRAPPER})
+	if(RESULT_PATH)
 		message("[PID] ERROR : An external package with the same name ${TARGET_WRAPPER} is already referenced in the workspace repository.")
 		return()
 	endif()

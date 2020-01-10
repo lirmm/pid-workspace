@@ -29,6 +29,7 @@ set(PID_DEPLOYMENT_FUNCTIONS_INCLUDED TRUE)
 
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
+include(PID_Contribution_Spaces_Functions NO_POLICY_SCOPE)
 
 #############################################################################################
 ############### API functions for managing references on dependent packages #################
@@ -437,9 +438,9 @@ if(FIRST_TIME AND REQUIRED_PACKAGES_AUTOMATIC_UPDATE) #if no automatic download 
 				deploy_Source_Native_Package(IS_DEPLOYED ${package} "${already_installed}" FALSE) #install last version available
 			endif()
 		else() # updating the binary package, if possible
-			include(Refer${package} OPTIONAL RESULT_VARIABLE refer_path)
-			if(${refer_path} STREQUAL NOTFOUND)
-				message("[PID] ERROR : the reference file for package ${package} cannot be found in the workspace ! Package update aborted.")
+      include_Package_Reference_File(PATH_TO_FILE ${package})
+			if(NOT PATH_TO_FILE)
+				message("[PID] ERROR : the reference file for package ${package} cannot be found in the contribution spaces installed in workspace ! Package update aborted.")
 				return()
 			endif()
 			load_Package_Binary_References(LOADED ${package}) #loading binary references to be informed of new released versions
@@ -613,15 +614,13 @@ function(package_Reference_Exists_In_Workspace EXIST package)
 set(res)
 get_Package_Type(${package} PACK_TYPE)
 if(PACK_TYPE STREQUAL "EXTERNAL")
-  if(EXISTS ${WORKSPACE_DIR}/cmake/references/ReferExternal${package}.cmake)
-    set(res "EXTERNAL")
-  endif()
+  get_Path_To_External_Reference_File(PATH_TO_FILE ${package})
 elseif(PACK_TYPE STREQUAL "NATIVE")#native package
-  if(EXISTS ${WORKSPACE_DIR}/cmake/references/Refer${package}.cmake)
-    set(res "NATIVE")
-  endif()
-endif()#if unknown it means that there is no reference file in workspace
-set(${EXIST} ${res} PARENT_SCOPE)
+  get_Path_To_Package_Reference_File(PATH_TO_FILE ${package})
+endif()#if unknown it means that there is no reference file in workspace anyway
+if(PATH_TO_FILE)
+  set(${EXIST} ${PACK_TYPE} PARENT_SCOPE)
+endif()
 endfunction(package_Reference_Exists_In_Workspace)
 
 #.rst:
@@ -713,8 +712,8 @@ if(USE_SOURCES) #package sources reside in the workspace
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
 	endif()
 else()#using references
-	include(Refer${package} OPTIONAL RESULT_VARIABLE refer_path)
-	if(refer_path STREQUAL NOTFOUND)
+  include_Package_Reference_File(PATH_TO_FILE ${package})
+	if(NOT PATH_TO_FILE)
 		message("[PID] ERROR : the reference file for package ${package} cannot be found in the workspace ! Package update aborted.")
 		return()
 	endif()
@@ -789,9 +788,9 @@ function(load_Package_Binary_References REFERENCES_FOUND package)
 set(${REFERENCES_FOUND} FALSE PARENT_SCOPE)
 set(to_include)
 if(${package}_FRAMEWORK) #references are deployed in a framework
-	if(EXISTS ${WORKSPACE_DIR}/cmake/references/ReferFramework${${package}_FRAMEWORK}.cmake)
+  include_Framework_Reference_File(PATH_TO_FILE ${${package}_FRAMEWORK})
+	if(PATH_TO_REF)
 		#when package is in a framework there is one more indirection to get references (we need to get information about this framework before downloading the reference file)
-		include(${WORKSPACE_DIR}/cmake/references/ReferFramework${${package}_FRAMEWORK}.cmake )
 		set(FRAMEWORK_ADDRESS ${${${package}_FRAMEWORK}_FRAMEWORK_SITE})#get the address of the framework static site
     file(DOWNLOAD ${FRAMEWORK_ADDRESS}/packages/${package}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 		list(GET res 0 numeric_error)
@@ -2292,20 +2291,25 @@ endfunction(uninstall_External_Package)
 function(memorize_Binary_References REFERENCES_FOUND package)
 set(IS_EXISTING)
 
-package_Reference_Exists_In_Workspace(IS_EXISTING ${package})
-if(NOT IS_EXISTING)
-	set(${REFERENCES_FOUND} FALSE PARENT_SCOPE)
-	message("[PID] WARNING : unknown package ${package} : cannot find any reference of this package in the workspace. Cannot install this package.")
+get_Package_Type(${package} PACK_TYPE)
+if(PACK_TYPE STREQUAL "UNKNOWN")
+  #means no reference of it
+  #TODO CONTRIB update contrib space and retry
+  get_Package_Type(${package} PACK_TYPE)
+endif()
+if(PACK_TYPE STREQUAL "NATIVE")
+  include_Package_Reference_File(PATH_TO_FILE ${package})
+elseif(PACK_TYPE STREQUAL "NATIVE")
+  include_External_Reference_File(PATH_TO_FILE ${package})
+else()
+  set(${REFERENCES_FOUND} FALSE PARENT_SCOPE)
+	message("[PID] WARNING : unknown package ${package} : cannot find any reference of this package contribution spaces installed in workspace. Cannot install this package.")
 	return()
 endif()
-if(IS_EXISTING STREQUAL "NATIVE")
-  include(Refer${package} OPTIONAL RESULT_VARIABLE refer_path)
-else()
-  include(ReferExternal${package} OPTIONAL RESULT_VARIABLE refer_path)
-endif()
-if(${refer_path} STREQUAL NOTFOUND)
+
+if(NOT PATH_TO_FILE)
 	set(${REFERENCES_FOUND} FALSE PARENT_SCOPE)
-	message("[PID] WARNING : reference file not found for package ${package}!! This is certainly due to a badly referenced package. Please contact the administrator of the external package ${package} !!!")
+	message("[PID] WARNING : reference file not found for package ${package}!! This is certainly due to a badly referenced package. Please contact the administrator of package ${package} !!!")
 	return()
 endif()
 

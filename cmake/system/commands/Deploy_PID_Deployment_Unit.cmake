@@ -20,11 +20,11 @@
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system/api)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system/commands)
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/references)
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/find)
+
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 include(Package_Definition NO_POLICY_SCOPE) # to be able to interpret description of external components
 load_Current_Platform() #loading the current platform configuration
+configure_Contribution_Spaces()
 
 set(CMAKE_BUILD_TYPE Release)
 
@@ -90,9 +90,9 @@ endif()
 #including the adequate reference file
 if(DEPLOYED_FRAMEWORK)# a framework is deployed
 	# checks of the arguments
-	include(ReferFramework${DEPLOYED_FRAMEWORK} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
-	if(REQUIRED_STATUS STREQUAL NOTFOUND)
-		message("[PID] ERROR : Framework name ${DEPLOYED_FRAMEWORK} does not refer to any known framework in the workspace.")
+	include_Framework_Reference_File(PATH_TO_FILE ${DEPLOYED_FRAMEWORK})
+	if(NOT PATH_TO_FILE)
+		message("[PID] ERROR : Framework name ${DEPLOYED_FRAMEWORK} does not refer to any known framework in contribution spaces of the workspace.")
 		return()
 	endif()
 	# deployment of the framework
@@ -106,9 +106,9 @@ if(DEPLOYED_FRAMEWORK)# a framework is deployed
 
 elseif(DEPLOYED_ENVIRONMENT)# deployment of an environment is required
 	# checks of the arguments
-	include(ReferEnvironment${DEPLOYED_ENVIRONMENT} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
-	if(REQUIRED_STATUS STREQUAL NOTFOUND)
-		message("[PID] ERROR : Environment name ${DEPLOYED_ENVIRONMENT} does not refer to any known environment in the workspace.")
+	include_Framework_Environment_File(PATH_TO_FILE ${DEPLOYED_ENVIRONMENT})
+	if(NOT PATH_TO_FILE)
+		message("[PID] ERROR : Environment name ${DEPLOYED_ENVIRONMENT} does not refer to any known environment in in contribution spaces of the workspace.")
 		return()
 	endif()
 	# deployment of the framework
@@ -131,23 +131,37 @@ else()# a package deployment is required
 		return()
 	endif()
 
-	#check if package is known
-	set(is_external FALSE)
-	include(Refer${DEPLOYED_PACKAGE} OPTIONAL RESULT_VARIABLE REQUIRED_STATUS)
-	if(REQUIRED_STATUS STREQUAL NOTFOUND)
-		include(ReferExternal${DEPLOYED_PACKAGE} OPTIONAL RESULT_VARIABLE EXT_REQUIRED_STATUS)
-		if(EXT_REQUIRED_STATUS STREQUAL NOTFOUND)
+	#check if package is known since a deployment supposes that the package is referenced
+	get_Package_Type(${DEPLOYED_PACKAGE} PACK_TYPE)
+	if(PACK_TYPE STREQUAL "UNKNOWN")
+		#TODO CONTRIB update and retry
+		get_Package_Type(${DEPLOYED_PACKAGE} PACK_TYPE)
+	endif()
+	if(PACK_TYPE STREQUAL "NATIVE")
+		include_Package_Reference_File(PATH_TO_FILE ${DEPLOYED_PACKAGE})
+		if(NOT PATH_TO_FILE)
+			message("[PID] ERROR : Package name ${DEPLOYED_PACKAGE} does not refer to any known package in the workspace (either native or external).")
+			return()
+		else()
+			set(is_external FALSE)
+		endif()
+		if(TARGET_VERSION STREQUAL "SYSTEM")
+			message("[PID] ERROR : Native package (as ${DEPLOYED_PACKAGE}) cannot be installed as OS variants, only external packages can.")
+			return()
+		endif()
+	elseif(PACK_TYPE STREQUAL "EXTERNAL")
+		include_External_Reference_File(PATH_TO_FILE ${DEPLOYED_PACKAGE})
+		if(NOT PATH_TO_FILE)
 			message("[PID] ERROR : Package name ${DEPLOYED_PACKAGE} does not refer to any known package in the workspace (either native or external).")
 			return()
 		else()
 			set(is_external TRUE)
 		endif()
-	else()#this is a native package
-		if(TARGET_VERSION STREQUAL "SYSTEM")
-			message("[PID] ERROR : Native package (as ${DEPLOYED_PACKAGE}) cannot be installed as OS variants, only external packages can.")
-			return()
-		endif()
+	else()#unknown package type => we have no ereferecen of it
+		message("[PID] ERROR : Package name ${DEPLOYED_PACKAGE} does not refer to any known package in the workspace (either native or external).")
+		return()
 	endif()
+
 	#after this previous commands packages references are known
 	if(FORCE_REDEPLOY AND (FORCE_REDEPLOY STREQUAL "true" OR FORCE_REDEPLOY STREQUAL "TRUE"))
 		set(redeploy TRUE)

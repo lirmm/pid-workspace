@@ -245,10 +245,9 @@ if(CMAKE_BUILD_TYPE MATCHES Release)
 	endif()
 
 	if(	${PROJECT_NAME}_LICENSE )
-    get_Path_To_License_File(RESULT_PATH ${${PROJECT_NAME}_LICENSE})
-
-	  if(NOT RESULT_PATH)
-			message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in any contribution space, license file will not be generated")
+    include_License_File(PATH_TO_FILE ${${PROJECT_NAME}_LICENSE})
+	  if(NOT PATH_TO_FILE)
+			message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in any contribution space installed in workspace, license file will not be generated.")
 		else()
 			#prepare license generation
 			set(${PROJECT_NAME}_FOR_LICENSE ${PROJECT_NAME})
@@ -258,8 +257,6 @@ if(CMAKE_BUILD_TYPE MATCHES Release)
 				generate_Full_Author_String(${author} STRING_TO_APPEND)
 				set(${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE "${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE} ${STRING_TO_APPEND}")
 			endforeach()
-
-			include(${RESULT_PATH})#include the license
 			file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
 			install(FILES ${CMAKE_SOURCE_DIR}/license.txt DESTINATION ${${PROJECT_NAME}_DEPLOY_PATH})
 			file(WRITE ${CMAKE_BINARY_DIR}/share/file_header_comment.txt.in ${LICENSE_HEADER_FILE_DESCRIPTION})
@@ -1230,9 +1227,7 @@ if(${dependency}_SITE_ROOT_PAGE)
 	set(RES "+ [${dependency}](${${dependency}_SITE_ROOT_PAGE})") #creating a link to the package site
 elseif(${dependency}_FRAMEWORK) #the package belongs to a framework, creating a link to this page in the framework
 	if(NOT ${${dependency}_FRAMEWORK}_FRAMEWORK_SITE) #getting framework online site
-		if(EXISTS ${WORKSPACE_DIR}/cmake/references/ReferFramework${${dependency}_FRAMEWORK}.cmake)
-			include (${WORKSPACE_DIR}/cmake/references/ReferFramework${${dependency}_FRAMEWORK}.cmake) #get the information about the framework
-		endif()
+    include_Framework_Reference_File(${${dependency}_FRAMEWORK})
 	endif()
 
 	if(${${dependency}_FRAMEWORK}_FRAMEWORK_SITE) #get the information about the framework
@@ -1287,42 +1282,39 @@ endfunction(generate_Dependency_Site)
 #      :RES_CONTENT: output variable containing the markdown content used to target the dependency static site.
 #
 function(generate_External_Dependency_Site RES_CONTENT dependency list_of_versions exact_versions)
-if(EXISTS ${WORKSPACE_DIR}/cmake/references/ReferExternal${dependency}.cmake)
-	include (${WORKSPACE_DIR}/cmake/references/ReferExternal${dependency}.cmake) #get the information about the framework
-endif()
-if(${dependency}_FRAMEWORK)
-	if(NOT ${${dependency}_FRAMEWORK}_FRAMEWORK_SITE)#getting framework online site
-		if(EXISTS ${WORKSPACE_DIR}/cmake/references/ReferFramework${${dependency}_FRAMEWORK}.cmake)
-			include (${WORKSPACE_DIR}/cmake/references/ReferFramework${${dependency}_FRAMEWORK}.cmake) #get the information about the framework
-		endif()
-	endif()
-	if(${${dependency}_FRAMEWORK}_FRAMEWORK_SITE)
-		set(RES "+ [${dependency}](${${${dependency}_FRAMEWORK}_FRAMEWORK_SITE}/external/${dependency})")
-	else()#in case of a problem (framework unknown, problem in framework description), do not create the link
-		set(RES "+ ${dependency}")
-	endif()
-else()
-	set(RES "+ ${dependency}")
-endif()
+  include_External_Reference_File(${dependency})
 
-if(list_of_versions AND ${list_of_versions})
-  set(ALL_VERSIONS)
-  foreach(vers IN LISTS ${list_of_versions})
-    if(ALL_VERSIONS)#there is already content in ALL_VERSIONS => managing append operation
-      set(ALL_VERSIONS "${ALL_VERSIONS},")
-    endif()
-    list(FIND exact_versions ${vers} INDEX)
-    if(index EQUAL -1)
-      set(ALL_VERSIONS "${ALL_VERSIONS} version ${vers} or compatible")
-    else()
-      set(ALL_VERSIONS "${ALL_VERSIONS} exact version ${vers}")
-    endif()
-  endforeach()
-  set(RES "${RES}:${ALL_VERSIONS}.")
-else()
-	set(RES "${RES}: any version available.")
-endif()
-set(${RES_CONTENT} ${RES} PARENT_SCOPE)
+  if(${dependency}_FRAMEWORK)
+  	if(NOT ${${dependency}_FRAMEWORK}_FRAMEWORK_SITE)#getting framework online site
+      include_Framework_Reference_File(${${dependency}_FRAMEWORK})
+  	endif()
+  	if(${${dependency}_FRAMEWORK}_FRAMEWORK_SITE)
+  		set(RES "+ [${dependency}](${${${dependency}_FRAMEWORK}_FRAMEWORK_SITE}/external/${dependency})")
+  	else()#in case of a problem (framework unknown, problem in framework description), do not create the link
+  		set(RES "+ ${dependency}")
+  	endif()
+  else()
+  	set(RES "+ ${dependency}")
+  endif()
+
+  if(list_of_versions AND ${list_of_versions})
+    set(ALL_VERSIONS)
+    foreach(vers IN LISTS ${list_of_versions})
+      if(ALL_VERSIONS)#there is already content in ALL_VERSIONS => managing append operation
+        set(ALL_VERSIONS "${ALL_VERSIONS},")
+      endif()
+      list(FIND exact_versions ${vers} INDEX)
+      if(index EQUAL -1)
+        set(ALL_VERSIONS "${ALL_VERSIONS} version ${vers} or compatible")
+      else()
+        set(ALL_VERSIONS "${ALL_VERSIONS} exact version ${vers}")
+      endif()
+    endforeach()
+    set(RES "${RES}:${ALL_VERSIONS}.")
+  else()
+  	set(RES "${RES}: any version available.")
+  endif()
+  set(${RES_CONTENT} ${RES} PARENT_SCOPE)
 endfunction(generate_External_Dependency_Site)
 
 #.rst:
@@ -1736,10 +1728,8 @@ endfunction(produce_Package_Static_Site_Content)
 function(get_Package_Site_Address SITE_ADDRESS package)
 set(${SITE_ADDRESS} PARENT_SCOPE)
 if(${package}_FRAMEWORK) #package belongs to a framework
-	if(EXISTS ${WORKSPACE_DIR}/cmake/references/ReferFramework${${package}_FRAMEWORK}.cmake)
-		include(${WORKSPACE_DIR}/cmake/references/ReferFramework${${package}_FRAMEWORK}.cmake)
-		set(${SITE_ADDRESS} ${${${package}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${package} PARENT_SCOPE)
-	endif()
+  include_Framework_Reference_File(${${package}_FRAMEWORK})
+  set(${SITE_ADDRESS} ${${${package}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${package} PARENT_SCOPE)
 elseif(${package}_SITE_GIT_ADDRESS AND ${package}_SITE_ROOT_PAGE)
 	set(${SITE_ADDRESS} ${${package}_SITE_ROOT_PAGE} PARENT_SCOPE)
 endif()
@@ -1838,10 +1828,9 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/license.txt)# a license has already been generated
 	endif()
 endif()
 if(${PROJECT_NAME}_LICENSE)
-  get_Path_To_License_File(PATH_TO_FILE ${${PROJECT_NAME}_LICENSE})
-
+  include_License_File(PATH_TO_FILE ${${PROJECT_NAME}_LICENSE})
 	if(NOT PATH_TO_FILE)
-		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
+    message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in workspace, license file will not be generated")
 	else()
 		#prepare license generation
 		set(${PROJECT_NAME}_FOR_LICENSE "${PROJECT_NAME} PID Wrapper")
@@ -1851,7 +1840,6 @@ if(${PROJECT_NAME}_LICENSE)
 			generate_Full_Author_String(${author} STRING_TO_APPEND)
 			set(${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE "${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE} ${STRING_TO_APPEND}")
 		endforeach()
-		include(${PATH_TO_FILE})
 		file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
 	endif()
 endif()

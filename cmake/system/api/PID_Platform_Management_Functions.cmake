@@ -1212,7 +1212,7 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
   set(${CHECK_OK} FALSE PARENT_SCOPE)
   get_Path_To_Configuration_Dir(RESULT_PATH ${config_name})
   if(NOT RESULT_PATH)
-    #TODO do something !!
+    #TODO CONTRIB do something like updating contribution spaces
   endif()
   if(RESULT_PATH AND EXISTS ${RESULT_PATH}/check_${config_name}.cmake)
     #check if the configuration has already been checked
@@ -1295,7 +1295,6 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
   endif()
 endfunction(check_System_Configuration_With_Arguments)
 
-
 #.rst:
 #
 # .. ifmode:: internal
@@ -1345,7 +1344,7 @@ function(is_Allowed_System_Configuration ALLOWED config_name config_args)
   set(${ALLOWED} FALSE PARENT_SCOPE)
   get_Path_To_Configuration_Dir(RESULT_PATH ${config_name})
   if(NOT RESULT_PATH)
-    #TODO do something !!
+    #TODO CONTRIB do something like updating contribution spaces
   endif()
   if( EXISTS ${RESULT_PATH}/check_${config_name}.cmake
       AND EXISTS ${RESULT_PATH}/find_${config_name}.cmake)

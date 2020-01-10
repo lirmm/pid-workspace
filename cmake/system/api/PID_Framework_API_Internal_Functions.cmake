@@ -29,6 +29,7 @@ include(PID_Version_Management_Functions NO_POLICY_SCOPE)
 include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
+include(PID_Contribution_Spaces_Functions NO_POLICY_SCOPE)
 
 ##################################################################################
 ##################  declaration of a lone package static site ####################
@@ -499,8 +500,7 @@ endfunction(generate_Framework_Readme_File)
 function(generate_Framework_License_File)
 if(	DEFINED ${PROJECT_NAME}_FRAMEWORK_LICENSE
 	AND NOT ${${PROJECT_NAME}_FRAMEWORK_LICENSE} STREQUAL "")
-	get_Path_To_License_File(PATH_TO_FILE ${${PROJECT_NAME}_FRAMEWORK_LICENSE})
-
+	include_License_File(PATH_TO_FILE ${${PROJECT_NAME}_FRAMEWORK_LICENSE})
 	if(NOT PATH_TO_FILE)
 		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_FRAMEWORK_LICENSE} not found in workspace, license file will not be generated")
 	else()
@@ -512,8 +512,6 @@ if(	DEFINED ${PROJECT_NAME}_FRAMEWORK_LICENSE
 			generate_Full_Author_String(${author} STRING_TO_APPEND)
 			set(${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE "${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE} ${STRING_TO_APPEND}")
 		endforeach()
-
-		include(${PATH_TO_FILE})
 		file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
 	endif()
 endif()
@@ -766,16 +764,14 @@ else()
 	#second almternative, binaries have been put into the folder by hand
 	#need to generate a simple index page that directly contains description of binaries
 	set(PATH_TO_PAGE ${CMAKE_SOURCE_DIR}/src/_external/${package}/index.md)
-	set(PATH_TO_REFERENCE_FILE ${WORKSPACE_DIR}/cmake/references/ReferExternal${package}.cmake)
-	if(NOT EXISTS ${PATH_TO_REFERENCE_FILE})
+	include_External_Reference_File(PATH_TO_REFERENCE_FILE ${package})
+	if(NOT PATH_TO_REFERENCE_FILE)
 		message("[PID] WARNING : reference file to package ${package} does not exists !")
 		return()
 	endif()
 	if(EXISTS ${PATH_TO_PAGE}) #remove the file to be sure
 		file(REMOVE ${PATH_TO_PAGE})
 	endif()
-
-	include(${PATH_TO_REFERENCE_FILE})
 
 	set(EXTERNAL_PACKAGE_NAME ${package})
 

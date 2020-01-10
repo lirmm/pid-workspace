@@ -32,7 +32,6 @@ include(PID_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 include(External_Definition NO_POLICY_SCOPE) #to interpret content description of external packages
-include(PID_Contribution_Spaces_Functions NO_POLICY_SCOPE)
 
 ########################################################################
 ########## Categories (classification of packages) management ##########
@@ -192,22 +191,29 @@ macro(reset_Workspace_Content_Information)
 # 1) fill the two root variables, by searching in all reference files lying in the workspace
 set(ALL_AVAILABLE_PACKAGES)
 set(ALL_AVAILABLE_FRAMEWORKS)
-file(GLOB reference_files ${CMAKE_SOURCE_DIR}/cmake/references/Refer*.cmake)
+set(ALL_AVAILABLE_ENVIRONMENTS)
+
+get_All_Available_References(reference_files "")
 foreach(a_ref_file IN LISTS reference_files)# 2) including all reference files and memorizing packages and frameworks names
-	string(REGEX REPLACE "^${CMAKE_SOURCE_DIR}/cmake/references/Refer([^\\.]+)\\.cmake$" "\\1" PACKAGE_NAME ${a_ref_file})
-	if(PACKAGE_NAME MATCHES External)#it is an external package
-		string(REGEX REPLACE "^External([^\\.]+)$" "\\1" PACKAGE_NAME ${PACKAGE_NAME})
-		list(APPEND ALL_AVAILABLE_PACKAGES ${PACKAGE_NAME})
-	elseif(PACKAGE_NAME MATCHES Framework)#it is a framework
-		string(REGEX REPLACE "^Framework([^\\.]+)$" "\\1" FRAMEWORK_NAME ${PACKAGE_NAME})
+	string(REGEX REPLACE "^Refer([^\\.]+)\\.cmake$" "\\1" DEPLOYMENT_UNIT_NAME ${a_ref_file})
+	if(DEPLOYMENT_UNIT_NAME MATCHES External)#it is an external package
+		string(REGEX REPLACE "^External([^\\.]+)$" "\\1" EXTERNAL_NAME ${DEPLOYMENT_UNIT_NAME})
+		list(APPEND ALL_AVAILABLE_PACKAGES ${EXTERNAL_NAME})
+	elseif(DEPLOYMENT_UNIT_NAME MATCHES Framework)#it is a framework
+		string(REGEX REPLACE "^Framework([^\\.]+)$" "\\1" FRAMEWORK_NAME ${DEPLOYMENT_UNIT_NAME})
 		list(APPEND ALL_AVAILABLE_FRAMEWORKS ${FRAMEWORK_NAME})
-	else() #it is a native package
-		list(APPEND ALL_AVAILABLE_PACKAGES ${PACKAGE_NAME})
+	elseif(DEPLOYMENT_UNIT_NAME MATCHES Environment)#it is a framework
+		string(REGEX REPLACE "^Environment([^\\.]+)$" "\\1" ENVIRONMENT_NAME ${DEPLOYMENT_UNIT_NAME})
+		list(APPEND ALL_AVAILABLE_FRAMEWORKS ${FRAMEWORK_NAME})
+	else() #it is a native package -> no need to parse more
+		list(APPEND ALL_AVAILABLE_PACKAGES ${DEPLOYMENT_UNIT_NAME})
 	endif()
-	include(${a_ref_file}) # no need to test we know by construction that the file exists
+	include(Refer${DEPLOYMENT_UNIT_NAME})#directly include (since we know it exists): since module based resolution is based on CMAKE_MODULE_PATH only the first corresponding reference file in the list (the one with highest priority) will be included in the end
 endforeach()
+
 set(ALL_PACKAGES ${ALL_AVAILABLE_PACKAGES} CACHE INTERNAL "")
 set(ALL_FRAMEWORKS ${ALL_AVAILABLE_FRAMEWORKS} CACHE INTERNAL "")
+set(ALL_ENVIRONMENTS ${ALL_AVAILABLE_ENVIRONMENTS} CACHE INTERNAL "")
 endmacro(reset_Workspace_Content_Information)
 
 #.rst:
