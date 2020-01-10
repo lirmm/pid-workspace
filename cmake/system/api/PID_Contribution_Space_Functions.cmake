@@ -31,7 +31,7 @@ include(PID_Git_Functions NO_POLICY_SCOPE)
 
 
 ##########################################################################################
-############################ format files ################################################
+############################ format files resolution #####################################
 ##########################################################################################
 
 function(get_Path_To_Format_File RESULT_PATH code_style)
@@ -46,7 +46,7 @@ function(get_Path_To_Format_File RESULT_PATH code_style)
 endfunction(get_Path_To_Format_File)
 
 ##########################################################################################
-############################ plugins descriptions ########################################
+############################ plugin files resolution #####################################
 ##########################################################################################
 
 function(get_Path_To_Plugin_Dir RESULT_PATH plugin)
@@ -81,8 +81,25 @@ function(get_All_Available_Plugins PLUGINS_LIST)
   set(${PLUGINS_LIST} ${FINAL_LIST} PARENT_SCOPE)
 endfunction(get_All_Available_Plugins)
 
+
 ##########################################################################################
-############################ licenses descriptions ########################################
+############################ configuration files resolution ##############################
+##########################################################################################
+
+
+function(get_Path_To_Configuration_Dir RESULT_PATH config)
+  set(${RESULT_PATH} PARENT_SCOPE)
+  foreach(contribution_space IN LISTS CONTRIBUTION_SPACES)#CONTRIBUTION_SPACES is supposed to be ordered from highest to lowest priority contribution spaces
+    set(PATH_TO_CONFIG ${WORKSPACE_DIR}/contributions/${contribution_space}/contributions/${config})
+    if(EXISTS ${PATH_TO_CONFIG} AND IS_DIRECTORY ${PATH_TO_CONFIG})
+      set(${RESULT_PATH} ${PATH_TO_CONFIG} PARENT_SCOPE)
+      return()
+    endif()
+  endforeach()
+endfunction(get_Path_To_Configuration_Dir)
+
+##########################################################################################
+############################ license files resolution ####################################
 ##########################################################################################
 
 function(get_Path_To_License_File RESULT_PATH license)

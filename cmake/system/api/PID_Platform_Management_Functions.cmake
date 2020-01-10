@@ -26,6 +26,9 @@ endif()
 set(PID_PLATFORM_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
 ##########################################################################################
 
+include(PID_Utils_Functions NO_POLICY_SCOPE)
+include(PID_Contribution_Spaces_Functions NO_POLICY_SCOPE)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -1207,7 +1210,11 @@ endfunction(check_Configuration_Arguments_Included_In_Constraints)
 function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS config_name config_args mode)
   set(${BINARY_CONTRAINTS} PARENT_SCOPE)
   set(${CHECK_OK} FALSE PARENT_SCOPE)
-  if(EXISTS ${WORKSPACE_DIR}/configurations/${config_name}/check_${config_name}.cmake)
+  get_Path_To_Configuration_Dir(RESULT_PATH ${config_name})
+  if(NOT RESULT_PATH)
+    #TODO do something !!
+  endif()
+  if(RESULT_PATH AND EXISTS ${RESULT_PATH}/check_${config_name}.cmake)
     #check if the configuration has already been checked
     check_Configuration_Temporary_Optimization_Variables(RES_CHECK RES_CONSTRAINTS ${config_name} ${mode})
     if(RES_CHECK)
@@ -1226,7 +1233,7 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
       endif()
     endif()
     reset_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
-    include(${WORKSPACE_DIR}/configurations/${config_name}/check_${config_name}.cmake)#get the description of the configuration check
+    include(${RESULT_PATH}/check_${config_name}.cmake)#get the description of the configuration check
     #now preparing args passed to the configruation (generate cmake variables)
     if(${config_args})#testing if the variable containing arguments is not empty
       prepare_Configuration_Arguments(${config_name} ${config_args})#setting variables that correspond to the arguments passed to the check script
@@ -1239,10 +1246,10 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
     endif()
 
     # finding artifacts to fulfill system configuration
-    find_Configuration(${config_name})
+    find_Configuration(${config_name} ${RESULT_PATH})
     set(${config_name}_AVAILABLE TRUE CACHE INTERNAL "")
     if(NOT ${config_name}_CONFIG_FOUND)
-    	install_Configuration(${config_name})
+    	install_Configuration(${config_name} ${RESULT_PATH})
     	if(NOT ${config_name}_INSTALLED)
         set(${config_name}_AVAILABLE FALSE CACHE INTERNAL "")
       endif()
@@ -1283,7 +1290,7 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
     set_Configuration_Temporary_Optimization_Variables(${config_name} Release TRUE "${ALL_CONSTRAINTS}")
     return()
   else()
-    message("[PID] WARNING : when checking constraints on current platform, configuration information for ${config_name} does not exists. You use an unknown constraint. Please remove this constraint or create a new cmake script file called check_${config_name}.cmake in ${WORKSPACE_DIR}/configurations/${config_name} to manage this configuration. You can also try to update your workspace to get updates on available configurations.")
+    message("[PID] WARNING : when checking constraints on current platform file check_${config_name}.cmake has not been found or configuration ${config_name} does not exists in any of contributions spaces you use. Please either : remove the constraint ${config_name}; check that ${config_name} is well spelled and rename it if necessary; create a new configuration called ${config_name} in one of the contribution spaces you use or configure your workspace with the contribution space defining ${config_name}.")
     return()
   endif()
 endfunction(check_System_Configuration_With_Arguments)
@@ -1336,12 +1343,16 @@ endfunction(into_Configuration_Argument_List)
 #
 function(is_Allowed_System_Configuration ALLOWED config_name config_args)
   set(${ALLOWED} FALSE PARENT_SCOPE)
-  if( EXISTS ${WORKSPACE_DIR}/configurations/${config_name}/check_${config_name}.cmake
-      AND EXISTS ${WORKSPACE_DIR}/configurations/${config_name}/find_${config_name}.cmake)
+  get_Path_To_Configuration_Dir(RESULT_PATH ${config_name})
+  if(NOT RESULT_PATH)
+    #TODO do something !!
+  endif()
+  if( EXISTS ${RESULT_PATH}/check_${config_name}.cmake
+      AND EXISTS ${RESULT_PATH}/find_${config_name}.cmake)
 
     reset_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
 
-    include(${WORKSPACE_DIR}/configurations/${config_name}/check_${config_name}.cmake)#get the description of the configuration check
+    include(${RESULT_PATH}/check_${config_name}.cmake)#get the description of the configuration check
 
     #now preparing args passed to the configruation (generate cmake variables)
     if(${config_args})#testing if the variable containing arguments is not empty
@@ -1366,15 +1377,15 @@ function(is_Allowed_System_Configuration ALLOWED config_name config_args)
       endif()
     endforeach()
 
-    find_Configuration(${config_name}) # find the artifacts used by this configuration
+    find_Configuration(${config_name} ${RESULT_PATH}) # find the artifacts used by this configuration
     if(NOT ${config_name}_CONFIG_FOUND)# not found, trying to see if it can be installed
-      is_Configuration_Installable(INSTALLABLE ${config_name})
+      is_Configuration_Installable(INSTALLABLE ${config_name} ${RESULT_PATH})
       if(NOT INSTALLABLE)
           return()
       endif()
     endif()
   else()
-    message("[PID] WARNING : configuration ${config_name} is unknown in workspace.")
+    message("[PID] WARNING : when checking if system configuration ${config_name} is possibly usable on current platform, either file check_${config_name}.cmake or file find_${config_name}.cmake has not been found in ${config_name} folder. ${config_name} is badly described and you should add those files in the folder ${RESULT_PATH}.")
     return()
   endif()
   set(${ALLOWED} TRUE PARENT_SCOPE)
@@ -1392,16 +1403,20 @@ endfunction(is_Allowed_System_Configuration)
 #  find_Configuration
 #  ------------------
 #
-#   .. command:: find_Configuration(config)
+#   .. command:: find_Configuration(config path_to_config)
 #
 #   Call the procedure for finding artefacts related to a configuration. Set the ${config}_FOUND variable, that is TRUE is configuration has been found, FALSE otherwise.
 #
 #     :config: the name of the configuration to find.
 #
-macro(find_Configuration config)
+#     :path_to_config: the path to configuration folder.
+#
+macro(find_Configuration config path_to_config)
   set(${config}_CONFIG_FOUND FALSE)
-  if(EXISTS ${WORKSPACE_DIR}/configurations/${config}/find_${config}.cmake)
-    include(${WORKSPACE_DIR}/configurations/${config}/find_${config}.cmake)
+  if(EXISTS ${path_to_config}/find_${config}.cmake)
+    include(${path_to_config}/find_${config}.cmake)
+  else()
+    message("[PID] WARNING : configuration ${config} does not define any find script. Find result will always be false ! Please define a script named find_${config}.cmake in the configuration ${config} folder ${path_to_config}")
   endif()
 endmacro(find_Configuration)
 
@@ -1415,18 +1430,20 @@ endmacro(find_Configuration)
 #  is_Configuration_Installable
 #  ----------------------------
 #
-#   .. command:: is_Configuration_Installable(INSTALLABLE config)
+#   .. command:: is_Configuration_Installable(INSTALLABLE config path_to_config)
 #
 #   Call the procedure telling if a configuratio can be installed.
 #
 #     :config: the name of the configuration to install.
 #
+#     :path_to_config: the path to configuration folder.
+#
 #     :INSTALLABLE: the output variable that is TRUE is configuartion can be installed, FALSE otherwise.
 #
-function(is_Configuration_Installable INSTALLABLE config)
+function(is_Configuration_Installable INSTALLABLE config path_to_config)
   set(${INSTALLABLE} FALSE PARENT_SCOPE)
-  if(EXISTS ${WORKSPACE_DIR}/configurations/${config}/installable_${config}.cmake)
-    include(${WORKSPACE_DIR}/configurations/${config}/installable_${config}.cmake)
+  if(EXISTS ${path_to_config}/installable_${config}.cmake)
+    include(${path_to_config}/installable_${config}.cmake)
     if(${config}_CONFIG_INSTALLABLE)
       set(${INSTALLABLE} TRUE PARENT_SCOPE)
     endif()
@@ -1443,26 +1460,30 @@ endfunction(is_Configuration_Installable)
 #  install_Configuration
 #  ---------------------
 #
-#   .. command:: install_Configuration(config)
+#   .. command:: install_Configuration(config path_to_config)
 #
 #   Call the install procedure of a given configuration. Set the ${config}_INSTALLED variable to TRUE if the configuration has been installed on OS.
 #
 #     :config: the name of the configuration to install.
 #
-macro(install_Configuration config)
+#     :path_to_config: the path to configuration folder.
+#
+macro(install_Configuration config path_to_config)
   set(${config}_INSTALLED FALSE)
-  is_Configuration_Installable(INSTALLABLE ${config})
+  is_Configuration_Installable(INSTALLABLE ${config} ${path_to_config})
   if(INSTALLABLE)
     message("[PID] INFO : installing configuration ${config}...")
-  	if(EXISTS ${WORKSPACE_DIR}/configurations/${config}/install_${config}.cmake)
-      include(${WORKSPACE_DIR}/configurations/${config}/install_${config}.cmake)
-      find_Configuration(${config})
+  	if(EXISTS ${path_to_config}/install_${config}.cmake)
+      include(${path_to_config}/install_${config}.cmake)
+      find_Configuration(${config} ${path_to_config})
       if(${config}_CONFIG_FOUND)
         message("[PID] INFO : configuration ${config} installed !")
         set(${config}_INSTALLED TRUE)
       else()
         message("[PID] WARNING : install of configuration ${config} has failed !")
       endif()
+    else()
+      message("[PID] WARNING : configuration ${config} does not define any install script while it is supposed to be installable. Install result will always be false ! Please define a script named install_${config}.cmake in the configuration ${config} folder ${path_to_config}")
     endif()
   endif()
 endmacro(install_Configuration)
