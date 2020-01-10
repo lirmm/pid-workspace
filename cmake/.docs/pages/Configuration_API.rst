@@ -3,5 +3,5 @@ Configuration API
 
 .. setmode:: user
 
-.. cmake-module:: ../../system/Configuration_Definition.cmake
+.. cmake-module:: ../../Configuration_Definition.cmake
 

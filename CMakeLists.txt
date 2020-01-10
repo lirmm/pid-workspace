@@ -18,9 +18,9 @@
 #########################################################################################
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0.2)
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/system)
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/system/api)
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/system/commands)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/api)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/commands)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/platforms)
 
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
@@ -108,7 +108,7 @@ add_custom_target(info
 					-DTARGET_ENVIRONMENT=\${environment}
 					-DTARGET_LICENSE=\${license}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Print_PID_Workspace_Info.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Print_PID_Workspace_Info.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -124,7 +124,7 @@ add_custom_target(deploy
 					-DUSE_BRANCH=\${branch}
 					-DRUN_TESTS=\${test}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Deploy_PID_Deployment_Unit.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Deploy_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -132,7 +132,7 @@ add_custom_target(deploy
 add_custom_target(build
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES="\${package}"
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Build_PID_Packages.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Build_PID_Packages.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -140,7 +140,7 @@ add_custom_target(build
 add_custom_target(rebuild
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES="\${package}"
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Rebuild_PID_Packages.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Rebuild_PID_Packages.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -149,7 +149,7 @@ add_custom_target(resolve
 	COMMAND ${CMAKE_COMMAND} 	-DRESOLVED_PACKAGE=\${package}
 					-DTARGET_VERSION=\${version}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Resolve_PID_Package.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Resolve_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -165,7 +165,7 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DOPTIONNAL_GIT_URL=\${url}
 					-DOPTIONNAL_SITE=\${site}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Create_PID_Deployment_Unit.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Create_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -180,7 +180,7 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_FRAMEWORK=\${framework}
 					-DFORCED_RECONNECTION=\${force}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Connect_PID_Deployment_Unit.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Connect_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -190,7 +190,7 @@ add_custom_target(clear
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DTARGET_VERSION=\${version}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Clear_PID_Package.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Clear_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -199,7 +199,7 @@ add_custom_target(hard_clean
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DRECONFIGURE=\${configure}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Hard_Clean_PID_Package.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -209,7 +209,7 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DTARGET_FRAMEWORK=\${framework}
 					-DTARGET_ENVIRONMENT=\${environment}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Remove_PID_Deployment_Unit.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Remove_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -219,7 +219,7 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DTARGET_FRAMEWORK=\${framework}
 					-DTARGET_ENVIRONMENT=\${environment}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Register_PID_Deployment_Unit.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Register_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -230,7 +230,7 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DFROM_BRANCH=\${branch}
 					-DAUTOMATIC_RELEASE=\${recursive}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Release_PID_Package.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Release_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -238,7 +238,7 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 add_custom_target(update
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Update_PID_Package.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Update_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -247,7 +247,7 @@ add_custom_target(upgrade
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_OFFICIAL=\${official}
 					-DUPDATE_ALL_PACKAGES=\${update}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Upgrade_PID_Workspace.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Upgrade_PID_Workspace.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -260,7 +260,7 @@ COMMAND ${CMAKE_COMMAND} 	-DINSTALLED_PACKAGE=\${package}
 					-DINSTALL_FOLDER=\${folder}
 					-DINSTALL_MODE=\${mode}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Install_PID_Package.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Install_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
@@ -281,6 +281,6 @@ COMMAND ${CMAKE_COMMAND} -DTARGET_ENVIRONMENT=\${environment}
 					-DCURRENT_PLATFORM=${CURRENT_PLATFORM}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} #using default or current native build system
-					-P ${CMAKE_SOURCE_DIR}/cmake/system/commands/Configure_PID_Environment.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Configure_PID_Environment.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )

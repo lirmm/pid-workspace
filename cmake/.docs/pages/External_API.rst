@@ -3,4 +3,4 @@ External API
 
 .. setmode:: user
 
-.. cmake-module:: ../../system/External_Definition.cmake
+.. cmake-module:: ../../External_Definition.cmake

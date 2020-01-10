@@ -1,0 +1,4466 @@
+#########################################################################################
+#       This file is part of the program PID                                            #
+#       Program description : build system supportting the PID methodology              #
+#       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
+#       et de Microelectronique de Montpellier). All Right reserved.                    #
+#                                                                                       #
+#       This software is free software: you can redistribute it and/or modify           #
+#       it under the terms of the CeCILL-C license as published by                      #
+#       the CEA CNRS INRIA, either version 1                                            #
+#       of the License, or (at your option) any later version.                          #
+#       This software is distributed in the hope that it will be useful,                #
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of                  #
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                    #
+#       CeCILL-C License for more details.                                              #
+#                                                                                       #
+#       You can find the complete license description on the official website           #
+#       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
+#########################################################################################
+
+##########################################################################################
+############################ Guard for optimization of configuration process #############
+##########################################################################################
+if(PID_UTILS_FUNCTIONS_INCLUDED)
+  return()
+endif()
+set(PID_UTILS_FUNCTIONS_INCLUDED TRUE)
+##########################################################################################
+
+include(CMakeParseArguments)
+<<<<<<< 407516242c94e7b9725a235d7a4f3b19f24e7a77:cmake/system/api/PID_Utils_Functions.cmake
+include(PID_Contribution_Spaces_Functions NO_POLICY_SCOPE)
+=======
+
+include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
+>>>>>>> refactoring: restructuring and fixing module path for contribution spaces:cmake/api/PID_Utils_Functions.cmake
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |execute_OS_Command| replace:: ``execute_OS_Command``
+#  .. _execute_OS_Command:
+#
+#  execute_OS_Command
+#  ------------------
+#
+#   .. command:: execute_OS_Command(list_of_args)
+#
+#      invoque a command of the operating system with adequate privileges.
+#
+#     :list_of_args: the system command to be passed and that will be executed with adequate privileges (do not use sudo !)
+#
+macro(execute_OS_Command)
+if(IN_CI_PROCESS)
+  execute_process(COMMAND ${ARGN})
+else()
+  execute_process(COMMAND sudo ${ARGN})#need to have super user privileges except in CI where sudo is forbidden
+endif()
+endmacro(execute_OS_Command)
+
+#############################################################
+########### general utilities for build management ##########
+#############################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Mode_Variables| replace:: ``get_Mode_Variables``
+#  .. _get_Mode_Variables:
+#
+#  get_Mode_Variables
+#  ------------------
+#
+#   .. command:: get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX mode)
+#
+#     Getting suffixes related to target mode (common accessor usefull in many places)
+#
+#     :mode: the mode for which getting corresponding suffixes
+#
+#     :TARGET_SUFFIX: the output variable containing the suffix string to be used for targets names
+#
+#     :VAR_SUFFIX: the output variable containing the suffix string to be used for CMake variable names
+#
+function(get_Mode_Variables TARGET_SUFFIX VAR_SUFFIX mode)
+if(mode MATCHES Release)
+	set(${TARGET_SUFFIX} PARENT_SCOPE)
+	set(${VAR_SUFFIX} PARENT_SCOPE)
+else()
+	set(${TARGET_SUFFIX} -dbg PARENT_SCOPE)
+	set(${VAR_SUFFIX} _DEBUG PARENT_SCOPE)
+endif()
+endfunction(get_Mode_Variables)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Platform_Variables| replace:: ``get_Platform_Variables``
+#  .. _get_Platform_Variables:
+#
+#  get_Platform_Variables
+#  ----------------------
+#
+#   .. command:: get_Platform_Variables([OPTION value]...)
+#
+#     Getting basic system variables related to current target platform (common accessor usefull in many places).
+#
+#     :BASENAME var:  the output variable that contains the base name of the current platform (with the form <arch>_<bits>_<kernel>_<abi>, e.g. x86_64_linux_abi11).
+#
+#     :INSTANCE var:  the output variable that contains the name of the instance for current platform (empty by default).
+#
+#     :PKG_STRING var: the output variable that contains the string representing the platform name appended to binary archives generated by CPack
+#
+#     :DISTRIBUTION var: the output variable that contains the string representing the current platform distribution (if any)
+#
+#     :DIST_VERSION var: the output variable that contains the string representing the current platform distribution version (if any distribution defined)
+#
+function(get_Platform_Variables)
+  set(oneValueArgs BASENAME INSTANCE PKG_STRING DISTRIBUTION DIST_VERSION OS ARCH ABI TYPE PYTHON)
+  cmake_parse_arguments(GET_PLATFORM_VARIABLES "" "${oneValueArgs}" "" ${ARGN} )
+  if(GET_PLATFORM_VARIABLES_BASENAME)
+    set(${GET_PLATFORM_VARIABLES_BASENAME} ${CURRENT_PLATFORM} PARENT_SCOPE)
+  endif()
+  if(GET_PLATFORM_VARIABLES_INSTANCE)
+    set(${GET_PLATFORM_VARIABLES_INSTANCE} ${CURRENT_PLATFORM_INSTANCE} PARENT_SCOPE)
+  endif()
+  if(GET_PLATFORM_VARIABLES_PKG_STRING)
+    set(${GET_PLATFORM_VARIABLES_PKG_STRING} ${CURRENT_PACKAGE_STRING} PARENT_SCOPE)
+  endif()
+  if(GET_PLATFORM_VARIABLES_DISTRIBUTION)
+    set(${GET_PLATFORM_VARIABLES_DISTRIBUTION} ${CURRENT_DISTRIBUTION} PARENT_SCOPE)
+  endif()
+  if(GET_PLATFORM_VARIABLES_DIST_VERSION)
+    set(${GET_PLATFORM_VARIABLES_DIST_VERSION} ${CURRENT_DISTRIBUTION_VERSION} PARENT_SCOPE)
+  endif()
+  if(GET_PLATFORM_VARIABLES_TYPE)
+  	set(OK TRUE)
+  	set(${GET_PLATFORM_VARIABLES_TYPE} ${CURRENT_PLATFORM_TYPE} PARENT_SCOPE)
+  endif()
+  if(GET_PLATFORM_VARIABLES_OS)
+  	set(OK TRUE)
+  	set(${GET_PLATFORM_VARIABLES_OS} ${CURRENT_PLATFORM_OS} PARENT_SCOPE)
+  endif()
+  if(GET_PLATFORM_VARIABLES_ARCH)
+  	set(OK TRUE)
+  	set(${GET_PLATFORM_VARIABLES_ARCH} ${CURRENT_PLATFORM_ARCH} PARENT_SCOPE)
+  endif()
+  if(GET_PLATFORM_VARIABLES_ABI)
+  	set(OK TRUE)
+    if(CURRENT_PLATFORM_ABI MATCHES "abi11|CXX11|11")
+      set(${GET_PLATFORM_VARIABLES_ABI} CXX11 PARENT_SCOPE)
+    elseif(CURRENT_PLATFORM_ABI STREQUAL "abi98|CXX|98")
+      set(${GET_PLATFORM_VARIABLES_ABI} CXX PARENT_SCOPE)
+    endif()
+  endif()
+  if(GET_PLATFORM_VARIABLES_PYTHON)
+  		set(OK TRUE)
+  		set(${GET_PLATFORM_VARIABLES_PYTHON} ${CURRENT_PYTHON} PARENT_SCOPE)
+  endif()
+endfunction(get_Platform_Variables)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_A_System_Reference_Path| replace:: ``is_A_System_Reference_Path``
+#  .. _is_A_System_Reference_Path:
+#
+#  is_A_System_Reference_Path
+#  --------------------------
+#
+#   .. command:: is_A_System_Reference_Path(path IS_SYSTEM)
+#
+#     Tells wether the path is a system path where are located binaries.
+#
+#     :path: the path to check
+#
+#     :IS_SYSTEM: the output variable that is TRUE if path is a system reference path, FALSE otherwise
+#
+function(is_A_System_Reference_Path path IS_SYSTEM)
+  set(all_default_path)
+  list(APPEND all_default_path ${CMAKE_C_IMPLICIT_LINK_DIRECTORIES} ${CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES})
+  if(all_default_path)
+    list(REMOVE_DUPLICATES all_default_path)
+    foreach(a_path IN LISTS all_default_path)
+      if(a_path STREQUAL path)#OK path is in default path => remove it
+        set(${IS_SYSTEM} TRUE PARENT_SCOPE)
+        return()
+      endif()
+    endforeach()
+  endif()
+  set(${IS_SYSTEM} FALSE PARENT_SCOPE)
+endfunction(is_A_System_Reference_Path)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |extract_Info_From_Platform| replace:: ``extract_Info_From_Platform``
+#  .. _extract_Info_From_Platform:
+#
+#  extract_Info_From_Platform
+#  --------------------------
+#
+#   .. command:: extract_Info_From_Platform(RES_TYPE RES_ARCH RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE name)
+#
+#     Extract the different elements of a platform name (e.g. x86_64_linux_abi11) to get corresponding information.
+#
+#     :name: the name of the platform
+#
+#     :RES_TYPE: the output variable containing processor architecture type (e.g. x86)
+#
+#     :RES_ARCH: the output variable containing processor registry size (e.g. 32 or 64)
+#
+#     :RES_OS: the output variable containing  kernel name (e.g. linux) or empty string if the target platform has no kernel (e.g. microcontroller)
+#
+#     :RES_ABI: the output variable containing abi name (e.g. CXX or CXX11)
+#
+#     :RES_INSTANCE: the output variable containing platform instance name (may be empty in case of a valid match)
+#
+#     :RES_PLATFORM_BASE: the output variable containing platform base name (in case no instance is specified it is == name)
+#
+function(extract_Info_From_Platform RES_TYPE RES_ARCH RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE name)
+  if(name MATCHES "^(.+)__(.+)__$")#there is an instance name
+    set(platform_name ${CMAKE_MATCH_1})
+    set(instance_name ${CMAKE_MATCH_2})# this is a custom platform name used for CI and binary deployment
+  else()
+    set(platform_name ${name})
+    set(instance_name)
+  endif()
+	string(REGEX REPLACE "^([^_]+)_([^_]+)_([^_]+)_([^_]+)$" "\\1;\\2;\\3;\\4" list_of_properties ${platform_name})
+  if(list_of_properties STREQUAL platform_name)#if no replacement, try without kernel name
+    string(REGEX REPLACE "^([^_]+)_([^_]+)_([^_]+)$" "\\1;\\2;\\3" list_of_properties ${platform_name})
+    if(list_of_properties STREQUAL platform_name)#bad name => not allowed
+    	set(${RES_TYPE} PARENT_SCOPE)
+    	set(${RES_ARCH} PARENT_SCOPE)
+    	set(${RES_OS} PARENT_SCOPE)
+    	set(${RES_ABI} PARENT_SCOPE)
+    	set(${RES_INSTANCE} PARENT_SCOPE)
+    	set(${RES_PLATFORM_BASE} PARENT_SCOPE)
+    else()
+      list(GET list_of_properties 2 abi)
+    endif()
+  else()
+  	list(GET list_of_properties 2 os)
+  	list(GET list_of_properties 3 abi)
+  endif()
+
+	list(GET list_of_properties 0 type)
+	list(GET list_of_properties 1 arch)
+	set(${RES_TYPE} ${type} PARENT_SCOPE)
+	set(${RES_ARCH} ${arch} PARENT_SCOPE)
+	set(${RES_OS} ${os} PARENT_SCOPE)
+  if(abi STREQUAL "abi98")
+	   set(${RES_ABI} CXX PARENT_SCOPE)
+  elseif(abi STREQUAL "abi11")
+	   set(${RES_ABI} CXX11 PARENT_SCOPE)
+  endif()
+  set(${RES_INSTANCE} ${instance_name} PARENT_SCOPE)
+  set(${RES_PLATFORM_BASE} ${platform_name} PARENT_SCOPE)
+endfunction(extract_Info_From_Platform)
+
+#############################################################
+################ string handling utilities ##################
+#############################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |escape_Guillemet_From_String| replace:: ``escape_Guillemet_From_String``
+#  .. _escape_Guillemet_From_String:
+#
+#  escape_Guillemet_From_String
+#  ----------------------------
+#
+#   .. command:: escape_Guillemet_From_String(str_var)
+#
+#    Update the input string in such a way that escaped guillemets are preserved if the value of the string is evaluated
+#
+#     :str_var: the input/output string variable that may contain guillemet characters to escape.
+#
+function(escape_Guillemet_From_String str_var)
+  if(${str_var})
+    string(REPLACE "\"" "\\\"" ret_str "${${str_var}}")
+    set(${str_var} ${ret_str} PARENT_SCOPE)
+  endif()
+endfunction(escape_Guillemet_From_String)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |extract_Component_And_Package_From_Dependency_String| replace:: ``extract_Component_And_Package_From_Dependency_String``
+#  .. _extract_Component_And_Package_From_Dependency_String:
+#
+#  extract_Component_And_Package_From_Dependency_String
+#  ----------------------------------------------------
+#
+#   .. command:: extract_Component_And_Package_From_Dependency_String(RES_COMP RES_PACK dependency_string)
+#
+#    Get the name of component and package from a dependency string. Dependencies strinsg follow the poattern: [<package_name>/]<component_name>
+#
+#     :dependency_string: the dependency string to parse.
+#
+#     :RES_COMP: the output variable that contains the name of the component.
+#
+#     :RES_PACK: the output variable that contains the name of the package, if any specified, or that is empty otherwise.
+#
+function(extract_Component_And_Package_From_Dependency_String RES_COMP RES_PACK dependency_string)
+if(dependency_string MATCHES "^([^/]+)/(.+)$") #it matches => this is a dependency string with package expression using / symbol
+  list(GET RESULT_LIST 0 package)
+  list(GET RESULT_LIST 1 component)
+  set(${RES_COMP} ${CMAKE_MATCH_2} PARENT_SCOPE)
+  set(${RES_PACK} ${CMAKE_MATCH_1} PARENT_SCOPE)
+else()#this is a dependency that only specifies the name of the component
+  set(${RES_PACK} PARENT_SCOPE)
+  set(${RES_COMP} ${dependency_string} PARENT_SCOPE)
+endif()
+endfunction(extract_Component_And_Package_From_Dependency_String)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |extract_All_Words| replace:: ``extract_All_Words``
+#  .. _extract_All_Words:
+#
+#  extract_All_Words
+#  -----------------
+#
+#   .. command:: extract_All_Words(the_string separator ALL_WORDS_IN_LIST)
+#
+#    Split a string into a list of words.
+#
+#     :the_string: the the_string to split.
+#
+#     :separator: the separator character used to split the string.
+#
+#     :ALL_WORDS_IN_LIST: the output variable containg the list of words
+#
+function(extract_All_Words the_string separator ALL_WORDS_IN_LIST)
+set(res "")
+string(REPLACE "${separator}" ";" res "${the_string}")
+set(${ALL_WORDS_IN_LIST} ${res} PARENT_SCOPE)
+endfunction(extract_All_Words)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |extract_All_Words_From_Path| replace:: ``extract_All_Words_From_Path``
+#  .. _extract_All_Words_From_Path:
+#
+#  extract_All_Words_From_Path
+#  ---------------------------
+#
+#   .. command:: extract_All_Words_From_Path(name_with_slash ALL_WORDS_IN_LIST)
+#
+#    Split a path into a list of words.
+#
+#     :name_with_slash: the path expressed as a CMake path (with / separator)
+#
+#     :ALL_WORDS_IN_LIST: the output variable containg the list of words from the path
+#
+function(extract_All_Words_From_Path name_with_slash ALL_WORDS_IN_LIST)
+set(res "")
+string(REPLACE "/" ";" res "${name_with_slash}")
+set(${ALL_WORDS_IN_LIST} ${res} PARENT_SCOPE)
+endfunction(extract_All_Words_From_Path)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |fill_String_From_List| replace:: ``fill_String_From_List``
+#  .. _fill_String_From_List:
+#
+#  fill_String_From_List
+#  ---------------------
+#
+#   .. command:: fill_String_From_List(input_list RES_STRING)
+#
+#    Create a string with space separators from a list.
+#
+#     :input_list: the variable containing the list of words.
+#
+#     :RES_STRING: the output variable containg the resulting string
+#
+function(fill_String_From_List input_list RES_STRING)
+set(res "")
+foreach(element IN LISTS ${input_list})
+	set(res "${res} ${element}")
+endforeach()
+string(STRIP "${res}" res_finished)
+set(${RES_STRING} ${res_finished} PARENT_SCOPE)
+endfunction(fill_String_From_List)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |extract_Package_Namespace_From_SSH_URL| replace:: ``extract_Package_Namespace_From_SSH_URL``
+#  .. _extract_Package_Namespace_From_SSH_URL:
+#
+#  extract_Package_Namespace_From_SSH_URL
+#  --------------------------------------
+#
+#   .. command:: extract_Package_Namespace_From_SSH_URL(url package NAMESPACE SERVER_ADDRESS EXTENSION)
+#
+#    Extract useful information (for PID) from the git url of a package repository.
+#
+#     :url: the git URL.
+#
+#     :package: the name of the package.
+#
+#     :NAMESPACE: output variable containing the namespace of the repository
+#
+#     :SERVER_ADDRESS: output variable containing the address of the git repository server
+#
+#     :EXTENSION: output variable containing the name of the package extension. This later information is used to get the name of the lone static site for a package.
+#
+function(extract_Package_Namespace_From_SSH_URL url package NAMESPACE SERVER_ADDRESS EXTENSION)
+string (REGEX REPLACE "^([^@]+@[^:]+):([^/]+)/${package}(\\.site|-site|\\.pages|-pages)?\\.git$" "\\2;\\1" RESULT ${url})
+if(NOT RESULT STREQUAL "${url}") #match found
+	list(GET RESULT 0 NAMESPACE_NAME)
+	set(${NAMESPACE} ${NAMESPACE_NAME} PARENT_SCOPE)
+	list(GET RESULT 1 ACCOUNT_ADDRESS)
+	set(${SERVER_ADDRESS} ${ACCOUNT_ADDRESS} PARENT_SCOPE)
+
+	string (REGEX REPLACE "^[^@]+@[^:]+:[^/]+/${package}(\\.site|-site|\\.pages|-pages)\\.git$" "\\1" RESULT ${url})
+	if(NOT RESULT STREQUAL "${url}") #match found
+		set(${EXTENSION} ${RESULT} PARENT_SCOPE)
+	else()
+		set(${EXTENSION} PARENT_SCOPE)
+	endif()
+else()
+	set(${NAMESPACE} PARENT_SCOPE)
+	set(${SERVER_ADDRESS} PARENT_SCOPE)
+	set(${EXTENSION} PARENT_SCOPE)
+endif()
+endfunction(extract_Package_Namespace_From_SSH_URL)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |format_PID_Identifier_Into_Markdown_Link| replace:: ``format_PID_Identifier_Into_Markdown_Link``
+#  .. _format_PID_Identifier_Into_Markdown_Link:
+#
+#  format_PID_Identifier_Into_Markdown_Link
+#  ----------------------------------------
+#
+#   .. command:: format_PID_Identifier_Into_Markdown_Link(RES_LINK function_name)
+#
+#    Transform the name of a function into a name that can be exploited in markdown to target corresponding function symbol (used for cross referencing functions).
+#
+#     :function_name: the name of the function.
+#
+#     :RES_LINK: the output variable containing the resulting markdown link string
+#
+function(format_PID_Identifier_Into_Markdown_Link RES_LINK function_name)
+string(REPLACE "_" "" RES_STR ${function_name})#simply remove underscores
+string(REPLACE " " "-" FINAL_STR ${RES_STR})#simply remove underscores
+set(${RES_LINK} ${FINAL_STR} PARENT_SCOPE)
+endfunction(format_PID_Identifier_Into_Markdown_Link)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |normalize_Version_String| replace:: ``normalize_Version_String``
+#  .. _normalize_Version_String:
+#
+#  normalize_Version_String
+#  ------------------------
+#
+#   .. command:: normalize_Version_String(input_version NORMALIZED_VERSION_STRING)
+#
+#    Normalize a version string so that it always match the pattern: major.minor.patch
+#
+#     :input_version: the version to normalize, with dotted notation
+#
+#     :NORMALIZED_VERSION_STRING: the output variable containing the normalized version string
+#
+function(normalize_Version_String input_version NORMALIZED_VERSION_STRING)
+	get_Version_String_Numbers(${input_version} major minor patch)
+	set(VERSION_STR "${major}.")
+	if(minor)
+		set(VERSION_STR "${VERSION_STR}${minor}.")
+	else()
+		set(VERSION_STR "${VERSION_STR}0.")
+	endif()
+	if(patch)
+		set(VERSION_STR "${VERSION_STR}${patch}")
+	else()
+		set(VERSION_STR "${VERSION_STR}0")
+	endif()
+	set(${NORMALIZED_VERSION_STRING} ${VERSION_STR} PARENT_SCOPE)
+endfunction(normalize_Version_String)
+
+
+#############################################################
+################ filesystem management utilities ############
+#############################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |make_Empty_Folder| replace:: ``make_Empty_Folder``
+#  .. _make_Empty_Folder:
+#
+#  make_Empty_Folder
+#  -----------------
+#
+#   .. command:: make_Empty_Folder(path)
+#
+#    clear the content of an existing folder of create it.
+#
+#     :path: the path to the folder
+#
+function(make_Empty_Folder path)
+if(path)
+  if(EXISTS ${path} AND IS_DIRECTORY ${path})
+    file(GLOB DIR_CONTENT "${path}/*")
+    if(DIR_CONTENT)#not already empty
+      file(REMOVE_RECURSE ${path})
+      file(MAKE_DIRECTORY ${path})
+    endif()
+  else()
+    file(MAKE_DIRECTORY ${path})
+  endif()
+endif()
+endfunction(make_Empty_Folder)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Symlink| replace:: ``create_Symlink``
+#  .. _create_Symlink:
+#
+#  create_Symlink
+#  --------------
+#
+#   .. command:: create_Symlink(path_to_old path_to_new)
+#
+#    Create a symlink to a filesystem resource (file or folder).
+#
+#     :path_to_old: the path to create a symlink for
+#
+#     :path_to_new: the path of the resulting symlink
+#
+function(create_Symlink path_to_old path_to_new)
+    set(oneValueArgs WORKING_DIR)
+    cmake_parse_arguments(OPT "" "${oneValueArgs}" "" ${ARGN} )
+    if(WIN32)
+        string(REGEX REPLACE "/" "\\\\" path_to_old ${path_to_old})
+        string(REGEX REPLACE "/" "\\\\" path_to_new ${path_to_new})
+        if(OPT_WORKING_DIR)
+            string(REGEX REPLACE "/" "\\\\" OPT_WORKING_DIR ${OPT_WORKING_DIR})
+        endif()
+
+        # check if target is a directory or a file to pass to proper argument to mklink
+        get_filename_component(DIR ${path_to_old} DIRECTORY)
+        if(${path_to_old} STREQUAL ${DIR})
+            set(mklink_option "/D")
+        else()
+            set(mklink_option "")
+        endif()
+    endif()
+
+    if(EXISTS ${OPT_WORKING_DIR}/${path_to_new} AND IS_SYMLINK ${OPT_WORKING_DIR}/${path_to_new})
+        #remove the existing symlink
+        file(REMOVE ${OPT_WORKING_DIR}/${path_to_new})
+    endif()
+
+    #1) first create the folder containing symlinks if it does not exist
+    get_filename_component(containing_folder ${path_to_new} DIRECTORY)
+    if(NOT EXISTS ${containing_folder})
+      file(MAKE_DIRECTORY ${containing_folder})
+    endif()
+    #2) then generate symlinks in this folder
+    if(WIN32)
+        if(OPT_WORKING_DIR)
+            execute_process(
+                COMMAND cmd.exe /c mklink ${mklink_option} ${path_to_new} ${path_to_old}
+                WORKING_DIRECTORY ${OPT_WORKING_DIR}
+                OUTPUT_QUIET
+            )
+        else()
+            execute_process(
+                COMMAND cmd.exe /c mklink ${mklink_option} ${path_to_new} ${path_to_old}
+                OUTPUT_QUIET
+            )
+        endif()
+    else()
+        if(OPT_WORKING_DIR)
+            execute_process(
+                COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_old} ${path_to_new}
+                WORKING_DIRECTORY ${OPT_WORKING_DIR}
+            )
+        else()
+            execute_process(
+                COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_old} ${path_to_new}
+            )
+        endif()
+    endif()
+endfunction(create_Symlink)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Runtime_Symlink| replace:: ``create_Runtime_Symlink``
+#  .. _create_Runtime_Symlink:
+#
+#  create_Runtime_Symlink
+#  ----------------------
+#
+#   .. command:: create_Runtime_Symlink(path_to_target path_to_container_folder rpath_sub_folder)
+#
+#    Create a symlink for a runtime resource of a component.
+#
+#     :path_to_target: the target runtime resource to symlink.
+#
+#     :path_to_container_folder: the path to the package .rpath folder.
+#
+#     :rpath_sub_folder: the path to relative to the .rpath folder of the component that use the symlink to access its runtime resources.
+#
+function(create_Runtime_Symlink path_to_target path_to_container_folder rpath_sub_folder)
+#first creating the path where to put symlinks if it does not exist
+set(RUNTIME_DIR ${path_to_container_folder}/${rpath_sub_folder})
+get_filename_component(A_FILE ${path_to_target} NAME)
+#second creating the symlink
+create_Symlink(${path_to_target} ${RUNTIME_DIR}/${A_FILE})
+endfunction(create_Runtime_Symlink)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_Runtime_Symlink| replace:: ``install_Runtime_Symlink``
+#  .. _install_Runtime_Symlink:
+#
+#  install_Runtime_Symlink
+#  -----------------------
+#
+#   .. command:: install_Runtime_Symlink(path_to_target path_to_rpath_folder rpath_sub_folder)
+#
+#    Install symlink for a runtime resource of a component.
+#
+#     :path_to_target: the target runtime resource to symlink.
+#
+#     :path_to_rpath_folder: the path to the package .rpath folder.
+#
+#     :rpath_sub_folder: the path to relative to the .rpath folder of the component that use the symlink to access its runtime resources.
+#
+function(install_Runtime_Symlink path_to_target path_to_rpath_folder rpath_sub_folder)
+  get_filename_component(A_FILE "${path_to_target}" NAME)
+	set(FULL_RPATH_DIR ${path_to_rpath_folder}/${rpath_sub_folder})
+	install(DIRECTORY DESTINATION ${FULL_RPATH_DIR}) #create the folder that will contain symbolic links to runtime resources used by the component (will allow full relocation of components runtime dependencies at install time)
+  if(WIN32)
+      string(REGEX REPLACE "/" "\\\\\\\\" W32_PATH_FILE ${FULL_RPATH_DIR}/${A_FILE})
+      string(REGEX REPLACE "/" "\\\\\\\\" W32_PATH_TARGET ${path_to_target})
+  endif()
+	install(CODE "
+                    list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/api)
+                    include(PID_Utils_Functions NO_POLICY_SCOPE)
+                    message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
+                    create_Symlink(${path_to_target} ${FULL_RPATH_DIR}/${A_FILE} WORKING_DIR ${CMAKE_INSTALL_PREFIX})
+	")# creating links "on the fly" when installing
+endfunction(install_Runtime_Symlink)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Directory_Exists| replace:: ``check_Directory_Exists``
+#  .. _check_Directory_Exists:
+#
+#  check_Directory_Exists
+#  ----------------------
+#
+#   .. command:: check_Directory_Exists(IS_EXISTING path)
+#
+#    Tell whether the given path is a folder path and it exists on filesystem.
+#
+#     :path: the path to check
+#
+#     :IS_EXISTING: the output variable set to TRUE is the directory exist, FALSE otherwise.
+#
+function (check_Directory_Exists IS_EXISTING path)
+if(	EXISTS "${path}"
+	AND IS_DIRECTORY "${path}")
+	set(${IS_EXISTING} TRUE PARENT_SCOPE)
+	return()
+endif()
+set(${IS_EXISTING} FALSE PARENT_SCOPE)
+endfunction(check_Directory_Exists)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Required_Directories_Exist| replace:: ``check_Required_Directories_Exist``
+#  .. _check_Required_Directories_Exist:
+#
+#  check_Required_Directories_Exist
+#  --------------------------------
+#
+#   .. command:: check_Required_Directories_Exist(PROBLEM type folder)
+#
+#    Tell whether the given path is a folder path and it exists on filesystem.
+#
+#     :type: the type of component for which the adequate folders are checked. May take values : STATIC, SHARED, HEADER, MODULE, EXAMPLE, APPLICATION, TEST or PYTHON.
+#
+#     :folder: the name of the folder where to find code related to the component.
+#
+#     :PROBLEM: the output variable containing the message if any problem detected.
+#
+function (check_Required_Directories_Exist PROBLEM type folder)
+	#checking directory containing headers
+	set(${PROBLEM} PARENT_SCOPE)
+	if(type STREQUAL "STATIC" OR type STREQUAL "SHARED" OR type STREQUAL "HEADER")
+		check_Directory_Exists(EXIST  ${CMAKE_SOURCE_DIR}/include/${folder})
+		if(NOT EXIST)
+			set(${PROBLEM} "No folder named ${folder} in the include folder of the project" PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+	if(type STREQUAL "STATIC" OR type STREQUAL "SHARED" OR type STREQUAL "MODULE"
+		OR type STREQUAL "APP" OR type STREQUAL "EXAMPLE" OR type STREQUAL "TEST")
+		check_Directory_Exists(EXIST  ${CMAKE_CURRENT_SOURCE_DIR}/${folder})
+		if(NOT EXIST)
+			set(${PROBLEM} "No folder named ${folder} in folder ${CMAKE_CURRENT_SOURCE_DIR}" PARENT_SCOPE)
+			return()
+		endif()
+	elseif(type STREQUAL "PYTHON")
+		check_Directory_Exists(EXIST ${CMAKE_CURRENT_SOURCE_DIR}/script/${folder})
+		if(NOT EXIST)
+			set(${PROBLEM} "No folder named ${folder} in folder ${CMAKE_CURRENT_SOURCE_DIR}/script" PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+endfunction(check_Required_Directories_Exist)
+
+
+#############################################################
+################ Management of version information ##########
+#############################################################
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |parse_Version_Argument| replace:: ``parse_Version_Argument``
+#  .. _parse_Version_Argument:
+#
+#  parse_Version_Argument
+#  ----------------------
+#
+#   .. command:: parse_Version_Argument(string_to_parse VERSION FORMAT)
+#
+#    Parse a string that is a version argument passed to PID. This string can be a sequence of digits or a dotted notation formatted string.
+#
+#     :string_to_parse: the version string to parse that has been written by an end user.
+#
+#     :VERSION: the output variable containing the list of version digits.
+#
+#     :FORMAT: the output variable that is set to DIGITS if string_to_parse was given by a sequence of digits, set to DOTTED_STRING if string_to_parse was written with dotted notation or empty otherwise (bad version argument given).
+#
+function(parse_Version_Argument string_to_parse VERSION FORMAT)
+  string(REGEX REPLACE "^[ \t]*([0-9]+)[ \t]+([0-9]+)[ \t]*([0-9]*)[ \t]*$" "\\1;\\2;\\3" A_VERSION ${string_to_parse})
+  if(NOT string_to_parse STREQUAL A_VERSION)#the replacement took place so the version is defined with 2 ou 3 digits
+    set(${VERSION} ${A_VERSION} PARENT_SCOPE)#only taking the last instruction since it shadows previous ones
+    set(${FORMAT} "DIGITS" PARENT_SCOPE)#also specify it is under digits format
+    return()
+  endif()
+  #OK so maybe it is under dotted notation
+  string(REGEX REPLACE "^[ \t]*([0-9]+).([0-9]+).([0-9]+)[ \t]*$" "\\1;\\2;\\3" A_VERSION ${string_to_parse})
+  if(NOT string_to_parse STREQUAL A_VERSION)#the replacement took place so the version is defined with a 3 digits dotted notation
+    set(${VERSION} ${A_VERSION} PARENT_SCOPE)
+    set(${FORMAT} "DOTTED_STRING" PARENT_SCOPE)#also specify it has been found under dotted notation format
+    return()
+  endif()
+  set(${VERSION} PARENT_SCOPE)
+  set(${FORMAT} PARENT_SCOPE)
+endfunction(parse_Version_Argument)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |parse_Package_Dependency_Version_Arguments| replace:: ``parse_Package_Dependency_Version_Arguments``
+#  .. _parse_Package_Dependency_Version_Arguments:
+#
+#  parse_Package_Dependency_Version_Arguments
+#  ------------------------------------------
+#
+#   .. command:: parse_Package_Dependency_Version_Arguments(args RES_VERSION RES_EXACT RES_UNPARSED)
+#
+#    Parse a version constraint expression and extract corresponding version number and exactness attribute.
+#
+#     :args: arguments to parse, that may contains version constraints expressions.
+#
+#     :RES_VERSION: the output variable containing the first version constraint detected, if any.
+#
+#     :RES_CONSTRAINT: the output variable that contains the constraint type on version constraint expression (EXACT, TO or FROM), or that is empty if no additionnal constraint is given.
+#
+#     :RES_UNPARSED: the output variable containing the remaining expressions after the first version constraint expression detected.
+#
+function(parse_Package_Dependency_Version_Arguments args RES_VERSION RES_CONSTRAINT RES_UNPARSED)
+set(expr_string)
+if(args MATCHES "^;?(EXACT;|FROM;|TO;)?(VERSION;[^;]+)(;.+)?$")
+  set(expr_string ${CMAKE_MATCH_1}${CMAKE_MATCH_2})
+  set(${RES_UNPARSED} ${CMAKE_MATCH_3} PARENT_SCOPE)
+endif()
+if(expr_string)#version expression has been found => parse it
+	set(options EXACT FROM TO)
+	set(oneValueArg VERSION)
+	cmake_parse_arguments(PARSE_PACKAGE_ARGS "${options}" "${oneValueArg}" "" ${expr_string})
+	set(${RES_VERSION} ${PARSE_PACKAGE_ARGS_VERSION} PARENT_SCOPE)
+  if(PARSE_PACKAGE_ARGS_EXACT)
+	   set(${RES_CONSTRAINT} EXACT PARENT_SCOPE)
+  elseif(PARSE_PACKAGE_ARGS_FROM)
+    set(${RES_CONSTRAINT} FROM PARENT_SCOPE)
+  elseif(PARSE_PACKAGE_ARGS_TO)
+    set(${RES_CONSTRAINT} TO PARENT_SCOPE)
+  endif()
+else()
+	set(${RES_VERSION} PARENT_SCOPE)
+	set(${RES_CONSTRAINT} PARENT_SCOPE)
+	set(${RES_UNPARSED} "${args}" PARENT_SCOPE)
+endif()
+endfunction(parse_Package_Dependency_Version_Arguments)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Versions_In_Interval| replace:: ``get_Versions_In_Interval``
+#  .. _get_Versions_In_Interval:
+#
+#  get_Versions_In_Interval
+#  ------------------------
+#
+#   .. command:: get_Versions_In_Interval(IN_VERSIONS all_versions from_version to_version)
+#
+#   From a list of versions collect all those that are in an interval [FROM...TO].
+#
+#     :IN_VERSIONS: the output variable containing the list of versions in the interval from...to.
+#
+#     :all_versions: parent_scope variable containing the list of all versions.
+#
+#     :from_version: lower bound of the version interval.
+#
+#     :to_version: upper bound of the version interval.
+#
+function(get_Versions_In_Interval IN_VERSIONS all_versions from_version to_version)
+set(temp_list ${${all_versions}})
+set(result_list)
+  foreach(element IN LISTS temp_list)
+    if(NOT element VERSION_LESS from_version
+    AND NOT element VERSION_GREATER to_version)
+      list(APPEND result_list ${element})
+    endif()
+  endforeach()
+set(${IN_VERSIONS} ${result_list} PARENT_SCOPE)
+endfunction(get_Versions_In_Interval)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |collect_Versions_From_Constraints| replace:: ``collect_Versions_From_Constraints``
+#  .. _collect_Versions_From_Constraints:
+#
+#  collect_Versions_From_Constraints
+#  ---------------------------------
+#
+#   .. command:: collect_Versions_From_Constraints(INTERVAL_VERSIONS package from_version to_version)
+#
+#   Collect all versions of a package that are in an interval [FROM...TO].
+#
+#     :INTERVAL_VERSIONS: the output variable containing the list of version in the interval from...to.
+#
+#     :package: name of the package for which versions in interval are computed.
+#
+#     :from_version: lower bound of the version interval.
+#
+#     :to_version: upper bound of the version interval.
+#
+function(collect_Versions_From_Constraints INTERVAL_VERSIONS package from_version to_version)
+get_Package_Type(${package} PACK_TYPE)
+set(${INTERVAL_VERSIONS} PARENT_SCOPE)
+
+#get the official known version (those published)
+if(NOT DEFINED ${package}_PID_KNOWN_VERSION)
+  set(DO_NOT_FIND_${package} TRUE)
+  include_Find_File(${package})#TODO check if no real problem when find file is NOT found
+  unset(DO_NOT_FIND_${package})
+endif()
+set(ALL_VERSIONS ${${package}_PID_KNOWN_VERSION})
+
+#then perform additionnal actions to get version that are only local (not published yet)
+set(MORE_VERSIONS)
+if(PACK_TYPE STREQUAL "EXTERNAL")
+  load_And_Configure_Wrapper(LOADED ${package})
+  if(LOADED)#wrapper available ... use its build file (maybe more up to date than published versions)
+    get_Wrapper_Known_Versions(MORE_VERSIONS ${package})
+  endif()
+else()#native package
+  #try to get all available versions directly from package repository (maybe more up to date than published ones)
+  get_Repository_Version_Tags(GIT_VERSIONS ${package}) #get all version tags
+  if(GIT_VERSIONS)
+    normalize_Version_Tags(MORE_VERSIONS "${GIT_VERSIONS}")
+  endif()
+endif()
+list(APPEND ALL_VERSIONS ${MORE_VERSIONS})
+if(ALL_VERSIONS)
+  list(REMOVE_DUPLICATES ALL_VERSIONS)
+  #some corrective actions before calling functions to get version in interval
+  if(NOT from_version)
+    set(from_version 0.0.0)
+  endif()
+  if(NOT to_version)
+    set(to_version 99999.99999.99999)
+  endif()
+  get_Versions_In_Interval(IN_VERSIONS ALL_VERSIONS ${from_version} ${to_version})
+  set(${INTERVAL_VERSIONS} ${IN_VERSIONS} PARENT_SCOPE)
+endif()
+endfunction(collect_Versions_From_Constraints)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |parse_Package_Dependency_All_Version_Arguments| replace:: ``parse_Package_Dependency_All_Version_Arguments``
+#  .. _parse_Package_Dependency_All_Version_Arguments:
+#
+#  parse_Package_Dependency_All_Version_Arguments
+#  ----------------------------------------------
+#
+#   .. command:: parse_Package_Dependency_All_Version_Arguments(package all_args LIST_OF_VERSIONS EXACT_VERSIONS REMAINING_TO_PARSE PARSE_RESULT)
+#
+#    Parse an expression that contains version constraints and fill corresponding output variables.
+#
+#     :package: name of the package used in the current depenency.
+#
+#     :all_args: parent scope variable containing string arguments to parse and that may contains version constraints expressions.
+#
+#     :LIST_OF_VERSIONS: the output variable containing a list of version.
+#
+#     :EXACT_VERSIONS: the output variable containing the list of exact versions.
+#
+#     :REMAINING_TO_PARSE: the output variable containing the remaining expressions after all version constraint expressions have been parsed.
+#
+#     :PARSE_RESULT: the output variable that is TRUE if parsing is OK, FALSE otherwise.
+#
+function(parse_Package_Dependency_All_Version_Arguments package all_args LIST_OF_VERSIONS EXACT_VERSIONS REMAINING_TO_PARSE PARSE_RESULT)
+  set(TO_PARSE "${${all_args}}")
+  set(${LIST_OF_VERSIONS} PARENT_SCOPE)
+  set(${EXACT_VERSIONS} PARENT_SCOPE)
+  set(${PARSE_RESULT} TRUE PARENT_SCOPE)
+  set(all_versions)
+  set(all_exact_versions)
+  set(already_from)
+  set(already_to)
+	set(RES_VERSION TRUE)#initialize to TRUE to enter the loop
+	while(TO_PARSE AND RES_VERSION)
+		parse_Package_Dependency_Version_Arguments("${TO_PARSE}" RES_VERSION ADDITIONNAL_CONSTRAINT TO_PARSE)
+    if(RES_VERSION)
+      if(ADDITIONNAL_CONSTRAINT)
+        if(ADDITIONNAL_CONSTRAINT STREQUAL "EXACT")
+          if(already_from)
+            message("[PID] ERROR : an EXACT VERSION expression cannot be used just after a FROM VERSION expression.")
+            set(${PARSE_RESULT} FALSE PARENT_SCOPE)
+            return()
+          else()
+            list(APPEND all_versions ${RES_VERSION})
+            list(APPEND all_exact_versions ${RES_VERSION})#simply adding the version to the two returned lists
+          endif()
+        elseif(ADDITIONNAL_CONSTRAINT STREQUAL "FROM")
+          if(already_from)
+            message("[PID] ERROR : a FROM VERSION expression cannot be used just after another FROM VERSION expression.")
+            set(${PARSE_RESULT} FALSE PARENT_SCOPE)
+            return()
+          else()
+            set(already_from ${RES_VERSION})
+            set(already_to)#reset to (if necessay) because a new interval is defined
+          endif()
+        elseif(ADDITIONNAL_CONSTRAINT STREQUAL "TO")
+          if(already_from)#ok we face a normal from...to... expression
+            if(already_from VERSION_LESS already_to)
+              message("[PID] ERROR : a TO VERSION expression must specify a version that is greater or equal than its preceding FROM VERSION expression.")
+              set(${PARSE_RESULT} FALSE PARENT_SCOPE)
+              return()
+            endif()
+            collect_Versions_From_Constraints(RES_INTERVAL_VERSIONS ${package} "${already_from}" "${RES_VERSION}")
+            list(APPEND all_versions ${RES_INTERVAL_VERSIONS})
+            set(already_from)#reset from... memory to be capable of defining multiple intervals
+          elseif(already_to)
+            message("[PID] ERROR : a TO VERSION expression cannot be used just after another TO VERSION expression.")
+            set(${PARSE_RESULT} FALSE PARENT_SCOPE)
+            return()
+          else()#to... without from... means "any previous version to"
+            collect_Versions_From_Constraints(RES_INTERVAL_VERSIONS ${package} "" "${RES_VERSION}")
+            list(APPEND all_versions ${RES_INTERVAL_VERSIONS})
+            set(already_to ${RES_VERSION})
+          endif()
+        endif()
+      else()#simple version constraint
+        list(APPEND all_versions ${RES_VERSION})
+			endif()
+		elseif(ADDITIONNAL_CONSTRAINT)#additionnal constraint without VERSION => error !
+      message("[PID] ERROR : you cannot use EXACT, FROM or TO keywords without using the VERSION keyword (e.g. EXACT VERSION 3.0.2).")
+      set(${PARSE_RESULT} FALSE PARENT_SCOPE)
+      return()
+    endif()
+	endwhile()
+  #need to manage the "closing" of a FROM expression
+  if(already_from)# collect all known versions from the specified one
+    collect_Versions_From_Constraints(RES_INTERVAL_VERSIONS ${package} "${already_from}" "")
+    list(APPEND all_versions ${RES_INTERVAL_VERSIONS})
+  endif()
+  #produce the reply
+  if(all_versions)
+    list(REVERSE all_versions)
+  endif()
+  set(${REMAINING_TO_PARSE} ${TO_PARSE} PARENT_SCOPE)
+  set(${LIST_OF_VERSIONS} ${all_versions} PARENT_SCOPE)
+  set(${EXACT_VERSIONS} ${all_exact_versions} PARENT_SCOPE)
+endfunction(parse_Package_Dependency_All_Version_Arguments)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Version_String_Numbers| replace:: ``get_Version_String_Numbers``
+#  .. _get_Version_String_Numbers:
+#
+#  get_Version_String_Numbers
+#  --------------------------
+#
+#   .. command:: get_Version_String_Numbers(version_string major minor patch)
+#
+#    Parse a version string to extract major, minor and patch numbers.
+#
+#     :version_string: the version string to parse.
+#
+#     :MAJOR: the output variable set to the value of version major number.
+#
+#     :MINOR: the output variable set to the value of version minor number.
+#
+#     :PATCH: the output variable set to the value of version patch number.
+#
+function(get_Version_String_Numbers version_string MAJOR MINOR PATCH)
+if(version_string MATCHES "^([0-9]+)(\\.([0-9]+))?(\\.([0-9]+))?\\.?(.*)$") # version string is well formed with major.minor.patch (at least) format
+	set(${MAJOR} ${CMAKE_MATCH_1} PARENT_SCOPE)
+	set(${MINOR} ${CMAKE_MATCH_3} PARENT_SCOPE)
+	set(${PATCH} ${CMAKE_MATCH_5} PARENT_SCOPE)
+else() #not even a number
+  set(${MAJOR} PARENT_SCOPE)
+  set(${MINOR} PARENT_SCOPE)
+  set(${PATCH} PARENT_SCOPE)
+endif()
+endfunction(get_Version_String_Numbers)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_Version_Subdirectories| replace:: ``list_Version_Subdirectories``
+#  .. _list_Version_Subdirectories:
+#
+#  list_Version_Subdirectories
+#  ---------------------------
+#
+#   .. command:: list_Version_Subdirectories(RESULT curdir)
+#
+#    Get the list of all subfolder of a given folder that match the pattern : "major.minor.patch".
+#
+#     :curdir: the path to a folder that may contain version subfolders.
+#
+#     :RESULT: the output variable scontaining the list of all version sufolders.
+#
+function(list_Version_Subdirectories RESULT curdir)
+	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	set(dirlist "")
+	foreach(child ${children})
+		if(IS_DIRECTORY ${curdir}/${child} AND "${child}" MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$")
+			list(APPEND dirlist ${child})
+		endif()
+	endforeach()
+  list(SORT dirlist)
+	set(${RESULT} ${dirlist} PARENT_SCOPE)
+endfunction(list_Version_Subdirectories)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Greater_Version| replace:: ``get_Greater_Version``
+#  .. _get_Greater_Version:
+#
+#  get_Greater_Version
+#  -------------------
+#
+#   .. command:: get_Greater_Version(GREATER_ONE list_of_versions)
+#
+#    Get the greater version from a list of versions.
+#
+#     :list_of_versions: the list of versions.
+#
+#     :GREATER_ONE: the output variable scontaining the max version found in list.
+#
+function(get_Greater_Version GREATER_ONE list_of_versions)
+  set(version_string_curr)
+  foreach(version IN LISTS list_of_versions)
+    if(NOT version_string_curr)
+        set(version_string_curr ${version})
+    elseif(version_string_curr VERSION_LESS ${version})
+      set(version_string_curr ${version})
+    endif()
+  endforeach()
+  set(${GREATER_ONE} ${version_string_curr} PARENT_SCOPE)
+endfunction(get_Greater_Version)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_Platform_Symlinks| replace:: ``list_Platform_Symlinks``
+#  .. _list_Platform_Symlinks:
+#
+#  list_Platform_Symlinks
+#  ----------------------
+#
+#   .. command:: list_Platform_Symlinks(RESULT curdir)
+#
+#    Get the list of all symlink from a given folder, with each symlink pointing to a folder with a platform name pattern (e.g. x86_64_linux_abi11).
+#
+#     :curdir: the folder to find symlinks in.
+#
+#     :RESULT: the output variable containing the list of symlinks.
+#
+function(list_Platform_Symlinks RESULT curdir)
+	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	set(dirlist "")
+	foreach(child ${children})
+		if(IS_SYMLINK ${curdir}/${child})
+      if("${child}" MATCHES "^[^_]+_[^_]+_[^_]+_[^_]+$")
+  			list(APPEND dirlist ${child})
+      elseif("${child}" MATCHES "^[^_]+_[^_]+_[^_]+$")
+  			list(APPEND dirlist ${child})
+      endif()
+		endif()
+	endforeach()
+  list(SORT dirlist)
+	set(${RESULT} ${dirlist} PARENT_SCOPE)
+endfunction(list_Platform_Symlinks)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_Platform_Subdirectories| replace:: ``list_Platform_Subdirectories``
+#  .. _list_Platform_Subdirectories:
+#
+#  list_Platform_Subdirectories
+#  ----------------------------
+#
+#   .. command:: list_Platform_Subdirectories(RESULT curdir)
+#
+#    Get the list of all direct subfolders of a given folder, each folder with a platform name pattern (e.g. x86_64_linux_abi11).
+#
+#     :curdir: the folder to find platform subfolders in.
+#
+#     :RESULT: the output variable containing the list of platform subfolders.
+#
+function(list_Platform_Subdirectories RESULT curdir)
+	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	set(dirlist "")
+  if(children)
+  	foreach(child ${children})
+  		if(IS_DIRECTORY ${curdir}/${child}
+  			AND NOT IS_SYMLINK ${curdir}/${child}
+  			AND "${child}" MATCHES "^[^_]+_[^_]+_[^_]+_[^_]+(__.+__)?$")#platform name pattern takes into account pontential environment instance
+  			list(APPEND dirlist ${child})
+  		endif()
+  	endforeach()
+  endif()
+	set(${RESULT} ${dirlist} PARENT_SCOPE)
+endfunction(list_Platform_Subdirectories)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_Subdirectories| replace:: ``list_Subdirectories``
+#  .. _list_Subdirectories:
+#
+#  list_Subdirectories
+#  -------------------
+#
+#   .. command:: list_Subdirectories(RESULT curdir)
+#
+#    Get the list of all direct subfolders of a given folder.
+#
+#     :curdir: the folder to find subfolders in.
+#
+#     :RESULT: the output variable containing the list of subfolders.
+#
+function(list_Subdirectories RESULT curdir)
+	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	set(dirlist "")
+	foreach(child ${children})
+		if(IS_DIRECTORY ${curdir}/${child})
+			list(APPEND dirlist ${child})
+		endif()
+	endforeach()
+	set(${RESULT} ${dirlist} PARENT_SCOPE)
+endfunction(list_Subdirectories)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_Regular_Files| replace:: ``list_Regular_Files``
+#  .. _list_Regular_Files:
+#
+#  list_Regular_Files
+#  -------------------
+#
+#   .. command:: list_Regular_Files(RESULT curdir)
+#
+#    Get the list of all regular files into a given folder.
+#
+#     :curdir: the folder to find regular files in.
+#
+#     :RESULT: the output variable containing the list of regular files names.
+#
+function(list_Regular_Files RESULT curdir)
+	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	set(filelist "")
+	foreach(child ${children})
+		if(NOT IS_DIRECTORY ${curdir}/${child} AND NOT IS_SYMLINK ${curdir}/${child})
+			list(APPEND filelist ${child})
+		endif()
+	endforeach()
+	set(${RESULT} ${filelist} PARENT_SCOPE)
+endfunction(list_Regular_Files)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Compatible_Version| replace:: ``is_Compatible_Version``
+#  .. _is_Compatible_Version:
+#
+#  is_Compatible_Version
+#  ---------------------
+#
+#   .. command:: is_Compatible_Version(COMPATIBLE reference_major reference_minor version_to_compare)
+#
+#    Tell whether a reference version is compatible with (i.e. can be used instead of) another version. Means that their major version are the same and compared version has same or lower minor version number.
+#
+#     :reference_major: the major number of the reference version.
+#
+#     :reference_minor: the minor number of the reference version.
+#
+#     :version_to_compare: the version string of the compared version
+#
+#     :COMPATIBLE: the output variable that is TRUE if reference version is compatible with version_to_compare.
+#
+function(is_Compatible_Version COMPATIBLE reference_major reference_minor version_to_compare)
+set(${COMPATIBLE} FALSE PARENT_SCOPE)
+get_Version_String_Numbers("${version_to_compare}.0" compare_major compare_minor compared_patch)
+if(NOT compare_major EQUAL reference_major OR compare_minor GREATER reference_minor)
+	return()#not compatible
+endif()
+set(${COMPATIBLE} TRUE PARENT_SCOPE)
+endfunction(is_Compatible_Version)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Exact_Compatible_Version| replace:: ``is_Exact_Compatible_Version``
+#  .. _is_Exact_Compatible_Version:
+#
+#  is_Exact_Compatible_Version
+#  ---------------------------
+#
+#   .. command:: is_Exact_Compatible_Version(COMPATIBLE reference_major reference_minor version_to_compare)
+#
+#    Tell whether a version is compatible with a reference version if an exact constraint is applied. Means that their major and minor version number are the same.
+#
+#     :reference_major: the major number of the reference version.
+#
+#     :reference_minor: the minor number of the reference version.
+#
+#     :version_to_compare: the version string of the compared version
+#
+#     :COMPATIBLE: the output variable that is TRUE if version_to_compare is compatible with reference version
+#
+function(is_Exact_Compatible_Version COMPATIBLE reference_major reference_minor version_to_compare)
+set(${COMPATIBLE} FALSE PARENT_SCOPE)
+get_Version_String_Numbers("${version_to_compare}.0" compare_major compare_minor compared_patch)
+if(	NOT (compare_major EQUAL reference_major)
+    OR NOT (compare_minor EQUAL reference_minor))
+	return()#not compatible
+endif()
+set(${COMPATIBLE} TRUE PARENT_SCOPE)
+endfunction(is_Exact_Compatible_Version)
+
+#############################################################
+################ Information about authors ##################
+#############################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Full_Author_String| replace:: ``generate_Full_Author_String``
+#  .. _generate_Full_Author_String:
+#
+#  generate_Full_Author_String
+#  ---------------------------
+#
+#   .. command:: generate_Full_Author_String(author RES_STRING)
+#
+#    Transform an author string from an internal format to a readable format (ready to be used in any information output for the user).
+#
+#     :author: the author description internal string (e.g. "firstname_lastname(all_words_of_the_institution)").
+#
+#     :RES_STRING: the output variable that contains the author information string in a readable format.
+#
+function(generate_Full_Author_String author RES_STRING)
+string(REGEX REPLACE "^([^\\(]+)\\(([^\\)]+)\\)$" "\\1;\\2" author_institution "${author}")
+if(author_institution STREQUAL "${author}")
+	string(REGEX REPLACE "^([^\\(]+)\\(([^\\)]*)\\)$" "\\1;\\2" author_institution "${author}")
+	list(GET author_institution 0 AUTHOR_NAME)
+	set(INSTITUTION_NAME)
+else()
+	list(GET author_institution 0 AUTHOR_NAME)
+	list(GET author_institution 1 INSTITUTION_NAME)
+endif()
+extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
+extract_All_Words("${INSTITUTION_NAME}" "_" INSTITUTION_ALL_WORDS)
+fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
+fill_String_From_List(INSTITUTION_ALL_WORDS INSTITUTION_STRING)
+if(NOT INSTITUTION_STRING STREQUAL "")
+	set(${RES_STRING} "${AUTHOR_STRING} (${INSTITUTION_STRING})" PARENT_SCOPE)
+else()
+	set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
+endif()
+endfunction(generate_Full_Author_String)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Contact_String| replace:: ``generate_Contact_String``
+#  .. _generate_Contact_String:
+#
+#  generate_Contact_String
+#  -----------------------
+#
+#   .. command:: generate_Contact_String(author mail RES_STRING)
+#
+#    Transform a contact author string from an internal format to a readable format (ready to be used in any information output for the user).
+#
+#     :author: the author description internal string (e.g. "firstname_lastname").
+#
+#     :mail: the mail of the contact author.
+#
+#     :RES_STRING: the output variable that contains the contact author information string in a readable format.
+#
+function(generate_Contact_String author mail RES_STRING)
+extract_All_Words("${author}" "_" AUTHOR_ALL_WORDS)
+fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
+if(mail AND NOT mail STREQUAL "")
+	set(${RES_STRING} "${AUTHOR_STRING} (${mail})" PARENT_SCOPE)
+else()
+	set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
+endif()
+endfunction(generate_Contact_String)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Formatted_Framework_Contact_String| replace:: ``get_Formatted_Framework_Contact_String``
+#  .. _get_Formatted_Framework_Contact_String:
+#
+#  get_Formatted_Framework_Contact_String
+#  --------------------------------------
+#
+#   .. command:: get_Formatted_Framework_Contact_String(framework RES_STRING)
+#
+#    Transform a string from an internal format to a readable format used in framework static site.
+#
+#     :framework: the name of target framework.
+#
+#     :RES_STRING: the output variable that contains the string in a readable format.
+#
+function(get_Formatted_Framework_Contact_String framework RES_STRING)
+extract_All_Words("${${framework}_FRAMEWORK_MAIN_AUTHOR}" "_" AUTHOR_ALL_WORDS)
+extract_All_Words("${${framework}_FRAMEWORK_MAIN_INSTITUTION}" "_" INSTITUTION_ALL_WORDS)
+fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
+fill_String_From_List(INSTITUTION_ALL_WORDS INSTITUTION_STRING)
+if(NOT INSTITUTION_STRING STREQUAL "")
+	if(${framework}_FRAMEWORK_CONTACT_MAIL)
+		set(${RES_STRING} "${AUTHOR_STRING} (${${framework}_FRAMEWORK_CONTACT_MAIL}) - ${INSTITUTION_STRING}" PARENT_SCOPE)
+	else()
+		set(${RES_STRING} "${AUTHOR_STRING} - ${INSTITUTION_STRING}" PARENT_SCOPE)
+	endif()
+else()
+	if(${package}_FRAMEWORK_CONTACT_MAIL)
+		set(${RES_STRING} "${AUTHOR_STRING} (${${framework}_FRAMEWORK_CONTACT_MAIL})" PARENT_SCOPE)
+	else()
+		set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
+	endif()
+endif()
+endfunction(get_Formatted_Framework_Contact_String)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Formatted_String| replace:: ``generate_Formatted_String``
+#  .. _generate_Formatted_String:
+#
+#  generate_Formatted_String
+#  -------------------------
+#
+#   .. command:: generate_Formatted_String(input RES_STRING)
+#
+#    Transform a string from an internal format to a readable format (ready to be used in any information output for the user).
+#
+#     :input: the string with internal format (e.g. "one_two_three").
+#
+#     :RES_STRING: the output variable that contains the string in a readable format.
+#
+function(generate_Formatted_String input RES_STRING)
+extract_All_Words("${input}" "_" INPUT_ALL_WORDS)
+fill_String_From_List(INPUT_ALL_WORDS INPUT_STRING)
+set(${RES_STRING} "${INPUT_STRING}" PARENT_SCOPE)
+endfunction(generate_Formatted_String)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Formatted_Author_String| replace:: ``get_Formatted_Author_String``
+#  .. _get_Formatted_Author_String:
+#
+#  get_Formatted_Author_String
+#  ---------------------------
+#
+#   .. command:: get_Formatted_Author_String(author RES_STRING)
+#
+#    Transform an author string from an internal format to a readable format.
+#
+#     :author: the author data in internal format.
+#
+#     :RES_STRING: the output variable that contains the author string in a readable format.
+#
+function(get_Formatted_Author_String author RES_STRING)
+string(REGEX REPLACE "^([^\\(]+)\\(([^\\)]*)\\)$" "\\1;\\2" author_institution "${author}")
+list(LENGTH author_institution SIZE)
+if(SIZE EQUAL 2)
+  list(GET author_institution 0 AUTHOR_NAME)
+  list(GET author_institution 1 INSTITUTION_NAME)
+  extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
+  extract_All_Words("${INSTITUTION_NAME}" "_" INSTITUTION_ALL_WORDS)
+  fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
+  fill_String_From_List(INSTITUTION_ALL_WORDS INSTITUTION_STRING)
+elseif(SIZE EQUAL 1)
+  list(GET author_institution 0 AUTHOR_NAME)
+  extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
+  fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
+  set(INSTITUTION_STRING "")
+endif()
+if(NOT INSTITUTION_STRING STREQUAL "")
+	set(${RES_STRING} "${AUTHOR_STRING} - ${INSTITUTION_STRING}" PARENT_SCOPE)
+else()
+	set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
+endif()
+endfunction(get_Formatted_Author_String)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Formatted_Package_Contact_String| replace:: ``get_Formatted_Package_Contact_String``
+#  .. _get_Formatted_Package_Contact_String:
+#
+#  get_Formatted_Package_Contact_String
+#  ------------------------------------
+#
+#   .. command:: get_Formatted_Package_Contact_String(package RES_STRING)
+#
+#    Transform a string from an internal format to a readable format used in package description (static site, workspace commands).
+#
+#     :package: the name of target package.
+#
+#     :RES_STRING: the output variable that contains the contact string in a readable format.
+#
+function(get_Formatted_Package_Contact_String package RES_STRING)
+extract_All_Words("${${package}_MAIN_AUTHOR}" "_" AUTHOR_ALL_WORDS)
+extract_All_Words("${${package}_MAIN_INSTITUTION}" "_" INSTITUTION_ALL_WORDS)
+fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
+fill_String_From_List(INSTITUTION_ALL_WORDS INSTITUTION_STRING)
+if(NOT INSTITUTION_STRING STREQUAL "")
+	if(${package}_CONTACT_MAIL)
+		set(${RES_STRING} "${AUTHOR_STRING} (${${package}_CONTACT_MAIL}) - ${INSTITUTION_STRING}" PARENT_SCOPE)
+	else()
+		set(${RES_STRING} "${AUTHOR_STRING} - ${INSTITUTION_STRING}" PARENT_SCOPE)
+	endif()
+else()
+	if(${package}_CONTACT_MAIL)
+		set(${RES_STRING} "${AUTHOR_STRING} (${${package}_CONTACT_MAIL})" PARENT_SCOPE)
+	else()
+		set(${RES_STRING} "${AUTHOR_STRING}" PARENT_SCOPE)
+	endif()
+endif()
+endfunction(get_Formatted_Package_Contact_String)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |package_License_Is_Closed_Source| replace:: ``package_License_Is_Closed_Source``
+#  .. _package_License_Is_Closed_Source:
+#
+#  package_License_Is_Closed_Source
+#  --------------------------------
+#
+#   .. command:: package_License_Is_Closed_Source(CLOSED package is_external)
+#
+#    Check whether the license applying to a package is closed source or not.
+#
+#     :package: the name of the package.
+#
+#     :is_external: if TRUE then the package is an external package.
+#
+#     :CLOSED: the output variable that is TRUE if package is closed source.
+#
+function(package_License_Is_Closed_Source CLOSED package is_external)
+	#first step determining if the dependent package provides its license in its use file (compatiblity with previous version of PID)
+	if(NOT ${package}_LICENSE)
+    if(is_external)
+      include_External_Reference_File(PATH_TO_FILE ${package})
+      if(NOT PATH_TO_FILE)#we consider the package as having an opensource license when no information provided
+  			set(${CLOSED} FALSE PARENT_SCOPE)
+  			return()
+  		endif()
+    else()
+      include_Package_Reference_File(PATH_TO_FILE ${package})
+  		if(NOT PATH_TO_FILE)#we consider the package as having an opensource license when no information provided
+  			set(${CLOSED} FALSE PARENT_SCOPE)
+  			return()
+  		endif()
+    endif()
+	endif()
+	set(found_license_description FALSE)
+	if(KNOWN_LICENSES)
+		list(FIND KNOWN_LICENSES ${${package}_LICENSE} INDEX)
+		if(NOT INDEX EQUAL -1)
+			set(found_license_description TRUE)
+		endif()#otherwise license has never been loaded so do not know if open or closed source
+	endif()#otherwise license is unknown for now
+	if(NOT found_license_description)
+		#trying to find that license
+    check_License_File(PATH_TO_FILE ${${package}_LICENSE})
+    if(NOT PATH_TO_FILE)
+      set(${CLOSED} TRUE PARENT_SCOPE)
+      message("[PID] ERROR : cannot find description file for license ${${package}_LICENSE}, specified for package ${package}. Package is supposed to be closed source.")
+      return()
+    endif()
+    include(${PATH_TO_FILE})
+		set(temp_list ${KNOWN_LICENSES} ${${package}_LICENSE} CACHE INTERNAL "")
+		list(REMOVE_DUPLICATES temp_list)
+		set(KNOWN_LICENSES ${temp_list} CACHE INTERNAL "")#adding the license to known licenses
+
+		if(LICENSE_IS_OPEN_SOURCE)
+			set(KNOWN_LICENSE_${${package}_LICENSE}_CLOSED FALSE CACHE INTERNAL "")
+		else()
+			set(KNOWN_LICENSE_${${package}_LICENSE}_CLOSED TRUE CACHE INTERNAL "")
+		endif()
+	endif()
+	# here the license is already known, simply checking for the registered values
+	# this memorization is to optimize configuration time as License file may be long to load
+	set(${CLOSED} ${KNOWN_LICENSE_${${package}_LICENSE}_CLOSED} PARENT_SCOPE)
+endfunction(package_License_Is_Closed_Source)
+
+#############################################################
+################ Source file management #####################
+#############################################################
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |activate_Adequate_Languages| replace:: ``activate_Adequate_Languages``
+#  .. _activate_Adequate_Languages:
+#
+#  activate_Adequate_Languages
+#  ---------------------------
+#
+#   .. command:: activate_Adequate_Languages()
+#
+#    Activate adequate languages in the current CMake project, depending on source file used in the project.
+#
+macro(activate_Adequate_Languages)
+
+#enable assembler by default => assembler will be used anytime because it is a C/C++ project
+enable_language(ASM)#use assembler
+
+if(CMAKE_Fortran_COMPILER)
+  enable_language(Fortran)#use fortran
+endif()
+
+if(CMAKE_CUDA_COMPILER)#if a CUDA compiler is defined by the current environment, then enable language
+  if(NOT CMAKE_VERSION VERSION_LESS 3.8)# CMake 3.8+ supports CUDA
+    set(temp_flags ${CMAKE_CUDA_FLAGS})#need to deactivate forced flags to avoid problems when detecting language
+    set(CMAKE_CUDA_FLAGS CACHE INTERNAL "" FORCE)
+    enable_language(CUDA)#use cuda compiler
+    set(CMAKE_CUDA_FLAGS ${temp_flags} CACHE INTERNAL "" FORCE)
+  endif()
+endif()
+
+endmacro(activate_Adequate_Languages)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |filter_All_Sources| replace:: ``filter_All_Sources``
+#  .. _filter_All_Sources:
+#
+#  filter_All_Sources
+#  -------------------
+#
+#   .. command:: filter_All_Sources(LIST_TO_FILTER)
+#
+#    Filter the input list by keeping only c/c++ source files.
+#
+#     :LIST_TO_FILTER: the input and output variable that contains all source files path.
+#
+function(filter_All_Sources LIST_TO_FILTER)
+  set(temp_sources_to_check)
+  if(LIST_TO_FILTER AND ${LIST_TO_FILTER})
+    foreach(source IN LISTS ${LIST_TO_FILTER})
+      if(source MATCHES "^.+\\.(c|C|cc|cpp|cxx|c\\+\\+|h|hh|hpp|hxx)$" # a file with specific C/C++ extension
+          OR source MATCHES "^[^.]+$" )# a file without extension
+        list(APPEND temp_sources_to_check ${source})
+      endif()
+    endforeach()
+  endif()
+set (${LIST_TO_FILTER} ${temp_sources_to_check} PARENT_SCOPE)
+endfunction(filter_All_Sources)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_All_Sources_Relative| replace:: ``get_All_Sources_Relative``
+#  .. _get_All_Sources_Relative:
+#
+#  get_All_Sources_Relative
+#  ------------------------
+#
+#   .. command:: get_All_Sources_Relative(RESULT dir)
+#
+#    Get all the relative path of source files found in a folder (and its subfolders).
+#
+#     :dir: the path to the folder
+#
+#     :RESULT: the output variable that contains all source files path relative to the folder.
+#
+function(get_All_Sources_Relative RESULT dir)
+file(	GLOB_RECURSE
+	RES
+	RELATIVE ${dir}
+	"${dir}/*.c"
+	"${dir}/*.C"
+	"${dir}/*.cc"
+	"${dir}/*.cpp"
+	"${dir}/*.cxx"
+	"${dir}/*.c++"
+	"${dir}/*.h"
+	"${dir}/*.hpp"
+	"${dir}/*.hh"
+	"${dir}/*.hxx"
+	"${dir}/*.h++"
+	"${dir}/*.s"
+	"${dir}/*.S"
+	"${dir}/*.asm"
+	"${dir}/*.f"
+	"${dir}/*.py"
+)
+set (${RESULT} ${RES} PARENT_SCOPE)
+endfunction(get_All_Sources_Relative)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_All_Sources_Absolute| replace:: ``get_All_Sources_Absolute``
+#  .. _get_All_Sources_Absolute:
+#
+#  get_All_Sources_Absolute
+#  ------------------------
+#
+#   .. command:: get_All_Sources_Absolute(RESULT dir)
+#
+#    Get the absolute path of all the source files found in a folder (and subfolders). Absolute sources do not take into account python files as they will not be part of a build process.
+#
+#     :dir: the path to the folder
+#
+#     :RESULT: the output variable that contains all source files path.
+#
+function(get_All_Sources_Absolute RESULT dir)
+file(	GLOB_RECURSE
+	RES
+	${dir}
+	"${dir}/*.c"
+	"${dir}/*.C"
+	"${dir}/*.cc"
+	"${dir}/*.cpp"
+	"${dir}/*.c++"
+	"${dir}/*.cxx"
+	"${dir}/*.h"
+	"${dir}/*.hpp"
+	"${dir}/*.h++"
+	"${dir}/*.hh"
+	"${dir}/*.hxx"
+	"${dir}/*.s"
+	"${dir}/*.S"
+	"${dir}/*.asm"
+	"${dir}/*.f"
+)
+set (${RESULT} ${RES} PARENT_SCOPE)
+endfunction(get_All_Sources_Absolute)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_All_Cpp_Sources_Absolute| replace:: ``get_All_Cpp_Sources_Absolute``
+#  .. _get_All_Cpp_Sources_Absolute:
+#
+#  get_All_Cpp_Sources_Absolute
+#  ----------------------------
+#
+#   .. command:: get_All_Cpp_Sources_Absolute(RESULT dir)
+#
+#    Get the absolute path of all the C/C++ source files found in a folder (and subfolders).
+#
+#     :dir: the path to the folder
+#
+#     :RESULT: the output variable that contains all source files path.
+#
+function(get_All_Cpp_Sources_Absolute RESULT dir)
+file(	GLOB_RECURSE
+	RES
+	${dir}
+	"${dir}/*.c"
+	"${dir}/*.C"
+	"${dir}/*.cc"
+	"${dir}/*.cpp"
+	"${dir}/*.c++"
+	"${dir}/*.cxx"
+	"${dir}/*.h"
+	"${dir}/*.hpp"
+	"${dir}/*.h++"
+	"${dir}/*.hh"
+	"${dir}/*.hxx"
+)
+set (${RESULT} ${RES} PARENT_SCOPE)
+endfunction(get_All_Cpp_Sources_Absolute)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_All_Sources_Absolute_From| replace:: ``get_All_Sources_Absolute_From``
+#  .. _get_All_Sources_Absolute_From:
+#
+#  get_All_Sources_Absolute_From
+#  -----------------------------
+#
+#   .. command:: get_All_Sources_Absolute_From(PATH_TO_SOURCES LIST_OF_INCLUDES root_dir list_of_path)
+#
+#    List all source files absolute path that are contained in a set of path expressed relative to a root path. If a path given targets a folder that contains header files, this  path is added to the list of monitored include folders.
+#    Path to source files are simply added to the list.
+#
+#     :root_dir: the path to the root folder, path are expressed reltive to.
+#
+#     :list_of_path: the list of path to scan.
+#
+#     :PATH_TO_SOURCES: the ouput variable containing the list of path to source files that are contained in list_of_path.
+#
+#     :LIST_OF_INCLUDES: the ouput variable containing the list of absolute path to include folder from list_of_path.
+#
+function(get_All_Sources_Absolute_From PATH_TO_SOURCES LIST_OF_INCLUDES root_dir list_of_path)
+set(all_sources)
+set(all_includes)
+set(${PATH_TO_SOURCES} PARENT_SCOPE)
+set(${LIST_OF_INCLUDES} PARENT_SCOPE)
+foreach(path IN LISTS list_of_path)
+  if(EXISTS "${root_dir}/${path}")
+    if(IS_DIRECTORY "${root_dir}/${path}")
+      get_All_Sources_Absolute(DIR_SRC "${root_dir}/${path}")
+      list(APPEND all_sources "${DIR_SRC}")
+      get_All_Headers_Absolute(ALL_HEADERS "${root_dir}/${path}" "")
+      if(ALL_HEADERS)#if there are headers into the folder simply add this folder as an include folder
+        list(APPEND all_includes "${root_dir}/${path}")
+      endif()
+    else()
+      list(APPEND all_sources "${root_dir}/${path}")
+    endif()
+  endif()
+endforeach()
+set(${LIST_OF_INCLUDES} ${all_includes}  PARENT_SCOPE)
+set(${PATH_TO_SOURCES} ${all_sources} PARENT_SCOPE)
+endfunction(get_All_Sources_Absolute_From)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_All_Sources_Relative_From| replace:: ``get_All_Sources_Relative_From``
+#  .. _get_All_Sources_Relative_From:
+#
+#  get_All_Sources_Relative_From
+#  -----------------------------
+#
+#   .. command:: get_All_Sources_Relative_From(PATH_TO_SOURCES MONITORED_FOLDER root_dir list_of_path)
+#
+#    List all source files path relative from a root path that are contained in a set of path. If a path given target a folder its content is recursively added and the path is added to the monitored folders. Path to source files are simply added to the list.
+#
+#     :root_dir: the path to the root folder, path are expressed reltive to.
+#
+#     :list_of_path: the list of path to scan.
+#
+#     :PATH_TO_SOURCES: the ouput variable containing the list of path to source files that are contained in list_of_path.
+#
+#     :MONITORED_FOLDER: the ouput variable containing the list of path to folder from list_of_path.
+#
+function(get_All_Sources_Relative_From PATH_TO_SOURCES MONITORED_FOLDER root_dir list_of_path)
+set(RESULT)
+set(MONITOR)
+set(${PATH_TO_SOURCES} PARENT_SCOPE)
+set(${MONITORED_FOLDER} PARENT_SCOPE)
+foreach(path IN LISTS list_of_path)
+  if(EXISTS "${root_dir}/${path}")
+    if(IS_DIRECTORY "${root_dir}/${path}")
+      list(APPEND MONITOR ${path})#directly add the relative path to monitored elements
+      get_All_Sources_Relative(DIR_SRC "${root_dir}/${path}")
+      foreach(src IN LISTS DIR_SRC)
+        list(APPEND temp_rel_src "${path}/${src}")
+      endforeach()
+      list(APPEND RESULT ${temp_rel_src})
+    else()
+      list(APPEND RESULT "${path}")
+    endif()
+  endif()
+endforeach()
+set(${PATH_TO_SOURCES} ${RESULT} PARENT_SCOPE)
+set(${MONITORED_FOLDER} ${MONITOR} PARENT_SCOPE)
+endfunction(get_All_Sources_Relative_From)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |contains_Python_Code| replace:: ``contains_Python_Code``
+#  .. _contains_Python_Code:
+#
+#  contains_Python_Code
+#  --------------------
+#
+#   .. command:: contains_Python_Code(HAS_PYTHON dir)
+#
+#    Tell whether a folder contains python script or not.
+#
+#     :dir: the path to the folder
+#
+#     :HAS_PYTHON: the output variable that is TRUE if folder contains python code.
+#
+function(contains_Python_Code HAS_PYTHON dir)
+file(GLOB_RECURSE HAS_PYTHON_CODE ${dir} "${dir}/*.py")
+set(${HAS_PYTHON} ${HAS_PYTHON_CODE} PARENT_SCOPE)
+endfunction(contains_Python_Code)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |contains_Python_Package_Description| replace:: ``contains_Python_Package_Description``
+#  .. _contains_Python_Package_Description:
+#
+#  contains_Python_Package_Description
+#  -----------------------------------
+#
+#   .. command:: contains_Python_Package_Description(IS_PYTHON_PACK dir)
+#
+#    Tell whether a folder is a python package or not.
+#
+#     :dir: the path to the folder
+#
+#     :IS_PYTHON_PACK: the output variable that is TRUE if folder is a python package.
+#
+function(contains_Python_Package_Description IS_PYTHON_PACK dir)
+	file(GLOB PY_PACK_FILE RELATIVE ${dir} "${dir}/__init__.py")
+	set(${IS_PYTHON_PACK} ${PY_PACK_FILE} PARENT_SCOPE)
+endfunction(contains_Python_Package_Description)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_All_Headers_Relative| replace:: ``get_All_Headers_Relative``
+#  .. _get_All_Headers_Relative:
+#
+#  get_All_Headers_Relative
+#  ------------------------
+#
+#   .. command:: get_All_Headers_Relative(RESULT dir)
+#
+#    Get all the relative path of header files found in a folder (and its subfolders).
+#
+#     :dir: the path to the folder
+#
+#     :filters: custom filters provided by the user, that target header files relative to dir (used for instance for headers without extension)
+#
+#     :RESULT: the output variable that contains all header files path relative to the folder.
+#
+function(get_All_Headers_Relative RESULT dir filters)
+set(LIST_OF_FILTERS)
+foreach(filter IN LISTS filters)
+  list(APPEND LIST_OF_FILTERS "${dir}/${filter}")
+endforeach()
+
+file(	GLOB_RECURSE
+	RES
+	RELATIVE ${dir}
+	"${dir}/*.h"
+	"${dir}/*.hpp"
+	"${dir}/*.hh"
+	"${dir}/*.hxx"
+	"${dir}/*.h++"
+  ${LIST_OF_FILTERS}
+)
+set (${RESULT} ${RES} PARENT_SCOPE)
+endfunction(get_All_Headers_Relative)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_All_Headers_Absolute| replace:: ``get_All_Headers_Absolute``
+#  .. _get_All_Headers_Absolute:
+#
+#  get_All_Headers_Absolute
+#  ------------------------
+#
+#   .. command:: get_All_Headers_Absolute(RESULT dir filters)
+#
+#    Get the absolute path of all the header files found in a folder (and subfolders).
+#
+#     :dir: the path to the folder
+#
+#     :filters: custom filters provided by the user, that target header files relative to dir (used for instance for headers without extension)
+#
+#     :RESULT: the output variable that contains all header files absolute path.
+#
+function(get_All_Headers_Absolute RESULT dir filters)
+  set(LIST_OF_FILTERS)
+  foreach(filter IN LISTS filters)
+    list(APPEND LIST_OF_FILTERS "${dir}/${filter}")
+  endforeach()
+
+file(	GLOB_RECURSE
+	RES
+	${dir}
+	"${dir}/*.h"
+	"${dir}/*.hpp"
+	"${dir}/*.hh"
+	"${dir}/*.hxx"
+  ${LIST_OF_FILTERS}
+)
+set (${RESULT} ${RES} PARENT_SCOPE)
+endfunction(get_All_Headers_Absolute)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Shared_Lib_With_Path| replace:: ``is_Shared_Lib_With_Path``
+#  .. _is_Shared_Lib_With_Path:
+#
+#  is_Shared_Lib_With_Path
+#  -----------------------
+#
+#   .. command:: is_Shared_Lib_With_Path(SHARED input_link)
+#
+#    Tell whether the path to a binary object is a shared/dynamic library.
+#
+#     :input_link: the path to a given binary
+#
+#     :SHARED: the output variable that is TRUE .
+#
+function(is_Shared_Lib_With_Path SHARED input_link)
+set(${SHARED} FALSE PARENT_SCOPE)
+get_filename_component(LIB_TYPE ${input_link} EXT)
+if(LIB_TYPE)
+  if(APPLE)
+      if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib
+        set(${SHARED} TRUE PARENT_SCOPE)
+      endif()
+  elseif(UNIX)
+      if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.so(\\.[0-9]+)*$")#found shared lib
+        set(${SHARED} TRUE PARENT_SCOPE)
+      endif()
+  elseif(WIN32)
+     if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dll(\\.[0-9]+)*$")#found shared lib
+        set(${SHARED} TRUE PARENT_SCOPE)
+     endif()
+  endif()
+else()
+   # no extenion may be possible with MACOSX frameworks
+  if(APPLE)
+     set(${SHARED} TRUE PARENT_SCOPE)
+  endif()
+endif()
+endfunction(is_Shared_Lib_With_Path)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Library_Dirs_For_Links| replace:: ``get_Library_Dirs_For_Links``
+#  .. _get_Library_Dirs_For_Links:
+#
+#  get_Library_Dirs_For_Links
+#  --------------------------
+#
+#   .. command:: get_Library_Dirs_For_Links(OUT_LDIRS ext_package list_of_libraries)
+#
+#    Provides the list of library dirs provided by a given external package.
+#
+#     :ext_package: the name of external package
+#
+#     :list_of_libraries: the list variable containing links defined in external package
+#
+#     :OUT_LDIRS: the output variable that contains the list of library dirs.
+#
+function(get_Library_Dirs_For_Links OUT_LDIRS ext_package list_of_libraries)
+  set(ret_ldirs)
+  if(list_of_libraries AND ${list_of_libraries})#the variable containing the list trully contains a list
+    foreach(lib IN LISTS ${list_of_libraries})
+      if(lib MATCHES "^<${ext_package}>.+$")
+        get_filename_component(FOLDER ${lib} DIRECTORY)
+        list(APPEND ret_ldirs ${FOLDER})
+      endif()#if a system link is used (absolute) no need to define the library dir because not related to the package
+    endforeach()
+    if(ret_ldirs)
+      list(REMOVE_DUPLICATES ret_ldirs)
+    endif()
+  endif()
+  set(${OUT_LDIRS} ${ret_ldirs} PARENT_SCOPE)
+endfunction(get_Library_Dirs_For_Links)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Shared_Lib_Extension| replace:: ``create_Shared_Lib_Extension``
+#  .. _create_Shared_Lib_Extension:
+#
+#  create_Shared_Lib_Extension
+#  ---------------------------
+#
+#   .. command:: create_Shared_Lib_Extension(RES_EXT platform soname)
+#
+#    Get the extension string to use for shared libraries.
+#
+#     :platform: the identifier of target platform.
+#
+#     :soname: the soname to use for unix shared objects
+#
+#     :RES_EXT: the output variable containing the resulting extension to use for shared objects, depending on platform.
+#
+function(create_Shared_Lib_Extension RES_EXT platform soname)
+  extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${platform})
+  if(RES_OS STREQUAL macos)
+    if(soname OR soname EQUAL 0)
+      if(soname MATCHES "^\\.[0-9].*$")
+        set(${RES_EXT} "${soname}.dylib" PARENT_SCOPE)
+      else()
+        set(${RES_EXT} ".${soname}.dylib" PARENT_SCOPE)
+      endif()
+    else()
+      set(${RES_EXT} ".dylib" PARENT_SCOPE)
+    endif()
+	elseif(RES_OS STREQUAL windows)
+		set(${RES_EXT} ".dll" PARENT_SCOPE)
+	else()# Linux or any other standard UNIX system
+		if(soname OR soname EQUAL 0)
+			if(soname MATCHES "^\\.[0-9].*$")#MATCH: the soname expression start with a dot
+				set(${RES_EXT} ".so${soname}" PARENT_SCOPE)
+			else()#the expression starts with a number, simply add the dot
+				set(${RES_EXT} ".so.${soname}" PARENT_SCOPE)
+			endif()
+		else()
+			set(${RES_EXT} ".so" PARENT_SCOPE)
+		endif()
+	endif()
+endfunction(create_Shared_Lib_Extension)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |shared_Library_Needs_Soname| replace:: ``shared_Library_Needs_Soname``
+#  .. _shared_Library_Needs_Soname:
+#
+#  shared_Library_Needs_Soname
+#  -----------------------------------
+#
+#   .. command:: shared_Library_Needs_Soname(NEEDS_SONAME library_path)
+#
+#    Check whether a shared library needs to have a soname extension appended to its name.
+#
+#     :library_path: the path to the library.
+#
+#     :platform: the target platform.
+#
+#     :NEEDS_SONAME: the output variable that is TRUE if the extension finish by a SONAME.
+#
+function(shared_Library_Needs_Soname NEEDS_SONAME library_path platform)
+  set(${NEEDS_SONAME} FALSE PARENT_SCOPE)
+  if(library_path MATCHES "^-l.*$")#OS dependency using standard library path => no need of soname extension
+    return()
+  endif()
+	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${platform})
+  get_filename_component(EXTENSION ${library_path} EXT)#get the longest extension of the file
+	if(RES_OS STREQUAL "macosx")
+    set(target_extension "\\.dylib")
+  elseif(RES_OS STREQUAL "windows")
+    set(target_extension "\\.dll")
+  else()
+    set(target_extension "\\.so(\\.[0-9]+)*")
+  endif()
+  if(EXTENSION MATCHES "^(\\.[^\\.]+)*${target_extension}$")#there is already a .so|.dylib|.dll extension
+    # this check is here to ensure that a library name ending with a dot followed by any characters
+    # will not be considered as a library extension (e.g. example libusb-1.0)
+    return()
+  endif()
+  set(${NEEDS_SONAME} TRUE PARENT_SCOPE)
+endfunction(shared_Library_Needs_Soname)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |convert_Library_Path_To_Default_System_Library_Link| replace:: ``convert_Library_Path_To_Default_System_Library_Link``
+#  .. _convert_Library_Path_To_Default_System_Library_Link:
+#
+#  convert_Library_Path_To_Default_System_Library_Link
+#  ---------------------------------------------------
+#
+#   .. command:: convert_Library_Path_To_Default_System_Library_Link(RESULTING_LINK library_path)
+#
+#    Check whether a shared library needs to have a soname extension appended to its name.
+#
+#     :library_path: the path to the library.
+#
+#     :RESULTING_LINK: the output variable that contains the default system link option for the given library.
+#
+function(convert_Library_Path_To_Default_System_Library_Link RESULTING_LINK library_path)
+  if(library_path MATCHES "^-l.*$")#OS dependency using standard library path => no need for conversion
+    set(${RESULTING_LINK} ${library_path} PARENT_SCOPE)
+    return()
+  endif()
+  get_filename_component(LIB_NAME ${library_path} NAME)
+  string(REGEX REPLACE "^lib(.+)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
+  if(APPLE)
+    string(REGEX REPLACE "^(.+)\\.(dylib(\\.[0-9]+)*|l?a)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
+  elseif(UNIX)
+    string(REGEX REPLACE "^(.+)\\.(so(\\.[0-9]+)*|l?a)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
+  else()
+    string(REGEX REPLACE "^(.+)\\.(dll(\\.[0-9]+)*|lib)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
+  endif()
+
+  set(${RESULTING_LINK} "-l${LIB_NAME}" PARENT_SCOPE)
+endfunction(convert_Library_Path_To_Default_System_Library_Link)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Link_Type| replace:: ``get_Link_Type``
+#  .. _get_Link_Type:
+#
+#  get_Link_Type
+#  -------------
+#
+#   .. command:: get_Link_Type(RES_TYPE input_link)
+#
+#    Get the type of a link option based on the extension used (if any)
+#
+#     :input_link: the link option
+#
+#     :RES_TYPE: the output variable that contains the type of the target binary (SHARED, STATIC or OPTION if none of the two first) .
+#
+function(get_Link_Type RES_TYPE input_link)
+
+set(${RES_TYPE} OPTION PARENT_SCOPE)# by default if no extension => considered as a specific linker option
+get_filename_component(LIB_TYPE ${input_link} EXT)
+if(LIB_TYPE)
+    if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib (MACOSX)
+		set(${RES_TYPE} SHARED PARENT_SCOPE)
+	elseif(LIB_TYPE MATCHES "^\\.so(\\.[0-9]+)*$")#found shared lib (UNIX)
+		set(${RES_TYPE} SHARED PARENT_SCOPE)
+  elseif(LIB_TYPE MATCHES "^\\.dll$")#found shared lib (windows)
+    set(${RES_TYPE} SHARED PARENT_SCOPE)
+	elseif(LIB_TYPE MATCHES "^\\.a$")#found static lib (C)
+		set(${RES_TYPE} STATIC PARENT_SCOPE)
+	elseif(LIB_TYPE MATCHES "^\\.la$")#found static lib (libtools archives)
+		set(${RES_TYPE} STATIC PARENT_SCOPE)
+	elseif(LIB_TYPE MATCHES "^\\.lib$")#found lib (windows)
+		set(${RES_TYPE} STATIC PARENT_SCOPE)
+	endif()
+endif()
+endfunction(get_Link_Type)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Library_Type| replace:: ``is_Library_Type``
+#  .. _is_Library_Type:
+#
+#  is_Library_Type
+#  ---------------
+#
+#   .. command:: is_Library_Type(RESULT keyword)
+#
+#    Check whether the type of a component is a library.
+#
+#     :keyword: the type of the component.
+#
+#     :RESULT: the output variable that is TRUE if the component is a library, FALSE otherwise.
+#
+function(is_Library_Type RESULT keyword)
+	if(keyword STREQUAL "HEADER"
+		OR keyword STREQUAL "STATIC"
+		OR keyword STREQUAL "SHARED"
+		OR keyword STREQUAL "MODULE")
+		set(${RESULT} TRUE PARENT_SCOPE)
+	else()
+		set(${RESULT} FALSE PARENT_SCOPE)
+	endif()
+endfunction(is_Library_Type)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Platform_Related_Binary_Prefix_Suffix| replace:: ``get_Platform_Related_Binary_Prefix_Suffix``
+#  .. _get_Platform_Related_Binary_Prefix_Suffix:
+#
+#  get_Platform_Related_Binary_Prefix_Suffix
+#  -----------------------------------------
+#
+#   .. command:: get_Platform_Related_Binary_Prefix_Suffix(PREFIX SUFFIX platform type_of_binary)
+#
+#    Get prefix and suffix of the name for a given component binary that depends on the platform and type of component.
+#
+#     :platform_os: the target operating system of the target platform
+#
+#     :type_of_binary: the type of the component.
+#
+#     :PREFIX: the output variable that contains the prefix of the binary.
+#
+#     :SUFFIX: the output variable that contains the extension of the binary.
+#
+function(get_Platform_Related_Binary_Prefix_Suffix PREFIX SUFFIX platform_os type_of_binary)
+  set(${PREFIX} PARENT_SCOPE)
+  set(${SUFFIX} PARENT_SCOPE)
+  if(type_of_binary STREQUAL "STATIC")
+    if(platform_os STREQUAL "windows")
+      set(${SUFFIX} .lib PARENT_SCOPE)
+    else()
+      set(${SUFFIX} .a PARENT_SCOPE)
+      set(${PREFIX} lib PARENT_SCOPE)
+    endif()
+  elseif(type_of_binary STREQUAL "SHARED" OR type_of_binary STREQUAL "MODULE")
+    if(platform_os STREQUAL "windows")
+      set(${SUFFIX} .dll PARENT_SCOPE)
+    elseif(platform_os STREQUAL "macos")
+      set(${SUFFIX} .dylib PARENT_SCOPE)
+      set(${PREFIX} lib PARENT_SCOPE)
+    elseif(platform_os STREQUAL "linux")
+      set(${SUFFIX} .so PARENT_SCOPE)
+      set(${PREFIX} lib PARENT_SCOPE)
+    endif()
+  elseif(type_of_binary STREQUAL "APPLICATION" OR type_of_binary STREQUAL "EXAMPLE")
+    if(platform_os STREQUAL "windows")
+      set(${SUFFIX} .exe PARENT_SCOPE)
+    else()
+      set(${SUFFIX} PARENT_SCOPE)
+    endif()
+  endif()
+endfunction(get_Platform_Related_Binary_Prefix_Suffix)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Application_Type| replace:: ``is_Application_Type``
+#  .. _is_Application_Type:
+#
+#  is_Application_Type
+#  -------------------
+#
+#   .. command:: is_Application_Type(RESULT keyword)
+#
+#    Check whether the type of a component is an application.
+#
+#     :keyword: the type of the component.
+#
+#     :RESULT: the output variable that is TRUE if the component is an application, FALSE otherwise.
+#
+function(is_Application_Type RESULT keyword)
+	if(	keyword STREQUAL "TEST"
+		OR keyword STREQUAL "APP"
+		OR keyword STREQUAL "EXAMPLE")
+		set(${RESULT} TRUE PARENT_SCOPE)
+	else()
+		set(${RESULT} FALSE PARENT_SCOPE)
+	endif()
+endfunction(is_Application_Type)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Package_Type| replace:: ``get_Package_Type``
+#  .. _get_Package_Type:
+#
+#  get_Package_Type
+#  ----------------
+#
+#   .. command:: get_Package_Type(package PACK_TYPE)
+#
+#    Given a package name, detects if this package is an external package or a native package depending on workspace content.
+#
+#     :package: the name of the package.
+#
+#     :PACK_TYPE: the output variable that contains the package type (NATIVE or EXTERNAL) if detected, UNKNOWN otherwise.
+#
+function(get_Package_Type package PACK_TYPE)
+  get_Platform_Variables(BASENAME curr_platform_str)
+  #try to simply find it in install tree
+  if(EXISTS ${WORKSPACE_DIR}/external/${curr_platform_str}/${package}
+  AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${curr_platform_str}/${package})
+  	set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
+    return()
+  elseif(EXISTS ${WORKSPACE_DIR}/install/${curr_platform_str}/${package}
+  AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${curr_platform_str}/${package})
+  	set(${PACK_TYPE} "NATIVE" PARENT_SCOPE)
+    return()
+  endif()
+  #try to find it in source tree
+  if(EXISTS ${WORKSPACE_DIR}/wrappers/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package})
+  	set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
+    return()
+  elseif(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
+  	set(${PACK_TYPE} "NATIVE" PARENT_SCOPE)
+    return()
+  endif()
+  # From here they are unknown in the local filesystem, finaly try to find references of this package
+  get_Path_To_External_Reference_File(RESULT_PATH ${package})
+  if(RESULT_PATH)
+    set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
+    return()
+  else()
+    get_Path_To_Package_Reference_File(RESULT_PATH ${package})
+    if(RESULT_PATH)
+      set(${PACK_TYPE} "NATIVE" PARENT_SCOPE)
+      return()
+    endif()
+  endif()
+  set(${PACK_TYPE} UNKNOWN PARENT_SCOPE)
+endfunction(get_Package_Type)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_External_Package_Defined| replace:: ``is_External_Package_Defined``
+#  .. _is_External_Package_Defined:
+#
+#  is_External_Package_Defined
+#  ---------------------------
+#
+#   .. command:: is_External_Package_Defined(ext_package mode RES_PATH_TO_PACKAGE)
+#
+#    Get the path to the target external package install folder.
+#
+#     :ext_package: the name of external package
+#
+#     :mode: the considered build mode
+#
+#     :RES_PATH_TO_PACKAGE: the output variable that contains the path to the external package install folder or NOTFOUND if package cannot be found in workspace.
+#
+function(is_External_Package_Defined ext_package mode RES_PATH_TO_PACKAGE)
+get_Platform_Variables(BASENAME curr_platform_str)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+if(${ext_package}_FOUND${VAR_SUFFIX})
+	set(${RES_PATH_TO_PACKAGE} ${WORKSPACE_DIR}/external/${curr_platform_str}/${ext_package}/${${ext_package}_VERSION_STRING} PARENT_SCOPE)
+else()
+	set(${RES_PATH_TO_PACKAGE} PARENT_SCOPE)
+endif()
+endfunction(is_External_Package_Defined)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |transform_External_Link_Into_Absolute_Path_Expression| replace:: ``transform_External_Link_Into_Absolute_Path_Expression``
+#  .. _transform_External_Link_Into_Absolute_Path_Expression:
+#
+#  transform_External_Link_Into_Absolute_Path_Expression
+#  -----------------------------------------------------
+#
+#   .. command:: transform_External_Link_Into_Absolute_Path_Expression(RES ext_package link)
+#
+#    From a linker option, generate a package tag `<ext_package>` at beginning of the expresion it is a relative path to a library of the external package.
+#
+#     :ext_package: the name of external package
+#
+#     :link: the linker flag that can be a path to a library
+#
+#     :RES: the output variable that contains the corresponding linker expression (possibly with an absolute path to a library).
+#
+function(transform_External_Link_Into_Absolute_Path_Expression RES ext_package link)
+  #if the string DOES NOT start with a / (absolute path), a <package> (relative path from package root) or - (link option specification) then we add the header <package>
+  if(link MATCHES  "^(<${ext_package}>|/|-|/).*")
+    set(${RES} ${link} PARENT_SCOPE)#already well formed
+  else()
+    set(${RES} "<${ext_package}>/${link}" PARENT_SCOPE)# prepend the external package tag
+  endif()
+endfunction(transform_External_Link_Into_Absolute_Path_Expression)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |transform_External_Include_Into_Absolute_Path_Expression| replace:: ``transform_External_Include_Into_Absolute_Path_Expression``
+#  .. _transform_External_Include_Into_Absolute_Path_Expression:
+#
+#  transform_External_Include_Into_Absolute_Path_Expression
+#  --------------------------------------------------------
+#
+#   .. command:: transform_External_Include_Into_Absolute_Path_Expression(RES ext_package inc)
+#
+#    From an include option expression, generate a package tag `<ext_package>` at beginning of the expresion it is a relative path to an include folder of the external package.
+#
+#     :ext_package: the name of external package
+#
+#     :inc: the include flag that can be a path to an include folder.
+#
+#     :RES: the output variable that contains the corresponding include expression (possibly an absolute path to a folder).
+#
+function(transform_External_Include_Into_Absolute_Path_Expression RES ext_package inc)
+  if(inc MATCHES "^(<${ext_package}>|/|/).*")
+    set(${RES} ${inc} PARENT_SCOPE)
+  else()#if the string DOES NOT start with a / (absolute path), or a <package> tag (relative path from package root) then we add the header <package> to the path
+    set(${RES} "<${ext_package}>/${inc}" PARENT_SCOPE)# prepend the external package tag
+  endif()
+endfunction(transform_External_Include_Into_Absolute_Path_Expression)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |transform_External_Path_Into_Absolute_Path_Expression| replace:: ``transform_External_Path_Into_Absolute_Path_Expression``
+#  .. _transform_External_Path_Into_Absolute_Path_Expression:
+#
+#  transform_External_Path_Into_Absolute_Path_Expression
+#  -----------------------------------------------------
+#
+#   .. command:: transform_External_Path_Into_Absolute_Path_Expression(RES ext_package path)
+#
+#    From a path expression, generate a package tag `<ext_package>` at beginning of the expresion it is a relative path to a folder of the external package.
+#
+#     :ext_package: the name of external package
+#
+#     :path: the path expression.
+#
+#     :RES: the output variable that contains the corresponding path expression (an absolute path).
+#
+function(transform_External_Path_Into_Absolute_Path_Expression RES ext_package path)
+  #if the string DOES NOT start with a / (absolute path) or by a <package> tag (relative path from package root), then then we add the <package> tag at the begginning of the target path.
+  if(path MATCHES "^(<${ext_package}>|/).*$")
+    set(${RES} ${path} PARENT_SCOPE)
+  else()
+    set(${RES} "<${ext_package}>/${path}" PARENT_SCOPE)# prepend the external package tag
+  endif()
+endfunction(transform_External_Path_Into_Absolute_Path_Expression)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_External_Libs_Path| replace:: ``resolve_External_Libs_Path``
+#  .. _resolve_External_Libs_Path:
+#
+#  resolve_External_Libs_Path
+#  --------------------------
+#
+#   .. command:: resolve_External_Libs_Path(COMPLETE_LINKS_PATH ext_links mode)
+#
+#    Resolve any kind of link option, either static or shared, absolute or relative to provide an absolute path (most of time pointing to a library in the workspace).
+#
+#     :ext_links: the link options to resolve.
+#
+#     :mode: the given build mode.
+#
+#     :COMPLETE_LINKS_PATH: the output variable that contains the resolved links (linker options may be let unchanged).
+#
+function(resolve_External_Libs_Path COMPLETE_LINKS_PATH ext_links mode)
+set(res_links)
+foreach(link IN LISTS ext_links)
+  set(CMAKE_MATCH_1)
+  set(CMAKE_MATCH_2)
+  set(CMAKE_MATCH_3)
+  if(link AND DEFINED ${link})#check if this is a variable coming from a configuration
+    if(${link})#if this variable is not empty
+      list(APPEND res_links ${${link}})
+    endif()
+    #otherwise this is a variable that must simply be omitted
+  elseif(link MATCHES "^<([^>]+)>(.*)$")# a replacement has taken place => this is a full path to a library
+    set(ext_package_name ${CMAKE_MATCH_1})
+		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
+		if(NOT PATHTO)
+      if(GLOBAL_PROGRESS_VAR)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
+      endif()
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!! Please set the path to this external package.")
+		else()
+			list(APPEND res_links ${PATHTO}${CMAKE_MATCH_2})
+		endif()
+	elseif(link MATCHES "^([^<]+)<([^>]+)>(.*)")# this may be a link with a prefix (like -L<path>) that need replacement
+		set(link_prefix ${CMAKE_MATCH_1})
+    set(ext_package_name ${CMAKE_MATCH_2})
+		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
+		if(NOT PATHTO)
+      if(GLOBAL_PROGRESS_VAR)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
+      endif()
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for link ${link}!!")
+			return()
+		endif()
+		list(APPEND res_links ${link_prefix}${PATHTO}${CMAKE_MATCH_3})
+	else()#this is a link that does not require any replacement (e.g. -l<library name> or -L<system path>)
+		list(APPEND res_links ${link})
+	endif()
+endforeach()
+set(${COMPLETE_LINKS_PATH} ${res_links} PARENT_SCOPE)
+endfunction(resolve_External_Libs_Path)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_External_Includes_Path| replace:: ``resolve_External_Includes_Path``
+#  .. _resolve_External_Includes_Path:
+#
+#  resolve_External_Includes_Path
+#  ------------------------------
+#
+#   .. command:: resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH ext_inc_dirs mode)
+#
+#    Resolve any kind of include path, either absolute or relative to provide an absolute path (most of time pointing to the adequate place in the workspace).
+#
+#     :ext_inc_dirs: the includes path to resolve.
+#
+#     :mode: the given build mode.
+#
+#     :COMPLETE_INCLUDES_PATH: the output variable that contains the resolved paths.
+#
+function(resolve_External_Includes_Path COMPLETE_INCLUDES_PATH ext_inc_dirs mode)
+set(res_includes)
+foreach(include_dir IN LISTS ext_inc_dirs)
+  set(CMAKE_MATCH_1)
+  set(CMAKE_MATCH_2)
+  set(CMAKE_MATCH_3)
+  if(include_dir AND DEFINED ${include_dir})#check if this is a variable coming from a configuration
+    if(${include_dir})#if this variable is not empty
+      list(APPEND res_includes ${${include_dir}})
+    endif()
+    #otherwise this is a variable that must simply be omitted
+  elseif(include_dir MATCHES "^<([^>]+)>(.*)$")# a replacement has taken place => this is a full path to an incude dir of an external package
+		set(ext_package_name ${CMAKE_MATCH_1})
+		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
+		if(NOT PATHTO)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
+		endif()
+		list(APPEND res_includes ${PATHTO}${CMAKE_MATCH_2})
+	elseif(include_dir MATCHES "^-I<([^>]+)>(.*)$")# this may be an include dir with a prefix (-I<path>) that need replacement
+		set(ext_package_name ${CMAKE_MATCH_1})
+		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
+		if(NOT PATHTO)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
+		endif()
+		list(APPEND res_includes${PATHTO}${CMAKE_MATCH_2})
+	elseif(include_dir MATCHES "^-I(.+)")#this is an include dir that does not require any replacement => system include dir ! (should be avoided)
+		list(APPEND res_includes ${CMAKE_MATCH_1})
+	else()
+		list(APPEND res_includes ${include_dir}) #for absolute path or system dependencies simply copying the absolute path
+	endif()
+endforeach()
+set(${COMPLETE_INCLUDES_PATH} ${res_includes} PARENT_SCOPE)
+endfunction(resolve_External_Includes_Path)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_External_Resources_Path| replace:: ``resolve_External_Resources_Path``
+#  .. _resolve_External_Resources_Path:
+#
+#  resolve_External_Resources_Path
+#  -------------------------------
+#
+#   .. command:: resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH ext_resources mode)
+#
+#    Resolve path to runtime resources in order to get absolute path pointing to the adequate file or folder in the workspace.
+#
+#     :ext_resources: the path to runtime resources to resolve.
+#
+#     :mode: the given build mode.
+#
+#     :COMPLETE_RESOURCES_PATH: the output variable that contains the resolved paths.
+#
+function(resolve_External_Resources_Path COMPLETE_RESOURCES_PATH ext_resources mode)
+set(res_resources)
+foreach(resource IN LISTS ext_resources)
+  set(CMAKE_MATCH_1)
+  set(CMAKE_MATCH_2)
+	if(resource MATCHES "^<([^>]+)>(.*)")# a replacement has taken place => this is a relative path to an external package resource
+		set(ext_package_name ${CMAKE_MATCH_1})
+		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
+		if(NOT PATHTO)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for resource ${resource}!! Please set the path to this external package.")
+		else()
+			list(APPEND res_resources ${PATHTO}${CMAKE_MATCH_2})
+		endif()
+  elseif(resource AND DEFINED ${resource})#the resource is not a path but a variable => need to interpret it !
+    list(APPEND res_resources ${${resource}})	# evaluate the variable to get the system path
+  else()#this is a relative path (relative to a native package) or an absolute path
+		list(APPEND res_resources ${resource})	#for relative path or system dependencies (absolute path) simply copying the path
+	endif()
+endforeach()
+set(${COMPLETE_RESOURCES_PATH} ${res_resources} PARENT_SCOPE)
+endfunction(resolve_External_Resources_Path)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_External_Resources_Relative_Path| replace:: ``resolve_External_Resources_Relative_Path``
+#  .. _resolve_External_Resources_Relative_Path:
+#
+#  resolve_External_Resources_Relative_Path
+#  ----------------------------------------
+#
+#   .. command:: resolve_External_Resources_Relative_Path(RELATIVE_RESOURCES_PATH ext_resources mode)
+#
+#    Resolve relative path to runtime resources with respect to external package root dir.
+#
+#     :ext_resources: the path to runtime resources to resolve.
+#
+#     :mode: the given build mode.
+#
+#     :RELATIVE_RESOURCES_PATH: the output variable that contains the resolved relative paths (or absolute if system path).
+#
+function(resolve_External_Resources_Relative_Path RELATIVE_RESOURCES_PATH ext_resources mode)
+set(res_resources)
+foreach(resource IN LISTS ext_resources)
+  set(CMAKE_MATCH_1)
+  set(CMAKE_MATCH_2)
+	if(resource MATCHES "^<[^>]+>(.*)")# a replacement has taken place => this is a relative path to an external package resource
+		list(APPEND res_resources ${CMAKE_MATCH_1})
+		endif()
+  elseif(resource AND DEFINED ${resource})#the resource is not a path but a variable => need to interpret it !
+    list(APPEND res_resources ${${resource}})	# evaluate the variable to get the system path
+  else()#this is a relative path (relative to an external package or an absolute path
+		list(APPEND res_resources ${resource})	#for relative path or system dependencies (absolute path) simply copying the path
+	endif()
+endforeach()
+set(${COMPLETE_RESOURCES_PATH} ${res_resources} PARENT_SCOPE)
+endfunction(resolve_External_Resources_Relative_Path)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |evaluate_Variables_In_List| replace:: ``evaluate_Variables_In_List``
+#  .. _evaluate_Variables_In_List:
+#
+#  evaluate_Variables_In_List
+#  --------------------------
+#
+#   .. command:: evaluate_Variables_In_List(variable)
+#
+#     Evaluate the variables contained in a list.
+#
+#     :variable: the parent scope variable to evaluate. Its content will potentially be modified after execution.
+#
+#     :out_list: the output variable that contain the resulting list.
+#
+function(evaluate_Variables_In_List out_list variable)
+  if(NOT variable OR NOT ${variable})#nothing inside parent scope variable
+    set(${out_list} PARENT_SCOPE)
+    return()
+  endif()
+  set(resulting_list)
+  foreach(element IN LISTS ${variable})#for each element contained in the variable
+    if(DEFINED ${element})#the element is a variable !!!
+      list(APPEND resulting_list ${${element}})#we put into result the evaluation of this variable
+    else()
+      list(APPEND resulting_list ${element})#we directly put the value into result
+    endif()
+  endforeach()
+  set(${out_list} ${resulting_list} PARENT_SCOPE)
+endfunction(evaluate_Variables_In_List)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |append_Prefix_In_List| replace:: ``append_Prefix_In_List``
+#  .. _append_Prefix_In_List:
+#
+#  append_Prefix_In_List
+#  ---------------------
+#
+#   .. command:: append_Prefix_In_List(prefix variable)
+#
+#     Append a prefix string at the beginning of each element of a list.
+#
+#     :prefix: the string to append as prefix.
+#
+#     :variable: the input parent scope variable. Its content is modified after execution.
+#
+function(append_Prefix_In_List prefix variable)
+  if(NOT variable OR NOT ${variable})#nothing inside parent scope variable
+    return()
+  endif()
+  set(resulting_list)
+  foreach(element IN LISTS ${variable})#for each element contained in the variable
+    list(APPEND resulting_list "${prefix}${element}")
+  endforeach()
+  set(${variable} ${resulting_list} PARENT_SCOPE)
+endfunction(append_Prefix_In_List)
+
+#############################################################
+################ Package Life cycle management ##############
+#############################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Package_Repository_Address| replace:: ``set_Package_Repository_Address``
+#  .. _set_Package_Repository_Address:
+#
+#  set_Package_Repository_Address
+#  ------------------------------
+#
+#   .. command:: set_Package_Repository_Address(package git_url)
+#
+#    Adding an address for the git repository to the package description..
+#
+#     :package: the name ofthe target source package.
+#
+#     :git_url: the url to set.
+#
+function(set_Package_Repository_Address package git_url)
+	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE  "([ \t\n]+)YEAR" "\\1ADDRESS ${git_url}\n\\1YEAR" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(set_Package_Repository_Address)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Package_Repository_Address| replace:: ``reset_Package_Repository_Address``
+#  .. _reset_Package_Repository_Address:
+#
+#  reset_Package_Repository_Address
+#  --------------------------------
+#
+#   .. command:: reset_Package_Repository_Address(package new_git_url)
+#
+#    Changing  the address of the git repository to a package description..
+#
+#     :package: the name ofthe target source package.
+#
+#     :new_git_url: the new giturl to set instead of existing one.
+#
+function(reset_Package_Repository_Address package new_git_url)
+	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE "([ \t\n]+)ADDRESS([ \t\n]+)([^ \t\n]+)([ \t\n]+)" "\\1ADDRESS\\2${new_git_url}\\4" NEW_CONTENT ${CONTENT})
+	string(REGEX REPLACE "([ \t\n]+)PUBLIC_ADDRESS([ \t\n]+)([^ \t\n]+)([ \t\n]+)" "\\1PUBLIC_ADDRESS\\2${new_git_url}\\4" FINAL_CONTENT ${NEW_CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${FINAL_CONTENT})
+endfunction(reset_Package_Repository_Address)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Package_Repository_Address| replace:: ``get_Package_Repository_Address``
+#  .. _get_Package_Repository_Address:
+#
+#  get_Package_Repository_Address
+#  ------------------------------
+#
+#   .. command:: get_Package_Repository_Address(package RES_URL RES_PUBLIC_URL)
+#
+#    Getting git repository addresses of a package from its description.
+#
+#     :package: the name ofthe target source package.
+#
+#     :RES_URL: the output variable that contains the current git URL of teh pakage respository.
+#
+#     :RES_PUBLIC_URL: the output variable that contains the public counterpart URL of package respotiry.
+#
+function(get_Package_Repository_Address package RES_URL RES_PUBLIC_URL)
+  if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt)
+	  set(${RES_URL} PARENT_SCOPE)
+    set(${RES_PUBLIC_URL} PARENT_SCOPE)
+    return()
+  endif()
+
+	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CMAKE_CONTENT)
+	#checking for restricted address
+	string(REGEX REPLACE "^.+[ \t\n]ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CMAKE_CONTENT})
+	if(url STREQUAL CMAKE_CONTENT)#no match
+		set(${RES_URL} PARENT_SCOPE)
+	else()
+		set(${RES_URL} ${url} PARENT_SCOPE)
+	endif()
+	#checking for public (fetch only) address
+	string(REGEX REPLACE "^.+[ \t\n]PUBLIC_ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CMAKE_CONTENT})
+	if(url STREQUAL CMAKE_CONTENT)#no match
+		set(${RES_PUBLIC_URL} PARENT_SCOPE)
+	else()
+		set(${RES_PUBLIC_URL} ${url} PARENT_SCOPE)
+	endif()
+endfunction(get_Package_Repository_Address)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Package_Reference_Info| replace:: ``get_Package_Reference_Info``
+#  .. _get_Package_Reference_Info:
+#
+#  get_Package_Reference_Info
+#  --------------------------
+#
+#   .. command:: get_Package_Reference_Info(package REF_EXISTS RES_URL RES_PUBLIC_URL)
+#
+#    Getting info on a package from its reference file.
+#
+#     :package: the name of the target package.
+#
+#     :REF_EXISTS: the output variable that is TRUE if reference file exists, FALSE otherwise.
+#
+#     :RES_URL: the output variable that contains the current git URL of the pakage respository.
+#
+#     :RES_PUBLIC_URL: the output variable that contains the public counterpart URL of package respotiry.
+#
+function(get_Package_Reference_Info package REF_EXISTS RES_URL RES_PUBLIC_URL)
+  get_Path_To_Package_Reference_File(PATH_TO_FILE ${package})
+  if(NOT PATH_TO_FILE)
+    #TODO contrib => update contrib spaces
+    set(${RES_URL} PARENT_SCOPE)
+    set(${RES_PUBLIC_URL} PARENT_SCOPE)
+    set(${REF_EXISTS} FALSE PARENT_SCOPE)
+    return()
+  endif()
+  set(${REF_EXISTS} TRUE PARENT_SCOPE)
+  #saving locally defined addresses
+  set(TEMP_${package}_MAIN_AUTHOR ${${package}_MAIN_AUTHOR})
+  set(TEMP_${package}_MAIN_INSTITUTION ${${package}_MAIN_INSTITUTION})
+  set(TEMP_${package}_CONTACT_MAIL ${${package}_CONTACT_MAIL})
+  set(TEMP_${package}_FRAMEWORK ${${package}_FRAMEWORK})
+  set(TEMP_${package}_SITE_ROOT_PAGE ${${package}_SITE_ROOT_PAGE})
+  set(TEMP_${package}_PROJECT_PAGE ${${package}_PROJECT_PAGE})
+  set(TEMP_${package}_SITE_GIT_ADDRESS ${${package}_SITE_GIT_ADDRESS})
+  set(TEMP_${package}_SITE_INTRODUCTION ${${package}_SITE_INTRODUCTION})
+  set(TEMP_${package}_AUTHORS_AND_INSTITUTIONS ${${package}_AUTHORS_AND_INSTITUTIONS})
+  set(TEMP_${package}_DESCRIPTION ${${package}_DESCRIPTION})
+  set(TEMP_${package}_YEARS ${${package}_YEARS})
+  set(TEMP_${package}_LICENSE ${${package}_LICENSE})
+  set(TEMP_${package}_ADDRESS ${${package}_ADDRESS})
+  set(TEMP_${package}_PUBLIC_ADDRESS ${${package}_PUBLIC_ADDRESS})
+  set(TEMP_${package}_CATEGORIES ${${package}_CATEGORIES})
+  set(TEMP_${package}_REFERENCES ${${package}_REFERENCES})
+  #then include (will modify these cache variables) and extract adequate values
+
+  include(${PATH_TO_FILE})
+
+  set(${RES_URL} ${${package}_ADDRESS} PARENT_SCOPE)
+  set(${RES_PUBLIC_URL} ${${package}_PUBLIC_ADDRESS} PARENT_SCOPE)
+  #finally give to the variables their initial value
+  set(${package}_MAIN_AUTHOR ${TEMP_${package}_MAIN_AUTHOR} CACHE INTERNAL "")
+  set(${package}_MAIN_INSTITUTION ${TEMP_${package}_MAIN_INSTITUTION} CACHE INTERNAL "")
+  set(${package}_CONTACT_MAIL ${TEMP_${package}_CONTACT_MAIL} CACHE INTERNAL "")
+  set(${package}_FRAMEWORK ${TEMP_${package}_FRAMEWORK} CACHE INTERNAL "")
+  set(${package}_SITE_ROOT_PAGE ${TEMP_${package}_SITE_ROOT_PAGE} CACHE INTERNAL "")
+  set(${package}_PROJECT_PAGE ${TEMP_${package}_PROJECT_PAGE} CACHE INTERNAL "")
+  set(${package}_SITE_GIT_ADDRESS ${TEMP_${package}_SITE_GIT_ADDRESS} CACHE INTERNAL "")
+  set(${package}_SITE_INTRODUCTION ${TEMP_${package}_SITE_INTRODUCTION} CACHE INTERNAL "")
+  set(${package}_AUTHORS_AND_INSTITUTIONS ${TEMP_${package}_AUTHORS_AND_INSTITUTIONS} CACHE INTERNAL "")
+  set(${package}_DESCRIPTION ${TEMP_${package}_DESCRIPTION} CACHE INTERNAL "")
+  set(${package}_YEARS ${TEMP_${package}_YEARS} CACHE INTERNAL "")
+  set(${package}_LICENSE ${TEMP_${package}_LICENSE} CACHE INTERNAL "")
+  set(${package}_ADDRESS ${TEMP_${package}_ADDRESS} CACHE INTERNAL "")
+  set(${package}_PUBLIC_ADDRESS ${TEMP_${package}_PUBLIC_ADDRESS} CACHE INTERNAL "")
+  set(${package}_CATEGORIES ${TEMP_${package}_CATEGORIES} CACHE INTERNAL "")
+  set(${package}_REFERENCES ${TEMP_${package}_REFERENCES} CACHE INTERNAL "")
+endfunction(get_Package_Reference_Info)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_All_Source_Packages_In_Workspace| replace:: ``list_All_Source_Packages_In_Workspace``
+#  .. _list_All_Source_Packages_In_Workspace:
+#
+#  list_All_Source_Packages_In_Workspace
+#  -------------------------------------
+#
+#   .. command:: list_All_Source_Packages_In_Workspace(PACKAGES)
+#
+#    Getting all source packages that currently exist in local workspace.
+#
+#     :PACKAGES: the output variable that contains the list of package of the workspace.
+#
+function(list_All_Source_Packages_In_Workspace PACKAGES)
+file(GLOB source_packages RELATIVE ${WORKSPACE_DIR}/packages ${WORKSPACE_DIR}/packages/*)
+foreach(a_file IN LISTS source_packages)
+	if(EXISTS ${WORKSPACE_DIR}/packages/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${a_file})
+		list(APPEND result ${a_file})
+	endif()
+endforeach()
+set(${PACKAGES} ${result} PARENT_SCOPE)
+endfunction(list_All_Source_Packages_In_Workspace)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_All_Wrappers_In_Workspace| replace:: ``list_All_Wrappers_In_Workspace``
+#  .. _list_All_Wrappers_In_Workspace:
+#
+#  list_All_Wrappers_In_Workspace
+#  ------------------------------
+#
+#   .. command:: list_All_Wrappers_In_Workspace(WRAPPERS)
+#
+#    Getting all external packages wrappers that currently exist in local workspace.
+#
+#     :WRAPPERS: the output variable that contains the list of wrappers of the workspace.
+#
+function(list_All_Wrappers_In_Workspace WRAPPERS)
+  file(GLOB source_wrappers RELATIVE ${WORKSPACE_DIR}/wrappers ${WORKSPACE_DIR}/wrappers/*)
+  foreach(a_file IN LISTS source_wrappers)
+  	if(EXISTS ${WORKSPACE_DIR}/wrappers/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${a_file})
+  		list(APPEND result ${a_file})
+  	endif()
+  endforeach()
+  set(${WRAPPERS} ${result} PARENT_SCOPE)
+endfunction(list_All_Wrappers_In_Workspace)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_All_Binary_Packages_In_Workspace| replace:: ``list_All_Binary_Packages_In_Workspace``
+#  .. _list_All_Binary_Packages_In_Workspace:
+#
+#  list_All_Binary_Packages_In_Workspace
+#  -------------------------------------
+#
+#   .. command:: list_All_Binary_Packages_In_Workspace(NATIVE_PACKAGES EXTERNAL_PACKAGES)
+#
+#    Getting all binary packages (native and external) that currently exist in local workspace.
+#
+#     :NATIVE_PACKAGES: the output variable that contains the list of native binary packages in the workspace.
+#
+#     :EXTERNAL_PACKAGES: the output variable that contains the list of external binary packages in the workspace.
+#
+function(list_All_Binary_Packages_In_Workspace NATIVE_PACKAGES EXTERNAL_PACKAGES)
+get_Platform_Variables(BASENAME curr_platform_str)
+file(GLOB bin_pakages RELATIVE ${WORKSPACE_DIR}/install/${curr_platform_str} ${WORKSPACE_DIR}/install/${curr_platform_str}/*)
+foreach(a_file IN LISTS bin_pakages)
+	if(EXISTS ${WORKSPACE_DIR}/install/${curr_platform_str}/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${curr_platform_str}/${a_file})
+		list(APPEND result ${a_file})
+	endif()
+endforeach()
+set(${NATIVE_PACKAGES} ${result} PARENT_SCOPE)
+set(result)
+file(GLOB ext_pakages RELATIVE ${WORKSPACE_DIR}/external/${curr_platform_str} ${WORKSPACE_DIR}/external/${curr_platform_str}/*)
+foreach(a_file IN LISTS ext_pakages)
+	if(EXISTS ${WORKSPACE_DIR}/external/${curr_platform_str}/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${curr_platform_str}/${a_file})
+		list(APPEND result ${a_file})
+	endif()
+endforeach()
+set(${EXTERNAL_PACKAGES} ${result} PARENT_SCOPE)
+endfunction(list_All_Binary_Packages_In_Workspace)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |package_Already_Built| replace:: ``package_Already_Built``
+#  .. _package_Already_Built:
+#
+#  package_Already_Built
+#  ---------------------
+#
+#   .. command:: package_Already_Built(ANSWER package reference_package)
+#
+#    Tells Wether a source package used as a depeendency by another package needs to be rebuilt or not.
+#
+#     :package: the name of the package used as a dependency.
+#
+#     :reference_package: the name of the package using the dependency.
+#
+#     :ANSWER: the output variable that is TRUE if package needs to be rebuilt, FALSE otherwise.
+#
+function(package_Already_Built ANSWER package reference_package)
+set(${ANSWER} TRUE PARENT_SCOPE)
+if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build/build_process)
+	if(${WORKSPACE_DIR}/packages/${package}/build/build_process IS_NEWER_THAN ${WORKSPACE_DIR}/packages/${reference_package}/build/build_process)
+		message("package ${package} is newer than package ${reference_package}")
+		set(${ANSWER} FALSE PARENT_SCOPE)
+	endif()
+endif()
+endfunction(package_Already_Built)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |test_Modified_Components| replace:: ``test_Modified_Components``
+#  .. _test_Modified_Components:
+#
+#  test_Modified_Components
+#  ------------------------
+#
+#   .. command:: test_Modified_Components(package build_tool RESULT)
+#
+#    Check wether components of a package have any modifications.
+#
+#     :package: the name of the target package.
+#
+#     :build_tool: the path to build toolin use (e.g. make).
+#
+#     :RESULT: the output variable that is TRUE if any component of package has modifications, FALSE otherwise.
+#
+function(test_Modified_Components package build_tool RESULT)
+set(${RESULT} FALSE PARENT_SCOPE)
+if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")#rule to check if any modification is generated only by makefiles
+  execute_process(COMMAND ${build_tool} cmake_check_build_system
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
+                  OUTPUT_VARIABLE NEED_UPDATE)
+  if(NOT NEED_UPDATE STREQUAL "")
+  	set(${RESULT} TRUE PARENT_SCOPE)
+  endif()
+endif()
+endfunction(test_Modified_Components)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Version_Number_And_Repo_From_Package| replace:: ``get_Version_Number_And_Repo_From_Package``
+#  .. _get_Version_Number_And_Repo_From_Package:
+#
+#  get_Version_Number_And_Repo_From_Package
+#  ----------------------------------------
+#
+#   .. command:: get_Version_Number_And_Repo_From_Package(package DIGITS STRING_NUMBER ADDRESS)
+#
+#    Get information from the description of a source package (e.g. data extracted from its CMakeLists.txt).
+#
+#     :package: the name of the target package.
+#
+#     :DIGITS: the output variable that list of numbers bound to the version (major;minor[;patch]).
+#
+#     :STRING: the output variable that contains the PID normalized string of package version number.
+#
+#     :FORMAT: the output variable that contains the format of the specified version (DOTTED_STRING or DIGITS).
+#
+#     :METHOD: the output variable that contains the method used to specify the version (FUNCTION or ARG).
+#
+#     :ADDRESS: the output variable that contains the address of the repository.
+#
+#
+function(get_Version_Number_And_Repo_From_Package package DIGITS STRING FORMAT METHOD ADDRESS)
+set(${ADDRESS} PARENT_SCOPE)
+file(STRINGS ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
+#parsing the file to find where version is given (in package declaration VERSION argument or in set_PID_Package_Version call)
+set(WITH_ARG FALSE)
+set(WITH_FUNCTION FALSE)
+set(IN_DECLARE FALSE)
+set(ADDR_OK FALSE)
+set(declare_function_regex_pattern "([dD][eE][cC][lL][Aa][rR][eE]_)?[pP][iI][dD]_[pP][aA][cC][kK][aA][gG][eE]")
+set(version_function_regex_pattern "[sS][eE][tT]_[pP][iI][dD]_[pP][aA][cC][kK][aA][gG][eE]_[vV][eE][rR][sS][iI][oO][nN]")
+
+foreach(line IN LISTS PACKAGE_METADATA)
+	if(line)
+    if(line MATCHES "^[^#]*${declare_function_regex_pattern}[ \t]*\\((.*)$")
+      set(IN_DECLARE TRUE)
+      if("${CMAKE_MATCH_2}" MATCHES "^[^#]*VERSION[ \t]+([0-9\\. \t]+).*$")#check if version argument not on first line
+        # string(REGEX REPLACE "^[^#]*VERSION([0-9\\. \t]+).*$" "\\1" VERSION_ARGS ${line})#extract the argument for version (either digits or version string)
+        parse_Version_Argument("${CMAKE_MATCH_1}" VERSION_DIGITS VERSION_FORMAT)#CMAKE_MATCH_1 changed because of last if .. MATCHES
+        set(WITH_ARG TRUE)
+      endif()
+    elseif(IN_DECLARE AND (NOT WITH_ARG) #still after declare call but not found any VERSION argument yet
+      AND (line MATCHES "^.*${version_function_regex_pattern}[ \t]*\\(([0-9][0-9\\. \t]+)\\).*$"))#this is a call to set_PID_Package_Version function
+      set(IN_DECLARE FALSE)# call to set_pid_package means we are outside of the declare function
+      parse_Version_Argument("${CMAKE_MATCH_1}" VERSION_DIGITS VERSION_FORMAT)
+      set(WITH_FUNCTION TRUE)
+    elseif(IN_DECLARE AND
+      (line MATCHES "^[^#]*ADDRESS[ \t]+([^ \t]+\\.git).*"))
+      set(${ADDRESS} ${CMAKE_MATCH_1} PARENT_SCOPE)#an address had been found
+      set(ADDR_OK TRUE)
+    elseif(IN_DECLARE AND (NOT WITH_ARG)
+      AND (line MATCHES "^[^#]*VERSION[ \t]+([0-9][0-9\\. \t]+).*$"))
+      parse_Version_Argument("${CMAKE_MATCH_1}" VERSION_DIGITS VERSION_FORMAT)
+      set(WITH_ARG TRUE)
+    endif()
+	endif()
+  if((WITH_ARG OR WITH_FUNCTION) AND ADDR_OK)#just to avoid parsing the whole file !
+    break()
+  endif()
+endforeach()
+
+set(${DIGITS} ${VERSION_DIGITS} PARENT_SCOPE)
+
+if(VERSION_DIGITS)
+	#from here we are sure there is at least 2 digits
+	list(GET VERSION_DIGITS 0 MAJOR)
+	list(GET VERSION_DIGITS 1 MINOR)
+	list(LENGTH VERSION_DIGITS size_of_version)
+	if(NOT size_of_version GREATER 2)
+		set(PATCH 0)
+		list(APPEND VERSION_DIGITS 0)
+	else()
+		list(GET VERSION_DIGITS 2 PATCH)
+	endif()
+	set(${STRING} "${MAJOR}.${MINOR}.${PATCH}" PARENT_SCOPE)
+  set(${FORMAT} ${VERSION_FORMAT} PARENT_SCOPE)
+  if(WITH_FUNCTION)
+    set(${METHOD} "FUNCTION" PARENT_SCOPE)
+  else()
+    set(${METHOD} "ARG" PARENT_SCOPE)
+  endif()
+else()
+	set(${STRING} PARENT_SCOPE)
+  set(${FORMAT} PARENT_SCOPE)
+  set(${METHOD} PARENT_SCOPE)
+endif()
+
+endfunction(get_Version_Number_And_Repo_From_Package)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Version_Number_To_Package| replace:: ``set_Version_Number_To_Package``
+#  .. _set_Version_Number_To_Package:
+#
+#  set_Version_Number_To_Package
+#  ----------------------------------------
+#
+#   .. command:: set_Version_Number_To_Package(RESULT_OK package format major minor patch)
+#
+#    Set the version in package description (e.g. CMakeLists.txt).
+#
+#     :package: the name of the target package.
+#
+#     :format: the format used to write the version (dotted string notation -DOTTED_STRING- or list of digits -DIGITS).
+#
+#     :method: the method used to specify the version (with dedicated function -FUNCTION- or as argument of package declaration -ARG).
+#
+#     :major: major number of the package version.
+#
+#     :minor: minor number of the package version.
+#
+#     :patch: patch number of the package version.
+#
+#     :RESULT_OK: the output variable that is TRUE if
+#
+function(set_Version_Number_To_Package RESULT_OK package format method major minor patch)
+file(STRINGS ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt PACKAGE_METADATA) #getting global info on the package
+set(${RESULT_OK} TRUE PARENT_SCOPE)
+set(BEGIN "")
+set(END "")
+set(SIGNATURE_FOUND FALSE)
+
+set(declare_function_regex_pattern "([dD][eE][cC][lL][Aa][rR][eE]_)?([pP][iI][dD]_[pP][aA][cC][kK][aA][gG][eE])")
+set(version_function_regex_pattern "[sS][eE][tT]_[pP][iI][dD]_[pP][aA][cC][kK][aA][gG][eE]_[vV][eE][rR][sS][iI][oO][nN]")
+
+if(method STREQUAL "FUNCTION")#using function set_PID_Package_Version
+  foreach(line IN LISTS PACKAGE_METADATA)
+  	if(line MATCHES "^([^#]*${version_function_regex_pattern}[ \t]*\\()[^\\)]+(\\).*)$")#this is a call to set_PID_Package_Version function
+        set(SIGNATURE_FOUND TRUE)
+        set(BEGIN "${BEGIN}${CMAKE_MATCH_1}")
+        set(END "${CMAKE_MATCH_2}\n")
+    else()
+      if(NOT SIGNATURE_FOUND)
+        set(BEGIN "${BEGIN}${line}\n")
+      else()
+        set(END "${END}${line}\n")
+      endif()
+    endif()
+  endforeach()
+else()# VERSION argument of package method=="ARG"
+  set(IN_DECLARE FALSE)
+  foreach(line IN LISTS PACKAGE_METADATA)
+    if(NOT SIGNATURE_FOUND AND (line MATCHES "^[^#]*${declare_function_regex_pattern}[ \t]*\\(.*$"))#the pattern for declare function has been found
+      set(declare_function_signature ${CMAKE_MATCH_1}${CMAKE_MATCH_2})
+      set(IN_DECLARE TRUE)
+      if(line MATCHES "^([^#]*${declare_function_signature}[ \t]*\\([^#]*VERSION[ \t]+)[0-9][0-9\\. \t]+(.*)$")#check if version not on first line
+        set(SIGNATURE_FOUND TRUE)
+        set(BEGIN "${BEGIN}${CMAKE_MATCH_1}")
+        set(END "${CMAKE_MATCH_2}\n")
+      else()#VERSION argument not found on that line
+        #simply copy the whole line
+        set(BEGIN "${BEGIN}${line}\n")
+      endif()
+    elseif(IN_DECLARE AND (NOT SIGNATURE_FOUND) #searching in declare function but not at first line
+          AND (line MATCHES "^([^#]*VERSION[ \t]+)[0-9][0-9\\. \t]+(.*)$"))
+      set(SIGNATURE_FOUND TRUE)
+      set(BEGIN "${BEGIN}${CMAKE_MATCH_1}")
+      set(END "${CMAKE_MATCH_2}\n")
+    else() #other lines
+      if(NOT SIGNATURE_FOUND)
+        set(BEGIN "${BEGIN}${line}\n")
+      else()
+        set(END "${END}${line}\n")
+      endif()
+    endif()
+  endforeach()
+endif()
+if(NOT SIGNATURE_FOUND)
+  set(${RESULT_OK} FALSE PARENT_SCOPE)
+  return()
+endif()
+#OK simply write new version string at good place
+if(format STREQUAL DIGITS)#version formatted as a list of digits
+  set(TO_WRITE "${BEGIN}${major} ${minor} ${patch}${END}")
+else()#version formatted with dotted notation
+  set(TO_WRITE "${BEGIN}${major}.${minor}.${patch}${END}")
+endif()
+file(WRITE ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt ${TO_WRITE})
+endfunction(set_Version_Number_To_Package)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Binary_Package_Version_In_Development| replace:: ``is_Binary_Package_Version_In_Development``
+#  .. _is_Binary_Package_Version_In_Development:
+#
+#  is_Binary_Package_Version_In_Development
+#  ----------------------------------------
+#
+#   .. command:: is_Binary_Package_Version_In_Development(RESULT package version)
+#
+#    Check wether a given binary package version is in development state. That means the version in used is not a released version.
+#
+#     :package: the name of the target package.
+#
+#     :version: target version of the package.
+#
+#     :RESULT: the output variable taht is TRUE if package version is in development (not released), FALSE otherwise
+#
+function(is_Binary_Package_Version_In_Development RESULT package version)
+set(${RESULT} FALSE PARENT_SCOPE)
+get_Platform_Variables(BASENAME curr_platform_str)
+set(USE_FILE ${WORKSPACE_DIR}/install/${curr_platform_str}/${package}/${version}/share/Use${package}-${version}.cmake)
+if(EXISTS ${USE_FILE}) #file does not exists means the target version is not in development
+	set(PID_VERSION_FILE ${WORKSPACE_DIR}/install/${curr_platform_str}/${package}/${version}/cmake/${package}_PID_Version.cmake)
+	if(EXISTS ${PID_VERSION_FILE})
+		include(${PID_VERSION_FILE})
+		PID_Package_Is_With_Development_Info_In_Use_Files(RES ${package})
+		if(RES)
+			include(${USE_FILE})#include the definitions
+			if(${package}_DEVELOPMENT_STATE STREQUAL "development") #this binary package has been built from a development branch
+				set(${RESULT} TRUE PARENT_SCOPE)
+			endif()
+		endif()
+	endif()
+endif()
+endfunction(is_Binary_Package_Version_In_Development)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |hard_Clean_Build_Folder| replace:: ``hard_Clean_Build_Folder``
+#  .. _hard_Clean_Build_Folder:
+#
+#  hard_Clean_Build_Folder
+#  -----------------------
+#
+#   .. command:: hard_Clean_Build_Folder(path_to_folder)
+#
+#    Clean a build folder in an aggressive and definitive way.
+#
+#     :path_to_folder: the path to the build folder to reset.
+#
+function(hard_Clean_Build_Folder path_to_folder)
+  file(GLOB thefiles RELATIVE ${path_to_folder} ${path_to_folder}/*)
+  foreach(a_file IN LISTS thefiles)
+    if(NOT a_file STREQUAL ".gitignore")
+      file(REMOVE_RECURSE ${path_to_folder}/${a_file})
+    endif()
+  endforeach()
+endfunction(hard_Clean_Build_Folder)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |hard_Clean_Package| replace:: ``hard_Clean_Package``
+#  .. _hard_Clean_Package:
+#
+#  hard_Clean_Package
+#  ------------------
+#
+#   .. command:: hard_Clean_Package(package)
+#
+#    Clean the build folder of a package in an aggressive and definitive way.
+#
+#     :package: the name of the target package.
+#
+function(hard_Clean_Package package)
+  get_Package_Type(${package} PACK_TYPE)
+  if(PACK_TYPE STREQUAL "EXTERNAL")
+    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${package}/build)
+  else()
+    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build)
+  endif()
+  hard_Clean_Build_Folder(${TARGET_BUILD_FOLDER})
+endfunction(hard_Clean_Package)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |hard_Clean_Package_Debug| replace:: ``hard_Clean_Package_Debug``
+#  .. _hard_Clean_Package_Debug:
+#
+#  hard_Clean_Package_Debug
+#  ------------------------
+#
+#   .. command:: hard_Clean_Package_Debug(package)
+#
+#    Clean the debug build folder of a package in an aggressive and definitive way.
+#
+#     :package: the name of the target package.
+#
+function(hard_Clean_Package_Debug package)
+  get_Package_Type(${package} PACK_TYPE)
+  if(PACK_TYPE STREQUAL "EXTERNAL")
+    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${package}/build)
+  else()
+    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/debug)
+  endif()
+  hard_Clean_Build_Folder(${TARGET_BUILD_FOLDER})
+endfunction(hard_Clean_Package_Debug)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |hard_Clean_Package_Release| replace:: ``hard_Clean_Package_Release``
+#  .. _hard_Clean_Package_Release:
+#
+#  hard_Clean_Package_Release
+#  --------------------------
+#
+#   .. command:: hard_Clean_Package_Release(package)
+#
+#    Clean the release build folder of a package in an aggressive and definitive way.
+#
+#     :package: the name of the target package.
+#
+function(hard_Clean_Package_Release package)
+  get_Package_Type(${package} PACK_TYPE)
+  if(PACK_TYPE STREQUAL "EXTERNAL")
+    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${package}/build)
+  else()
+    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/release)
+  endif()
+  hard_Clean_Build_Folder(${TARGET_BUILD_FOLDER})
+endfunction(hard_Clean_Package_Release)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reconfigure_Package_Build| replace:: ``reconfigure_Package_Build``
+#  .. _reconfigure_Package_Build:
+#
+#  reconfigure_Package_Build
+#  --------------------------
+#
+#   .. command:: reconfigure_Package_Build(package)
+#
+#    Reconfigure a package (launch cmake process on that package).
+#
+#     :package: the name of the target package.
+#
+function(reconfigure_Package_Build package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build)
+execute_process(COMMAND ${CMAKE_COMMAND} -DBUILD_RELEASE_ONLY:BOOL=OFF .. WORKING_DIRECTORY ${TARGET_BUILD_FOLDER} )
+endfunction(reconfigure_Package_Build)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reconfigure_Package_Build_Debug| replace:: ``reconfigure_Package_Build_Debug``
+#  .. _reconfigure_Package_Build_Debug:
+#
+#  reconfigure_Package_Build_Debug
+#  -------------------------------
+#
+#   .. command:: reconfigure_Package_Build_Debug(package)
+#
+#    Reconfigure a package in debug mode only.
+#
+#     :package: the name of the target package.
+#
+function(reconfigure_Package_Build_Debug package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/debug)
+execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${TARGET_BUILD_FOLDER} )
+endfunction(reconfigure_Package_Build_Debug)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reconfigure_Package_Build_Release| replace:: ``reconfigure_Package_Build_Release``
+#  .. _reconfigure_Package_Build_Release:
+#
+#  reconfigure_Package_Build_Release
+#  ---------------------------------
+#
+#   .. command:: reconfigure_Package_Build_Release(package)
+#
+#    Reconfigure a package in release mode only.
+#
+#     :package: the name of the target package.
+#
+function(reconfigure_Package_Build_Release package)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/release)
+execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${TARGET_BUILD_FOLDER} )
+endfunction(reconfigure_Package_Build_Release)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_For_Dependencies_Version| replace:: ``check_For_Dependencies_Version``
+#  .. _check_For_Dependencies_Version:
+#
+#  check_For_Dependencies_Version
+#  ------------------------------
+#
+#   .. command:: check_For_Dependencies_Version(BAD_DEPS package)
+#
+#    Check wether version of package dependencies have been released (i.e. if their version specified in the CMakeLists.txt of the package is released).
+#
+#     :package: the name of the target package.
+#
+#     :BAD_DEPS: the output variable containing the list of packages whose version in use are not released.
+#
+function(check_For_Dependencies_Version BAD_DEPS package)
+set(${BAD_DEPS} PARENT_SCOPE)
+set(list_of_bad_deps)
+#check that the files describing the dependencies are existing
+if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/share/Dep${package}.cmake
+OR NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/share/Dep${package}.cmake)
+  #simply reconfigure to get the dependencies
+  reconfigure_Package_Build(${package})
+  if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/share/Dep${package}.cmake
+    OR NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/share/Dep${package}.cmake)
+    message("[PID] WARNING : no dependency description found in package ${package}: cannot check version of its dependencies. The configuration of this package should fail at some point.")
+    return()
+  endif()
+endif()
+# loading variables describing dependencies
+include(${WORKSPACE_DIR}/packages/${package}/build/release/share/Dep${package}.cmake)
+include(${WORKSPACE_DIR}/packages/${package}/build/debug/share/Dep${package}.cmake)
+
+# now check that target dependencies
+#debug
+foreach(dep IN LISTS TARGET_NATIVE_DEPENDENCIES_DEBUG)
+	if(EXISTS ${WORKSPACE_DIR}/packages/${dep})#checking that the user may use a version generated by a source package
+		# step 1: get all versions for that package
+		get_Repository_Version_Tags(AVAILABLE_VERSIONS ${dep})
+		set(VERSION_NUMBERS)
+		if(AVAILABLE_VERSIONS)
+			normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}")
+		endif()
+
+		# step 2: checking that the version specified in the CMakeLists really exist
+		if(TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG)
+			normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
+
+			list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
+  			if(INDEX EQUAL -1)# the version of dependency has not been released yet
+  				list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION_DEBUG}")#using # instead of _ since names of package can contain _
+  			endif()
+  		endif()#else no version bound to dependency == no constraint
+	  endif()
+	endforeach()
+
+#release
+foreach(dep IN LISTS TARGET_NATIVE_DEPENDENCIES)
+	if(EXISTS ${WORKSPACE_DIR}/packages/${dep})#checking that the user may use a version generated by a source package
+		# step 1: get all versions for that package
+		get_Repository_Version_Tags(AVAILABLE_VERSIONS ${dep})
+		set(VERSION_NUMBERS)
+		if(AVAILABLE_VERSIONS)
+			normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}")
+		endif()
+
+		# step 2: checking that the version specified in the CMakeLists really exist
+		if(TARGET_NATIVE_DEPENDENCY_${dep}_VERSION)
+			normalize_Version_String(${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION} NORMALIZED_STR)# normalize to a 3 digits version number to allow comparion in the search
+			list(FIND VERSION_NUMBERS ${NORMALIZED_STR} INDEX)
+			if(INDEX EQUAL -1)# the version of dependency has not been released yet
+				list(APPEND list_of_bad_deps "${dep}#${TARGET_NATIVE_DEPENDENCY_${dep}_VERSION}")#using # instead of _ since names of package can contain _
+			endif()
+		endif()#no version bound to dependency == no constraint
+	endif()
+endforeach()
+if(list_of_bad_deps)#guard to avoid troubles with CMake complaining that the list does not exist
+	list(REMOVE_DUPLICATES list_of_bad_deps)
+	set(${BAD_DEPS} ${list_of_bad_deps} PARENT_SCOPE)#need of guillemet to preserve the list structure
+endif()
+endfunction(check_For_Dependencies_Version)
+
+################################################################
+################ Wrappers Life cycle management ################
+################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |hard_Clean_Wrapper| replace:: ``hard_Clean_Wrapper``
+#  .. _hard_Clean_Wrapper:
+#
+#  hard_Clean_Wrapper
+#  ------------------
+#
+#   .. command:: hard_Clean_Wrapper(wrapper)
+#
+#    Clean the build folder of a wrapper in an aggressive and definitive way.
+#
+#     :wrapper: the name of the target wrapper.
+#
+function(hard_Clean_Wrapper wrapper)
+set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${wrapper}/build)
+file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
+foreach(a_file IN LISTS thefiles)
+	if(NOT a_file STREQUAL ".gitignore")
+    file(REMOVE_RECURSE ${TARGET_BUILD_FOLDER}/${a_file})
+	endif()
+endforeach()
+endfunction(hard_Clean_Wrapper)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Wrapper_Repository_Address| replace:: ``set_Wrapper_Repository_Address``
+#  .. _set_Wrapper_Repository_Address:
+#
+#  set_Wrapper_Repository_Address
+#  ------------------------------
+#
+#   .. command:: set_Wrapper_Repository_Address(wrapper git_url)
+#
+#    Add a repository address of a wrapper in its description (i.e. in CMakeLists.txt)  .
+#
+#     :wrapper: the name of the target wrapper.
+#
+#     :git_url: the git url to set.
+#
+function(set_Wrapper_Repository_Address wrapper git_url)
+	file(READ ${WORKSPACE_DIR}/wrappers/${wrapper}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE  "([ \t\n]+)YEAR" "\\1ADDRESS ${git_url}\n\\1YEAR" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/wrappers/${wrapper}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(set_Wrapper_Repository_Address)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Wrapper_Repository_Address| replace:: ``reset_Wrapper_Repository_Address``
+#  .. _reset_Wrapper_Repository_Address:
+#
+#  reset_Wrapper_Repository_Address
+#  --------------------------------
+#
+#   .. command:: reset_Wrapper_Repository_Address(wrapper new_git_url)
+#
+#    Change the repository address of a wrapper in its description (i.e. in CMakeLists.txt)  .
+#
+#     :wrapper: the name of the target wrapper.
+#
+#     :new_git_url: the new git url to set.
+#
+function(reset_Wrapper_Repository_Address wrapper new_git_url)
+	file(READ ${WORKSPACE_DIR}/wrappers/${wrapper}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE "([ \t\n]+)ADDRESS[ \t\n]+([^ \t\n]+)([ \t\n]+)" "\\1ADDRESS ${new_git_url}\\3" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/wrappers/${wrapper}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(reset_Wrapper_Repository_Address)
+
+################################################################
+################ Frameworks Life cycle management ##############
+################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Framework_Repository_Address| replace:: ``set_Framework_Repository_Address``
+#  .. _set_Framework_Repository_Address:
+#
+#  set_Framework_Repository_Address
+#  --------------------------------
+#
+#   .. command:: set_Framework_Repository_Address(framework git_url)
+#
+#    Add a repository address of a framework in its description (i.e. in CMakeLists.txt)  .
+#
+#     :framework: the name of the target framework.
+#
+#     :git_url: the git url to set.
+#
+function(set_Framework_Repository_Address framework git_url)
+	file(READ ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE  "([ \t\n]+)YEAR" "\\1ADDRESS ${git_url}\n\\1YEAR" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(set_Framework_Repository_Address)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Framework_Repository_Address| replace:: ``reset_Framework_Repository_Address``
+#  .. _reset_Framework_Repository_Address:
+#
+#  reset_Framework_Repository_Address
+#  ----------------------------------
+#
+#   .. command:: reset_Framework_Repository_Address(framework new_git_url)
+#
+#    Change the repository address of a framework in its description (i.e. in CMakeLists.txt)  .
+#
+#     :framework: the name of the target framework.
+#
+#     :new_git_url: the new git url to set.
+#
+function(reset_Framework_Repository_Address framework new_git_url)
+	file(READ ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE "([ \t\n]+)ADDRESS[ \t\n]+([^ \t\n]+)([ \t\n]+)" "\\1ADDRESS ${new_git_url}\\3" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(reset_Framework_Repository_Address)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Framework_Repository_Address| replace:: ``get_Framework_Repository_Address``
+#  .. _get_Framework_Repository_Address:
+#
+#  get_Framework_Repository_Address
+#  --------------------------------
+#
+#   .. command:: get_Framework_Repository_Address(framework RES_URL)
+#
+#    Get the repository address of a framework from its description (i.e. in CMakeLists.txt)  .
+#
+#     :framework: the name of the target framework.
+#
+#     :RES_URL: the output variable containing the URL of the framqork in its description.
+#
+function(get_Framework_Repository_Address framework RES_URL)
+	file(READ ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE "^.+[ \t\n]ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CONTENT})
+	if(url STREQUAL "${CONTENT}")#no match
+		set(${RES_URL} "" PARENT_SCOPE)
+		return()
+	endif()
+	set(${RES_URL} ${url} PARENT_SCOPE)
+endfunction(get_Framework_Repository_Address)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Jekyll_URLs| replace:: ``get_Jekyll_URLs``
+#  .. _get_Jekyll_URLs:
+#
+#  get_Jekyll_URLs
+#  ---------------
+#
+#   .. command:: get_Jekyll_URLs(full_url NAMESPACE REMAINING_URL)
+#
+#    Tokenize a http address into a namespace and a remaining part. Used to extract information used by jekyll to adequately configure a static site.
+#
+#     :full_url: the given full URL.
+#
+#     :NAMESPACE: the output variable containing the namespace (http[s]?://gite.lirmm.fr) of the URL.
+#
+#     :REMAINING_URL: the output variable containing the remaining of the URL.
+#
+function(get_Jekyll_URLs full_url NAMESPACE REMAINING_URL)
+	string(REGEX REPLACE "^(http[s]?://[^/]+)/(.+)$" "\\1;\\2" all_urls ${full_url})
+	if(NOT (all_urls STREQUAL full_url))#it matches
+		list(GET all_urls 0 pub)
+		list(GET all_urls 1 base)
+		set(${NAMESPACE} ${pub} PARENT_SCOPE)
+		set(${REMAINING_URL} ${base} PARENT_SCOPE)
+	else()
+		string(REGEX REPLACE "^(http[s]?://[^/]+)/?$" "\\1" pub_url ${full_url})
+		set(${NAMESPACE} ${pub_url} PARENT_SCOPE)
+		set(${REMAINING_URL} PARENT_SCOPE)
+	endif()
+endfunction(get_Jekyll_URLs)
+
+
+################################################################
+################ Environments Life cycle management ############
+################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Environment_Repository_Address| replace:: ``set_Environment_Repository_Address``
+#  .. _set_Environment_Repository_Address:
+#
+#  set_Environment_Repository_Address
+#  ----------------------------------
+#
+#   .. command:: set_Environment_Repository_Address(environment git_url)
+#
+#    Add a repository address of a environment in its description (i.e. in CMakeLists.txt)  .
+#
+#     :environment: the name of the target environment.
+#
+#     :git_url: the git url to set.
+#
+function(set_Environment_Repository_Address environment git_url)
+	file(READ ${WORKSPACE_DIR}/environments/${environment}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE  "([ \t\n]+)YEAR" "\\1ADDRESS ${git_url}\n\\1YEAR" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/environments/${environment}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(set_Environment_Repository_Address)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Environment_Repository_Address| replace:: ``reset_Environment_Repository_Address``
+#  .. _reset_Environment_Repository_Address:
+#
+#  reset_Environment_Repository_Address
+#  ------------------------------------
+#
+#   .. command:: reset_Environment_Repository_Address(environment new_git_url)
+#
+#    Change the repository address of a environment in its description (i.e. in CMakeLists.txt)  .
+#
+#     :environment: the name of the target environment.
+#
+#     :new_git_url: the new git url to set.
+#
+function(reset_Environment_Repository_Address environment new_git_url)
+	file(READ ${WORKSPACE_DIR}/sites/frameworks/${environment}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE "([ \t\n]+)ADDRESS[ \t\n]+([^ \t\n]+)([ \t\n]+)" "\\1ADDRESS ${new_git_url}\\3" NEW_CONTENT ${CONTENT})
+	file(WRITE ${WORKSPACE_DIR}/sites/frameworks/${environment}/CMakeLists.txt ${NEW_CONTENT})
+endfunction(reset_Environment_Repository_Address)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Environment_Repository_Address| replace:: ``get_Environment_Repository_Address``
+#  .. _get_Environment_Repository_Address:
+#
+#  get_Environment_Repository_Address
+#  ----------------------------------
+#
+#   .. command:: get_Environment_Repository_Address(environment RES_URL)
+#
+#    Get the repository address of a environment from its description (i.e. in CMakeLists.txt)  .
+#
+#     :environment: the name of the target environment.
+#
+#     :RES_URL: the output variable containing the URL of the environment in its description.
+#
+function(get_Environment_Repository_Address environment RES_URL)
+	file(READ ${WORKSPACE_DIR}/environments/${environment}/CMakeLists.txt CONTENT)
+	string(REGEX REPLACE "^.+[ \t\n]ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CONTENT})
+	if(url STREQUAL CONTENT)#no match
+		set(${RES_URL} "" PARENT_SCOPE)
+		return()
+	endif()
+	set(${RES_URL} ${url} PARENT_SCOPE)
+endfunction(get_Environment_Repository_Address)
+
+
+################################################################
+################ Static site file management ###################
+################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |test_Site_Content_File| replace:: ``test_Site_Content_File``
+#  .. _test_Site_Content_File:
+#
+#  test_Site_Content_File
+#  ----------------------
+#
+#   .. command:: test_Site_Content_File(FILE_NAME EXTENSION a_file)
+#
+#    Check wether the file passed as argument is usable in a static site generation process. It can be pure html, markdown or image (jpg png gif bmp) file.
+#
+#     :a_file: the full file name.
+#
+#     :FILE_NAME: the output variable containing the file name without extension, or that is empty if the file cannot be used for static generation.
+#
+#     :EXTENSION: the output variable containing the file extension, or that is empty if the file cannot be used for static generation.
+#
+function(test_Site_Content_File FILE_NAME EXTENSION a_file)
+set(${FILE_NAME} PARENT_SCOPE)
+set(${EXTENSION} PARENT_SCOPE)
+
+#get the name and extension of the file
+string(REGEX REPLACE "^([^\\.]+)\\.(.+)$" "\\1;\\2" RESULTING_FILE ${a_file})
+if(NOT RESULTING_FILE STREQUAL ${a_file}) #it matches
+	list(GET RESULTING_FILE 1 RES_EXT)
+	list(APPEND POSSIBLE_EXTS markdown mkdown mkdn mkd md htm html jpg png gif bmp)
+	list(FIND POSSIBLE_EXTS ${RES_EXT} INDEX)
+	if(INDEX GREATER -1)
+		list(GET RESULTING_FILE 0 RES_NAME)
+		set(${FILE_NAME} ${RES_NAME} PARENT_SCOPE)
+		set(${EXTENSION} ${RES_EXT} PARENT_SCOPE)
+	endif()
+endif()
+endfunction(test_Site_Content_File)
+
+#########################################################################
+################ text files manipulation utilities ######################
+#########################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |test_Same_File_Content| replace:: ``test_Same_File_Content``
+#  .. _test_Same_File_Content:
+#
+#  test_Same_File_Content
+#  ----------------------
+#
+#   .. command:: test_Same_File_Content(file1_path file2_path ARE_SAME)
+#
+#    Check wether two regular files have same content.
+#
+#     :file1_path: the path to first file.
+#
+#     :file2_path: the path to second file.
+#
+#     :ARE_SAME: the output variable that is TRUE of both files have same content, FALSE otherwise.
+#
+function(test_Same_File_Content file1_path file2_path ARE_SAME)
+file(READ ${file1_path} FILE_1_CONTENT)
+file(READ ${file2_path} FILE_2_CONTENT)
+if("${FILE_1_CONTENT}" STREQUAL "${FILE_2_CONTENT}")
+	set(${ARE_SAME} TRUE PARENT_SCOPE)
+else()
+	set(${ARE_SAME} FALSE PARENT_SCOPE)
+endif()
+endfunction(test_Same_File_Content)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |test_Same_Directory_Content| replace:: ``test_Same_Directory_Content``
+#  .. _test_Same_Directory_Content:
+#
+#  test_Same_Directory_Content
+#  ---------------------------
+#
+#   .. command:: test_Same_Directory_Content(dir1_path dir2_path ARE_SAME)
+#
+#    Check wether two folders have exactly same content (even their contained regular files have same content).
+#
+#     :dir1_path: the path to first folder.
+#
+#     :dir2_path: the path to second folder.
+#
+#     :ARE_SAME: the output variable that is TRUE of both folders have same content, FALSE otherwise.
+#
+function(test_Same_Directory_Content dir1_path dir2_path ARE_SAME)
+file(GLOB_RECURSE ALL_FILES_DIR1 RELATIVE ${dir1_path} ${dir1_path}/*)
+file(GLOB_RECURSE ALL_FILES_DIR2 RELATIVE ${dir2_path} ${dir2_path}/*)
+foreach(a_file IN LISTS ALL_FILES_DIR1)
+	list(FIND ALL_FILES_DIR2 ${a_file} INDEX)
+	if(INDEX EQUAL -1)#if file not found -> not same content
+		set(${ARE_SAME} FALSE PARENT_SCOPE)
+		return()
+	else()
+		if(NOT IS_DIRECTORY ${dir1_path}/${a_file} AND NOT IS_SYMLINK ${dir1_path}/${a_file})
+			set(SAME FALSE)
+			test_Same_File_Content(${dir1_path}/${a_file} ${dir2_path}/${a_file} SAME)
+			if(NOT SAME)#file content is different
+
+				set(${ARE_SAME} FALSE PARENT_SCOPE)
+				return()
+			endif()
+		endif()
+	endif()
+endforeach()
+set(${ARE_SAME} TRUE PARENT_SCOPE)
+endfunction(test_Same_Directory_Content)
+
+######################################################################################
+################ compiler arguments test/manipulation functions ######################
+######################################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |translate_Standard_Into_Option| replace:: ``translate_Standard_Into_Option``
+#  .. _translate_Standard_Into_Option:
+#
+#  translate_Standard_Into_Option
+#  ------------------------------
+#
+#   .. command:: translate_Standard_Into_Option(RES_C_STD_OPT RES_CXX_STD_OPT c_std_number cxx_std_number)
+#
+#    Translate C/C++ language standard expressions into equivalent compiler options (e.G. C++ langauge standard 98 is translated into -std=c++98).
+#
+#     :c_std_number: the C language standard used.
+#
+#     :cxx_std_number: the C++ language standard used.
+#
+#     :RES_C_STD_OPT: the output variable that contains the equivalent compiler option for C language standard.
+#
+#     :RES_CXX_STD_OPT: the output variable that contains the equivalent compiler option for C++ language standard.
+#
+function(translate_Standard_Into_Option RES_C_STD_OPT RES_CXX_STD_OPT c_std_number cxx_std_number)
+	#managing c++
+	if(cxx_std_number EQUAL 98)
+		set(${RES_CXX_STD_OPT} "-std=c++98" PARENT_SCOPE)
+	elseif(cxx_std_number EQUAL 11)
+		set(${RES_CXX_STD_OPT} "-std=c++11" PARENT_SCOPE)
+	elseif(cxx_std_number EQUAL 14)
+		set(${RES_CXX_STD_OPT} "-std=c++14" PARENT_SCOPE)
+	elseif(cxx_std_number EQUAL 17)
+		set(${RES_CXX_STD_OPT} "-std=c++17" PARENT_SCOPE)
+	endif()
+
+	#managing c
+	if(c_std_number EQUAL 90)
+		set(${RES_C_STD_OPT} "-std=c90" PARENT_SCOPE)
+	elseif(c_std_number EQUAL 99)
+		set(${RES_C_STD_OPT} "-std=c99" PARENT_SCOPE)
+	elseif(c_std_number EQUAL 11)
+		set(${RES_C_STD_OPT} "-std=c11" PARENT_SCOPE)
+  else()
+    set(${RES_C_STD_OPT} PARENT_SCOPE)#the c standard may be let optional
+	endif()
+endfunction(translate_Standard_Into_Option)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_CXX_Version_Less| replace:: ``is_CXX_Version_Less``
+#  .. _is_CXX_Version_Less:
+#
+#  is_CXX_Version_Less
+#  -------------------
+#
+#   .. command:: is_CXX_Version_Less(IS_LESS first second)
+#
+#    Compare two C++ language standard versions.
+#
+#     :first: the first language standard version to compare.
+#
+#     :second: the second language standard version to compare.
+#
+#     :IS_LESS: the output variable that is TRUE if first is an older standard than second.
+#
+function(is_CXX_Version_Less IS_LESS first second)
+if(NOT first) #first is not set so true anytime
+  set(${IS_LESS} TRUE PARENT_SCOPE)
+  return()
+endif()
+if(NOT second)#second is not set so false anytime
+	set(${IS_LESS} FALSE PARENT_SCOPE)
+	return()
+endif()
+if(first EQUAL 98)
+	if(second EQUAL 98)
+		set(${IS_LESS} FALSE PARENT_SCOPE)
+	else()
+		set(${IS_LESS} TRUE PARENT_SCOPE)
+	endif()
+else()
+	if(second EQUAL 98)
+		set(${IS_LESS} FALSE PARENT_SCOPE)
+	else()# both number are comparable
+		if(first LESS second)
+			set(${IS_LESS} TRUE PARENT_SCOPE)
+		else()
+			set(${IS_LESS} FALSE PARENT_SCOPE)
+		endif()
+	endif()
+endif()
+endfunction(is_CXX_Version_Less)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_C_Version_Less| replace:: ``is_C_Version_Less``
+#  .. _is_C_Version_Less:
+#
+#  is_C_Version_Less
+#  -------------------
+#
+#   .. command:: is_C_Version_Less(IS_LESS first second)
+#
+#    Compare two C language standard versions.
+#
+#     :first: the first language standard version to compare.
+#
+#     :second: the second language standard version to compare.
+#
+#     :IS_LESS: the output variable that is TRUE if first is an older standard than second.
+#
+function(is_C_Version_Less IS_LESS first second)
+if(NOT first) #first is not set so true anytime
+	set(${IS_LESS} TRUE PARENT_SCOPE)
+	return()
+endif()
+if(NOT second) #second is not set so false anytime
+	set(${IS_LESS} FALSE PARENT_SCOPE)
+	return()
+endif()
+if(first EQUAL 11)#last version is 11 so never less
+	set(${IS_LESS} FALSE PARENT_SCOPE)
+else()
+	if(second EQUAL 11)
+		set(${IS_LESS} TRUE PARENT_SCOPE)
+	else()# both number are comparable (90 or 99)
+		if(first LESS second)
+			set(${IS_LESS} TRUE PARENT_SCOPE)
+		else()
+			set(${IS_LESS} FALSE PARENT_SCOPE)
+		endif()
+	endif()
+endif()
+endfunction(is_C_Version_Less)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_C_Standard_Option| replace:: ``is_C_Standard_Option``
+#  .. _is_C_Standard_Option:
+#
+#  is_C_Standard_Option
+#  --------------------
+#
+#   .. command:: is_C_Standard_Option(STANDARD_NUMBER opt)
+#
+#    Check whether the option passed to the compiler is used to set the C language standard and eventually get corrsponding C language standard version.
+#
+#     :opt: the compiler option to check.
+#
+#     :STANDARD_NUMBER: the output variable that contains the C language standard version, or empty if the option is not used to set language standard.
+#
+function(is_C_Standard_Option STANDARD_NUMBER opt)
+string(REGEX REPLACE "^[ \t]*-std=(c|gnu)(90|99|11)[ \t]*$" "\\2" OUTPUT_VAR_C ${opt})
+if(NOT OUTPUT_VAR_C STREQUAL opt)#it matches
+	set(${STANDARD_NUMBER} ${OUTPUT_VAR_C} PARENT_SCOPE)
+endif()
+endfunction(is_C_Standard_Option)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_CXX_Standard_Option| replace:: ``is_CXX_Standard_Option``
+#  .. _is_CXX_Standard_Option:
+#
+#  is_CXX_Standard_Option
+#  ----------------------
+#
+#   .. command:: is_CXX_Standard_Option(STANDARD_NUMBER opt)
+#
+#    Check whether the option passed to the compiler is used to set the C++ language standard and eventually get corresponding C++ language standard version.
+#
+#     :opt: the compiler option to check.
+#
+#     :STANDARD_NUMBER: the output variable that contains the C++ language standard version, or empty if the option is not used to set language standard.
+#
+function(is_CXX_Standard_Option STANDARD_NUMBER opt)
+string(REGEX REPLACE "^[ \t]*-std=(c|gnu)\\+\\+(98|11|14|17)[ \t]*$" "\\2" OUTPUT_VAR_CXX ${opt})
+if(NOT OUTPUT_VAR_CXX STREQUAL opt)#it matches
+	set(${STANDARD_NUMBER} ${OUTPUT_VAR_CXX} PARENT_SCOPE)
+endif()
+endfunction(is_CXX_Standard_Option)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |take_Greater_C_Standard_Version| replace:: ``take_Greater_C_Standard_Version``
+#  .. _take_Greater_C_Standard_Version:
+#
+#  take_Greater_C_Standard_Version
+#  -------------------------------
+#
+#   .. command:: take_Greater_C_Standard_Version(greater_c_var to_compare_c_var)
+#
+#    Set the greater C language to the greatest version passed as parameter.
+#
+#     :greater_c_var: the input/output variable that is called with any C language standard before call and is the greater C language standard after call.
+#
+#     :to_compare_c_var: the input variable that contains the C language standard to compare with.
+#
+function(take_Greater_C_Standard_Version greater_c_var to_compare_c_var)
+	is_C_Version_Less(IS_LESS "${${greater_c_var}}" "${${to_compare_c_var}}")
+	if(IS_LESS)
+		set(${greater_c_var} ${${to_compare_c_var}} PARENT_SCOPE)
+	endif()
+endfunction(take_Greater_C_Standard_Version)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |take_Greater_CXX_Standard_Version| replace:: ``take_Greater_CXX_Standard_Version``
+#  .. _take_Greater_CXX_Standard_Version:
+#
+#  take_Greater_CXX_Standard_Version
+#  ---------------------------------
+#
+#   .. command:: take_Greater_CXX_Standard_Version(greater_cxx_var to_compare_cxx_var)
+#
+#    Set the greater C++ language to the greatest version passed as parameter.
+#
+#     :greater_cxx_var: the input/output variable that is called with any C++ language standard before call and is the greater C language standard after call.
+#
+#     :to_compare_cxx_var: the input variable that contains the C++ language standard to compare with.
+#
+function(take_Greater_CXX_Standard_Version greater_cxx_var to_compare_cxx_var)
+	is_CXX_Version_Less(IS_LESS "${${greater_cxx_var}}" "${${to_compare_cxx_var}}")
+	if(IS_LESS)
+		set(${greater_cxx_var} ${${to_compare_cxx_var}} PARENT_SCOPE)
+	endif()
+endfunction(take_Greater_CXX_Standard_Version)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |compare_ABIs| replace:: ``compare_ABIs``
+#  .. _compare_ABIs:
+#
+#  compare_ABIs
+#  ------------
+#
+#   .. command:: compare_ABIs(ARE_EQUAL abi1 abi2)
+#
+#    Tells wether two abi identifier are refering to the same ABI or not.
+#
+#     :ARE_EQUAL: the output variable that is TRUE is both abi are the same.
+#
+#     :abi1: first abi identifier to compare.
+#
+#     :abi2: second abi identifier to compare.
+#
+function(compare_ABIs ARE_EQUAL abi1 abi2)
+  if(abi1 MATCHES "CXX11|11|abi11")
+    set(abi1_number 2)
+  elseif(abi1 MATCHES "abi98|CXX|98")
+    set(abi1_number 1)
+  else()
+    set(abi1_number 0)#unknown ABI
+  endif()
+  if(abi2 MATCHES "CXX11|11|abi11")
+    set(abi2_number 2)
+  elseif(abi1 MATCHES "abi98|CXX|98")
+    set(abi2_number 1)
+  else()
+    set(abi2_number 0)
+  endif()
+  if(abi1_number EQUAL abi2_number)
+    set(${ARE_EQUAL} TRUE PARENT_SCOPE)
+  else()
+    set(${ARE_EQUAL} FALSE PARENT_SCOPE)
+  endif()
+endfunction(compare_ABIs)
+
+#################################################################################################
+################################### pure CMake utilities ########################################
+#################################################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |usable_In_Regex| replace:: ``usable_In_Regex``
+#  .. _usable_In_Regex:
+#
+#  usable_In_Regex
+#  ---------------
+#
+#   .. command:: usable_In_Regex(RES_STR name)
+#
+#    Prepare a string so that its content can be found in a regular expression.
+#
+#     :name: the string content that is a name we want to search in a regular expression.
+#
+#     :RES_STR: the output variable that contains the equivalent name usable in a regular expression
+#
+function(usable_In_Regex RES_STR name)
+	string(REPLACE "+" "\\+" RES ${name})
+	string(REPLACE "." "\\." RES ${RES})
+	set(${RES_STR} ${RES} PARENT_SCOPE)
+endfunction(usable_In_Regex)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |append_Unique_In_Cache| replace:: ``append_Unique_In_Cache``
+#  .. _append_Unique_In_Cache:
+#
+#  append_Unique_In_Cache
+#  ----------------------
+#
+#   .. command:: append_Unique_In_Cache(list_name element_value)
+#
+#    Append and element to a list in cache. If the list does not exist in CACHE previous to this call it is created in CACHE.
+#
+#     :list_name: the input/output CACHE variable containing the list to append.
+#
+#     :element_value: the new element to append.
+#
+function(append_Unique_In_Cache list_name element_value)
+	if(${list_name})
+		set(temp_list ${${list_name}})
+		list(APPEND temp_list ${element_value})
+		list(REMOVE_DUPLICATES temp_list)
+		set(${list_name} ${temp_list} CACHE INTERNAL "")
+	else()
+		set(${list_name} ${element_value} CACHE INTERNAL "")
+	endif()
+endfunction(append_Unique_In_Cache)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |remove_Duplicates_From_List| replace:: ``remove_Duplicates_From_List``
+#  .. _remove_Duplicates_From_List:
+#
+#  remove_Duplicates_From_List
+#  ---------------------------
+#
+#   .. command:: remove_Duplicates_From_List(list_name)
+#
+#    Remove duplicates element from list. This function is used to avoid checking the list existence anytime the call of list(REMOVE_DUPLICATE ...) command is used.
+#
+#     :list_name: the input/output variable containing the list to remove duplicates in.
+#
+function(remove_Duplicates_From_List list_name)
+	if(${list_name})#there are elements in the list
+		list(REMOVE_DUPLICATES ${list_name})
+		set(${list_name} ${${list_name}} PARENT_SCOPE)
+	endif()
+endfunction(remove_Duplicates_From_List)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |define_Parallel_Jobs_Flag| replace:: ``define_Parallel_Jobs_Flag``
+#  .. _define_Parallel_Jobs_Flag:
+#
+#  define_Parallel_Jobs_Flag
+#  -------------------------
+#
+#   .. command:: define_Parallel_Jobs_Flag(PARALLEL_JOBS_FLAG)
+#
+#    Get the build system flag to use in order to get optimal number of jobs when building.
+#
+#     :PARALLEL_JOBS_FLAG: the output variable containing the native build system flag.
+#
+function(define_Parallel_Jobs_Flag PARALLEL_JOBS_FLAG)
+  include(ProcessorCount)
+  ProcessorCount(NUMBER_OF_JOBS)
+  math(EXPR NUMBER_OF_JOBS "${NUMBER_OF_JOBS}+1")#according to
+  if(NUMBER_OF_JOBS GREATER 1)#TODO manage variants between generators
+  	set(${PARALLEL_JOBS_FLAG} "-j${NUMBER_OF_JOBS}" PARENT_SCOPE)
+  else()
+  	set(${PARALLEL_JOBS_FLAG} PARENT_SCOPE)
+  endif()
+endfunction(define_Parallel_Jobs_Flag)
+
+# TODO add/generate documentation
+function(target_Options_Passed_Via_Environment res)
+    if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
+        set(${res} FALSE PARENT_SCOPE)
+    else()
+        set(${res} TRUE PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(get_GNU_Make_Program MAKE_EXE project_name)
+    find_program(MAKE_PATH make)
+    if(MAKE_PATH)
+        set(${MAKE_EXE} ${MAKE_PATH} PARENT_SCOPE)
+    else()
+        set(${MAKE_EXE} PARENT_SCOPE)
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : GNU make is required to build ${project_name} but cannot be found. Please install it and try again.")
+    endif()
+endfunction()
+
+function(get_Clang_Format_Program CLANG_FORMAT_EXE)
+    find_program(CLANG_FORMAT_PATH clang-format)
+    if(CLANG_FORMAT_PATH)
+        set(${CLANG_FORMAT_EXE} ${CLANG_FORMAT_PATH} PARENT_SCOPE)
+    endif()
+endfunction()
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Join_Generator_Expression| replace:: ``get_Join_Generator_Expression``
+#  .. _get_Join_Generator_Expression:
+#
+#  get_Join_Generator_Expression
+#  -----------------------------
+#
+#   .. command:: get_Join_Generator_Expression(EXPR_VAR join_list join_flag)
+#
+#    Create a JOIN generator expression equivalent to the list given in argument.
+#
+#     :EXPR_VAR: the output variable containing the resulting generator expression.
+#
+#     :join_list: the list of lements to join in expression.
+#
+#     :join_flag: the flag to append before any element of the list (may be empty string).
+#
+function(get_Join_Generator_Expression EXPR_VAR join_list join_flag)
+  list(LENGTH join_list SIZE)
+  if(SIZE EQUAL 0)
+    set(${EXPR_VAR} "$<0:notuseful>" PARENT_SCOPE)#produces nothing
+  else()
+    list(REMOVE_DUPLICATES join_list)
+    set(res "")
+    foreach(element IN LISTS join_list)
+      set(res "${res}${join_flag}${element} ")
+    endforeach()
+    string(STRIP "${res}" res)
+    set(${EXPR_VAR} "$<1:${res}>" PARENT_SCOPE)#produces the content of the right side of the generator expression
+  endif()
+endfunction(get_Join_Generator_Expression)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |append_Join_Generator_Expressions| replace:: ``append_Join_Generator_Expressions``
+#  .. _append_Join_Generator_Expressions:
+#
+#  append_Join_Generator_Expressions
+#  ---------------------------------
+#
+#   .. command:: append_Join_Generator_Expressions(inout_expr input_expr)
+#
+#    Create a JOIN generator expression equivalent for two generator expressions.
+#
+#     :inout_expr: the input/output variable containing the resulting generator expression, whose content is used as first element in result.
+#
+#     :input_expr: input variable containing the second expression to join
+#
+function(append_Join_Generator_Expressions inout_expr input_expr)
+  if(${inout_expr})
+    set(${inout_expr} "$<JOIN:${${inout_expr}}, ${input_expr}>" PARENT_SCOPE)
+  else()
+    set(${inout_expr} "${input_expr}" PARENT_SCOPE)
+  endif()
+endfunction(append_Join_Generator_Expressions)

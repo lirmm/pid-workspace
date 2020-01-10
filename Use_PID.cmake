@@ -77,19 +77,19 @@ endif()
 if(NOT path)
 	#test if the workspace has been deployed has a submodule directly inside the external project
 	if(EXISTS ${CMAKE_SOURCE_DIR}/pid-workspace AND IS_DIRECTORY ${CMAKE_SOURCE_DIR}/pid-workspace)
-		set(workspace_path ${CMAKE_SOURCE_DIR}/pid-workspace)
+		set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR}/pid-workspace CACHE INTERNAL "")
 	else()
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling import_PID_Workspace, a path must be given to import_PID_Workspace OR you can directly deploy the pid-workspace at the root of your project.")
 	endif()
 else()
 	if(NOT EXISTS ${path})
 		if(EXISTS ${CMAKE_SOURCE_DIR}/pid-workspace AND IS_DIRECTORY ${CMAKE_SOURCE_DIR}/pid-workspace)
-			set(workspace_path ${CMAKE_SOURCE_DIR}/pid-workspace)
+			set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR}/pid-workspace CACHE INTERNAL "")
 		else()
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling import_PID_Workspace, the path to the PID workspace ${path} does not exist.")
 		endif()
 	else()#otherwise use the user provided path
-		set(workspace_path ${path})
+		set(WORKSPACE_DIR ${path} CACHE INTERNAL "")
 	endif()
 endif()
 
@@ -115,26 +115,22 @@ set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")
 ########################################################################
 ############ all PID system path are put into the cmake path ###########
 ########################################################################
-list(APPEND CMAKE_MODULE_PATH ${workspace_path}/cmake/system)
-list(APPEND CMAKE_MODULE_PATH ${workspace_path}/cmake/system/api)
-list(APPEND CMAKE_MODULE_PATH ${workspace_path}/cmake/system/commands)
-list(APPEND CMAKE_MODULE_PATH ${workspace_path}/cmake/platforms)
-list(APPEND CMAKE_MODULE_PATH ${workspace_path}/cmake/references)
-list(APPEND CMAKE_MODULE_PATH ${workspace_path}/cmake/find)
-list(APPEND CMAKE_MODULE_PATH ${workspace_path}/configurations)
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
+
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
+include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_External_Use_Internal_Functions NO_POLICY_SCOPE)
 
-execute_process(COMMAND ${CMAKE_COMMAND} -S ${workspace_path} -B ${workspace_path}/pid
-								WORKING_DIRECTORY ${workspace_path}/pid)#force reconfiguration (in case workspace was deployed as a submodule and never configured)
+execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR} -B ${WORKSPACE_DIR}/pid
+								WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)#force reconfiguration (in case workspace was deployed as a submodule and never configured)
 
-include(${workspace_path}/pid/Workspace_Platforms_Description.cmake) #loading the workspace description configuration
+include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Description.cmake) #loading the workspace description configuration
 
 #need to reset the variables used to describe dependencies
-reset_Local_Components_Info(${workspace_path} ${mode})
+reset_Local_Components_Info(${WORKSPACE_DIR} ${mode})
 #enforce constraints before finding packages
 begin_Progress(workspace GLOBAL_PROGRESS_VAR)
 if(IMPORT_PID_WORKSPACE_SYSTEM_DEPENDENCIES)

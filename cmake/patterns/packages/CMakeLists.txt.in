@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0.2)
 set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR}/../.. CACHE PATH "root of the PID workspace directory")
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/system) # using generic scripts/modules of the workspace
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake) # using generic scripts/modules of the workspace
 include(Package_Definition NO_POLICY_SCOPE)
 
 project(@PACKAGE_NAME@)
