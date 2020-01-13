@@ -116,7 +116,7 @@ elseif(DIR_NAME STREQUAL "build/debug")
 	endif()
 elseif(DIR_NAME STREQUAL "build")
 	declare_Native_Global_Cache_Options() #first of all declaring global options so that the package is preconfigured with default options values and adequate comments for each variable
-
+	set_Cache_Entry_For_Default_Contribution_Space()
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/checksources "")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/rebuilt "")
 
@@ -1028,14 +1028,12 @@ endif(GENERATE_INSTALLER)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 
 	#copy the reference file of the package into the "references" folder of the workspace
+	get_Path_To_Default_Contribution_Space(DEFAULT_CS)
 	add_custom_target(referencing
-		COMMAND ${CMAKE_COMMAND}
-						-DWORKSPACE_DIR=${WORKSPACE_DIR}
-						-DREQUIRED_PACKAGE=${PROJECT_NAME}
-						-DSOURCE_DIR=${CMAKE_SOURCE_DIR}
-						-DBINARY_DIR=${CMAKE_BINARY_DIR}
-						-P ${WORKSPACE_DIR}/cmake/commands/Reference_PID_Package.cmake
+		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake ${DEFAULT_CS}/references
+		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake ${DEFAULT_CS}/finds
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+		COMMENT "[PID] installing references to the package into the workspace (in contribution space ${DEFAULT_CS})..."
 	)
 
 	#licensing all files of the project

@@ -1936,7 +1936,7 @@ if(EXIST)
 		endif()
 
 		#registering PID system version for that package
-		include(${PATH_TO_PACKAGE_VERSION}/cmake/${package}_PID_VERSION.cmake OPTIONAL RESULT_VARIABLE res)#using the installed PID version file to know which version is used
+		include(${PATH_TO_PACKAGE_VERSION}/share/cmake/${package}_PID_VERSION.cmake OPTIONAL RESULT_VARIABLE res)#using the installed PID version file to know which version is used
 		if(${res} STREQUAL NOTFOUND) #no bound to the package (maybe old package style before versionning)
 			set(${package}_PID_VERSION 0 CACHE INTERNAL "")#default version is 0
 		endif()

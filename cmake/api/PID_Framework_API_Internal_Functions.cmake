@@ -322,6 +322,7 @@ if(DIR_NAME STREQUAL "build")
 	set(${PROJECT_NAME}_FRAMEWORK_LICENSE ${license} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_FRAMEWORK_WELCOME ${welcome} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_FRAMEWORK_CATEGORIES CACHE INTERNAL "")#categories are reset
+	set_Cache_Entry_For_Default_Contribution_Space()
 
 	#searching for jekyll (static site generator)
 	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searcinh for the jekyll executable in standard paths
@@ -350,7 +351,6 @@ if(DIR_NAME STREQUAL "build")
 		COMMENT "[PID] Serving the static site of the framework ${PROJECT_NAME} ..."
 		VERBATIM
 	)
-
 	else()
 		message("[PID] ERROR: the jekyll executable cannot be found in the system, please install it and put it in a standard path.")
 	endif()
@@ -988,8 +988,9 @@ update_Environment_CI_Config_File() #update CI file with version coming from fra
 if(${PROJECT_NAME}_FRAMEWORK_ADDRESS)
 	generate_Framework_Reference_File(${CMAKE_BINARY_DIR}/share/ReferFramework${PROJECT_NAME}.cmake)
 	#copy the reference file of the package into the "references" folder of the workspace
+	get_Path_To_Default_Contribution_Space(DEFAULT_CS)
 	add_custom_target(referencing
-		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferFramework${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/cmake/references
+		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferFramework${PROJECT_NAME}.cmake ${DEFAULT_CS}/references
 		COMMAND ${CMAKE_COMMAND} -E echo "Framework references have been registered into the worskpace"
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )

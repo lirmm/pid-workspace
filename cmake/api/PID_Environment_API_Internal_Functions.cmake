@@ -194,6 +194,7 @@ macro(declare_Environment author institution mail year license address public_ad
   	else()
   		set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}" CACHE INTERNAL "")
   	endif()
+    set_Cache_Entry_For_Default_Contribution_Space()
   else()
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : please run cmake in the build folder of the environment ${PROJECT_NAME}.")
   	return()
@@ -354,8 +355,9 @@ macro(build_Environment_Project)
   if(${PROJECT_NAME}_ADDRESS)
     generate_Environment_Reference_File(${CMAKE_BINARY_DIR}/share/ReferEnvironment${PROJECT_NAME}.cmake)
     #copy the reference file of the package into the "references" folder of the workspace
+    get_Path_To_Default_Contribution_Space(DEFAULT_CS)
     add_custom_target(referencing
-      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferEnvironment${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/cmake/references
+      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferEnvironment${PROJECT_NAME}.cmake ${DEFAULT_CS}/references
       COMMAND ${CMAKE_COMMAND} -E echo "Environment references have been registered into the worskpace"
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )

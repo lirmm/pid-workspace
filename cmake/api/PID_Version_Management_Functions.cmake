@@ -46,9 +46,9 @@ if(NOT EXISTS ${WORKSPACE_DIR}/pid/PID_version.cmake)#if workspace has not been 
 endif()
 include(${WORKSPACE_DIR}/pid/PID_version.cmake) # get the current workspace version
 
-if(	EXISTS ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}_PID_Version.cmake)# get the workspace version with wich the package has been built
+if(	EXISTS ${CMAKE_SOURCE_DIR}/share/cmake/${PROJECT_NAME}_PID_Version.cmake)# get the workspace version with wich the package has been built
 	#The file already resides in package shared files
-	include(${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}_PID_Version.cmake)
+	include(${CMAKE_SOURCE_DIR}/share/cmake/${PROJECT_NAME}_PID_Version.cmake)
 	if(${PID_WORKSPACE_VERSION} LESS ${${PROJECT_NAME}_PID_VERSION})#workspace need to be updated
 		update_Workspace_Repository("official")
 		execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)#reconfigure workspace
@@ -56,13 +56,13 @@ if(	EXISTS ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}_PID_Version.cmake)# get the
 		if(${PID_WORKSPACE_VERSION} LESS ${${PROJECT_NAME}_PID_VERSION})#still less => impossible
 			message("[PID] INFO : PID version ${${PROJECT_NAME}_PID_VERSION} of ${PROJECT_NAME} is corrupted ... regenerating version according to most up to date workspace.")
 			set(${PROJECT_NAME}_PID_VERSION ${PID_WORKSPACE_VERSION} CACHE INTERNAL "")
-			file(WRITE ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}_PID_Version.cmake "set(${PROJECT_NAME}_PID_VERSION ${${PROJECT_NAME}_PID_VERSION} CACHE INTERNAL \"\")")#save the PID version with which the package has been built
+			file(WRITE ${CMAKE_SOURCE_DIR}/share/cmake/${PROJECT_NAME}_PID_Version.cmake "set(${PROJECT_NAME}_PID_VERSION ${${PROJECT_NAME}_PID_VERSION} CACHE INTERNAL \"\")")#save the PID version with which the package has been built
 		endif()
 	#else if > the workspace version of scripts should be able to manage difference between versions by using the ${PROJECT_NAME}_PID_VERSION variable (inside package) or ${package_name}_PID_VERSION (outside package)
 	endif()
 else()
 	set(${PROJECT_NAME}_PID_VERSION ${PID_WORKSPACE_VERSION})#if no version defined yet then set it to the current workspace one
-	file(WRITE ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}_PID_Version.cmake "set(${PROJECT_NAME}_PID_VERSION ${${PROJECT_NAME}_PID_VERSION} CACHE INTERNAL \"\")")#save the PID version with which the package has been built
+	file(WRITE ${CMAKE_SOURCE_DIR}/share/cmake/${PROJECT_NAME}_PID_Version.cmake "set(${PROJECT_NAME}_PID_VERSION ${${PROJECT_NAME}_PID_VERSION} CACHE INTERNAL \"\")")#save the PID version with which the package has been built
 endif()
 endfunction(init_PID_Version_Variable)
 

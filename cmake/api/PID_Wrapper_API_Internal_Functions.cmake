@@ -158,6 +158,7 @@ foreach(opt IN LISTS ${PROJECT_NAME}_USER_OPTIONS)
 	set(${PROJECT_NAME}_USER_OPTION_${opt}_VALUE CACHE INTERNAL "")
 endforeach()
 set(${PROJECT_NAME}_USER_OPTIONS CACHE INTERNAL "")
+
 endfunction(reset_Wrapper_Description_Cached_Variables)
 
 #.rst:
@@ -265,9 +266,10 @@ if(DIR_NAME STREQUAL "build")
 		)
 
 		# reference file generation target
+		get_Path_To_Default_Contribution_Space(DEFAULT_CS)
 	  add_custom_target(referencing
-	    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferExternal${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/cmake/references
-	  	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake ${WORKSPACE_DIR}/cmake/find
+	    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferExternal${PROJECT_NAME}.cmake ${DEFAULT_CS}/references
+	  	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake ${DEFAULT_CS}/finds
 	  	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	    COMMENT "[PID] installing references to the wrapped external package into the workspace..."
 	  )
@@ -289,6 +291,7 @@ if(DIR_NAME STREQUAL "build")
   #################################################
   reset_Wrapper_Description_Cached_Variables()
 	declare_Wrapper_Global_Cache_Options()
+	set_Cache_Entry_For_Default_Contribution_Space()
 	reset_Documentation_Info()
 	reset_CI_Variables()
 	reset_Packages_Finding_Variables()
@@ -2624,7 +2627,7 @@ function(resolve_Wrapper_Dependencies package version os_variant)
 			install_External_Package(INSTALL_OK ${dep_pack} FALSE FALSE)
 			if(NOT INSTALL_OK)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace and try to fond ReferExternal${dep_pack}.cmake file in cmake/references folder.")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace contribution spaces and try to fond ReferExternal${dep_pack}.cmake file references subfolders.")
 				return()
 			endif()
 			resolve_External_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${prefix} ${dep_pack} Release)#launch again the resolution
