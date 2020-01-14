@@ -507,7 +507,8 @@ function(generate_Wrapper_Find_File)
 	endif()
 	# generating/installing the generic cmake find file for the package
 	configure_file(${WORKSPACE_DIR}/cmake/patterns/wrappers/FindExternalPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
-	install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${WORKSPACE_DIR}/cmake/find) #install in the worskpace cmake directory which contains cmake find modules
+	get_Path_To_Default_Contribution_Space(DEFAULT_CS)
+	install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${DEFAULT_CS}/finds) #install in the worskpace cmake directory which contains cmake find modules
 endfunction(generate_Wrapper_Find_File)
 
 #.rst:
