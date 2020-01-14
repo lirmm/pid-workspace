@@ -295,7 +295,7 @@ if(DIR_NAME STREQUAL "build")
 	reset_Documentation_Info()
 	reset_CI_Variables()
 	reset_Packages_Finding_Variables()
-  init_PID_Version_Variable()
+  init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
   init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
 	check_For_Wrapper_Remote_Respositories()
 	begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
@@ -1380,6 +1380,35 @@ function(install_External_Find_File_For_Version package)
 	set(wrapper_path ${WORKSPACE_DIR}/wrappers/${package}/build)
 	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} install WORKING_DIRECTORY ${wrapper_path})#simply call the install function of the wrapper
 endfunction(install_External_Find_File_For_Version)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_External_PID_Version_File_For_Version| replace:: ``install_External_PID_Version_File_For_Version``
+#  .. _install_External_PID_Version_File_For_Version:
+#
+#  install_External_PID_Version_File_For_Version
+#  ---------------------------------------------
+#
+#   .. command:: install_External_PID_Version_File_For_Version(package version platform)
+#
+#    Copy the PID_Version file of a given version of an external package into install tree of the workspace.
+#
+#      :package: the name of the external package.
+#
+#      :version: the version of the external package for which a PID version file is installed.
+#
+#      :platform: the identifier of the platform to use in workspace install tree.
+#
+function(install_External_PID_Version_File_For_Version package version platform)
+	set(file_path ${WORKSPACE_DIR}/wrappers/${package}/share/cmake/${package}_PID_Version.cmake)
+	set(target_folder ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/cmake)
+	if(NOT EXISTS ${target_folder})
+		file(MAKE_DIRECTORY ${target_folder})
+	endif()
+	file(COPY ${file_path} DESTINATION ${target_folder})
+endfunction(install_External_PID_Version_File_For_Version)
 
 #.rst:
 #

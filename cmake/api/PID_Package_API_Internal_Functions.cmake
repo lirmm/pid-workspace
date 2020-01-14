@@ -174,15 +174,6 @@ elseif(DIR_NAME STREQUAL "build")
 		COMMENT "[PID] Integrating modifications ..."
 	)
 
-	# updating version of PID
-	add_custom_target(sync-version
-		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-P ${WORKSPACE_DIR}/cmake/commands/Synchronize_PID_Package_Version.cmake
-		COMMENT "[PID] Synchronizing the package version with workspace current version..."
-		VERBATIM
-	)
-
 	# checking that the build takes place on integration
 	add_custom_target(check-branch
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
@@ -192,7 +183,6 @@ elseif(DIR_NAME STREQUAL "build")
 						-P ${WORKSPACE_DIR}/cmake/commands/Check_PID_Package_Branch.cmake
 		COMMENT "[PID] Checking branch..."
 	)
-
 
 	# checking that the official has not been modified (migration)
 	if(${PROJECT_NAME}_ADDRESS) #only if there is an official address spefified
@@ -240,7 +230,6 @@ elseif(DIR_NAME STREQUAL "build")
 			VERBATIM
 		)
 		add_dependencies(build_release reconfigure) #checking if reconfiguration is necessary before build
-		add_dependencies(build_release sync-version)#checking if PID version synchronizing needed before build
 		add_dependencies(build_release check-branch)#checking if not built on master branch or released tag
 		if(${PROJECT_NAME}_ADDRESS)
 			add_dependencies(build_release check-repository) #checking if remote addrr needs to be changed
@@ -252,7 +241,6 @@ elseif(DIR_NAME STREQUAL "build")
 			VERBATIM
 		)
 		add_dependencies(build_debug reconfigure) #checking if reconfiguration is necessary before build
-		add_dependencies(build_debug sync-version)#checking if PID version synchronizing needed before build
 		add_dependencies(build_debug check-branch)#checking if not built on master branch or released tag
 		if(${PROJECT_NAME}_ADDRESS)
 		add_dependencies(build_debug check-repository) #checking if remote addrr needs to be changed
@@ -261,7 +249,6 @@ elseif(DIR_NAME STREQUAL "build")
 
 
 	add_dependencies(build reconfigure) #checking if reconfiguration is necessary before build
-	add_dependencies(build sync-version)#checking if PID version synchronizing needed before build
 	add_dependencies(build check-branch)#checking if not built on master branch or released tag
 	if(${PROJECT_NAME}_ADDRESS)
 		add_dependencies(build check-repository) #checking if remote addrr needs to be changed
@@ -488,7 +475,7 @@ reset_Documentation_Info()
 reset_CI_Variables()
 reset_Package_Platforms_Variables()
 reset_Packages_Finding_Variables()
-init_PID_Version_Variable()
+init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
 init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
 reset_Version_Cache_Variables()
 reset_Temporary_Optimization_Variables(${CMAKE_BUILD_TYPE}) #resetting temporary variables used in optimization of configruation process
@@ -909,9 +896,9 @@ generate_Package_CI_Config_File() #generating the CI config file in the project
 
 
 #installing specific folders of the share sub directory
-if(${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/cmake)
+if(CMAKE_BUILD_TYPE MATCHES Release AND EXISTS ${CMAKE_SOURCE_DIR}/share/cmake)
 	#installing the cmake folder (may contain specific find scripts for external libs used by the package)
-	install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
+	install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cmake DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
 endif()
 
 if(EXISTS ${CMAKE_SOURCE_DIR}/share/resources)

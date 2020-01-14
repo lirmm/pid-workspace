@@ -167,7 +167,7 @@ macro(declare_Environment author institution mail year license address public_ad
   if(DIR_NAME STREQUAL "build")
     set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 
-    init_PID_Version_Variable() # getting the workspace version used to generate the code
+    init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}) # getting the workspace version used to generate the code
     set(res_string)
     if(NOT "${author}" STREQUAL "")#cannot use directly author because we are in a macro
       foreach(string_el IN ITEMS ${author})

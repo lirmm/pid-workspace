@@ -297,7 +297,7 @@ if(DIR_NAME STREQUAL "build")
 
 	set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 	set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake PARENT_SCOPE) # adding the cmake scripts files from the framework
-	init_PID_Version_Variable() # getting the workspace version used to generate the code
+	init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}) # getting the workspace version used to generate the code
 	set(res_string)
 	foreach(string_el IN ITEMS ${author})
 		set(res_string "${res_string}_${string_el}")

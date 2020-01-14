@@ -191,6 +191,7 @@ message("[PID] INFO : Installing external package ${TARGET_EXTERNAL_PACKAGE} ver
 file(MAKE_DIRECTORY ${TARGET_INSTALL_DIR}/share)
 install_External_Use_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${version} ${CURRENT_PLATFORM})
 install_External_Find_File_For_Version(${TARGET_EXTERNAL_PACKAGE})
+install_External_PID_Version_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${version} ${CURRENT_PLATFORM})
 
 if(NOT use_os_variant)# perform specific operations at the end of the install process, if any specified and if external package is not the OS_variant
 	if(post_install_script_file AND EXISTS ${package_version_src_dir}/${post_install_script_file})

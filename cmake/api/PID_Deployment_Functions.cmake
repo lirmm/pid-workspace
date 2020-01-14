@@ -1848,6 +1848,8 @@ if (NOT EXISTS ${target_install_folder}/${version}/share/Use${package}-${version
 			message("[PID] WARNING : when installing binary package ${package}, cannot extract version folder from ${FOLDER_BINARY} and ${FOLDER_BINARY_DEBUG}.")
 		endif()
 		return()
+  else()
+    update_Workspace_For_Required_PID_Version(${package} ${target_install_folder}/${version})
 	endif()
 endif()
 
@@ -2771,6 +2773,7 @@ if(EXISTS download_url_dbg)
 endif()
 file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/share/release)
 
+update_Workspace_For_Required_PID_Version(${package} ${target_install_folder}/${version})
 set(${INSTALLED} TRUE PARENT_SCOPE)
 endfunction(download_And_Install_Binary_External_Package)
 
