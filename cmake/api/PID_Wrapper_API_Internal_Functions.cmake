@@ -1357,7 +1357,7 @@ endfunction(declare_Wrapped_Component_System_Dependency)
 #
 function(install_External_Use_File_For_Version package version platform)
 	set(file_path ${WORKSPACE_DIR}/wrappers/${package}/build/Use${package}-${version}.cmake)
-	set(target_folder ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share)
+	set(target_folder ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share)
 	file(COPY ${file_path} DESTINATION ${target_folder})
 endfunction(install_External_Use_File_For_Version)
 
@@ -1404,7 +1404,7 @@ endfunction(install_External_Find_File_For_Version)
 #
 function(install_External_PID_Version_File_For_Version package version platform)
 	set(file_path ${WORKSPACE_DIR}/wrappers/${package}/share/cmake/${package}_PID_Version.cmake)
-	set(target_folder ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/cmake)
+	set(target_folder ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/cmake)
 	if(NOT EXISTS ${target_folder})
 		file(MAKE_DIRECTORY ${target_folder})
 	endif()

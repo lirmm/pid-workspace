@@ -28,9 +28,9 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 PROJECT(pid-workspace C CXX ASM)
 
 manage_Platforms(${CMAKE_SOURCE_DIR}) # define the current platform in use and provide to the user some options to control finally targetted platform
+manage_Migrations()
 
 set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
-set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/external CACHE INTERNAL "")
 #spefici user entry to manage CI process speicifities
 option(IN_CI_PROCESS "Determine wether the build takes place in a CI environment (ON) or not (default to OFF)." OFF)
 mark_as_advanced(IN_CI_PROCESS)

@@ -2380,16 +2380,6 @@ endfunction(is_Application_Type)
 #
 function(get_Package_Type package PACK_TYPE)
   get_Platform_Variables(BASENAME curr_platform_str)
-  #try to simply find it in install tree
-  if(EXISTS ${WORKSPACE_DIR}/external/${curr_platform_str}/${package}
-  AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${curr_platform_str}/${package})
-  	set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
-    return()
-  elseif(EXISTS ${WORKSPACE_DIR}/install/${curr_platform_str}/${package}
-  AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${curr_platform_str}/${package})
-  	set(${PACK_TYPE} "NATIVE" PARENT_SCOPE)
-    return()
-  endif()
   #try to find it in source tree
   if(EXISTS ${WORKSPACE_DIR}/wrappers/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package})
   	set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
@@ -2399,6 +2389,7 @@ function(get_Package_Type package PACK_TYPE)
     return()
   endif()
   # From here they are unknown in the local filesystem, finaly try to find references of this package
+  # if not in source tree the packge has been deployed from a reference file => use this information to deduce its type
   get_Path_To_External_Reference_File(RESULT_PATH ${package})
   if(RESULT_PATH)
     set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
@@ -2437,7 +2428,7 @@ function(is_External_Package_Defined ext_package mode RES_PATH_TO_PACKAGE)
 get_Platform_Variables(BASENAME curr_platform_str)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(${ext_package}_FOUND${VAR_SUFFIX})
-	set(${RES_PATH_TO_PACKAGE} ${WORKSPACE_DIR}/external/${curr_platform_str}/${ext_package}/${${ext_package}_VERSION_STRING} PARENT_SCOPE)
+	set(${RES_PATH_TO_PACKAGE} ${WORKSPACE_DIR}/install/${curr_platform_str}/${ext_package}/${${ext_package}_VERSION_STRING} PARENT_SCOPE)
 else()
 	set(${RES_PATH_TO_PACKAGE} PARENT_SCOPE)
 endif()
@@ -3026,31 +3017,22 @@ endfunction(list_All_Wrappers_In_Workspace)
 #  list_All_Binary_Packages_In_Workspace
 #  -------------------------------------
 #
-#   .. command:: list_All_Binary_Packages_In_Workspace(NATIVE_PACKAGES EXTERNAL_PACKAGES)
+#   .. command:: list_All_Binary_Packages_In_Workspace(BIN_PACKAGES)
 #
 #    Getting all binary packages (native and external) that currently exist in local workspace.
 #
-#     :NATIVE_PACKAGES: the output variable that contains the list of native binary packages in the workspace.
+#     :BIN_PACKAGES: the output variable that contains the list of  binary packages in the workspace.
 #
-#     :EXTERNAL_PACKAGES: the output variable that contains the list of external binary packages in the workspace.
-#
-function(list_All_Binary_Packages_In_Workspace NATIVE_PACKAGES EXTERNAL_PACKAGES)
+function(list_All_Binary_Packages_In_Workspace BIN_PACKAGES)
 get_Platform_Variables(BASENAME curr_platform_str)
 file(GLOB bin_pakages RELATIVE ${WORKSPACE_DIR}/install/${curr_platform_str} ${WORKSPACE_DIR}/install/${curr_platform_str}/*)
 foreach(a_file IN LISTS bin_pakages)
-	if(EXISTS ${WORKSPACE_DIR}/install/${curr_platform_str}/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${curr_platform_str}/${a_file})
+	if(EXISTS ${WORKSPACE_DIR}/install/${curr_platform_str}/${a_file}
+      AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${curr_platform_str}/${a_file})
 		list(APPEND result ${a_file})
 	endif()
 endforeach()
-set(${NATIVE_PACKAGES} ${result} PARENT_SCOPE)
-set(result)
-file(GLOB ext_pakages RELATIVE ${WORKSPACE_DIR}/external/${curr_platform_str} ${WORKSPACE_DIR}/external/${curr_platform_str}/*)
-foreach(a_file IN LISTS ext_pakages)
-	if(EXISTS ${WORKSPACE_DIR}/external/${curr_platform_str}/${a_file} AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${curr_platform_str}/${a_file})
-		list(APPEND result ${a_file})
-	endif()
-endforeach()
-set(${EXTERNAL_PACKAGES} ${result} PARENT_SCOPE)
+set(${BIN_PACKAGES} ${result} PARENT_SCOPE)
 endfunction(list_All_Binary_Packages_In_Workspace)
 
 #.rst:

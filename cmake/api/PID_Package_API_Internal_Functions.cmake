@@ -1104,8 +1104,8 @@ endif()
 
 #retrieving dependencies on sources packages
 if(	BUILD_DEPENDENT_PACKAGES
-	AND 	(${CMAKE_BUILD_TYPE} MATCHES Debug
-		OR (${CMAKE_BUILD_TYPE} MATCHES Release AND BUILD_RELEASE_ONLY)))
+	AND 	(CMAKE_BUILD_TYPE MATCHES Debug
+		OR (CMAKE_BUILD_TYPE MATCHES Release AND BUILD_RELEASE_ONLY)))
 	#only necessary to do dependent build one time, so we do it in debug mode or release if debug not built (i.e. first mode built)
 	set(DEPENDENT_SOURCE_PACKAGES)
 	list_All_Source_Packages_In_Workspace(RESULT_PACKAGES)

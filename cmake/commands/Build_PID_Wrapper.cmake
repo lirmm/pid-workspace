@@ -78,7 +78,7 @@ message("[PID] INFO : building wrapper for external package ${TARGET_EXTERNAL_PA
 set(package_dir ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE})
 set(package_version_src_dir ${package_dir}/src/${version})
 set(package_version_build_dir ${package_dir}/build/${version})
-set(package_version_install_dir ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE}/${version})
+set(package_version_install_dir ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE}/${version})
 
 
 if(NOT EXISTS ${package_dir}/build/Build${TARGET_EXTERNAL_PACKAGE}.cmake)

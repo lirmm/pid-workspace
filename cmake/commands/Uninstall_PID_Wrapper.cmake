@@ -32,23 +32,23 @@ include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
 
-if(NOT EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE})
+if(NOT EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE})
   message("[PID] ERROR : no external package wrapper ${TARGET_EXTERNAL_PACKAGE} installed in worskspace for platform ${CURRENT_PLATFORM}.")
   return()
 endif()
 
 if(TARGET_EXTERNAL_VERSION STREQUAL "all")
   #direclty remove the containing folder
-  file(REMOVE_RECURSE ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE})
+  file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE})
   message("[PID] INFO : all versions of external package wrapper ${TARGET_EXTERNAL_PACKAGE} removed from worskspace for platform ${CURRENT_PLATFORM}.")
   return()
 else() #remove a given version folder
 
-  if(NOT EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE}/${TARGET_EXTERNAL_VERSION})
+  if(NOT EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE}/${TARGET_EXTERNAL_VERSION})
     message("[PID] ERROR : no version ${TARGET_EXTERNAL_VERSION} of external package wrapper ${TARGET_EXTERNAL_PACKAGE} installed in worskspace for platform ${CURRENT_PLATFORM}.")
     return()
   endif()
-  file(REMOVE_RECURSE ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE}/${TARGET_EXTERNAL_VERSION})
+  file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_EXTERNAL_PACKAGE}/${TARGET_EXTERNAL_VERSION})
   message("[PID] INFO : version ${TARGET_EXTERNAL_VERSION} of external package wrapper ${TARGET_EXTERNAL_PACKAGE} removed from worskspace for platform ${CURRENT_PLATFORM}.")
   return()
 

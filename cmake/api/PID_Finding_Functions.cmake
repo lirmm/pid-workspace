@@ -2019,7 +2019,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 set(${package}_FOUND${VAR_SUFFIX} FALSE CACHE INTERNAL "")
 #workspace dir must be defined for each package build
 set(EXTERNAL_PACKAGE_${package}_SEARCH_PATH
-    ${EXTERNAL_PACKAGE_BINARY_INSTALL_DIR}/${package}
+    ${PACKAGE_BINARY_INSTALL_DIR}/${package}
     CACHE
     INTERNAL
     "path to the package install dir containing versions of ${package} external package"

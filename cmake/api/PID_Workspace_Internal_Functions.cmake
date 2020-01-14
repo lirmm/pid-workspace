@@ -1763,7 +1763,7 @@ if(NOT version)#deploying the latest version of the package
 			endif()
 		endforeach()
 		if(NOT MAX_CURR_VERSION STREQUAL 0.0.0)
-			if(EXISTS ${WORKSPACE_DIR}/external/${platform_name}/${package}/${MAX_CURR_VERSION}
+			if(EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${package}/${MAX_CURR_VERSION}
 			AND NOT redeploy)
 				message("[PID] INFO : external package ${package} version ${MAX_CURR_VERSION} already lies in the workspace, use force=true to force the redeployment.")
 				return()
@@ -1799,8 +1799,8 @@ if(NOT version)#deploying the latest version of the package
 		endif()
 		set(list_of_installed_versions)
 		if(NOT redeploy #only exlcude the installed versions if redeploy is not required
-		AND EXISTS ${WORKSPACE_DIR}/external/${platform_name}/${package}/)
-			list_Version_Subdirectories(RES_VERSIONS ${WORKSPACE_DIR}/external/${platform_name}/${package})
+		AND EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${package}/)
+			list_Version_Subdirectories(RES_VERSIONS ${WORKSPACE_DIR}/install/${platform_name}/${package})
 			set(list_of_installed_versions ${RES_VERSIONS})
 		endif()
 		deploy_Source_External_Package(SOURCE_DEPLOYED ${package} "${list_of_installed_versions}")
@@ -2094,26 +2094,16 @@ if("${version}" MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+")	#specific version targetted
 		AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${platform_name}/${package}/${version})
 		file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${platform_name}/${package}/${version})
 	else()
-		if( EXISTS ${WORKSPACE_DIR}/external/${platform_name}/${package}/${version}
-			AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${platform_name}/${package}/${version})
-			file(REMOVE_RECURSE ${WORKSPACE_DIR}/external/${platform_name}/${package}/${version})
-		else()
-			message("[PID] ERROR : package ${package} version ${version} does not resides in workspace install directory.")
-			set(${RESULT} FALSE PARENT_SCOPE)
-		endif()
+		message("[PID] ERROR : package ${package} version ${version} does not resides in workspace install directory.")
+		set(${RESULT} FALSE PARENT_SCOPE)
 	endif()
 elseif(version MATCHES "all")#all versions targetted (including own versions and installers folder)
 	if( EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${package}
 		AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${platform_name}/${package})
 		file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${platform_name}/${package})
 	else()
-		if( EXISTS ${WORKSPACE_DIR}/external/${platform_name}/${package}
-			AND IS_DIRECTORY ${WORKSPACE_DIR}/external/${platform_name}/${package})
-			file(REMOVE_RECURSE ${WORKSPACE_DIR}/external/${platform_name}/${package})
-		else()
-			message("[PID] ERROR : package ${package} is not installed in workspace.")
-			set(${RESULT} FALSE PARENT_SCOPE)
-		endif()
+		message("[PID] ERROR : package ${package} is not installed in workspace.")
+		set(${RESULT} FALSE PARENT_SCOPE)
 	endif()
 else()
 	message("[PID] ERROR : invalid version string : ${version}, possible inputs are version numbers and all.")
@@ -2166,7 +2156,7 @@ endfunction(remove_PID_Package)
 function(remove_PID_Wrapper wrapper)
 	get_Platform_Variables(BASENAME platform_name)
 	#clearing install folder
-	if(	EXISTS ${WORKSPACE_DIR}/external/${platform_name}/${wrapper})
+	if(	EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${wrapper})
 		clear_PID_Package(RES ${wrapper} all)
 	endif()
 	#clearing source folder
@@ -2570,9 +2560,15 @@ endfunction(release_PID_Package)
 function(update_PID_Source_Package package)
 get_Platform_Variables(BASENAME platform_name)
 set(INSTALLED FALSE)
-message("[PID] INFO : launch the update of source package ${package}...")
+get_Package_Type(${package} PACK_TYPE)
 list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${platform_name}/${package})
-deploy_Source_Native_Package(INSTALLED ${package} "${version_dirs}" FALSE)
+	if(PACK_TYPE STREQUAL "NATIVE")
+		message("[PID] INFO : launch the update of native package ${package} from sources...")
+		deploy_Source_Native_Package(INSTALLED ${package} "${version_dirs}" FALSE)
+	else()
+		message("[PID] INFO : launch the update of external package ${package} from its wrapper...")
+		deploy_Source_External_Package(INSTALLED ${package} "${version_dirs}")
+	endif()
 if(NOT INSTALLED)
 	message("[PID] ERROR : cannot update ${package}.")
 else()
@@ -2646,34 +2642,31 @@ function(update_PID_All_Packages)
 set(NATIVES)
 set(EXTERNALS)
 set(SOURCE_PACKAGES)
-list_All_Binary_Packages_In_Workspace(NATIVES EXTERNALS)
-list_All_Source_Packages_In_Workspace(SOURCE_PACKAGES)
+list_All_Binary_Packages_In_Workspace(BINARY_PACKAGES)
+list_All_Source_Packages_In_Workspace(NATIVES)
+list_All_Wrappers_In_Workspace(WRAPPERS)
+set(SOURCE_PACKAGES ${NATIVES} ${WRAPPERS})
 
 if(SOURCE_PACKAGES)
-	if(NATIVES)
-		list(REMOVE_ITEM NATIVES ${SOURCE_PACKAGES})
+	if(BINARY_PACKAGES)#no need to check for packages already updated from sources
+		list(REMOVE_ITEM BINARY_PACKAGES ${SOURCE_PACKAGES})
 	endif()
 	foreach(package IN LISTS SOURCE_PACKAGES)
 		update_PID_Source_Package(${package})
 	endforeach()
 endif()
-if(NATIVES)
-	foreach(package IN LISTS NATIVES)
+if(BINARY_PACKAGES)
+	foreach(package IN LISTS BINARY_PACKAGES)
 		load_Package_Binary_References(REFERENCES_OK ${package})
 		if(NOT REFERENCES_OK)
 			message("[PID] WARNING : no binary reference exists for the package ${package}. Cannot update it ! Please contact the maintainer of package ${package} to have more information about this problem.")
 		else()
-			update_PID_Binary_Package(${package})
-		endif()
-	endforeach()
-endif()
-if(EXTERNALS)
-	foreach(package IN LISTS EXTERNALS)
-		load_Package_Binary_References(REFERENCES_OK ${package})
-		if(NOT REFERENCES_OK)
-			message("[PID] WARNING : no binary reference exists for the package ${package}. Cannot update it ! Please contact the maintainer of package ${package} to have more information about this problem.")
-		else()
-			update_PID_External_Package(${package})
+			get_Package_Type(${package} PACK_TYPE)
+			if(PACK_TYPE STREQUAL "NATIVE")
+				update_PID_Binary_Package(${package})
+			else()
+				update_PID_External_Package(${package})
+			endif()
 		endif()
 	endforeach()
 endif()
@@ -3180,17 +3173,16 @@ endfunction(generate_Package_CMake_Find_File)
 function(install_Package_Content_In_Folder package)
 set(IS_SYSTEM_DEPENDENCY_WRAPPER FALSE)
 set(GENERATE_SYMLINKS TRUE)
+set(package_workspace_path ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${${package}_VERSION_STRING})
 get_Package_Type(${package} PACK_TYPE)
 if(PACK_TYPE STREQUAL "EXTERNAL")
 	set(is_external TRUE)
-	set(package_workspace_path ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${package}/${${package}_VERSION_STRING})
 	if(${package}_BUILT_OS_VARIANT)
 		set(IS_SYSTEM_DEPENDENCY_WRAPPER TRUE)
 	endif()
 	set(GENERATE_SYMLINKS FALSE)
 else()#it is a native package
 	set(is_external FALSE)
-	set(package_workspace_path ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${${package}_VERSION_STRING})
 endif()
 
 if(NOT IS_SYSTEM_DEPENDENCY_WRAPPER)#for OS variant version of external packages simply do not do anything
@@ -3213,7 +3205,7 @@ if(NOT IS_SYSTEM_DEPENDENCY_WRAPPER)#for OS variant version of external packages
 		file(COPY ${libs} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 	endif()
 	#management of contained runtime resources
-	if(PACK_TYPE STREQUAL "EXTERNAL")#runtime resources of external packages are really specific
+	if(is_external)#runtime resources of external packages are really specific
 		set(ext_res)
 		foreach(component IN LISTS ${package}_COMPONENTS${VAR_SUFFIX})
 			if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})
@@ -3765,7 +3757,7 @@ function(write_Platform_Description file)
 	file(APPEND ${file} "set(CURRENT_PLATFORM_ABI ${CURRENT_PLATFORM_ABI} CACHE INTERNAL \"\" FORCE)\n")
 
 	#default install path used for that platform
-	file(APPEND ${file} "set(EXTERNAL_PACKAGE_BINARY_INSTALL_DIR ${EXTERNAL_PACKAGE_BINARY_INSTALL_DIR} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(PACKAGE_BINARY_INSTALL_DIR ${PACKAGE_BINARY_INSTALL_DIR} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(PACKAGE_BINARY_INSTALL_DIR ${PACKAGE_BINARY_INSTALL_DIR} CACHE INTERNAL \"\" FORCE)\n")
 
 	if(CURRENT_ENVIRONMENT)
@@ -3831,6 +3823,38 @@ write_Current_Configuration_Build_Related_Variables(${CMAKE_BINARY_DIR}/Workspac
 file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake NO_POLICY_SCOPE)\n")
 # defining all build configuration variables related to the current platform
 endfunction(write_Current_Configuration)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Migrations| replace:: ``manage_Migrations``
+#  .. _manage_Migrations:
+#
+#  manage_Migrations
+#  -----------------
+#
+#   .. command:: manage_Migrations()
+#
+#     Manage a migration from an old workspace to a new one.
+#     Note: transition to PID v4 removes the external folder
+#
+function(manage_Migrations)
+#To PID V4
+if(EXISTS ${WORKSPACE_DIR}/configurations AND IS_DIRECTORY ${WORKSPACE_DIR}/configurations)
+	file(REMOVE_RECURSE ${WORKSPACE_DIR}/configurations)
+endif()
+if(EXISTS ${WORKSPACE_DIR}/external AND IS_DIRECTORY ${WORKSPACE_DIR}/external)
+	file(GLOB installed_platforms RELATIVE ${WORKSPACE_DIR}/external ${WORKSPACE_DIR}/external/*)
+	foreach(platform IN LISTS installed_platforms)
+		file(GLOB installed_externals RELATIVE ${WORKSPACE_DIR}/external/${platform} ${WORKSPACE_DIR}/external/${platform}/*)
+		foreach(pack IN LISTS installed_externals)
+			file(RENAME ${WORKSPACE_DIR}/external/${platform}/${pack} ${WORKSPACE_DIR}/install/${platform}/${pack})
+		endforeach()
+	endforeach()
+	file(REMOVE_RECURSE ${WORKSPACE_DIR}/external)
+endif()
+endfunction(manage_Migrations)
 
 #.rst:
 #

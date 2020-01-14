@@ -579,12 +579,7 @@ endfunction(package_Source_Exists_In_Workspace)
 #      :RETURNED_PATH: the output variable that contains the path to the binary package version on filesystem, or empty of not existing.
 #
 function(package_Binary_Exists_In_Workspace RETURNED_PATH package version platform)
-get_Package_Type(${package} PACK_TYPE)
-if(PACK_TYPE STREQUAL "EXTERNAL")
-  set(PATH_TO_CHECK ${WORKSPACE_DIR}/external/${platform}/${package}/${version})
-elseif(PACK_TYPE STREQUAL "NATIVE")
-  set(PATH_TO_CHECK ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
-endif()
+set(PATH_TO_CHECK ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
 if(PATH_TO_CHECK AND EXISTS ${PATH_TO_CHECK} AND IS_DIRECTORY ${PATH_TO_CHECK})
   set(${RETURNED_PATH} ${PATH_TO_CHECK} PARENT_SCOPE)
 else()
@@ -1524,7 +1519,7 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
       if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
         add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
         #need to remove the package because it cannot be configured
-        uninstall_Binary_Package(${package} FALSE ${RES_VERSION} ${RES_PLATFORM})
+        uninstall_Binary_Package(${package} ${RES_VERSION} ${RES_PLATFORM})
         message("[PID] ERROR : cannot configure version ${version} of native package ${package}.")
         set(${DEPLOYED} FALSE PARENT_SCOPE)
       	return()
@@ -1625,7 +1620,7 @@ if(INDEX EQUAL -1) # selected version not found in versions to exclude
       if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
         add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
         #need to remove the package because it cannot be configured
-        uninstall_Binary_Package(${package} FALSE ${RES_VERSION} ${RES_PLATFORM})
+        uninstall_Binary_Package(${package} ${RES_VERSION} ${RES_PLATFORM})
         message("[PID] ERROR : cannot configure version ${RES_VERSION} of native package ${package}.")
         set(${DEPLOYED} FALSE PARENT_SCOPE)
       	return()
@@ -1988,7 +1983,7 @@ function(build_And_Install_External_Package_Version INSTALLED package version is
 
   get_Platform_Variables(BASENAME platform PKG_STRING package_string)
   if(BUILD_RES EQUAL 0
-  AND EXISTS ${WORKSPACE_DIR}/external/${platform}/${package}/${version}/share/Use${package}-${version}.cmake)
+  AND EXISTS ${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/Use${package}-${version}.cmake)
   	set(${INSTALLED} TRUE PARENT_SCOPE)
   	if(ADDITIONNAL_DEBUG_INFO)
   		message("[PID] INFO : external package ${package} version ${version} built !")
@@ -2266,7 +2261,7 @@ endfunction(resolve_Required_External_Package_Version)
 function(uninstall_External_Package package)
 set(version ${${package}_VERSION_STRING})
 get_Platform_Variables(BASENAME platform_str)
-set(path_to_install_dir ${WORKSPACE_DIR}/external/${platform_str}/${package}/${version})
+set(path_to_install_dir ${WORKSPACE_DIR}/install/${platform_str}/${package}/${version})
 if(EXISTS ${path_to_install_dir} AND IS_DIRECTORY ${path_to_install_dir})
   file(REMOVE_RECURSE ${path_to_install_dir}) #delete the external package version folder
 endif()
@@ -2445,8 +2440,8 @@ endif()
 
 #get the list of already installed versions used to avoid installation if not mandatory
 set(list_of_installed_versions)
-if(EXISTS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${package}/)
-	list_Version_Subdirectories(RES_VERSIONS ${WORKSPACE_DIR}/external/${CURRENT_PLATFORM}/${package})
+if(EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/)
+	list_Version_Subdirectories(RES_VERSIONS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
 	set(list_of_installed_versions ${RES_VERSIONS})
   if(FORCE_REBUILD)
     list(REMOVE_ITEM list_of_installed_versions ${SELECTED})
@@ -2530,7 +2525,7 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
     if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
       add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" TRUE)
       #need to remove the package because it cannot be configured
-      uninstall_Binary_Package(${package} TRUE ${RES_VERSION} ${TARGET_PLATFORM})
+      uninstall_Binary_Package(${package} ${RES_VERSION} ${TARGET_PLATFORM})
       message("[PID] ERROR : cannot configure version ${RES_VERSION} of external package ${package}.")
       set(${DEPLOYED} FALSE PARENT_SCOPE)
       return()
@@ -2625,7 +2620,7 @@ if(RES STREQUAL "UNKNOWN")
   if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
     add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
     #need to remove the package because it cannot be configured
-    uninstall_Binary_Package(${package} TRUE ${version} ${TARGET_PLATFORM})
+    uninstall_Binary_Package(${package} ${version} ${TARGET_PLATFORM})
     message("[PID] ERROR : cannot configure version ${version} of external package ${package}.")
     set(${DEPLOYED} FALSE PARENT_SCOPE)
     return()
@@ -2707,7 +2702,7 @@ if(EXISTS ${package}_REFERENCE_${version}_${platform}_URL_DEBUG)
 endif()
 
 ######## installing the external package ##########
-set(target_install_folder ${WORKSPACE_DIR}/external/${platform_str}/${package}/${version})
+set(target_install_folder ${WORKSPACE_DIR}/install/${platform_str}/${package}/${version})
 # 1) creating the external package root folder and the version folder
 if(NOT EXISTS ${target_install_folder})
   file(MAKE_DIRECTORY ${target_install_folder})
@@ -2788,24 +2783,18 @@ endfunction(download_And_Install_Binary_External_Package)
 #  uninstall_Binary_Package
 #  ------------------------
 #
-#   .. command:: uninstall_Binary_Package(package external version platform)
+#   .. command:: uninstall_Binary_Package(package version platform)
 #
 #    Remove the given binary package from install tree
 #
 #      :package: The name of the external package.
 #
-#      :external: if TRUE the target package is an external package, otherwise it is a native package.
-#
 #      :version: version of the external package to install.
 #
 #      :platform: target platform for archive binary content (name may contain also instance extension).
 #
-function(uninstall_Binary_Package package external version platform)
-  if(external)
-    set(path_to_install ${WORKSPACE_DIR}/external/${platform}/${package}/${version})
-  else()
-    set(path_to_install ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
-  endif()
+function(uninstall_Binary_Package package version platform)
+  set(path_to_install ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
   if(EXISTS ${path_to_install})
     file(REMOVE_RECURSE ${path_to_install})
   endif()
@@ -2843,19 +2832,14 @@ set(${RESULT} TRUE PARENT_SCOPE)
 
 extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE platform_base ${platform})
 
-if(external)
-  include(${WORKSPACE_DIR}/external/${platform_base}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
-  #using the hand written Use<package>-<version>.cmake file to get adequate version information about plaforms
-  if(res STREQUAL NOTFOUND)
-  	return()# no use file in external package ("raw external package") => nothing to do
-  endif()
-else()
-  include(${WORKSPACE_DIR}/install/${platform_base}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
-  if(res STREQUAL NOTFOUND)
+include(${WORKSPACE_DIR}/install/${platform_base}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
+if(res STREQUAL NOTFOUND)
+  if(NOT external)
+    #using the hand written Use<package>-<version>.cmake file to get adequate version information about plaforms
     set(${RESULT} FALSE PARENT_SCOPE)
-    return()# no use file in native package => problem !
   endif()
-endif()
+  return()# no use file in native package => problem !
+endif()# no use file in external package ("raw external package") => nothing to do
 
 # 0) checking global ABI compatibility
 is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${package} ${mode})
@@ -2906,7 +2890,7 @@ endforeach()
 
 if(external)#external packages may be provided with specific script to use when deploying binaries
   if(${package}_SCRIPT_POST_INSTALL)
-    set(TARGET_INSTALL_DIR ${WORKSPACE_DIR}/external/${platform_base}/${package}/${version})
+    set(TARGET_INSTALL_DIR ${WORKSPACE_DIR}/install/${platform_base}/${package}/${version})
     message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/cmake_script/${${package}_SCRIPT_POST_INSTALL} ...")
     include(${TARGET_INSTALL_DIR}/cmake_script/${${package}_SCRIPT_POST_INSTALL} NO_POLICY_SCOPE)#execute the script
   endif()
