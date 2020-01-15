@@ -30,7 +30,7 @@ include(CMakeParseArguments)
 
 #.rst:
 #
-# .. ifmode:: script
+# .. ifmode:: internal
 #
 #  .. |execute_OS_Command| replace:: ``execute_OS_Command``
 #  .. _execute_OS_Command:
@@ -38,24 +38,11 @@ include(CMakeParseArguments)
 #  execute_OS_Command
 #  ------------------
 #
-#   .. command:: execute_OS_Command(...)
+#   .. command:: execute_OS_Command(list_of_args)
 #
 #      invoque a command of the operating system with adequate privileges.
 #
-#     .. rubric:: Required parameters
-#
-#     :...: the commands to be passed (do not use sudo !)
-#
-#     .. admonition:: Effects
-#        :class: important
-#
-#        Execute the command with adequate privileges .
-#
-#     .. rubric:: Example
-#
-#     .. code-block:: cmake
-#
-#        execute_OS_Command(apt-get install -y libgtk2.0-dev libgtkmm-2.4-dev)
+#     :list_of_args: the system command to be passed and that will be executed with adequate privileges (do not use sudo !)
 #
 macro(execute_OS_Command)
 if(IN_CI_PROCESS)
