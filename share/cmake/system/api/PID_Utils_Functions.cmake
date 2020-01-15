@@ -28,6 +28,43 @@ set(PID_UTILS_FUNCTIONS_INCLUDED TRUE)
 
 include(CMakeParseArguments)
 
+#.rst:
+#
+# .. ifmode:: script
+#
+#  .. |execute_OS_Command| replace:: ``execute_OS_Command``
+#  .. _execute_OS_Command:
+#
+#  execute_OS_Command
+#  ------------------
+#
+#   .. command:: execute_OS_Command(...)
+#
+#      invoque a command of the operating system with adequate privileges.
+#
+#     .. rubric:: Required parameters
+#
+#     :...: the commands to be passed (do not use sudo !)
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        Execute the command with adequate privileges .
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        execute_OS_Command(apt-get install -y libgtk2.0-dev libgtkmm-2.4-dev)
+#
+macro(execute_OS_Command)
+if(IN_CI_PROCESS)
+  execute_process(COMMAND ${ARGN})
+else()
+  execute_process(COMMAND sudo ${ARGN})#need to have super user privileges except in CI where sudo is forbidden
+endif()
+endmacro(execute_OS_Command)
+
 #############################################################
 ########### general utilities for build management ##########
 #############################################################
