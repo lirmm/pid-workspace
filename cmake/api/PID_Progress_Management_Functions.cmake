@@ -196,6 +196,8 @@ foreach(pack IN LISTS CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS)
   file(APPEND ${thefile} "set(${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT ${${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT})\n")
   file(APPEND ${thefile} "set(${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM ${${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM})\n")
 endforeach()
+#memorize if an update of used contribution spaces has been made
+file(APPEND ${thefile} "set(CONTRBUTION_SPACES_UPDATED ${CONTRBUTION_SPACES_UPDATED})\n")
 endfunction(update_Progress_File)
 
 #.rst:
@@ -307,9 +309,58 @@ if(EXISTS ${thefile})
 endif()
 endfunction(add_Chosen_Package_Version_In_Current_Process)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Contribution_Spaces_Updated_In_Current_Process| replace:: ``set_Contribution_Spaces_Updated_In_Current_Process``
+#  .. _set_Contribution_Spaces_Updated_In_Current_Process:
+#
+#  set_Contribution_Spaces_Updated_In_Current_Process
+#  --------------------------------------------------
+#
+#   .. command:: set_Contribution_Spaces_Updated_In_Current_Process()
+#
+#    Mark the current process has having performed an update of contribution spaces.
+#
+function(set_Contribution_Spaces_Updated_In_Current_Process)
+set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+if(EXISTS ${thefile})
+	include (${thefile})
+  set(CONTRBUTION_SPACES_UPDATED TRUE)
+  update_Progress_File()
+  return()
+endif()
+endfunction(set_Contribution_Spaces_Updated_In_Current_Process)
+
 ####################################################################################################
 ######################## Utility functions to check state of the process ###########################
 ####################################################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Contribution_Spaces_Updated_In_Current_Process| replace:: ``check_Contribution_Spaces_Updated_In_Current_Process``
+#  .. _check_Contribution_Spaces_Updated_In_Current_Process:
+#
+#  check_Contribution_Spaces_Updated_In_Current_Process
+#  ----------------------------------------------------
+#
+#   .. command:: check_Contribution_Spaces_Updated_In_Current_Process(RESULT)
+#
+#    Check whether contribution spaces lying in the workspace have already been updated during this run.
+#
+#      :RESULT: the output variable that is TRUE if contribution spaces have been updated false otherwise.
+#
+function(check_Contribution_Spaces_Updated_In_Current_Process RESULT)
+set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(${RESULT} FALSE PARENT_SCOPE) #not already managed of no file exists
+if(EXISTS ${thefile})
+	include (${thefile})
+  set(${RESULT} ${CONTRBUTION_SPACES_UPDATED} PARENT_SCOPE) #not already managed of no file exists
+endif()
+endfunction(check_Contribution_Spaces_Updated_In_Current_Process)
 
 #.rst:
 #

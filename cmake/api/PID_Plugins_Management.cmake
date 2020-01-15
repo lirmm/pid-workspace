@@ -77,7 +77,7 @@ endfunction(manage_Plugins_In_Package)
 #      :plugin: The name of the plugin
 #
 function(activate_Plugin plugin)
-  get_Path_To_Plugin_Dir(PLUG_PATH ${plugin})
+  resolve_Path_To_Plugin_Dir(PLUG_PATH ${plugin})
   if(PLUG_PATH AND EXISTS ${PLUG_PATH}/plugin_activate.cmake)
     include(${PLUG_PATH}/plugin_activate.cmake)
   	if(${plugin}_PLUGIN_ACTIVATION_MESSAGE)
@@ -105,7 +105,7 @@ endfunction(activate_Plugin)
 #      :plugin: The name of the plugin
 #
 macro(plugin_Description plugin)
-  get_Path_To_Plugin_Dir(PLUG_PATH ${plugin})
+  resolve_Path_To_Plugin_Dir(PLUG_PATH ${plugin})
   if(PLUG_PATH)
     include(${PLUG_PATH}/plugin_description.cmake OPTIONAL)
   endif()
@@ -129,7 +129,7 @@ endmacro(plugin_Description)
 #      :plugin: The name of the plugin
 #
 function(deactivate_Plugin plugin)
-  get_Path_To_Plugin_Dir(PLUG_PATH ${plugin})
+  resolve_Path_To_Plugin_Dir(PLUG_PATH ${plugin})
 	if(PLUG_PATH AND EXISTS ${PLUG_PATH}/plugin_deactivate.cmake)
     if(${plugin}_PLUGIN_DEACTIVATION_MESSAGE)
       message("[PID] INFO : plugin ${plugin} : ${${plugin}_PLUGIN_DEACTIVATION_MESSAGE}.")

@@ -713,6 +713,33 @@ endfunction(register_Repository_Version)
 ############# function used to publish/update modifications   ###############
 #############################################################################
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_Contribution_Space_Repository| replace:: ``update_Contribution_Space_Repository``
+#  .. _update_Contribution_Space_Repository:
+#
+#  update_Contribution_Space_Repository
+#  -----------------------------------
+#
+#   .. command:: update_Contribution_Space_Repository(contrib_space)
+#
+#     Update local contrbution space's repository (pull).
+#
+#     :contrib_space: the name of target contribution space
+#
+function(update_Contribution_Space_Repository contrib_space)
+  get_Path_To_Contribution_Space(PATH_TO_DIR ${contrib_space})
+  if(PATH_TO_DIR)
+    #merge official content with local one
+    execute_process(COMMAND git pull origin master
+                    WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
+  endif()
+endfunction(update_Contribution_Space_Repository)
+
+
 #.rst:
 #
 # .. ifmode:: internal

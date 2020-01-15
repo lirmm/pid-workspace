@@ -27,6 +27,37 @@ set(PID_PACKAGE_FINDING_FUNCTIONS_INCLUDED TRUE)
 ##########################################################################################
 
 ##################################################################################
+### auxiliary macro to resove resolve path to find files and call find_package ###
+##################################################################################
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |find_package_resolved| replace:: ``find_package_resolved``
+#  .. _find_package_resolved:
+#
+#  find_package_resolved
+#  ---------------------
+#
+#   .. command:: find_package_resolved(deployment_unit ...)
+#
+#    Do a find_package only if the find file is known in workspace. May update contribution spaces if file is unknown.
+#
+#     :deployment_unit: the name of the deployment unit to find.
+#
+#     :...: other arguments to pass to find_package
+#
+macro(find_package_resolved deployment_unit)
+  resolve_Path_To_Find_File(PATH_KNOWN ${deployment_unit})
+  if(PATH_KNOWN)
+    find_package(${ARGN})
+  endif()
+  set(PATH_KNOWN)
+endmacro(find_package_resolved)
+
+##################################################################################
 ##################auxiliary functions to check package version####################
 ##################################################################################
 
@@ -976,7 +1007,7 @@ if(external)#management of external packages
     endif()
   else()#the version to test is NOT exact, so we can theorically change it in final build with version_in_use (or any compatible version)
     set(DO_NOT_FIND_${package} TRUE)
-    find_package(${package})#just include the find file to get information about compatible versions, do not "find for real" in install tree
+    include_Find_File(${package})#just include the find file to get information about compatible versions, do not "find for real" in install tree
     unset(DO_NOT_FIND_${package})
     if(version_in_use_is_exact) #the version currenlty in use is exact
       #the exact version in use must be compatible with (usable instead of) the tested one (since in final build version_in_use_will be used)
@@ -1621,7 +1652,7 @@ if(${dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been found (pre
 			if(IS_COMPATIBLE)
 				if(NEED_REFIND)
 					# OK installing the exact version instead
-					find_package(
+					resolve_Path_To_Find_File(
 						${dependency}
 						${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}
 						EXACT
@@ -1641,7 +1672,7 @@ if(${dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been found (pre
 					${dependency} ${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}})
 			if(COMPATIBLE_VERSION)
 				if(VERSION_TO_FIND)
-					find_package(
+					resolve_Path_To_Find_File(
 						${dependency}
 						${VERSION_TO_FIND}
 						MODULE
@@ -1663,7 +1694,7 @@ else()#the dependency has not been already found
 	if(${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX})
 
 		if(${package}_DEPENDENCY_${dependency}_VERSION_EXACT${VAR_SUFFIX}) #an exact version has been specified
-			find_package(
+			resolve_Path_To_Find_File(
 				${dependency}
 				${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}
 				EXACT
@@ -1673,7 +1704,7 @@ else()#the dependency has not been already found
 			)
 
 		else()
-			find_package(
+			resolve_Path_To_Find_File(
 				${dependency}
 				${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}
 				MODULE
@@ -1682,7 +1713,7 @@ else()#the dependency has not been already found
 			)
 		endif()
 	else() # not version specified
-		find_package(
+		resolve_Path_To_Find_File(
 			${dependency}
 			MODULE
 			REQUIRED
@@ -1739,7 +1770,7 @@ if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been f
             set(${external_dependency}_FIND_VERSION_SYSTEM FALSE)
           endif()
 					# OK need to find the exact version instead
-					find_package(
+					resolve_Path_To_Find_File(
 						${external_dependency}
 						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}
 						EXACT
@@ -1759,7 +1790,7 @@ if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been f
 					${external_dependency} ${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}})
       if(COMPATIBLE_VERSION)
 				if(VERSION_TO_FIND)
-					find_package(
+					resolve_Path_To_Find_File(
 						${external_dependency}
 						${VERSION_TO_FIND}
 						MODULE
@@ -1786,7 +1817,7 @@ else()#the dependency has not been already found
       else()
         set(${external_dependency}_FIND_VERSION_SYSTEM FALSE)
       endif()
-      find_package(
+      resolve_Path_To_Find_File(
 				${external_dependency}
 				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}
 				EXACT
@@ -1795,7 +1826,7 @@ else()#the dependency has not been already found
 				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${VAR_SUFFIX}}
 			)
     else()
-      find_package(
+      resolve_Path_To_Find_File(
 				${external_dependency}
 				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}
 				MODULE
@@ -1804,7 +1835,7 @@ else()#the dependency has not been already found
 			)
 		endif()
 	else()
-    find_package(
+    resolve_Path_To_Find_File(
 			${external_dependency}
 			MODULE
 			REQUIRED

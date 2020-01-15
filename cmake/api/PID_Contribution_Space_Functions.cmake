@@ -28,6 +28,7 @@ set(PID_CONTRIBUTION_SPACE_FUNCTIONS_INCLUDED TRUE)
 
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
+include(PID_Progress_Management_Functions NO_POLICY_SCOPE)
 
 macro(set_Project_Module_Path_From_Workspace)
   if(PID_WORKSPACE_MODULES_PATH)
@@ -58,6 +59,18 @@ function(get_Path_To_Format_File RESULT_PATH code_style)
   find_File_In_Contribution_Spaces(formats ".clang-format.${code_style}")
   set(${RESULT_PATH} ${FIND_FILE_RESULT_PATH} PARENT_SCOPE)
 endfunction(get_Path_To_Format_File)
+
+function(resolve_Path_To_Format_File RESULT_PATH code_style)
+  set(${RESULT_PATH} PARENT_SCOPE)
+  get_Path_To_Format_File(PATH_TO_FORMAT ${code_style})
+  if(NOT PATH_TO_FORMAT)
+    update_Contribution_Spaces(UPDATED)
+    if(UPDATED)
+      get_Path_To_Format_File(PATH_TO_FORMAT ${code_style})
+    endif()
+  endif()
+  set(${RESULT_PATH} ${PATH_TO_FORMAT} PARENT_SCOPE)
+endfunction(resolve_Path_To_Format_File)
 
 ##########################################################################################
 ############################ plugin files resolution #####################################
@@ -96,6 +109,18 @@ function(get_All_Available_Plugins PLUGINS_LIST)
 endfunction(get_All_Available_Plugins)
 
 
+function(resolve_Path_To_Plugin_Dir RESULT_PATH plugin)
+  set(${RESULT_PATH} PARENT_SCOPE)
+  get_Path_To_Plugin_Dir(PATH_TO_DIR ${plugin})
+  if(NOT PATH_TO_DIR)
+    update_Contribution_Spaces(UPDATED)
+    if(UPDATED)
+      get_Path_To_Plugin_Dir(PATH_TO_DIR ${plugin})
+    endif()
+  endif()
+  set(${RESULT_PATH} ${PATH_TO_DIR} PARENT_SCOPE)
+endfunction(resolve_Path_To_Plugin_Dir)
+
 ##########################################################################################
 ############################ configuration dirs resolution ###############################
 ##########################################################################################
@@ -115,8 +140,10 @@ function(resolve_Path_To_Configuration_Dir RESULT_PATH config)
   set(${RESULT_PATH} PARENT_SCOPE)
   get_Path_To_Configuration_Dir(PATH_TO_DIR ${config})
   if(NOT PATH_TO_DIR)
-    #TODO CONTRIB update and retry
-    get_Path_To_Configuration_Dir(PATH_TO_DIR ${config})
+    update_Contribution_Spaces(UPDATED)
+    if(UPDATED)
+      get_Path_To_Configuration_Dir(PATH_TO_DIR ${config})
+    endif()
   endif()
   set(${RESULT_PATH} ${PATH_TO_DIR} PARENT_SCOPE)
 endfunction(resolve_Path_To_Configuration_Dir)
@@ -154,12 +181,17 @@ endfunction(get_All_Available_Licenses)
 
 #will work as a function since variables are in cache inside reference files
 function(check_License_File PATH_TO_FILE license)
-  get_Path_To_License_File(PATH_TO_REF ${license})
-  if(NOT PATH_TO_REF)
-    #TODO CONTRIB update and retry
-    get_Path_To_License_File(PATH_TO_REF ${license})
+  get_Path_To_License_File(PATH_TO_LICENSE ${license})
+  if(NOT PATH_TO_LICENSE)
+    update_Contribution_Spaces(UPDATED)
+    if(UPDATED)
+      get_Path_To_License_File(PATH_TO_LICENSE ${license})
+      if(PATH_TO_LICENSE)
+        include (${PATH_TO_LICENSE}) #get the information about the framework
+      endif()
+    endif()
   endif()
-  set(${PATH_TO_FILE} ${PATH_TO_REF} PARENT_SCOPE)
+  set(${PATH_TO_FILE} ${PATH_TO_LICENSE} PARENT_SCOPE)
 endfunction(check_License_File)
 
 
@@ -172,13 +204,23 @@ function(get_Path_To_Find_File RESULT_PATH deployment_unit)
   set(${RESULT_PATH} ${FIND_FILE_RESULT_PATH} PARENT_SCOPE)
 endfunction(get_Path_To_Find_File)
 
-macro(include_Find_File deployment_unit)
+function(resolve_Path_To_Find_File RESULT_PATH deployment_unit)
   get_Path_To_Find_File(PATH_TO_FILE ${deployment_unit})
+  if(NOT PATH_TO_FILE)
+    update_Contribution_Spaces(UPDATED)
+    if(UPDATED)
+      get_Path_To_Find_File(PATH_TO_FILE ${deployment_unit})
+    endif()
+  endif()
+  set(${RESULT_PATH} ${PATH_TO_FILE} PARENT_SCOPE)
+endfunction(resolve_Path_To_Find_File)
+
+macro(include_Find_File deployment_unit)
+  resolve_Path_To_Find_File(PATH_TO_FILE ${deployment_unit})
   if(PATH_TO_FILE)
     include(${PATH_TO_FILE})
-  else()
-    #TODO CONTRIB update and retry
   endif()
+  set(PATH_TO_FILE)
 endmacro(include_Find_File)
 
 ##########################################################################################
@@ -211,7 +253,13 @@ function(include_Package_Reference_File PATH_TO_FILE package)
   if(PATH_TO_REF)
     include (${PATH_TO_REF}) #get the information about the framework
   else()
-    #TODO CONTRIB update an retry include
+    update_Contribution_Spaces(UPDATED)
+    if(UPDATED)
+      get_Path_To_Package_Reference_File(PATH_TO_REF ${package})
+      if(PATH_TO_REF)
+        include (${PATH_TO_REF}) #get the information about the framework
+      endif()
+    endif()
   endif()
   set(${PATH_TO_FILE} ${PATH_TO_REF} PARENT_SCOPE)
 endfunction(include_Package_Reference_File)
@@ -222,7 +270,13 @@ function(include_External_Reference_File PATH_TO_FILE package)
   if(PATH_TO_REF)
     include (${PATH_TO_REF}) #get the information about the framework
   else()
-    #TODO CONTRIB update an retry include
+    update_Contribution_Spaces(UPDATED)
+    if(UPDATED)
+      get_Path_To_External_Reference_File(PATH_TO_REF ${package})
+      if(PATH_TO_REF)
+        include (${PATH_TO_REF}) #get the information about the framework
+      endif()
+    endif()
   endif()
   set(${PATH_TO_FILE} ${PATH_TO_REF} PARENT_SCOPE)
 endfunction(include_External_Reference_File)
@@ -233,7 +287,13 @@ function(include_Framework_Reference_File PATH_TO_FILE framework)
   if(PATH_TO_REF)
     include (${PATH_TO_REF}) #get the information about the framework
   else()
-    #TODO CONTRIB update an retry include
+    update_Contribution_Spaces(UPDATED)
+    if(UPDATED)
+      get_Path_To_Framework_Reference_File(PATH_TO_REF ${framework})
+      if(PATH_TO_REF)
+        include (${PATH_TO_REF}) #get the information about the framework
+      endif()
+    endif()
   endif()
   set(${PATH_TO_FILE} ${PATH_TO_REF} PARENT_SCOPE)
 endfunction(include_Framework_Reference_File)
@@ -244,7 +304,13 @@ function(include_Environment_Reference_File PATH_TO_FILE environment)
   if(PATH_TO_REF)
     include (${PATH_TO_REF}) #get the information about the framework
   else()
-    #TODO CONTRIB update an retry include
+    update_Contribution_Spaces(UPDATED)
+    if(UPDATED)
+      get_Path_To_Environment_Reference_File(PATH_TO_REF ${environment})
+      if(PATH_TO_REF)
+        include (${PATH_TO_REF}) #get the information about the framework
+      endif()
+    endif()
   endif()
   set(${PATH_TO_FILE} ${PATH_TO_REF} PARENT_SCOPE)
 endfunction(include_Environment_Reference_File)
@@ -273,6 +339,16 @@ endfunction(get_All_Available_References)
 ##########################################################################################
 ############################ Contribution_Spaces management ##############################
 ##########################################################################################
+
+function(update_Contribution_Spaces)
+  check_Contribution_Spaces_Updated_In_Current_Process(ALREADY_UPDATED)
+  if(NOT ALREADY_UPDATED)
+    foreach(contrib IN LISTS CONTRIBUTION_SPACES)
+      update_Contribution_Space_Repository(${contrib})
+    endforeach()
+    set_Contribution_Spaces_Updated_In_Current_Process()
+  endif()
+endfunction(update_Contribution_Spaces)
 
 function(reset_Contribution_Spaces)
   set(default_official_contribution "pid-contributions")
@@ -352,6 +428,15 @@ macro(configure_Contribution_Spaces)
     configure_Contribution_Space_CMake_Path(${contrib})
   endforeach()
 endmacro(configure_Contribution_Spaces)
+
+function(get_Path_To_Contribution_Space PATH_TO_DIR space)
+  set(path ${WORKSPACE_DIR}/contributions/${space})
+  if(EXISTS ${path} AND IS_DIRECTORY ${path})
+    set(${PATH_TO_DIR} ${path} PARENT_SCOPE)
+  else()
+    set(${PATH_TO_DIR} PARENT_SCOPE)
+  endif()
+endfunction(get_Path_To_Contribution_Space)
 
 function(get_Path_To_Default_Contribution_Space DEFAULT_CONTRIB_SPACE)
   if(PUBLISHING_IN_CONTRIBUTION_SPACE)

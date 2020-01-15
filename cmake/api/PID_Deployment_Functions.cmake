@@ -350,7 +350,7 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
       else()
         set(exact_str "")
       endif()
-      find_package(${package} ${${package}_VERSION_STRING} ${exact_str} REQUIRED)#find again the package but this time we impose as constraint the specific version searched
+      find_package_resolved(${package} ${${package}_VERSION_STRING} ${exact_str} REQUIRED)#find again the package but this time we impose as constraint the specific version searched
       #TODO maybe use the ${package}_FIND_VERSION_EXACT variable instead of directly EXACT ?
       if(NOT ${package}_FOUND${VAR_SUFFIX})
         finish_Progress(${GLOBAL_PROGRESS_VAR})
