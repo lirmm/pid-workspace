@@ -1487,8 +1487,7 @@ execute_process(COMMAND git clone ${url}
 if(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
 	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
 	execute_process(COMMAND git fetch origin
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
-                  OUTPUT_QUIET ERROR_QUIET)
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
 	execute_process(COMMAND git checkout integration
                   WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
                   OUTPUT_QUIET ERROR_QUIET)#go to integration to create the local branch
@@ -1501,8 +1500,7 @@ if(EXISTS ${WORKSPACE_DIR}/packages/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}
                   WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
                 )
 	execute_process(COMMAND git fetch official
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
-                  OUTPUT_QUIET ERROR_QUIET) #updating remote branches for official remote
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}) #updating remote branches for official remote
 else()
 	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
 	message("[PID] ERROR : impossible to clone the repository of package ${package} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this package.")
@@ -2140,11 +2138,11 @@ endfunction(get_Remotes_Address)
 #
 function(clone_Wrapper_Repository IS_DEPLOYED wrapper url)
 execute_process(COMMAND git clone ${url}
-                WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers OUTPUT_QUIET ERROR_QUIET)
+                WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers)
 if(EXISTS ${WORKSPACE_DIR}/wrappers/${wrapper} AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${wrapper})
 	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
 	execute_process(COMMAND git fetch origin --tags
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${wrapper} OUTPUT_QUIET ERROR_QUIET) #just in case of version were not updated
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${wrapper}) #just in case of version were not updated
 else()
 	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
 	message("[PID] ERROR : impossible to clone the repository of external package wrapper ${wrapper} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this wrapper.")
@@ -2368,26 +2366,24 @@ endfunction(publish_Wrapper_Repository_Version)
 #     :IS_DEPLOYED: the output variable that is TRUE if framework has been cloned, FALSE otherwise
 #
 function(clone_Framework_Repository IS_DEPLOYED framework url)
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${WORKSPACE_DIR}/sites/frameworks git clone ${url} OUTPUT_QUIET ERROR_QUIET)
-
+execute_process(COMMAND git clone ${url}
+                WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks)
 #framework may be named by only by their name or with a -framework suffix
 if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${framework} AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework})
 	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
-	execute_process(COMMAND git fetch origin
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework} OUTPUT_QUIET ERROR_QUIET) #just in case of
 else()
 	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${framework}-framework AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}-framework)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E rename ${WORKSPACE_DIR}/sites/frameworks/${framework}-framework ${WORKSPACE_DIR}/sites/frameworks/${framework}
                     WORKING_DIRECTORY ${WORKSPACE_DIR}/pid OUTPUT_QUIET ERROR_QUIET)
-		execute_process(COMMAND git lfs pull origin master
-                    WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework})#fetching master branch to get most up to date archives
-		set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
-
+	  set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
 	else()
 		set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
 		message("[PID] ERROR : impossible to clone the repository of framework ${framework} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this framework.")
 	endif()
 endif()
+#getting most up to date archives
+execute_process(COMMAND git lfs pull origin master
+                WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework})
 endfunction(clone_Framework_Repository)
 
 #.rst:
@@ -2669,21 +2665,20 @@ function(clone_Environment_Repository IS_DEPLOYED environment url)
 #environment may be named by only by their name or with a -framework suffix
 if(EXISTS ${WORKSPACE_DIR}/environments/${environment} AND IS_DIRECTORY ${WORKSPACE_DIR}/environments/${environment})
   set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
-	execute_process(COMMAND git fetch origin
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/environments/${environment} OUTPUT_QUIET ERROR_QUIET) #just in case of
 else()
   if(EXISTS ${WORKSPACE_DIR}/environments/${environment}-environment
     AND IS_DIRECTORY ${WORKSPACE_DIR}/environments/${environment}-environment)
 		execute_process(COMMAND ${CMAKE_COMMAND} -E rename ${WORKSPACE_DIR}/environments/${environment}-environment ${WORKSPACE_DIR}/environments/${environment}
-    WORKING_DIRECTORY ${WORKSPACE_DIR}/pid OUTPUT_QUIET ERROR_QUIET)
-		execute_process(COMMAND git lfs pull origin master
-                    WORKING_DIRECTORY ${WORKSPACE_DIR}/environments/${environment})#fetching master branch to get most up to date archives
+                    WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
 		set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
 	else()
 		set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
 		message("[PID] ERROR : impossible to clone the repository of environment ${environment} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this framework.")
+    return()
 	endif()
 endif()
+execute_process(COMMAND git lfs pull origin master
+                WORKING_DIRECTORY ${WORKSPACE_DIR}/environments/${environment})#fetching master branch to get most up to date archives
 endfunction(clone_Environment_Repository)
 
 #.rst:
@@ -2953,15 +2948,14 @@ if(EXISTS ${WORKSPACE_DIR}/sites/packages/${package} AND IS_DIRECTORY ${WORKSPAC
 	if(EXISTS ${WORKSPACE_DIR}/sites/packages/${package}/build AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build
 		AND EXISTS ${WORKSPACE_DIR}/sites/packages/${package}/CMakeLists.txt)
 		set(${IS_INITIALIZED} TRUE PARENT_SCOPE)
-		execute_process(COMMAND git fetch origin
-                    WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package} OUTPUT_QUIET ERROR_QUIET) #just in case of
-		execute_process(COMMAND git lfs pull origin master
-                    WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package} )#fetching master branch to get most up to date archives
 	else() # the site's repository appear to be non existing
 		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/sites/packages/${package}
                     WORKING_DIRECTORY ${WORKSPACE_DIR}/pid OUTPUT_QUIET ERROR_QUIET) #just in case of
 		set(${IS_INITIALIZED} FALSE PARENT_SCOPE)
+    return()
 	endif()
+  execute_process(COMMAND git lfs pull origin master
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package} )#get most up to date archives
 else()
 	set(${IS_INITIALIZED} FALSE PARENT_SCOPE)
 	set(${BAD_URL} TRUE PARENT_SCOPE)
