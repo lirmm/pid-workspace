@@ -27,12 +27,7 @@ set(PID_UTILS_FUNCTIONS_INCLUDED TRUE)
 ##########################################################################################
 
 include(CMakeParseArguments)
-<<<<<<< 407516242c94e7b9725a235d7a4f3b19f24e7a77:cmake/system/api/PID_Utils_Functions.cmake
-include(PID_Contribution_Spaces_Functions NO_POLICY_SCOPE)
-=======
-
 include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
->>>>>>> refactoring: restructuring and fixing module path for contribution spaces:cmake/api/PID_Utils_Functions.cmake
 
 #.rst:
 #
