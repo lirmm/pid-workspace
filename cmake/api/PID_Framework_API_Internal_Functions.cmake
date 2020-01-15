@@ -296,7 +296,7 @@ file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 if(DIR_NAME STREQUAL "build")
 
 	set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
-	set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake PARENT_SCOPE) # adding the cmake scripts files from the framework
+	set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake ${CMAKE_MODULE_PATH} PARENT_SCOPE) # adding the cmake scripts files from the framework
 	init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}) # getting the workspace version used to generate the code
 	set(res_string)
 	foreach(string_el IN ITEMS ${author})
@@ -499,9 +499,8 @@ endfunction(generate_Framework_Readme_File)
 #   Create the license file within the current framework project.
 #
 function(generate_Framework_License_File)
-if(	DEFINED ${PROJECT_NAME}_FRAMEWORK_LICENSE
-	AND NOT ${${PROJECT_NAME}_FRAMEWORK_LICENSE} STREQUAL "")
-	check_License_File(PATH_TO_FILE ${${PROJECT_NAME}_FRAMEWORK_LICENSE})
+if(	${PROJECT_NAME}_FRAMEWORK_LICENSE)
+		check_License_File(PATH_TO_FILE ${${PROJECT_NAME}_FRAMEWORK_LICENSE})
 	if(NOT PATH_TO_FILE)
 		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_FRAMEWORK_LICENSE} not found in any contribution space installed in workspace, license file will not be generated.")
 	else()
