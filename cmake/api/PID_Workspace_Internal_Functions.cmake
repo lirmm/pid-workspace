@@ -3841,6 +3841,10 @@ endfunction(write_Current_Configuration)
 #
 function(manage_Migrations)
 #To PID V4
+if((EXISTS ${WORKSPACE_DIR}/configurations AND IS_DIRECTORY ${WORKSPACE_DIR}/configurations)
+		OR (EXISTS ${WORKSPACE_DIR}/external AND IS_DIRECTORY ${WORKSPACE_DIR}/external))
+		message(WARNING "[PID] Your are migrating to PID version 4. Workspace subfolders configurations and external will be removed. Currenlty installed external package will be moved to their corresponding subfolders in install folder. All runtime dependencies need to be resolved since workspace hierarchy has changed. This will be done automatically anytime you build a native package. Also some wrappers may face troubles with some of their dependencies. Simply rebuild these dependencies anytime build of a wrapper fails due to some unresolved path (path into workspace containing the external folder).")
+endif()
 if(EXISTS ${WORKSPACE_DIR}/configurations AND IS_DIRECTORY ${WORKSPACE_DIR}/configurations)
 	file(REMOVE_RECURSE ${WORKSPACE_DIR}/configurations)
 endif()
