@@ -2462,18 +2462,24 @@ if(res)#there is something to commit !
                   WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework} OUTPUT_QUIET ERROR_QUIET)
 	execute_process(COMMAND git commit -m "publishing new version of framework"
                   WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework} )
+else()
+  message("[PID] INFO: nothing new to publish in ${framework}")
+  set(${PUBLISHED} TRUE PARENT_SCOPE)
+  return()
 endif()
 execute_process(COMMAND git pull --ff-only origin master
                 WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework} OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
 if(PULL_RESULT EQUAL 0)#no conflict to manage
   execute_process(COMMAND git lfs pull origin master
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework} OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework} OUTPUT_QUIET ERROR_QUIET) #fetching LFS content, if any new in the mean time
   execute_process(COMMAND git push origin master
                   WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework} OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
   if(PUSH_RESULT EQUAL 0)
     set(${PUBLISHED} TRUE PARENT_SCOPE)
     return()
   endif()
+else()
+  message("[PID] WARNING: cannot push to ${framework} repository because there are conflicts to manage !")
 endif()
 set(${PUBLISHED} FALSE PARENT_SCOPE)
 endfunction(publish_Framework_Repository)
