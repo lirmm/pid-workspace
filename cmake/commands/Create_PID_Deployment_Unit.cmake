@@ -72,7 +72,7 @@ endif()
 #now verify that arguments are consistent and perform adequate actions
 
 if(TARGET_ENVIRONMENT)# a framework is created
-	get_Path_To_Environment_Reference_File(RESULT_PATH ${TARGET_ENVIRONMENT})
+	get_Path_To_Environment_Reference_File(RESULT_PATH PATH_TO_CS ${TARGET_ENVIRONMENT})
 	if(RESULT_PATH)
 		message("[PID] ERROR : An environment with the same name ${TARGET_ENVIRONMENT} is already referenced in the workspace repository.")
 		return()
@@ -111,7 +111,7 @@ if(TARGET_ENVIRONMENT)# a framework is created
 	endif()
 
 elseif(TARGET_FRAMEWORK)# a framework is created
-	get_Path_To_Framework_Reference_File(RESULT_PATH ${TARGET_FRAMEWORK})
+	get_Path_To_Framework_Reference_File(RESULT_PATH PATH_TO_CS ${TARGET_FRAMEWORK})
 	if(RESULT_PATH)
 		message("[PID] ERROR : A framework with the same name ${TARGET_FRAMEWORK} is already referenced in the workspace repository.")
 		return()
@@ -149,7 +149,7 @@ elseif(TARGET_FRAMEWORK)# a framework is created
 	endif()
 
 elseif(TARGET_PACKAGE)
-	get_Path_To_Package_Reference_File(RESULT_PATH ${TARGET_PACKAGE})
+	get_Path_To_Package_Reference_File(RESULT_PATH PATH_TO_CS ${TARGET_PACKAGE})
 	if(RESULT_PATH)
 		message("[PID] ERROR : A package with the same name ${TARGET_PACKAGE} is already referenced in the workspace repository.")
 		return()
@@ -188,7 +188,7 @@ elseif(TARGET_PACKAGE)
 	endif()
 
 elseif(TARGET_WRAPPER)
-	get_Path_To_External_Reference_File(RESULT_PATH ${TARGET_WRAPPER})
+	get_Path_To_External_Reference_File(RESULT_PATH PATH_TO_CS ${TARGET_WRAPPER})
 	if(RESULT_PATH)
 		message("[PID] ERROR : An external package with the same name ${TARGET_WRAPPER} is already referenced in the workspace repository.")
 		return()

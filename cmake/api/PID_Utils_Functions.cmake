@@ -2385,12 +2385,12 @@ function(get_Package_Type package PACK_TYPE)
   endif()
   # From here they are unknown in the local filesystem, finaly try to find references of this package
   # if not in source tree the packge has been deployed from a reference file => use this information to deduce its type
-  get_Path_To_External_Reference_File(RESULT_PATH ${package})
+  get_Path_To_External_Reference_File(RESULT_PATH PATH_TO_CS ${package})
   if(RESULT_PATH)
     set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
     return()
   else()
-    get_Path_To_Package_Reference_File(RESULT_PATH ${package})
+    get_Path_To_Package_Reference_File(RESULT_PATH PATH_TO_CS ${package})
     if(RESULT_PATH)
       set(${PACK_TYPE} "NATIVE" PARENT_SCOPE)
       return()
@@ -2897,7 +2897,7 @@ endfunction(get_Package_Repository_Address)
 #     :RES_PUBLIC_URL: the output variable that contains the public counterpart URL of package respotiry.
 #
 function(get_Package_Reference_Info package REF_EXISTS RES_URL RES_PUBLIC_URL)
-  get_Path_To_Package_Reference_File(PATH_TO_FILE ${package})
+  get_Path_To_Package_Reference_File(PATH_TO_FILE PATH_TO_CS ${package})
   if(NOT PATH_TO_FILE)
     #TODO contrib => update contrib spaces
     set(${RES_URL} PARENT_SCOPE)

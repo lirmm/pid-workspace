@@ -609,9 +609,9 @@ function(package_Reference_Exists_In_Workspace EXIST package)
 set(res)
 get_Package_Type(${package} PACK_TYPE)
 if(PACK_TYPE STREQUAL "EXTERNAL")
-  get_Path_To_External_Reference_File(PATH_TO_FILE ${package})
+  get_Path_To_External_Reference_File(PATH_TO_FILE PATH_TO_CS ${package})
 elseif(PACK_TYPE STREQUAL "NATIVE")#native package
-  get_Path_To_Package_Reference_File(PATH_TO_FILE ${package})
+  get_Path_To_Package_Reference_File(PATH_TO_FILE PATH_TO_CS ${package})
 endif()#if unknown it means that there is no reference file in workspace anyway
 if(PATH_TO_FILE)
   set(${EXIST} ${PACK_TYPE} PARENT_SCOPE)

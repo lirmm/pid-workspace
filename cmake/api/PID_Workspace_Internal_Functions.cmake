@@ -2225,7 +2225,6 @@ endfunction(remove_PID_Environment)
 #      :package: the name of the package to register.
 #
 function(register_PID_Package package)
-go_To_Workspace_Master()
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} install WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
 publish_Package_References_In_Workspace_Repository(${package})
@@ -2248,7 +2247,6 @@ endfunction(register_PID_Package)
 #      :wrapper: the name of the external package wrapper to register.
 #
 function(register_PID_Wrapper wrapper)
-	go_To_Workspace_Master()
 	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${wrapper}/build)
 	publish_Wrapper_References_In_Workspace_Repository(${wrapper})
 endfunction(register_PID_Wrapper)
@@ -2270,7 +2268,6 @@ endfunction(register_PID_Wrapper)
 #      :framework: the name of the framework to register.
 #
 function(register_PID_Framework framework)
-go_To_Workspace_Master()
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
 publish_Framework_References_In_Workspace_Repository(${framework})
@@ -2293,7 +2290,6 @@ endfunction(register_PID_Framework)
 #      :environment: the name of the environment to register.
 #
 function(register_PID_Environment environment)
-go_To_Workspace_Master()
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/environments/${environment}/build)
 publish_Environment_References_In_Workspace_Repository(${environment})
 endfunction(register_PID_Environment)

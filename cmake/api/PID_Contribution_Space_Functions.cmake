@@ -40,24 +40,26 @@ endmacro(set_Project_Module_Path_From_Workspace)
 ############################ auxiliary functions #########################################
 ##########################################################################################
 
-macro(find_File_In_Contribution_Spaces file_type file_name)
-  set(FIND_FILE_RESULT_PATH)
+function(find_File_In_Contribution_Spaces RESULT_FILE_PATH RESULT_CONTRIBUTION_SPACE file_type file_name)
+  set(${RESULT_FILE_PATH} PARENT_SCOPE)
+  set(${RESULT_CONTRIBUTION_SPACE} PARENT_SCOPE)
   foreach(contribution_space IN LISTS CONTRIBUTION_SPACES)#CONTRIBUTION_SPACES is supposed to be ordered from highest to lowest priority contribution spaces
     set(PATH_TO_FILE ${WORKSPACE_DIR}/contributions/${contribution_space}/${file_type}/${file_name})
     if(EXISTS ${PATH_TO_FILE})
-      set(FIND_FILE_RESULT_PATH ${PATH_TO_FILE})
+      set(${RESULT_FILE_PATH} ${PATH_TO_FILE} PARENT_SCOPE)
+      set(${RESULT_CONTRIBUTION_SPACE} ${WORKSPACE_DIR}/contributions/${contribution_space} PARENT_SCOPE)
       break()
     endif()
   endforeach()
-endmacro(find_File_In_Contribution_Spaces)
+endfunction(find_File_In_Contribution_Spaces)
 
 ##########################################################################################
 ############################ format files resolution #####################################
 ##########################################################################################
 
 function(get_Path_To_Format_File RESULT_PATH code_style)
-  find_File_In_Contribution_Spaces(formats ".clang-format.${code_style}")
-  set(${RESULT_PATH} ${FIND_FILE_RESULT_PATH} PARENT_SCOPE)
+  find_File_In_Contribution_Spaces(PATH CONTRIB formats ".clang-format.${code_style}")
+  set(${RESULT_PATH} ${PATH} PARENT_SCOPE)
 endfunction(get_Path_To_Format_File)
 
 function(resolve_Path_To_Format_File RESULT_PATH code_style)
@@ -153,8 +155,8 @@ endfunction(resolve_Path_To_Configuration_Dir)
 ##########################################################################################
 
 function(get_Path_To_License_File RESULT_PATH license)
-  find_File_In_Contribution_Spaces(licenses License${license}.cmake)
-  set(${RESULT_PATH} ${FIND_FILE_RESULT_PATH} PARENT_SCOPE)
+  find_File_In_Contribution_Spaces(PATH CONTRIB licenses License${license}.cmake)
+  set(${RESULT_PATH} ${PATH} PARENT_SCOPE)
 endfunction(get_Path_To_License_File)
 
 
@@ -200,8 +202,8 @@ endfunction(check_License_File)
 ##########################################################################################
 
 function(get_Path_To_Find_File RESULT_PATH deployment_unit)
-  find_File_In_Contribution_Spaces(finds Find${deployment_unit}.cmake)
-  set(${RESULT_PATH} ${FIND_FILE_RESULT_PATH} PARENT_SCOPE)
+  find_File_In_Contribution_Spaces(FIND_FILE_PATH CONTRIB finds Find${deployment_unit}.cmake)
+  set(${RESULT_PATH} ${FIND_FILE_PATH} PARENT_SCOPE)
 endfunction(get_Path_To_Find_File)
 
 function(resolve_Path_To_Find_File RESULT_PATH deployment_unit)
@@ -227,35 +229,39 @@ endmacro(include_Find_File)
 ############################ reference files resolution ##################################
 ##########################################################################################
 
-function(get_Path_To_Package_Reference_File RESULT_PATH package)
-  find_File_In_Contribution_Spaces(references Refer${package}.cmake)
+function(get_Path_To_Package_Reference_File RESULT_PATH RESULT_CONTRIB_SPACE package)
+  find_File_In_Contribution_Spaces(FIND_FILE_RESULT_PATH PACKAGE_CONTRIB_SPACE references Refer${package}.cmake)
   set(${RESULT_PATH} ${FIND_FILE_RESULT_PATH} PARENT_SCOPE)
+  set(${RESULT_CONTRIB_SPACE} ${PACKAGE_CONTRIB_SPACE} PARENT_SCOPE)
 endfunction(get_Path_To_Package_Reference_File)
 
-function(get_Path_To_External_Reference_File RESULT_PATH package)
-  find_File_In_Contribution_Spaces(references ReferExternal${package}.cmake)
+function(get_Path_To_External_Reference_File RESULT_PATH RESULT_CONTRIB_SPACE package)
+  find_File_In_Contribution_Spaces(FIND_FILE_RESULT_PATH PACKAGE_CONTRIB_SPACE references ReferExternal${package}.cmake)
   set(${RESULT_PATH} ${FIND_FILE_RESULT_PATH} PARENT_SCOPE)
+  set(${RESULT_CONTRIB_SPACE} ${PACKAGE_CONTRIB_SPACE} PARENT_SCOPE)
 endfunction(get_Path_To_External_Reference_File)
 
-function(get_Path_To_Framework_Reference_File RESULT_PATH framework)
-  find_File_In_Contribution_Spaces(references ReferFramework${framework}.cmake)
+function(get_Path_To_Framework_Reference_File RESULT_PATH RESULT_CONTRIB_SPACE framework)
+  find_File_In_Contribution_Spaces(FIND_FILE_RESULT_PATH PACKAGE_CONTRIB_SPACE references ReferFramework${framework}.cmake)
   set(${RESULT_PATH} ${FIND_FILE_RESULT_PATH} PARENT_SCOPE)
+  set(${RESULT_CONTRIB_SPACE} ${PACKAGE_CONTRIB_SPACE} PARENT_SCOPE)
 endfunction(get_Path_To_Framework_Reference_File)
 
-function(get_Path_To_Environment_Reference_File RESULT_PATH environment)
-  find_File_In_Contribution_Spaces(references ReferEnvironment${environment}.cmake)
+function(get_Path_To_Environment_Reference_File RESULT_PATH RESULT_CONTRIB_SPACE environment)
+  find_File_In_Contribution_Spaces(FIND_FILE_RESULT_PATH PACKAGE_CONTRIB_SPACE references ReferEnvironment${environment}.cmake)
   set(${RESULT_PATH} ${FIND_FILE_RESULT_PATH} PARENT_SCOPE)
+  set(${RESULT_CONTRIB_SPACE} ${PACKAGE_CONTRIB_SPACE} PARENT_SCOPE)
 endfunction(get_Path_To_Environment_Reference_File)
 
 #will work as a function since variables are in cache inside reference files
 function(include_Package_Reference_File PATH_TO_FILE package)
-  get_Path_To_Package_Reference_File(PATH_TO_REF ${package})
+  get_Path_To_Package_Reference_File(PATH_TO_REF PATH_TO_CS ${package})
   if(PATH_TO_REF)
     include (${PATH_TO_REF}) #get the information about the framework
   else()
     update_Contribution_Spaces(UPDATED)
     if(UPDATED)
-      get_Path_To_Package_Reference_File(PATH_TO_REF ${package})
+      get_Path_To_Package_Reference_File(PATH_TO_REF PATH_TO_CS ${package})
       if(PATH_TO_REF)
         include (${PATH_TO_REF}) #get the information about the framework
       endif()
@@ -266,13 +272,13 @@ endfunction(include_Package_Reference_File)
 
 #will work as a function since variables are in cache inside reference files
 function(include_External_Reference_File PATH_TO_FILE package)
-  get_Path_To_External_Reference_File(PATH_TO_REF ${package})
+  get_Path_To_External_Reference_File(PATH_TO_REF PATH_TO_CS ${package})
   if(PATH_TO_REF)
     include (${PATH_TO_REF}) #get the information about the framework
   else()
     update_Contribution_Spaces(UPDATED)
     if(UPDATED)
-      get_Path_To_External_Reference_File(PATH_TO_REF ${package})
+      get_Path_To_External_Reference_File(PATH_TO_REF PATH_TO_CS ${package})
       if(PATH_TO_REF)
         include (${PATH_TO_REF}) #get the information about the framework
       endif()
@@ -283,13 +289,13 @@ endfunction(include_External_Reference_File)
 
 #will work as a function since variables are in cache inside reference files
 function(include_Framework_Reference_File PATH_TO_FILE framework)
-  get_Path_To_Framework_Reference_File(PATH_TO_REF ${framework})
+  get_Path_To_Framework_Reference_File(PATH_TO_REF PATH_TO_CS ${framework})
   if(PATH_TO_REF)
     include (${PATH_TO_REF}) #get the information about the framework
   else()
     update_Contribution_Spaces(UPDATED)
     if(UPDATED)
-      get_Path_To_Framework_Reference_File(PATH_TO_REF ${framework})
+      get_Path_To_Framework_Reference_File(PATH_TO_REF PATH_TO_CS ${framework})
       if(PATH_TO_REF)
         include (${PATH_TO_REF}) #get the information about the framework
       endif()
@@ -300,13 +306,13 @@ endfunction(include_Framework_Reference_File)
 
 #will work as a function since variables are in cache inside reference files
 function(include_Environment_Reference_File PATH_TO_FILE environment)
-  get_Path_To_Environment_Reference_File(PATH_TO_REF ${environment})
+  get_Path_To_Environment_Reference_File(PATH_TO_REF PATH_TO_CS ${environment})
   if(PATH_TO_REF)
     include (${PATH_TO_REF}) #get the information about the framework
   else()
     update_Contribution_Spaces(UPDATED)
     if(UPDATED)
-      get_Path_To_Environment_Reference_File(PATH_TO_REF ${environment})
+      get_Path_To_Environment_Reference_File(PATH_TO_REF PATH_TO_CS ${environment})
       if(PATH_TO_REF)
         include (${PATH_TO_REF}) #get the information about the framework
       endif()
