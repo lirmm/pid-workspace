@@ -418,19 +418,11 @@ endfunction(fill_String_From_List)
 #     :EXTENSION: output variable containing the name of the package extension. This later information is used to get the name of the lone static site for a package.
 #
 function(extract_Package_Namespace_From_SSH_URL url package NAMESPACE SERVER_ADDRESS EXTENSION)
-string (REGEX REPLACE "^([^@]+@[^:]+):([^/]+)/${package}(\\.site|-site|\\.pages|-pages)?\\.git$" "\\2;\\1" RESULT ${url})
-if(NOT RESULT STREQUAL "${url}") #match found
-	list(GET RESULT 0 NAMESPACE_NAME)
-	set(${NAMESPACE} ${NAMESPACE_NAME} PARENT_SCOPE)
-	list(GET RESULT 1 ACCOUNT_ADDRESS)
-	set(${SERVER_ADDRESS} ${ACCOUNT_ADDRESS} PARENT_SCOPE)
-
-	string (REGEX REPLACE "^[^@]+@[^:]+:[^/]+/${package}(\\.site|-site|\\.pages|-pages)\\.git$" "\\1" RESULT ${url})
-	if(NOT RESULT STREQUAL "${url}") #match found
-		set(${EXTENSION} ${RESULT} PARENT_SCOPE)
-	else()
-		set(${EXTENSION} PARENT_SCOPE)
-	endif()
+set(CMAKE_MATCH_3)#reset the last match
+if(url MATCHES "^([^@]+@[^:]+):([^/]+)/${package}(\\.site|-site|\\.pages|-pages)?\\.git$") #match found
+	set(${NAMESPACE} ${CMAKE_MATCH_2} PARENT_SCOPE)
+	set(${SERVER_ADDRESS} ${CMAKE_MATCH_1} PARENT_SCOPE)
+  set(${EXTENSION} ${CMAKE_MATCH_3} PARENT_SCOPE)
 else()
 	set(${NAMESPACE} PARENT_SCOPE)
 	set(${SERVER_ADDRESS} PARENT_SCOPE)

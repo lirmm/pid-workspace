@@ -25,7 +25,7 @@ if(PID_CONTRIBUTION_SPACE_FUNCTIONS_INCLUDED)
 endif()
 set(PID_CONTRIBUTION_SPACE_FUNCTIONS_INCLUDED TRUE)
 ##########################################################################################
-
+include(CMakeParseArguments)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Progress_Management_Functions NO_POLICY_SCOPE)
@@ -342,9 +342,9 @@ function(get_All_Available_References REF_LIST prefix)
   set(${PLUGINS_LIST} ${FINAL_LIST} PARENT_SCOPE)
 endfunction(get_All_Available_References)
 
-##########################################################################################
-############################ Contribution_Spaces management ##############################
-##########################################################################################
+#################################################################################################
+############################ Contribution_Spaces global management ##############################
+#################################################################################################
 
 function(update_Contribution_Spaces)
   check_Contribution_Spaces_Updated_In_Current_Process(ALREADY_UPDATED)
@@ -355,60 +355,6 @@ function(update_Contribution_Spaces)
     set_Contribution_Spaces_Updated_In_Current_Process()
   endif()
 endfunction(update_Contribution_Spaces)
-
-function(reset_Contribution_Spaces)
-  set(default_official_contribution "pid-contributions")
-
-  if(NOT CONTRIBUTION_SPACES)
-    #case at first configuration time just after a clone or a clean (rm -Rf *) of the pid folder
-    if(NOT EXISTS ${WORKSPACE_DIR}/contributions/${default_official_contribution})# pid-contributions does not exists while it is the default official contribution space
-      clone_Contribution_Space_Repository(CLONED https://gite.lirmm.fr/pid/pid-contributions.git)
-      if(NOT CLONED)
-        message(WARNING "[PID] CRITICAL ERROR : impossible to clone the missing official contribution space, please set its url by using the configure command.")
-        return()
-      endif()
-    endif()
-    append_Unique_In_Cache(CONTRIBUTION_SPACES ${default_official_contribution})#simply add the only official contribution space
-  else()
-    set(TEMP_CONTRIBUTION_SPACES ${CONTRIBUTION_SPACES})#memorize the current priority order of contribution spaces
-    set(CONTRIBUTION_SPACES CACHE INTERNAL "")#reset the cache variable
-    #update the priority list of contribution spaces
-    if(DEFINED CONTRIBUTION_PRIORITY)
-      set(priority ${CONTRIBUTION_PRIORITY})
-      unset(CONTRIBUTION_PRIORITY CACHE)
-    else()
-      set(priority 0)#highest priority by default
-    endif()
-    if(DEFINED ADD_CONTRIBUTION)
-      list(INSERT TEMP_CONTRIBUTION_SPACES ${priority})
-      unset(ADD_CONTRIBUTION CACHE)
-    elseif(DEFINED SET_CONTRIBUTION)
-      list(GET TEMP_CONTRIBUTION_SPACES ${SET_CONTRIBUTION} INDEX)
-      if(NOT INDEX EQUAL priority)#change priority of the contribution
-        list(REMOVE_ITEM TEMP_CONTRIBUTION_SPACES ${SET_CONTRIBUTION})#remove previous place in list
-        math(EXPR priority "${priority}-1")
-        list(INSERT TEMP_CONTRIBUTION_SPACES ${priority})#set the new priority
-      endif()
-    endif()
-    # check if the default "pid-contributions" exists in workspace
-    if(NOT EXISTS ${WORKSPACE_DIR}/contributions/${default_official_contribution})# pid-contributions does not exists while it is the default official contribution space
-      clone_Contribution_Space_Repository(CLONED https://gite.lirmm.fr/pid/pid-contributions.git)
-      if(NOT CLONED)
-        message(WARNING "[PID] CRITICAL ERROR : impossible to clone the missing official contribution space, please set its url by using the configure command.")
-      else()
-        list(INSERT TEMP_CONTRIBUTION_SPACES -1)#insert the contribution with lowest priority
-      endif()
-    endif()
-
-    #now building the final list by checking that everything is correct
-    foreach(contrib IN LISTS TEMP_CONTRIBUTION_SPACES)#now adding to the cache variable the element in same order as in temporary variable
-      if(EXISTS ${WORKSPACE_DIR}/contributions/${contrib} AND IS_DIRECTORY ${WORKSPACE_DIR}/contributions/${contrib})#avoid .gitignore or removed contribution spaces
-        append_Unique_In_Cache(CONTRIBUTION_SPACES ${contrib})
-      endif()
-    endforeach()
-  endif()
-  configure_Contribution_Spaces()
-endfunction(reset_Contribution_Spaces)
 
 #Note: use a macro to stay in same scope as caller
 macro(configure_Contribution_Space_CMake_Path contribution_space)
@@ -474,3 +420,124 @@ function(set_Cache_Entry_For_Default_Contribution_Space)
     endif()
   endif()
 endfunction(set_Cache_Entry_For_Default_Contribution_Space)
+
+
+##########################################################################################
+############################ contributions file management ###############################
+##########################################################################################
+
+function(add_Contribution_Space name update publish)
+  append_Unique_In_Cache(CONTRIBUTION_SPACES ${name})#simply add the only update contribution space
+  set(CONTRIBUTION_SPACE_${name}_UPDATE_REMOTE ${update} CACHE INTERNAL "")
+  if(publish)
+    set(CONTRIBUTION_SPACE_${name}_PUBLISH_REMOTE ${publish} CACHE INTERNAL "")
+  else()#no defined publish CS so publish directly in official
+    set(CONTRIBUTION_SPACE_${name}_PUBLISH_REMOTE ${update} CACHE INTERNAL "")
+  endif()
+endfunction(add_Contribution_Space)
+
+function(deploy_Contribution_Space DEPLOYED name update publish)
+  set(${DEPLOYED} FALSE PARENT_SCOPE)
+  clone_Contribution_Space_Repository(CLONED ${publish})
+  if(NOT CLONED)
+    return()
+  endif()
+  #rename cloned repository folder when necessary
+  get_Repository_Name(repository_name ${publish})
+  if(EXISTS ${WORKSPACE_DIR}/contributions/${repository_name}
+    AND NOT repository_name STREQUAL name)
+    file(RENAME ${WORKSPACE_DIR}/contributions/${repository_name} ${WORKSPACE_DIR}/contributions/${name})
+  endif()
+  #finally set the update address
+  configure_Remote(${WORKSPACE_DIR}/contributions/${name} origin ${update} ${publish})
+endfunction(deploy_Contribution_Space)
+
+function(reset_Contribution_Spaces)
+  set(path_to_description_file ${WORKSPACE_DIR}/contributions/contribution_spaces_list.cmake)
+  set(official_cs_name "pid")
+  set(official_cs_update_remote "https://gite.lirmm.fr/pid/pid-contributions.git")
+  set(official_cs_publish_remote "git@gite.lirmm.fr:pid/pid-contributions.git")
+  #situations to deal with:
+  #- empty contributions folder
+  #- missing contributions management file
+
+  read_Contribution_Spaces_Description_File(FILE_EXISTS)
+  if(NOT FILE_EXISTS)# this is first configuration run of the workspace, or file has been removed by user to explicitly reset current configuration
+      if(NOT CONTRIBUTION_SPACES)#case at first configuration time just after a clone or a clean (rm -Rf *) of the pid folder
+        add_Contribution_Space(${official_cs_name} ${official_cs_update_remote} ${official_cs_publish_remote})# pid official CS is the default one and must be present
+      endif()
+  endif()#otherwise CS related cache variables have been reset with their value coming from the description file
+  #from here the cache variables are set so we need to align contributions folder content according to their values
+  foreach(cs IN LISTS CONTRIBUTION_SPACES)
+    if(EXISTS ${WORKSPACE_DIR}/contributions/${cs})
+      configure_Remote(${WORKSPACE_DIR}/contributions/${cs} origin ${CONTRIBUTION_SPACE_${cs}_UPDATE_REMOTE} ${CONTRIBUTION_SPACE_${cs}_PUBLISH_REMOTE})
+    else()
+      deploy_Contribution_Space(IS_SUCCESS ${cs} ${CONTRIBUTION_SPACE_${cs}_UPDATE_REMOTE} ${CONTRIBUTION_SPACE_${cs}_PUBLISH_REMOTE})
+      if(NOT IS_SUCCESS)
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : cannot deploy contribution space ${cs}, probably due to bad address (${CONTRIBUTION_SPACE_${cs}_PUBLISH_REMOTE}) or connection problems.")
+      endif()
+    endif()
+  endforeach()
+  #manage removal of contribution spaces
+  file(GLOB all_installed_cs RELATIVE ${WORKSPACE_DIR}/contributions ${WORKSPACE_DIR}/contributions/*)
+  foreach(cs IN LISTS all_installed_cs)
+    if(IS_DIRECTORY ${WORKSPACE_DIR}/contributions/${cs})#ignore files like .gitignore and cs list file
+      list(FIND CONTRIBUTION_SPACES ${cs} INDEX)
+      if(INDEX EQUAL -1)#the corresponding CS is not in list of contribution spaces (is has been removed)
+        file(REMOVE_RECURSE ${WORKSPACE_DIR}/contributions/${cs})
+      endif()
+    endif()
+  endforeach()
+  # now write the configuration file to memorize choices for next configuration (and for user editing)
+  write_Contribution_Spaces_Description_File()
+  # configure workspace (set CMAKE_MODULE_PATH adequately)
+  configure_Contribution_Spaces()
+endfunction(reset_Contribution_Spaces)
+
+function(PID_Contribution_Space)
+  set(oneValueArgs NAME UPDATE PUBLISH)
+  cmake_parse_arguments(PID_CONTRIBUTION_SPACE "" "${oneValueArgs}" "" ${ARGN} )
+
+  if(NOT PID_CONTRIBUTION_SPACE_NAME)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR: in PID_Contribution_Space, NAME of the constribution space must be defined.")
+    return()
+  endif()
+  if(NOT PID_CONTRIBUTION_SPACE_UPDATE)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR: in PID_Contribution_Space, UPDATE remote of the constribution space must be defined.")
+    return()
+  endif()
+  add_Contribution_Space(${PID_CONTRIBUTION_SPACE_NAME} ${PID_CONTRIBUTION_SPACE_UPDATE} "${PID_CONTRIBUTION_SPACE_PUBLISH}")
+endfunction(PID_Contribution_Space)
+
+function(reset_Contribution_Spaces_Variables)
+  foreach(contrib_space IN LISTS CONTRIBUTION_SPACES)
+    set(CONTRIBUTION_SPACE_${contrib_space}_UPDATE_REMOTE CACHE INTERNAL "")
+    set(CONTRIBUTION_SPACE_${contrib_space}_PUBLISH_REMOTE CACHE INTERNAL "")
+  endforeach()
+  set(CONTRIBUTION_SPACES CACHE INTERNAL "")
+endfunction(reset_Contribution_Spaces_Variables)
+
+function(read_Contribution_Spaces_Description_File READ_SUCCESS)
+  set(target_file_path ${WORKSPACE_DIR}/contributions/contribution_spaces_list.cmake)
+  if(EXISTS ${target_file_path})#if file exists it means there is a description
+    reset_Contribution_Spaces_Variables()#reset already existing description
+    include(${target_file_path})
+    set(${READ_SUCCESS} TRUE PARENT_SCOPE)
+    return()
+  endif()
+  set(${READ_SUCCESS} FALSE PARENT_SCOPE)
+endfunction(read_Contribution_Spaces_Description_File)
+
+function(write_Contribution_Spaces_Description_File)
+  set(target_file_path ${WORKSPACE_DIR}/contributions/contribution_spaces_list.cmake)
+  file(WRITE ${target_file_path} "")#reset file content
+  #contribution spaces list is ordered from highest to lowest priority
+  foreach(contrib_space IN LISTS CONTRIBUTION_SPACES)
+    if(CONTRIBUTION_SPACE_${contrib_space}_PUBLISH_REMOTE)
+      set(TO_WRITE "PID_Contribution_Space(NAME ${contrib_space} UPDATE ${CONTRIBUTION_SPACE_${contrib_space}_UPDATE_REMOTE} PUBLISH ${CONTRIBUTION_SPACE_${contrib_space}_PUBLISH_REMOTE})")
+    else()
+      set(TO_WRITE "PID_Contribution_Space(NAME ${contrib_space} UPDATE ${CONTRIBUTION_SPACE_${contrib_space}_UPDATE_REMOTE})")
+    endif()
+    file(APPEND ${target_file_path} "${TO_WRITE}\n")
+  endforeach()
+endfunction(write_Contribution_Spaces_Description_File)

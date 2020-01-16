@@ -3784,6 +3784,10 @@ function(write_Platform_Description file)
 
 	#managing contributions
 	file(APPEND ${file} "set(CONTRIBUTION_SPACES ${CONTRIBUTION_SPACES} CACHE INTERNAL \"\" FORCE)\n")
+	foreach(cs IN LISTS CONTRIBUTION_SPACES)
+		file(APPEND ${file} "set(CONTRIBUTION_SPACE_${cs}_UPDATE_REMOTE ${CONTRIBUTION_SPACE_${cs}_UPDATE_REMOTE} CACHE INTERNAL \"\" FORCE)\n")
+		file(APPEND ${file} "set(CONTRIBUTION_SPACE_${cs}_PUBLISH_REMOTE ${CONTRIBUTION_SPACE_${cs}_PUBLISH_REMOTE} CACHE INTERNAL \"\" FORCE)\n")
+	endforeach()
 	file(APPEND ${file} "set(PID_WORKSPACE_MODULES_PATH \"${PID_WORKSPACE_MODULES_PATH}\" CACHE INTERNAL \"\" FORCE)\n")
 
 	# store the CMake generator

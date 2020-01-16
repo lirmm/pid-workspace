@@ -1938,15 +1938,11 @@ endfunction(change_Origin_Repository)
 #
 function(get_Repository_Name RES_NAME git_url)
 #testing ssh address
-string(REGEX REPLACE "^[^@]+@[^:]+:(.+)$" "\\1" REPO_PATH ${git_url})
-if(REPO_PATH STREQUAL "${git_url}")
-	#testing https address
-	string(REGEX REPLACE "^https?://(.*)$" "\\1" REPO_PATH ${git_url})
-	if(REPO_PATH STREQUAL "${git_url}")
-		return()
-	endif()
+if(NOT git_url MATCHES "^([^@]+@[^:]+:|https?://)(.+)\\.git$")
+  set(${RES_NAME} PARENT_SCOPE)
+	return()
 endif()
-get_filename_component(REPO_NAME ${REPO_PATH} NAME_WE)
+get_filename_component(REPO_NAME ${CMAKE_MATCH_2} NAME)
 set(${RES_NAME} ${REPO_NAME} PARENT_SCOPE)
 endfunction(get_Repository_Name)
 
@@ -2157,6 +2153,34 @@ if(RESULTING_REMOTES)
 	endforeach()
 endif()
 endfunction(get_Remotes_Address)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |configure_Remote| replace:: ``configure_Remote``
+#  .. _configure_Remote:
+#
+#  configure_Remote
+#  ----------------
+#
+#   .. command:: configure_Remote(path remote_name update publish)
+#
+#     Configure push and fetch addresses of a repository for a specific remote
+#
+#     :path: the path to the repository.
+#
+#     :remote_name: the name of the remote to configure (origin or official).
+#
+#     :update: fetch address of the remote.
+#
+#     :publish: push address of the remote.
+#
+function(configure_Remote path remote_name update publish)
+  execute_process(COMMAND git remote set-url ${remote_name} ${update} WORKING_DIRECTORY ${path})
+  execute_process(COMMAND git remote set-url --push ${remote_name} ${publish} WORKING_DIRECTORY ${path})
+endfunction(configure_Remote)
 
 ##############################################################################
 ############## wrappers repository related functions #########################
