@@ -662,15 +662,15 @@ endfunction(package_Has_Nothing_To_Install)
 #
 # .. ifmode:: internal
 #
-#  .. |is_Python_Module| replace:: ``is_Python_Module``
-#  .. _is_Python_Module:
+#  .. |is_Usable_Python_Wrapper_Module| replace:: ``is_Usable_Python_Wrapper_Module``
+#  .. _is_Usable_Python_Wrapper_Module:
 #
-#  is_Python_Module
-#  ----------------
+#  is_Usable_Python_Wrapper_Module
+#  -------------------------------
 #
-#   .. command:: is_Python_Module(IS_PYTHON package component)
+#   .. command:: is_Usable_Python_Wrapper_Module(IS_PYTHON package component)
 #
-#   Check whether a component is a python wrapped module.
+#   Check whether a component is a python wrapped module and whether it can be used inside current workspace.
 #
 #     :package: the name of the package containing the component.
 #
@@ -678,13 +678,14 @@ endfunction(package_Has_Nothing_To_Install)
 #
 #     :IS_PYTHON: the output variable that is TRUE if the package content define nothing to install (depending on options chosen by the user and content of the package).
 #
-function(is_Python_Module IS_PYTHON package component)
-	if(${package}_${component}_TYPE STREQUAL "MODULE")
+function(is_Usable_Python_Wrapper_Module IS_PYTHON package component)
+	if(${package}_${component}_TYPE STREQUAL "MODULE" #otherwise cannot be a python wrapper
+      AND CURRENT_PYTHON)# otherwise cannot be usable since python not activated
 		set(${IS_PYTHON} ${${package}_${component}_HAS_PYTHON_WRAPPER} PARENT_SCOPE)
 	else()
 		set(${IS_PYTHON} FALSE PARENT_SCOPE)
 	endif()
-endfunction(is_Python_Module)
+endfunction(is_Usable_Python_Wrapper_Module)
 
 #.rst:
 #
@@ -2184,6 +2185,8 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 		if(NOT ${package}_${a_component}_TYPE STREQUAL "MODULE")#modules do not have public interfaces
 			file(APPEND ${file} "set(${package}_${a_component}_HEADER_DIR_NAME ${${package}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
 			file(APPEND ${file} "set(${package}_${a_component}_HEADERS ${${package}_${a_component}_HEADERS} CACHE INTERNAL \"\")\n")
+    elseif(${package}_${a_component}_HAS_PYTHON_WRAPPER)
+      file(APPEND ${file} "set(${package}_${a_component}_HAS_PYTHON_WRAPPER TRUE CACHE INTERNAL \"\")\n")
     endif()
 	endforeach()
 	foreach(a_component IN LISTS ${package}_COMPONENTS_APPS)

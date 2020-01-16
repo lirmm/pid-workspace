@@ -1299,7 +1299,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
 rename_If_Alias(real_comp_name ${package} FALSE ${component} Release)#resolve alias (by definition in this function always a native component)
 is_Runtime_Component(COMP_IS_RUNTIME ${package} ${real_comp_name})
-if(NOT COMP_IS_RUNTIME)
+if(NOT COMP_IS_RUNTIME AND NOT ${package}_${real_comp_name}_TYPE STREQUAL "PYTHON")
 	return()
 endif()
 
@@ -1307,38 +1307,43 @@ check_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables(MANAGED $
 if(MANAGED)#optimization
   return()
 endif()
-# 1) getting all shared links dependencies
-get_Bin_Component_Runtime_Links(LOCAL_LINKS USING_LINKS ${package} ${real_comp_name} ${mode})#suppose that findPackage has resolved everything
-list(APPEND ALL_RUNTIME_DEPS ${LOCAL_LINKS})#the binary package own runtime dependencies is resolved to need to consider only its local links dependencies
-#2) getting direct and undirect runtime resources dependencies
-get_Bin_Component_Runtime_Resources(RES_RESOURCES ${package} ${real_comp_name} ${mode} FALSE)
-list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
-if(ALL_RUNTIME_DEPS)
-  list(REMOVE_DUPLICATES ALL_RUNTIME_DEPS)
-endif()
-create_Bin_Component_Symlinks(${package} ${real_comp_name} ${mode} "${ALL_RUNTIME_DEPS}")
 
-if(${package}_${real_comp_name}_TYPE STREQUAL "MODULE"
-		AND ${package}_${real_comp_name}_HAS_PYTHON_WRAPPER #this is a python wrapper => python needs additionnal configuration to work properly
-		AND CURRENT_PYTHON)#python is activated
-	# getting path to internal targets dependecies that produce a runtime code (not used for rpath but required for python modules)
+if(${package}_${real_comp_name}_TYPE STREQUAL "PYTHON")
+  create_Python_Install_Symlinks(${package} ${real_comp_name} ${mode})
+else()
+  # 1) getting all shared links dependencies
+  get_Bin_Component_Runtime_Links(LOCAL_LINKS USING_LINKS ${package} ${real_comp_name} ${mode})#suppose that findPackage has resolved everything
+  list(APPEND ALL_RUNTIME_DEPS ${LOCAL_LINKS})#the binary package own runtime dependencies is resolved to need to consider only its local links dependencies
+  #2) getting direct and undirect runtime resources dependencies
+  get_Bin_Component_Runtime_Resources(RES_RESOURCES ${package} ${real_comp_name} ${mode} FALSE)
+  list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
+  if(ALL_RUNTIME_DEPS)
+    list(REMOVE_DUPLICATES ALL_RUNTIME_DEPS)
+  endif()
+  create_Bin_Component_Symlinks(${package} ${real_comp_name} ${mode} "${ALL_RUNTIME_DEPS}")
 
-	#cannot use the generator expression due to generator expression not evaluated in install(CODE) -> CMake BUG
-	if(CURRENT_PLATFORM_OS STREQUAL "macos")
-    set(suffix_ext .dylib)
-  elseif(CURRENT_PLATFORM_OS STREQUAL "windows")
-      set(suffix_ext .dll)
-	else()
-	    set(suffix_ext .so)
-	endif()
-	#we need to reference also internal libraries for creating adequate symlinks for python
-	set(prefix_path ${${package}_ROOT_DIR}/lib/lib)
-	get_Bin_Component_Direct_Internal_Runtime_Dependencies(RES_DEPS ${package} ${real_comp_name} ${mode} ${prefix_path} ${suffix_ext})
-	list(APPEND ALL_RUNTIME_DEPS ${RES_DEPS})
-	#finally we need to reference also the module binary itself
-	get_Binary_Location(LOCATION_RES ${package} ${real_comp_name} ${mode})
-	list(APPEND ALL_RUNTIME_DEPS ${LOCATION_RES})
-	create_Bin_Component_Python_Symlinks(${package} ${real_comp_name} ${mode} "${ALL_RUNTIME_DEPS}")
+  is_Usable_Python_Wrapper_Module(USABLE_WRAPPER ${package} ${real_comp_name})
+  if(USABLE_WRAPPER)
+  	# getting path to internal targets dependecies that produce a runtime code (not used for rpath but required for python modules)
+
+  	#cannot use the generator expression due to generator expression not evaluated in install(CODE) -> CMake BUG
+  	if(CURRENT_PLATFORM_OS STREQUAL "macos")
+      set(suffix_ext .dylib)
+    elseif(CURRENT_PLATFORM_OS STREQUAL "windows")
+        set(suffix_ext .dll)
+  	else()
+  	    set(suffix_ext .so)
+  	endif()
+  	#we need to reference also internal libraries for creating adequate symlinks for python
+  	set(prefix_path ${${package}_ROOT_DIR}/lib/lib)
+  	get_Bin_Component_Direct_Internal_Runtime_Dependencies(RES_DEPS ${package} ${real_comp_name} ${mode} ${prefix_path} ${suffix_ext})
+  	list(APPEND ALL_RUNTIME_DEPS ${RES_DEPS})
+  	#finally we need to reference also the module binary itself
+  	get_Binary_Location(LOCATION_RES ${package} ${real_comp_name} ${mode})
+  	list(APPEND ALL_RUNTIME_DEPS ${LOCATION_RES})
+  	create_Bin_Component_Python_Symlinks(${package} ${real_comp_name} ${mode} "${ALL_RUNTIME_DEPS}")
+    create_Python_Install_Symlinks(${package} ${real_comp_name} ${mode})
+  endif()
 endif()
 set_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables(${package} ${real_comp_name} ${mode})
 endfunction(resolve_Bin_Component_Runtime_Dependencies)
@@ -1403,6 +1408,55 @@ foreach(resource IN LISTS resources)
 	create_Runtime_Symlink("${resource}" "${${package}_ROOT_DIR}/share/script" ${component})#installing Debug and Release modes links in the same script folder
 endforeach()
 endfunction(create_Bin_Component_Python_Symlinks)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Python_Install_Symlinks| replace:: ``create_Python_Install_Symlinks``
+#  .. _create_Python_Install_Symlinks:
+#
+#  create_Python_Install_Symlinks
+#  ------------------------------
+#
+#   .. command:: create_Python_Install_Symlinks(package component mode)
+#
+#   Generating symlinks to python packages defined by a component of a package.
+#
+#     :package: the name of the package that contains the component.
+#
+#     :component: the name of the python package.
+#
+#     :mode: the build mode (Release or Debug) for the component.
+#
+function(create_Python_Install_Symlinks package component mode)
+  if(NOT CURRENT_PYTHON)
+    return()#do nothing if python not configured
+  endif()
+  set(path_to_package ${${package}_ROOT_DIR})
+  set(path_to_python_package ${path_to_package}/share/script/${component})#Note: name is unique for DEBUG or RELEASE versions
+  set(path_to_python_install ${WORKSPACE_DIR}/install/python${CURRENT_PYTHON})
+
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  if(${package}_${component}_TYPE STREQUAL "MODULE")
+    # this is a binary module for wrapping c++ code into python
+    # we need to create the symlink to the installed library implementing the wrapper inside the python package itself
+    set(path_to_module ${path_to_package}/lib/${${package}_${component}_BINARY_NAME${VAR_SUFFIX}})
+    # create the symlink to the module library INSIDE the python package folder
+    create_Symlink(${path_to_module} ${path_to_python_package}/${${package}_${component}_BINARY_NAME${VAR_SUFFIX}})#generate the symlink used
+  endif()
+
+  # now in python folder creating a symlink pointing to the python package folder (same for script AND wrappers)
+  contains_Python_Package_Description(IS_PYTHON_PACK ${path_to_python_package})
+  if(IS_PYTHON_PACK)#wrappers python packages or pure python packages are described the same way
+    if(NOT EXISTS path_to_python_install)
+      file(MAKE_DIRECTORY ${path_to_python_install})
+    endif()
+    create_Symlink(${path_to_python_package} ${path_to_python_install}/${component}${TARGET_SUFFIX})#generate the symlink used
+  endif()
+
+endfunction(create_Python_Install_Symlinks)
 
 ##################################################################################
 ################### source package run time dependencies in install tree #########
@@ -1505,9 +1559,8 @@ if(ALL_RUNTIME_DEPS)
   list(REMOVE_DUPLICATES ALL_RUNTIME_DEPS)
 endif()
 create_Source_Component_Symlinks(${real_comp_name} ${CMAKE_BUILD_TYPE} ALL_RUNTIME_DEPS)
-if(${PROJECT_NAME}_${real_comp_name}_TYPE STREQUAL "MODULE"
-		AND ${PROJECT_NAME}_${real_comp_name}_HAS_PYTHON_WRAPPER #this is a python wrapper => python needs additionnal configuration to work properly
-		AND CURRENT_PYTHON)#python is activated
+is_Usable_Python_Wrapper_Module(USABLE_WRAPPER ${PROJECT_NAME} ${real_comp_name})
+if(USABLE_WRAPPER)
 	# getting path to internal targets dependecies that produce a runtime code (not used for rpath but required for python modules)
 
 	#cannot use the generator expression due to generator expression not evaluated in install(CODE) -> CMake BUG
@@ -1518,9 +1571,15 @@ if(${PROJECT_NAME}_${real_comp_name}_TYPE STREQUAL "MODULE"
 	else()
 	    set(suffix_ext .so)
 	endif()
-	set(prefix_path ${${PROJECT_NAME}_INSTALL_PATH}/${${PROJECT_NAME}_DEPLOY_PATH}/lib/lib)
+
+	set(prefix_path ${${PROJECT_NAME}_INSTALL_PATH}/${${PROJECT_NAME}_INSTALL_LIB_PATH}/lib)
 	get_Bin_Component_Direct_Internal_Runtime_Dependencies(RES_DEPS ${PROJECT_NAME} ${real_comp_name} ${CMAKE_BUILD_TYPE} ${prefix_path} ${suffix_ext})
 	list(APPEND ALL_RUNTIME_DEPS ${RES_DEPS})
+  #finally we need to reference also the installed module binary itself
+  set(module_binary_name ${real_comp_name}${TARGET_SUFFIX}${suffix_ext})
+  set(path_to_module ${${PROJECT_NAME}_INSTALL_PATH}/${${PROJECT_NAME}_INSTALL_LIB_PATH}/${module_binary_name})
+  list(APPEND ALL_RUNTIME_DEPS ${path_to_module})
+
 	create_Source_Component_Python_Symlinks(${real_comp_name} ${CMAKE_BUILD_TYPE} "${ALL_RUNTIME_DEPS}")
 endif()
 endfunction(resolve_Source_Component_Runtime_Dependencies)

@@ -45,17 +45,10 @@ set(path_to_package_install ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGE
 set(path_to_python_install ${WORKSPACE_DIR}/install/python${CURRENT_PYTHON})
 set(path_to_module_python_wrapper ${path_to_package_install}/share/script/${TARGET_MODULE})#name is unique for DEBUG or RELEASE versions
 
-if(TARGET_COMPONENT_TYPE STREQUAL "MODULE")#this is a binary module for wrapping c++ code into python
-  set(path_to_module ${path_to_package_install}/lib/${module_binary_name})
-  # 1) create the symlink to the module library
-  message("-- Installing: ${path_to_module_python_wrapper}/${module_binary_name}")
-  create_Symlink(${path_to_module} ${path_to_module_python_wrapper}/${module_binary_name})#generate the symlink used
-endif()
-
 # 2) now in python folder creating a symlink pointing to the module script folder
 contains_Python_Package_Description(IS_PYTHON_PACK ${path_to_module_python_wrapper})
 if(IS_PYTHON_PACK)
-  if(NOT EXISTS path_to_python_install)
+  if(NOT EXISTS ${path_to_python_install})
     file(MAKE_DIRECTORY ${path_to_python_install})
   endif()
   create_Symlink(${path_to_module_python_wrapper} ${path_to_python_install}/${TARGET_MODULE}${TARGET_SUFFIX})#generate the symlink used
