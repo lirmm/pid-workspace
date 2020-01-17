@@ -416,15 +416,10 @@ function(set_Cache_Entry_For_Default_Contribution_Space)
     set_Default_Contribution_Space_For_Publication(RESULT_OK ${TARGET_CONTRIBUTION_SPACE})
     if(NOT RESULT_OK)#not a valid target contribution space
       #reset the cache variable
-      set(TARGET_CONTRIBUTION_SPACE "" CACHE STRING "The contribution space to contribute to. Possible values are: ${ALL_SPACES} (first is default)" FORCE)
+      set(TARGET_CONTRIBUTION_SPACE "" CACHE STRING "The contribution space to contribute to. Possible values are: ${CONTRIBUTION_SPACES} (first is default)" FORCE)
     endif()
   endif()
 endfunction(set_Cache_Entry_For_Default_Contribution_Space)
-
-
-##########################################################################################
-############################ contributions file management ###############################
-##########################################################################################
 
 function(add_Contribution_Space name update publish)
   append_Unique_In_Cache(CONTRIBUTION_SPACES ${name})#simply add the only update contribution space
@@ -450,6 +445,7 @@ function(deploy_Contribution_Space DEPLOYED name update publish)
   endif()
   #finally set the update address
   configure_Remote(${WORKSPACE_DIR}/contributions/${name} origin ${update} ${publish})
+  set(${DEPLOYED} TRUE PARENT_SCOPE)
 endfunction(deploy_Contribution_Space)
 
 function(reset_Contribution_Spaces)
@@ -541,3 +537,43 @@ function(write_Contribution_Spaces_Description_File)
     file(APPEND ${target_file_path} "${TO_WRITE}\n")
   endforeach()
 endfunction(write_Contribution_Spaces_Description_File)
+
+function(get_All_Matching_Contributions LICENSE REFERENCE FIND FORMAT CONFIGURATION cs name)
+  get_Path_To_Contribution_Space(PATH_TO_CS ${cs})
+  #checking licenses
+  if(EXISTS ${PATH_TO_CS}/licenses/License${name}.cmake)
+    set(${LICENSE} License${name}.cmake PARENT_SCOPE)
+  else()
+    set(${LICENSE} PARENT_SCOPE)
+  endif()
+  #checking formats
+  if(EXISTS ${PATH_TO_CS}/formats/.clang-format.${name})
+    set(${FORMAT} .clang-format.${name} PARENT_SCOPE)
+  else()
+    set(${FORMAT} PARENT_SCOPE)
+  endif()
+  #checking configurations
+  if(EXISTS ${PATH_TO_CS}/configurations/${name} AND IS_DIRECTORY ${PATH_TO_CS}/configurations/${name})
+    set(${CONFIGURATION} ${name} PARENT_SCOPE)
+  else()
+    set(${CONFIGURATION} PARENT_SCOPE)
+  endif()
+  #checking find files
+  if(EXISTS ${PATH_TO_CS}/finds/Find${name}.cmake)
+    set(${FIND} Find${name}.cmake PARENT_SCOPE)
+  else()
+    set(${FIND} PARENT_SCOPE)
+  endif()
+  #checking references
+  if(EXISTS ${PATH_TO_CS}/references/Refer${name}.cmake)
+    set(${REFERENCE} Refer${name}.cmake PARENT_SCOPE)
+  elseif(EXISTS ${PATH_TO_CS}/references/ReferExternal${name}.cmake)
+    set(${REFERENCE} ReferExternal${name}.cmake PARENT_SCOPE)
+  elseif(EXISTS ${PATH_TO_CS}/references/ReferEnvironment${name}.cmake)
+    set(${REFERENCE} ReferEnvironment${name}.cmake PARENT_SCOPE)
+  elseif(EXISTS ${PATH_TO_CS}/references/ReferFramework${name}.cmake)
+    set(${REFERENCE} ReferFramework${name}.cmake PARENT_SCOPE)
+  else()
+    set(${REFERENCE} PARENT_SCOPE)
+  endif()
+endfunction(get_All_Matching_Contributions)

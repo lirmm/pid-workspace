@@ -867,6 +867,60 @@ endif()
 endfunction(publish_Environment_References_In_Workspace_Repository)
 
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |publish_All_In_Contribution_Space_Repository| replace:: ``publish_All_In_Contribution_Space_Repository``
+#  .. _publish_All_In_Contribution_Space_Repository:
+#
+#  publish_All_In_Contribution_Space_Repository
+#  --------------------------------------------
+#
+#   .. command:: publish_All_In_Contribution_Space_Repository(cs)
+#
+#     Commit and push all new references contained in a contribution space.
+#
+#     :cs: the name of target contribution space
+#
+function(publish_All_In_Contribution_Space_Repository cs)
+  get_Path_To_Contribution_Space(PATH_TO_CS ${cs})
+  if(PATH_TO_CS)
+  	execute_process(COMMAND git add --all
+                    WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
+  	execute_process(COMMAND git commit -m "global update"
+                    WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
+  	execute_process(COMMAND git push origin master
+                    WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
+  else()
+  	message("[PID] ERROR : problem oublishing in ${cs} contribution space.")
+  endif()
+endfunction(publish_All_In_Contribution_Space_Repository)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Contribution_Space_Repository_Status| replace:: ``get_Contribution_Space_Repository_Status``
+#  .. _get_Contribution_Space_Repository_Status:
+#
+#  get_Contribution_Space_Repository_Status
+#  --------------------------------------------
+#
+#   .. command:: get_Contribution_Space_Repository_Status(cs)
+#
+#     get the git status of a contribution space.
+#
+#     :cs: the name of target contribution space
+#
+function(get_Contribution_Space_Repository_Status cs)
+  get_Path_To_Contribution_Space(PATH_TO_CS ${cs})
+  if(PATH_TO_CS)
+    execute_process(COMMAND git status WORKING_DIRECTORY ${PATH_TO_CS})
+  else()
+    message("[PID] ERROR : problem getting status of ${cs} contribution space.")
+  endif()
+endfunction(get_Contribution_Space_Repository_Status cs)
 
 #.rst:
 #
