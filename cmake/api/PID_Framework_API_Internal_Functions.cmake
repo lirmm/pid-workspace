@@ -987,12 +987,16 @@ update_Environment_CI_Config_File() #update CI file with version coming from fra
 if(${PROJECT_NAME}_FRAMEWORK_ADDRESS)
 	generate_Framework_Reference_File(${CMAKE_BINARY_DIR}/share/ReferFramework${PROJECT_NAME}.cmake)
 	#copy the reference file of the package into the "references" folder of the workspace
-	get_Path_To_Default_Contribution_Space(DEFAULT_CS)
+	get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${PROJECT_NAME})
 	add_custom_target(referencing
-		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/share/ReferFramework${PROJECT_NAME}.cmake ${DEFAULT_CS}/references
-		COMMAND ${CMAKE_COMMAND} -E echo "Framework references have been registered into the worskpace"
+		COMMAND ${CMAKE_COMMAND}
+						-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_FRAMEWORK=${PROJECT_NAME}
+						-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
+						-DALL_PUBLISHING_CS=\"${ALL_PUBLISHING_CS}\"
+						-P ${WORKSPACE_DIR}/cmake/commands/Referencing_PID_Deployment_Unit.cmake
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
+	)
 endif()
 endmacro(build_Framework)
 

@@ -743,128 +743,139 @@ endfunction(update_Contribution_Space_Repository)
 #
 # .. ifmode:: internal
 #
-#  .. |publish_Package_References_In_Workspace_Repository| replace:: ``publish_Package_References_In_Workspace_Repository``
-#  .. _publish_Package_References_In_Workspace_Repository:
+#  .. |publish_Package_References_In_Contribution_Spaces_Repositories| replace:: ``publish_Package_References_In_Contribution_Spaces_Repositories``
+#  .. _publish_Package_References_In_Contribution_Spaces_Repositories:
 #
-#  publish_Package_References_In_Workspace_Repository
-#  --------------------------------------------------
+#  publish_Package_References_In_Contribution_Spaces_Repositories
+#  --------------------------------------------------------------
 #
-#   .. command:: publish_Package_References_In_Workspace_Repository(package)
+#   .. command:: publish_Package_References_In_Contribution_Spaces_Repositories(package)
 #
-#     Commit and push cmake script files (find and reference) used to reference a package.
+#     Commit and push cmake script files (find and reference) used to reference a native package.
 #
 #     :package: the name of target package
 #
-function(publish_Package_References_In_Workspace_Repository package)
-  get_Path_To_Find_File(PATH_TO_FIND ${package})
-  get_Path_To_Package_Reference_File(PATH_TO_REF PATH_TO_CS ${package})
-
-  if(PATH_TO_FIND AND PATH_TO_REF)
-  	execute_process(COMMAND git add ${PATH_TO_FIND}
-                    WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
-  	execute_process(COMMAND git add ${PATH_TO_REF}
-                    WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
-  	execute_process(COMMAND git commit -m "${package} registered"
-                    WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
-  	execute_process(COMMAND git push origin master
-                    WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
-  else()
-  	message("[PID] ERROR : problem registering package ${package}, cannot find adequate cmake files in contribution spaces.")
-  endif()
-endfunction(publish_Package_References_In_Workspace_Repository)
+function(publish_Package_References_In_Contribution_Spaces_Repositories package)
+  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${package})
+  foreach(cs IN LISTS ALL_CONTRIB)
+    set(PATH_TO_REF ${cs}/references/Refer${package}.cmake)
+    set(PATH_TO_FIND ${cs}/finds/Find${package}.cmake)
+    if(EXISTS ${PATH_TO_REF} AND EXISTS ${PATH_TO_FIND})
+    	execute_process(COMMAND git add ${PATH_TO_FIND}
+                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    	execute_process(COMMAND git add ${PATH_TO_REF}
+                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    	execute_process(COMMAND git commit -m "${package} registered"
+                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    	execute_process(COMMAND git push origin master
+                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    else()
+    	message("[PID] WARNING : problem registering package ${package}, cannot find adequate cmake files in contribution space ${cs}.")
+    endif()
+  endforeach()
+endfunction(publish_Package_References_In_Contribution_Spaces_Repositories)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |publish_Wrapper_References_In_Workspace_Repository| replace:: ``publish_Wrapper_References_In_Workspace_Repository``
-#  .. _publish_Wrapper_References_In_Workspace_Repository:
+#  .. |publish_Wrapper_References_In_Contribution_Spaces_Repositories| replace:: ``publish_Wrapper_References_In_Contribution_Spaces_Repositories``
+#  .. _publish_Wrapper_References_In_Contribution_Spaces_Repositories:
 #
-#  publish_Wrapper_References_In_Workspace_Repository
-#  --------------------------------------------------
+#  publish_Wrapper_References_In_Contribution_Spaces_Repositories
+#  --------------------------------------------------------------
 #
-#   .. command:: publish_Wrapper_References_In_Workspace_Repository(wrapper)
+#   .. command:: publish_Wrapper_References_In_Contribution_Spaces_Repositories(wrapper)
 #
 #     Commit and push cmake script files (find and reference) used to reference an external package.
 #
 #     :wrapper: the name of external package wrapper to use.
 #
-function(publish_Wrapper_References_In_Workspace_Repository wrapper)
-  get_Path_To_Find_File(PATH_TO_FIND ${wrapper})
-  get_Path_To_External_Reference_File(PATH_TO_REF PATH_TO_CS ${wrapper})
-  if(PATH_TO_FIND AND PATH_TO_REF)
-  	execute_process(COMMAND git add ${PATH_TO_FIND}
-                    WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
-  	execute_process(COMMAND git add ${PATH_TO_REF}
-                    WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
-  	execute_process(COMMAND git commit -m "${wrapper} registered"
-                    WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
-  	execute_process(COMMAND git push origin master
-                    WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
-  else()
-  	message("[PID] ERROR : problem registering wrapper ${wrapper}, cannot find adequate cmake files in contribution spaces.")
-  endif()
-endfunction(publish_Wrapper_References_In_Workspace_Repository)
+function(publish_Wrapper_References_In_Contribution_Spaces_Repositories wrapper)
+  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${wrapper})
+  foreach(cs IN LISTS ALL_CONTRIB)
+    set(PATH_TO_REF ${cs}/references/ReferExternal${wrapper}.cmake)
+    set(PATH_TO_FIND ${cs}/finds/Find${wrapper}.cmake)
+    if(EXISTS ${PATH_TO_REF} AND EXISTS ${PATH_TO_FIND})
+    	execute_process(COMMAND git add ${PATH_TO_FIND}
+                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    	execute_process(COMMAND git add ${PATH_TO_REF}
+                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    	execute_process(COMMAND git commit -m "${wrapper} registered"
+                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    	execute_process(COMMAND git push origin master
+                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    else()
+    	message("[PID] WARNING : problem registering wrapper ${wrapper}, cannot find adequate cmake files in contribution spaces.")
+    endif()
+  endforeach()
+endfunction(publish_Wrapper_References_In_Contribution_Spaces_Repositories)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |publish_Framework_References_In_Workspace_Repository| replace:: ``publish_Framework_References_In_Workspace_Repository``
-#  .. _publish_Framework_References_In_Workspace_Repository:
+#  .. |publish_Framework_References_In_Contribution_Spaces_Repositories| replace:: ``publish_Framework_References_In_Contribution_Spaces_Repositories``
+#  .. _publish_Framework_References_In_Contribution_Spaces_Repositories:
 #
-#  publish_Framework_References_In_Workspace_Repository
-#  ----------------------------------------------------
+#  publish_Framework_References_In_Contribution_Spaces_Repositories
+#  ----------------------------------------------------------------
 #
-#   .. command:: publish_Framework_References_In_Workspace_Repository(package)
+#   .. command:: publish_Framework_References_In_Contribution_Spaces_Repositories(framework)
 #
 #     Commit and push cmake script files (reference) used to reference a framework.
 #
 #     :framework: the name of target framework
 #
-function(publish_Framework_References_In_Workspace_Repository framework)
-get_Path_To_Framework_Reference_File(PATH_TO_REF PATH_TO_CS ${framework})
-if(PATH_TO_REF)
-	execute_process(COMMAND git add ${PATH_TO_REF}
-                  WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
-	execute_process(COMMAND git commit -m "framework ${framework} registered"
-                  WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
-	execute_process(COMMAND git push origin master
-                  WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
-else()
-	message("[PID] ERROR : problem registering framework ${framework}, cannot find adequate cmake files in contribution spaces.")
-endif()
-endfunction(publish_Framework_References_In_Workspace_Repository)
+function(publish_Framework_References_In_Contribution_Spaces_Repositories framework)
+  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${framework})
+  foreach(cs IN LISTS ALL_CONTRIB)
+    set(PATH_TO_REF ${cs}/references/ReferFramework${framework}.cmake)
+    if(EXISTS ${PATH_TO_REF})
+      execute_process(COMMAND git add ${PATH_TO_REF}
+                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    	execute_process(COMMAND git commit -m "framework ${framework} registered"
+                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    	execute_process(COMMAND git push origin master
+                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    else()
+    	message("[PID] WARNING : problem registering framework ${framework}, cannot find adequate cmake files in contribution spaces.")
+    endif()
+  endforeach()
+endfunction(publish_Framework_References_In_Contribution_Spaces_Repositories)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |publish_Environment_References_In_Workspace_Repository| replace:: ``publish_Environment_References_In_Workspace_Repository``
-#  .. _publish_Environment_References_In_Workspace_Repository:
+#  .. |publish_Environment_References_In_Contribution_Spaces_Repositories| replace:: ``publish_Environment_References_In_Contribution_Spaces_Repositories``
+#  .. _publish_Environment_References_In_Contribution_Spaces_Repositories:
 #
-#  publish_Environment_References_In_Workspace_Repository
-#  ------------------------------------------------------
+#  publish_Environment_References_In_Contribution_Spaces_Repositories
+#  ------------------------------------------------------------------
 #
-#   .. command:: publish_Environment_References_In_Workspace_Repository(environment)
+#   .. command:: publish_Environment_References_In_Contribution_Spaces_Repositories(environment)
 #
 #     Commit and push cmake script files (reference) used to reference a environment.
 #
 #     :environment: the name of target environment
 #
-function(publish_Environment_References_In_Workspace_Repository environment)
-  get_Path_To_Environment_Reference_File(PATH_TO_REF PATH_TO_CS ${environment})
-if(PATH_TO_REF)
-	execute_process(COMMAND git add ${PATH_TO_REF}
-                  WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
-	execute_process(COMMAND git commit -m "environment ${environment} registered"
-                  WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
-	execute_process(COMMAND git push origin master
-                  WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
-else()
-	message("[PID] ERROR : problem registering environment ${environment}, cannot find adequate cmake files in workspace.")
-endif()
-endfunction(publish_Environment_References_In_Workspace_Repository)
+function(publish_Environment_References_In_Contribution_Spaces_Repositories environment)
+  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${environment})
+  foreach(cs IN LISTS ALL_CONTRIB)
+    set(PATH_TO_REF ${cs}/references/ReferEnvironment${environment}.cmake)
+    if(EXISTS ${PATH_TO_REF})
+      execute_process(COMMAND git add ${PATH_TO_REF}
+                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    	execute_process(COMMAND git commit -m "environment ${environment} registered"
+                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    	execute_process(COMMAND git push origin master
+                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    else()
+    	message("[PID] WARNING : problem registering environment ${environment}, cannot find adequate cmake files in workspace.")
+    endif()
+  endforeach()
+endfunction(publish_Environment_References_In_Contribution_Spaces_Repositories)
 
 
 #.rst:

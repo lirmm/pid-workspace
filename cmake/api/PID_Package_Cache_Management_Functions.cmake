@@ -106,6 +106,40 @@ endmacro(manage_Parrallel_Build_Option)
 #
 # .. ifmode:: internal
 #
+#  .. |write_Cache_Option_Line_If_Not_Managed| replace:: ``write_Cache_Option_Line_If_Not_Managed``
+#  .. _write_Cache_Option_Line_If_Not_Managed:
+#
+#  write_Cache_Option_Line_If_Not_Managed
+#  --------------------------------------
+#
+#   .. command:: write_Cache_Option_Line_If_Not_Managed(file entry type managed_entries)
+#
+#   add to a file a line setting the default cache variable if not already managed
+#
+#     :file: file to write in.
+#
+#     :entry: name of the cache entry.
+#
+#     :type: type of the cache entry.
+#
+#     :managed_entries: inpout/output variable containing the list of cache entries already contained in the file.
+#
+function(write_Cache_Option_Line_If_Not_Managed file entry type managed_entries)
+  if(${managed_entries})
+    list(FIND ${managed_entries} ${entry} INDEX)
+    if(NOT INDEX EQUAL -1)#if already found in managed entries then do nothing
+      return()
+    endif()
+  endif()
+  #in other situations simply add the entry to the cache
+  file(APPEND ${file} "set(${entry} ${${entry}} CACHE ${type} \"\" FORCE)\n")
+  set(${managed_entries} ${managed_entries} ${entry} PARENT_SCOPE)
+endfunction(write_Cache_Option_Line_If_Not_Managed)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |set_Mode_Specific_Options_From_Global| replace:: ``set_Mode_Specific_Options_From_Global``
 #  .. _set_Mode_Specific_Options_From_Global:
 #
@@ -131,39 +165,40 @@ function(set_Mode_Specific_Options_From_Global)
 	endforeach()
 	set(OPTIONS_FILE ${CMAKE_BINARY_DIR}/share/cacheConfig.cmake)
 	file(WRITE ${OPTIONS_FILE} "")
-  #first provide current values of common variables
-  file(APPEND ${OPTIONS_FILE} "set(WORKSPACE_DIR \"${WORKSPACE_DIR}\" CACHE PATH \"\" FORCE)\n")
-  file(APPEND ${OPTIONS_FILE} "set(BUILD_EXAMPLES ${BUILD_EXAMPLES} CACHE BOOL \"\" FORCE)\n")
-  file(APPEND ${OPTIONS_FILE} "set(BUILD_API_DOC ${BUILD_API_DOC} CACHE BOOL \"\" FORCE)\n")
-  file(APPEND ${OPTIONS_FILE} "set(BUILD_COVERAGE_REPORT ${BUILD_COVERAGE_REPORT} CACHE BOOL \"\" FORCE)\n")
-  file(APPEND ${OPTIONS_FILE} "set(BUILD_STATIC_CODE_CHECKING_REPORT ${BUILD_STATIC_CODE_CHECKING_REPORT} CACHE BOOL \"\" FORCE)\n")
-  file(APPEND ${OPTIONS_FILE} "set(BUILD_LATEX_API_DOC ${BUILD_LATEX_API_DOC} CACHE BOOL \"\" FORCE)\n")
-  file(APPEND ${OPTIONS_FILE} "set(BUILD_AND_RUN_TESTS ${BUILD_AND_RUN_TESTS} CACHE BOOL \"\" FORCE)\n")
-  file(APPEND ${OPTIONS_FILE} "set(RUN_TESTS_WITH_PRIVILEGES ${RUN_TESTS_WITH_PRIVILEGES} CACHE BOOL \"\" FORCE)\n")
-  file(APPEND ${OPTIONS_FILE} "set(BUILD_TESTS_IN_DEBUG ${BUILD_TESTS_IN_DEBUG} CACHE BOOL \"\" FORCE)\n")
-  file(APPEND ${OPTIONS_FILE} "set(BUILD_RELEASE_ONLY ${BUILD_RELEASE_ONLY} CACHE BOOL \"\" FORCE)\n")
-  file(APPEND ${OPTIONS_FILE} "set(GENERATE_INSTALLER ${GENERATE_INSTALLER} CACHE BOOL \"\" FORCE)\n")
-  file(APPEND ${OPTIONS_FILE} "set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ${REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD} CACHE BOOL \"\" FORCE)\n")
-  file(APPEND ${OPTIONS_FILE} "set(REQUIRED_PACKAGES_AUTOMATIC_UPDATE ${REQUIRED_PACKAGES_AUTOMATIC_UPDATE} CACHE BOOL \"\" FORCE)\n")
-  file(APPEND ${OPTIONS_FILE} "set(ENABLE_PARALLEL_BUILD ${ENABLE_PARALLEL_BUILD} CACHE BOOL \"\" FORCE)\n")
-  file(APPEND ${OPTIONS_FILE} "set(BUILD_DEPENDENT_PACKAGES ${BUILD_DEPENDENT_PACKAGES} CACHE BOOL \"\" FORCE)\n")
-  file(APPEND ${OPTIONS_FILE} "set(ADDITIONNAL_DEBUG_INFO ${ADDITIONNAL_DEBUG_INFO} CACHE BOOL \"\" FORCE)\n")
-
+  set(managed_options)
   if(CACHE_OK)#there is a cache => use it
 		foreach(line IN LISTS LINES)
       if(line MATCHES "^([^:]+):([^=]+)=(.*)$")
         if(DEFINED ${CMAKE_MATCH_1})#the target cache variable is defined locally
-          set(curr_option "set( ${CMAKE_MATCH_1} \"${${CMAKE_MATCH_1}}\"\ CACHE ${CMAKE_MATCH_2} \"\" FORCE)\n")
+          set(curr_option "set(${CMAKE_MATCH_1} ${${CMAKE_MATCH_1}} CACHE ${CMAKE_MATCH_2} \"\" FORCE)\n")
         else() #no local definition (strange but OK) => simply recopy the value
-          set(curr_option "set( ${CMAKE_MATCH_1} \"${CMAKE_MATCH_3}\"\ CACHE ${CMAKE_MATCH_2} \"\" FORCE)\n")
+          set(curr_option "set(${CMAKE_MATCH_1} ${CMAKE_MATCH_3} CACHE ${CMAKE_MATCH_2} \"\" FORCE)\n")
         endif()
+        list(APPEND managed_options ${CMAKE_MATCH_1})
         file(APPEND ${OPTIONS_FILE} ${curr_option})
 			endif()
 		endforeach()
 	#else only populating the load cache script with default PID cache variables to transmit them to release/debug mode caches
 	endif()
+  #if managed_options is empty this is first run after a hard clean of the build folder
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} WORKSPACE_DIR PATH managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} ADDITIONNAL_DEBUG_INFO BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} BUILD_EXAMPLES BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} BUILD_API_DOC BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} BUILD_COVERAGE_REPORT BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} BUILD_STATIC_CODE_CHECKING_REPORT BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} BUILD_LATEX_API_DOC BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} BUILD_AND_RUN_TESTS BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} RUN_TESTS_WITH_PRIVILEGES BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} BUILD_TESTS_IN_DEBUG BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} BUILD_RELEASE_ONLY BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} GENERATE_INSTALLER BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} REQUIRED_PACKAGES_AUTOMATIC_UPDATE BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} ENABLE_PARALLEL_BUILD BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} BUILD_DEPENDENT_PACKAGES BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} TARGET_CONTRIBUTION_SPACE STRING managed_options)
 endfunction(set_Mode_Specific_Options_From_Global)
-
 
 #.rst:
 #
@@ -2441,8 +2476,10 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
   normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}") #getting standard version number depending on value of tags
   set(FIND_FILE_KNOWN_VERSIONS ${VERSION_NUMBERS})#only write release versions
 	configure_file(${WORKSPACE_DIR}/cmake/patterns/packages/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
-  get_Path_To_Default_Contribution_Space(DEFAULT_CS)
-  install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${DEFAULT_CS}/finds) #install in the worskpace cmake directory which contains cmake find modules
+  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${PROJECT_NAME})
+  foreach(cs_path IN LISTS ALL_PUBLISHING_CS)
+    install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${cs_path}/finds) #install in the adequate contribution space
+  endforeach()
 endif()
 endfunction(generate_Package_Find_File)
 

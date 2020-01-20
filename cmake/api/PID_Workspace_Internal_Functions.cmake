@@ -2220,14 +2220,18 @@ endfunction(remove_PID_Environment)
 #
 #   .. command:: register_PID_Package(package)
 #
-#     Updating the workspace repository with updated (or newly created) reference and find files for a given package.
+#     Updating the workspace contributions space(s) with updated (or newly created) reference and find files for a given package.
 #
 #      :package: the name of the package to register.
 #
 function(register_PID_Package package)
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} install WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
-publish_Package_References_In_Workspace_Repository(${package})
+#only publish if the package has an address and/or a public address
+include_Package_Reference_File(PATH_TO_FILE ${package})
+if(PATH_TO_FILE AND (${package}_PUBLIC_ADDRESS OR ${package}_ADDRESS))#means included and an address is defined
+	publish_Package_References_In_Contribution_Spaces_Repositories(${package})
+endif()
 endfunction(register_PID_Package)
 
 #.rst:
@@ -2242,13 +2246,17 @@ endfunction(register_PID_Package)
 #
 #   .. command:: register_PID_Wrapper(wrapper)
 #
-#     Updating the workspace repository with updated (or newly created) reference and find files for a given external package wrapper.
+#     Updating the workspace contributions space(s) with updated (or newly created) reference and find files for a given external package wrapper.
 #
 #      :wrapper: the name of the external package wrapper to register.
 #
 function(register_PID_Wrapper wrapper)
 	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${wrapper}/build)
-	publish_Wrapper_References_In_Workspace_Repository(${wrapper})
+	#only publish if the wrapper has an address and/or a public address
+	include_External_Reference_File(PATH_TO_FILE ${wrapper})
+	if(PATH_TO_FILE AND (${wrapper}_PUBLIC_ADDRESS OR ${wrapper}_ADDRESS))#means included and an address is defined
+		publish_Wrapper_References_In_Contribution_Spaces_Repositories(${wrapper})
+	endif()
 endfunction(register_PID_Wrapper)
 
 #.rst:
@@ -2270,7 +2278,11 @@ endfunction(register_PID_Wrapper)
 function(register_PID_Framework framework)
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
-publish_Framework_References_In_Workspace_Repository(${framework})
+#only publish if the package has an address and/or a public address
+include_Framework_Reference_File(PATH_TO_FILE ${framework})
+if(PATH_TO_FILE AND ${framework}_ADDRESS)#means included and an address is defined
+	publish_Framework_References_In_Contribution_Spaces_Repositories(${framework})
+endif()
 endfunction(register_PID_Framework)
 
 #.rst:
@@ -2291,7 +2303,11 @@ endfunction(register_PID_Framework)
 #
 function(register_PID_Environment environment)
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/environments/${environment}/build)
-publish_Environment_References_In_Workspace_Repository(${environment})
+#only publish if the package has an address and/or a public address
+include_Environment_Reference_File(PATH_TO_FILE ${environment})
+if(PATH_TO_FILE AND (${environment}_PUBLIC_ADDRESS OR ${environment}_ADDRESS))#means included and an address is defined
+	publish_Environment_References_In_Contribution_Spaces_Repositories(${environment})
+endif()
 endfunction(register_PID_Environment)
 
 ##########################################
@@ -2437,7 +2453,7 @@ if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
 	endif()
 endif()
 
-# build one time to be sure it builds and tests are passing
+# build one time to be sure it builds and tests pass
 build_And_Install_Source(IS_BUILT ${package} "" "${CURRENT_BRANCH}" TRUE)
 if(NOT IS_BUILT)
 	message("[PID] ERROR : cannot release package ${package}, because its branch ${CURRENT_BRANCH} does not build.")
@@ -2458,7 +2474,7 @@ if(branch)#if we use a specific branch for patching then do not merge into maste
 		message("[PID] ERROR : cannot release package ${package}, because your are not allowed to push version to its official remote !")
 		return()
 	endif()
-
+	register_PID_Package(${package})#automate the registering after release
 else()# check that integration branch is a fast forward of master
 	merge_Into_Master(MERGE_OK ${package} "integration" ${STRING})
 	if(NOT MERGE_OK)
@@ -2477,6 +2493,8 @@ else()# check that integration branch is a fast forward of master
 		go_To_Integration(${package})#always go back to original branch
 		return()
 	endif()
+	register_PID_Package(${package})#automate the registering after release
+
 	#remove the installed version built from integration branch
 	file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${STRING})
 	#rebuild package from master branch to get a clean installed version (getting clean use file)
