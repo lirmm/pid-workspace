@@ -1251,6 +1251,7 @@ endif()
 if(DECLARE_PID_COMPONENT_EXPORT)#exported dependencies
   foreach(dep IN LISTS DECLARE_PID_COMPONENT_EXPORT)
     extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
+    set(COMPONENT_ARG ${COMPONENT_NAME})
     if(RES_PACK)#here the package name may be a framework name
       get_Package_Type(${RES_PACK} PACK_TYPE)
       if(PACK_TYPE STREQUAL "UNKNOWN")#not a known package => it is maybe a framework
@@ -1264,16 +1265,20 @@ if(DECLARE_PID_COMPONENT_EXPORT)#exported dependencies
       else()
         set(PACKAGE_ARG "PACKAGE;${RES_PACK}")
       endif()
-    else()
+    else()#no package defined
       set(PACKAGE_ARG)
+      if(${COMPONENT_NAME}_AVAILABLE)#there is a configuration with same name that is available
+        set(COMPONENT_ARG CONFIGURATION ${COMPONENT_NAME})#transform component name into a configuration name
+      endif()
     endif()
-    declare_PID_Component_Dependency(COMPONENT ${comp_name} EXPORT ${COMPONENT_NAME} ${PACKAGE_ARG})
+    declare_PID_Component_Dependency(COMPONENT ${comp_name} EXPORT ${COMPONENT_ARG} ${PACKAGE_ARG})
   endforeach()
 endif()
 
 if(DECLARE_PID_COMPONENT_DEPEND)#non exported dependencies
   foreach(dep IN LISTS DECLARE_PID_COMPONENT_DEPEND)
     extract_Component_And_Package_From_Dependency_String(COMPONENT_NAME RES_PACK ${dep})
+    set(COMPONENT_ARG ${COMPONENT_NAME})
     if(RES_PACK)#here the package name may be a framework name
       get_Package_Type(${RES_PACK} PACK_TYPE)
       if(PACK_TYPE STREQUAL "UNKNOWN")#not a known package => it is maybe a framework
@@ -1289,9 +1294,12 @@ if(DECLARE_PID_COMPONENT_DEPEND)#non exported dependencies
       endif()
     else()
       set(PACKAGE_ARG)
+      if(${COMPONENT_NAME}_AVAILABLE)#there is a configuration with same name that is available
+        set(COMPONENT_ARG CONFIGURATION ${COMPONENT_NAME})#transform component name into a configuration name
+      endif()
     endif()
-    declare_PID_Component_Dependency(COMPONENT ${comp_name} DEPEND ${COMPONENT_NAME} ${PACKAGE_ARG})
-    endforeach()
+    declare_PID_Component_Dependency(COMPONENT ${comp_name} DEPEND ${COMPONENT_ARG} ${PACKAGE_ARG})
+  endforeach()
 endif()
 
 if(DECLARE_PID_COMPONENT_LOGGABLE)#need to deal with dependency to pid-log if not explicitly managed
@@ -1546,9 +1554,11 @@ endfunction(used_PID_Package_Dependency)
 #  PID_Component_Dependency
 #  ------------------------
 #
-#  .. command:: PID_Component_Dependency([COMPONENT] ... [EXPORT|DEPEND] [NATIVE|EXTERNAL] ... [PACKAGE ...] [defintions...])
+#  .. command:: PID_Component_Dependency([COMPONENT] ... [EXPORT|DEPEND] [NATIVE|EXTERNAL] ... [PACKAGE|FRAMEWORK ...] [definitions...])
 #
 #  .. command:: PID_Component_Dependency([COMPONENT] ... [EXPORT] [EXTERNAL ...] [OPTIONS])
+#
+#  .. command:: PID_Component_Dependency([COMPONENT] ... [EXPORT|DEPEND] CONFIGURATION ... [definitions...])
 #
 #  .. command:: declare_PID_Component_Dependency([COMPONENT] ... [EXPORT|DEPEND] [NATIVE|EXTERNAL] ... [PACKAGE ...] [defintions...])
 #
@@ -1557,7 +1567,8 @@ endfunction(used_PID_Package_Dependency)
 #   Declare a dependency for a component of the current package.
 #   First signature is used to defince a dependency to an explicity component either native or external. Compared to the DEPEND option of |PID_Component|_ this function may define additional configuration for a given component dependency (typically setting definitions).
 #   Second signature is used to define a dependency between the component and either the content of an external package or to the operating system.
-#   As often as possible first signature must be preferred to second one. This later here is mainly to ensure legacy compatibility.
+#   Third signature is used to define a dependency between the component and all components defined by a configuration. This is a shortcut of second signature to bind a component with system dependencies that are described as configurations.
+#   As often as possible first or third signature must be preferred to second one. This later here is mainly to ensure legacy compatibility.
 #
 #   .. rubric:: Common parameters
 #
@@ -1575,6 +1586,7 @@ endfunction(used_PID_Package_Dependency)
 #   :[DEPEND]: If this flag is present, the dependency is NOT exported. It means that symbols of this dependency do not appear in component public headers. Cannot be used together with EXPORT keyword. If none of EXPORT or DEPEND keyword are used, you must either use NATIVE or EXTERNAL keyword to specify the dependency.
 #   :[PACKAGE <package>]: ``package`` is the native package that contains the component. If ``PACKAGE`` is not used, it means either ``component`` is part of the current package or it can be found in current package dependencies.
 #   :[FRAMEWORK <framework>]: ``framework`` is the name of the framework containing the package that itself contains the component. Usable instead of ``PACKAGE``.
+#   :[CONFIGURATION <framework>]: ``framework`` is the name of the framework containing the package that itself contains the component. Usable instead of ``PACKAGE``.
 #
 #   .. rubric:: Second signature
 #
@@ -1586,6 +1598,12 @@ endfunction(used_PID_Package_Dependency)
 #   :LINKS STATIC|SHARED <links>:
 #     - ``STATIC <links>``: static libraries. For system libraries, system referencing must be used (e.g. -lm for libm.a). For external packages, complete path (relative to the package root dir) must be used.
 #     - ``SHARED <links>``: shared libraries. For system libraries, system referencing must be used (e.g. -lm for libm.a). For external packages, complete path (relative to the package root dir) must be used.
+#
+#   .. rubric:: Third signature
+#
+#   :[EXPORT]: If this flag is present, the dependency is exported. It means that symbols of this dependency appears in component public headers. Cannot be used together with DEPEND keyword.
+#   :[DEPEND]: If this flag is present, the dependency is NOT exported. It means that symbols of this dependency do not appear in component public headers. Cannot be used together with EXPORT keyword. If none of EXPORT or DEPEND keyword are used, you must either use NATIVE or EXTERNAL keyword to specify the dependency.
+#   :[CONFIGURATION <configuration>]: ``configuration`` is the name of the configuration defining the system dependency.
 #
 #   .. admonition:: Constraints
 #      :class: warning
@@ -1609,6 +1627,11 @@ endfunction(used_PID_Package_Dependency)
 #      #declare a dependency to an external component that is NOT exported
 #      PID_Component_Dependency(my-static-lib
 #                                       DEPEND EXTERNAL boost-headers PACKAGE boost
+#      )
+#
+#      #declare a dependency to a system configuration that is NOT exported
+#      PID_Component_Dependency(my-static-lib
+#                                       DEPEND CONFIGURATION posix
 #      )
 #
 #      #declare a dependency to a native package of same project that is exported
@@ -1635,7 +1658,7 @@ endmacro(PID_Component_Dependency)
 
 macro(declare_PID_Component_Dependency)
 set(options EXPORT DEPEND)
-set(oneValueArgs COMPONENT NATIVE PACKAGE EXTERNAL FRAMEWORK C_STANDARD CXX_STANDARD)
+set(oneValueArgs COMPONENT NATIVE PACKAGE EXTERNAL FRAMEWORK C_STANDARD CXX_STANDARD CONFIGURATION)
 set(multiValueArgs INCLUDE_DIRS LIBRARY_DIRS LINKS COMPILER_OPTIONS INTERNAL_DEFINITIONS IMPORTED_DEFINITIONS EXPORTED_DEFINITIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -1901,20 +1924,51 @@ else()#no target package => 2 cases OS dependency OR ERROR
     finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, the package containing component ${target_component} cannot be deduced !")
   else()#this is a system dependency
-    declare_System_Component_Dependency(
-  			${component_name}
-  			${export}
-  			"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
-  			"${DECLARE_PID_COMPONENT_DEPENDENCY_LIBRARY_DIRS}"
-  			"${comp_defs}"
-  			"${comp_exp_defs}"
-  			"${dep_defs}"
-  			"${compiler_options}"
-  			"${static_links}"
-  			"${shared_links}"
-  			"${DECLARE_PID_COMPONENT_DEPENDENCY_C_STANDARD}"
-  			"${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_STANDARD}"
-  			"${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
+    if(DECLARE_PID_COMPONENT_DEPENDENCY_CONFIGURATION)#system dependency described with a direct configuration
+      set(all_shared_links)
+      set(all_static_links)
+      set(config ${DECLARE_PID_COMPONENT_DEPENDENCY_CONFIGURATION})
+      foreach(link IN LISTS ${config}_LINK_OPTIONS)#for each link defined by the configuration
+        get_Link_Type(RES_TYPE ${link})
+        if(RES_TYPE STREQUAL STATIC)#a static archive extension is explicitly given
+          list(APPEND all_static_links ${link})
+        else()#by default links refer to shared object (if no extension given)
+          list(APPEND all_shared_links ${link})
+        endif()
+      endforeach()
+      #same call as an hand-made one but using automatically standard configuration variables
+      set(all_dep_defs ${${config}_DEFINITIONS} ${dep_defs})#preprocessor definition that appy to the interface of the configuration's components come from : 1) the component definition itself (i.e. configuration description) and 2) can be set directly by the user component
+      declare_System_Component_Dependency(
+    			${component_name}
+    			${export}
+    			${config}_INCLUDE_DIRS
+    			${config}_LIBRARY_DIRS
+    			"${comp_defs}"#only definitions can come from the description of the dependency
+    			"${comp_exp_defs}"#only definitions can come from the description of the dependency
+    			"${all_dep_defs}"#only definitions can come from the description of the dependency
+    			${config}_COMPILER_OPTIONS
+    			"${all_static_links}"
+    			"${all_shared_links}"
+    			"${${config}_C_STANDARD}"
+    			"${${config}_CXX_STANDARD}"
+    			${config}_RPATH)
+
+    else()
+      declare_System_Component_Dependency(
+    			${component_name}
+    			${export}
+    			"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
+    			"${DECLARE_PID_COMPONENT_DEPENDENCY_LIBRARY_DIRS}"
+    			"${comp_defs}"
+    			"${comp_exp_defs}"
+    			"${dep_defs}"
+    			"${compiler_options}"
+    			"${static_links}"
+    			"${shared_links}"
+    			"${DECLARE_PID_COMPONENT_DEPENDENCY_C_STANDARD}"
+    			"${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+    			"${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
+    endif()
   endif()
 endif()
 endmacro(declare_PID_Component_Dependency)

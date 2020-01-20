@@ -947,6 +947,8 @@ if(DECLARE_PID_WRAPPER_COMPONENT_EXPORT)#exported dependencies
     extract_Component_And_Package_From_Dependency_String(RES_COMP RES_PACK ${dep})
     if(RES_PACK)
       set(COMP_ARGS "${RES_COMP};PACKAGE;${RES_PACK}")
+    elseif(${RES_COMP}_AVAILABLE)#transform the component dependency into a configuration dependency
+      set(COMP_ARGS "CONFIGURATION;${RES_COMP}")
     else()
       set(COMP_ARGS ${RES_COMP})
     endif()
@@ -959,6 +961,8 @@ if(DECLARE_PID_WRAPPER_COMPONENT_DEPEND)#non exported dependencies
     extract_Component_And_Package_From_Dependency_String(RES_COMP RES_PACK ${dep})
     if(RES_PACK)
       set(COMP_ARGS "${RES_COMP};PACKAGE;${RES_PACK}")
+    elseif(${RES_COMP}_AVAILABLE)#transform the component dependency into a configuration dependency
+      set(COMP_ARGS "CONFIGURATION;${RES_COMP}")
     else()
       set(COMP_ARGS ${RES_COMP})
     endif()
@@ -1040,7 +1044,7 @@ macro(declare_PID_Wrapper_Component_Dependency)
 set(target_component)
 set(component_name)
 set(options EXPORT DEPEND)
-set(oneValueArgs COMPONENT EXTERNAL PACKAGE C_STANDARD CXX_STANDARD)
+set(oneValueArgs COMPONENT EXTERNAL PACKAGE C_STANDARD CXX_STANDARD CONFIGURATION)
 set(multiValueArgs INCLUDES LIBRARY_DIRS SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT)
@@ -1131,17 +1135,33 @@ else()#this is a dependency to another component defined in the same external pa
   		"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
   	)
   else()#no target component defined => it is a system dependency
-    list(APPEND ALL_LINKS ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_SHARED_LINKS} ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_STATIC_LINKS})
-    declare_Wrapped_Component_System_Dependency(${component_name}
-      "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_INCLUDES}"
-      "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_LIBRARY_DIRS}"
-      "${ALL_LINKS}"
-      "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
-      "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_OPTIONS}"
-      "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_C_STANDARD}"
-      "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CXX_STANDARD}"
-      "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}"
-    )
+    if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CONFIGURATION)
+      set(config ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CONFIGURATION})
+      set(all_defs ${${config}_DEFINITIONS} ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS})
+      declare_Wrapped_Component_System_Dependency(${component_name}
+        ${config}_INCLUDE_DIRS
+        ${config}_LIBRARY_DIRS
+        "${${config}_LINK_OPTIONS}"
+        "${all_defs}"
+        ${config}_COMPILER_OPTIONS
+        "${${config}_C_STANDARD}"
+        "${${config}_CXX_STANDARD}"
+        ${config}_RPATH
+      )
+      set(config)
+    else()
+      list(APPEND ALL_LINKS ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_SHARED_LINKS} ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_STATIC_LINKS})
+      declare_Wrapped_Component_System_Dependency(${component_name}
+        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_INCLUDES}"
+        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_LIBRARY_DIRS}"
+        "${ALL_LINKS}"
+        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
+        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_OPTIONS}"
+        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_C_STANDARD}"
+        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}"
+      )
+    endif()
   endif()
 endif()
 endmacro(declare_PID_Wrapper_Component_Dependency)
