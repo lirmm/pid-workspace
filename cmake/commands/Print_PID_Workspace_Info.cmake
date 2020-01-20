@@ -129,11 +129,12 @@ elseif(TARGET_LICENSE)
 	if(TARGET_LICENSE STREQUAL "all")#listing all packages ordered by category
 		print_Available_Licenses()
 	else()
-		check_License_File(PATH_TO_FILE ${TARGET_LICENSE})
+		resolve_License_File(PATH_TO_FILE ${TARGET_LICENSE})
 		if(NOT PATH_TO_FILE)
 			message("[PID] ERROR : license name ${TARGET_LICENSE} does not refer to any known license in installed contribution spaces.")
 			return()
 		endif()
+		include(${PATH_TO_FILE})
 		print_License_Info(${TARGET_LICENSE})
 	endif()
 

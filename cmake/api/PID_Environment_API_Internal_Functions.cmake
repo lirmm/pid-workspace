@@ -1024,7 +1024,7 @@ endfunction(generate_Environment_Readme_Files)
 function(generate_Environment_License_File)
 
   if(${PROJECT_NAME}_LICENSE)
-    check_License_File(PATH_TO_FILE ${${PROJECT_NAME}_LICENSE})
+    resolve_License_File(PATH_TO_FILE ${${PROJECT_NAME}_LICENSE})
     if(NOT PATH_TO_FILE)
       message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in any contribution space installed in workspace, license file will not be generated.")
   	else()

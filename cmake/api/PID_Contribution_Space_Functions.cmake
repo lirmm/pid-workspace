@@ -30,6 +30,20 @@ include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Progress_Management_Functions NO_POLICY_SCOPE)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Project_Module_Path_From_Workspace| replace:: ``set_Project_Module_Path_From_Workspace``
+#  .. _set_Project_Module_Path_From_Workspace:
+#
+#  set_Project_Module_Path_From_Workspace
+#  --------------------------------------
+#
+#   .. command:: set_Project_Module_Path_From_Workspace()
+#
+#      Set the module path to target all currenlty used contribution spaces at workspace level
+#
 macro(set_Project_Module_Path_From_Workspace)
   if(PID_WORKSPACE_MODULES_PATH)
     list(APPEND CMAKE_MODULE_PATH ${PID_WORKSPACE_MODULES_PATH})
@@ -40,6 +54,28 @@ endmacro(set_Project_Module_Path_From_Workspace)
 ############################ auxiliary functions #########################################
 ##########################################################################################
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |find_File_In_Contribution_Spaces| replace:: ``find_File_In_Contribution_Spaces``
+#  .. _find_File_In_Contribution_Spaces:
+#
+#  find_File_In_Contribution_Spaces
+#  --------------------------------
+#
+#   .. command:: find_File_In_Contribution_Spaces(RESULT_FILE_PATH RESULT_CONTRIBUTION_SPACE file_type file_name)
+#
+#      AUxiliary funciton to find a file or directory in the contribution space with highest priority and returns its path and the path to its contribution space
+#
+#      :file_type: type of the file (licenses, formats, plugins, references, finds, configurations)
+#
+#      :file_name: name of file or folder
+#
+#      :RESULT_FILE_PATH: output variable containing path to the file if found, empty otherwise.
+#
+#      :RESULT_CONTRIBUTION_SPACE: output variable containing path to the contribution space containing the file or folder if found, empty otherwise.
+#
 function(find_File_In_Contribution_Spaces RESULT_FILE_PATH RESULT_CONTRIBUTION_SPACE file_type file_name)
   set(${RESULT_FILE_PATH} PARENT_SCOPE)
   set(${RESULT_CONTRIBUTION_SPACE} PARENT_SCOPE)
@@ -57,11 +93,47 @@ endfunction(find_File_In_Contribution_Spaces)
 ############################ format files resolution #####################################
 ##########################################################################################
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Path_To_Format_File| replace:: ``get_Path_To_Format_File``
+#  .. _get_Path_To_Format_File:
+#
+#  get_Path_To_Format_File
+#  -----------------------
+#
+#   .. command:: get_Path_To_Format_File(RESULT_PATH code_style)
+#
+#      get the path to a format file
+#
+#      :code_style: name of the code style defined by format
+#
+#      :RESULT_PATH: output variable containing path to the format file if found, empty otherwise.
+#
 function(get_Path_To_Format_File RESULT_PATH code_style)
   find_File_In_Contribution_Spaces(PATH CONTRIB formats ".clang-format.${code_style}")
   set(${RESULT_PATH} ${PATH} PARENT_SCOPE)
 endfunction(get_Path_To_Format_File)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Path_To_Format_File| replace:: ``resolve_Path_To_Format_File``
+#  .. _resolve_Path_To_Format_File:
+#
+#  resolve_Path_To_Format_File
+#  ---------------------------
+#
+#   .. command:: resolve_Path_To_Format_File(RESULT_PATH code_style)
+#
+#      get the path to a format file, update contribution spaces if not found first time.
+#
+#      :code_style: name of the code style defined by format
+#
+#      :RESULT_PATH: output variable containing path to the format file if found, empty otherwise.
+#
 function(resolve_Path_To_Format_File RESULT_PATH code_style)
   set(${RESULT_PATH} PARENT_SCOPE)
   get_Path_To_Format_File(PATH_TO_FORMAT ${code_style})
@@ -78,6 +150,24 @@ endfunction(resolve_Path_To_Format_File)
 ############################ plugin files resolution #####################################
 ##########################################################################################
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Path_To_Plugin_Dir| replace:: ``get_Path_To_Plugin_Dir``
+#  .. _get_Path_To_Plugin_Dir:
+#
+#  get_Path_To_Plugin_Dir
+#  ----------------------
+#
+#   .. command:: get_Path_To_Plugin_Dir(RESULT_PATH plugin)
+#
+#      get the path to the folder containing a plugin definition
+#
+#      :plugin: name of the plugin
+#
+#      :RESULT_PATH: output variable containing path to the plugin folder if found, empty otherwise.
+#
 function(get_Path_To_Plugin_Dir RESULT_PATH plugin)
   set(${RESULT_PATH} PARENT_SCOPE)
   foreach(contribution_space IN LISTS CONTRIBUTION_SPACES)#CONTRIBUTION_SPACES is supposed to be ordered from highest to lowest priority contribution spaces
@@ -89,6 +179,24 @@ function(get_Path_To_Plugin_Dir RESULT_PATH plugin)
   endforeach()
 endfunction(get_Path_To_Plugin_Dir)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Available_Plugins_For_Contribution_Space| replace:: ``get_Available_Plugins_For_Contribution_Space``
+#  .. _get_Available_Plugins_For_Contribution_Space:
+#
+#  get_Available_Plugins_For_Contribution_Space
+#  --------------------------------------------
+#
+#   .. command:: get_Available_Plugins_For_Contribution_Space(RES_LIST contribution_space)
+#
+#      get all available plugins in a given contribution space
+#
+#      :contribution_space: name of the contribution space
+#
+#      :RES_LIST: output variable containing the list of plugins provided by contribution_space.
+#
 function(get_Available_Plugins_For_Contribution_Space RES_LIST contribution_space)
   set(${RES_LIST} PARENT_SCOPE)
   set(PATH_TO_PLUGINS ${WORKSPACE_DIR}/contributions/${contribution_space}/plugins)
@@ -98,6 +206,22 @@ function(get_Available_Plugins_For_Contribution_Space RES_LIST contribution_spac
   endif()
 endfunction(get_Available_Plugins_For_Contribution_Space)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_All_Available_Plugins| replace:: ``get_All_Available_Plugins``
+#  .. _get_All_Available_Plugins:
+#
+#  get_All_Available_Plugins
+#  -------------------------
+#
+#   .. command:: get_All_Available_Plugins(PLUGINS_LIST)
+#
+#      get all available plugins from all contribution spaces in use.
+#
+#      :PLUGINS_LIST: output variable containing the list of usable plugins.
+#
 function(get_All_Available_Plugins PLUGINS_LIST)
   set(FINAL_LIST)
   foreach(contrib IN LISTS CONTRIBUTION_SPACES)#CONTRIBUTION_SPACES is supposed to be ordered from highest to lowest priority contribution spaces
@@ -111,6 +235,24 @@ function(get_All_Available_Plugins PLUGINS_LIST)
 endfunction(get_All_Available_Plugins)
 
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Path_To_Plugin_Dir| replace:: ``resolve_Path_To_Plugin_Dir``
+#  .. _resolve_Path_To_Plugin_Dir:
+#
+#  resolve_Path_To_Plugin_Dir
+#  --------------------------
+#
+#   .. command:: resolve_Path_To_Plugin_Dir(RESULT_PATH plugin)
+#
+#      get the path to a plugin folder, update contribution spaces if not found first time.
+#
+#      :plugin: name of the plugin.
+#
+#      :RESULT_PATH: output variable containing path to the plugin directory if found, empty otherwise.
+#
 function(resolve_Path_To_Plugin_Dir RESULT_PATH plugin)
   set(${RESULT_PATH} PARENT_SCOPE)
   get_Path_To_Plugin_Dir(PATH_TO_DIR ${plugin})
@@ -127,6 +269,24 @@ endfunction(resolve_Path_To_Plugin_Dir)
 ############################ configuration dirs resolution ###############################
 ##########################################################################################
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Path_To_Configuration_Dir| replace:: ``get_Path_To_Configuration_Dir``
+#  .. _get_Path_To_Configuration_Dir:
+#
+#  get_Path_To_Configuration_Dir
+#  -----------------------------
+#
+#   .. command:: get_Path_To_Configuration_Dir(RESULT_PATH config)
+#
+#      get the path to the folder containing a configuration definition
+#
+#      :config: name of the configuration
+#
+#      :RESULT_PATH: output variable containing path to the configuration folder if found, empty otherwise.
+#
 function(get_Path_To_Configuration_Dir RESULT_PATH config)
   set(${RESULT_PATH} PARENT_SCOPE)
   foreach(contribution_space IN LISTS CONTRIBUTION_SPACES)#CONTRIBUTION_SPACES is supposed to be ordered from highest to lowest priority contribution spaces
@@ -138,6 +298,24 @@ function(get_Path_To_Configuration_Dir RESULT_PATH config)
   endforeach()
 endfunction(get_Path_To_Configuration_Dir)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Path_To_Configuration_Dir| replace:: ``resolve_Path_To_Configuration_Dir``
+#  .. _resolve_Path_To_Configuration_Dir:
+#
+#  resolve_Path_To_Configuration_Dir
+#  ---------------------------------
+#
+#   .. command:: resolve_Path_To_Configuration_Dir(RESULT_PATH config)
+#
+#      get the path to a configuration folder, update contribution spaces if not found first time.
+#
+#      :config: name of the config.
+#
+#      :RESULT_PATH: output variable containing path to the configuration directory if found, empty otherwise.
+#
 function(resolve_Path_To_Configuration_Dir RESULT_PATH config)
   set(${RESULT_PATH} PARENT_SCOPE)
   get_Path_To_Configuration_Dir(PATH_TO_DIR ${config})
@@ -154,12 +332,47 @@ endfunction(resolve_Path_To_Configuration_Dir)
 ############################ license files resolution ####################################
 ##########################################################################################
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Path_To_License_File| replace:: ``get_Path_To_License_File``
+#  .. _get_Path_To_License_File:
+#
+#  get_Path_To_License_File
+#  ------------------------
+#
+#   .. command:: get_Path_To_License_File(RESULT_PATH license)
+#
+#      get the path to the a license file.
+#
+#      :license: name of the license
+#
+#      :RESULT_PATH: output variable containing path to the license file if found, empty otherwise.
+#
 function(get_Path_To_License_File RESULT_PATH license)
   find_File_In_Contribution_Spaces(PATH CONTRIB licenses License${license}.cmake)
   set(${RESULT_PATH} ${PATH} PARENT_SCOPE)
 endfunction(get_Path_To_License_File)
 
-
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Available_Licenses_For_Contribution_Space| replace:: ``get_Available_Licenses_For_Contribution_Space``
+#  .. _get_Available_Licenses_For_Contribution_Space:
+#
+#  get_Available_Licenses_For_Contribution_Space
+#  ---------------------------------------------
+#
+#   .. command:: get_Available_Licenses_For_Contribution_Space(RES_LIST contribution_space)
+#
+#      get all available licenses referenecd in a given contribution space
+#
+#      :contribution_space: name of the contribution space
+#
+#      :RES_LIST: output variable containing the list of licenses provided by contribution_space.
+#
 function(get_Available_Licenses_For_Contribution_Space RES_LIST contribution_space)
   set(${RES_LIST} PARENT_SCOPE)
   set(PATH_TO_LICENSE ${WORKSPACE_DIR}/contributions/${contribution_space}/licenses)
@@ -169,6 +382,22 @@ function(get_Available_Licenses_For_Contribution_Space RES_LIST contribution_spa
   endif()
 endfunction(get_Available_Licenses_For_Contribution_Space)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_All_Available_Licenses| replace:: ``get_All_Available_Licenses``
+#  .. _get_All_Available_Licenses:
+#
+#  get_All_Available_Licenses
+#  --------------------------
+#
+#   .. command:: get_All_Available_Licenses(LICENSES_LIST)
+#
+#      get all available licenses from all contribution spaces in use.
+#
+#      :LICENSES_LIST: output variable containing the list of usable licenses.
+#
 function(get_All_Available_Licenses LICENSES_LIST)
   set(FINAL_LIST)
   foreach(contrib IN LISTS CONTRIBUTION_SPACES)#CONTRIBUTION_SPACES is supposed to be ordered from highest to lowest priority contribution spaces
@@ -182,30 +411,80 @@ function(get_All_Available_Licenses LICENSES_LIST)
 endfunction(get_All_Available_Licenses)
 
 #will work as a function since variables are in cache inside reference files
-function(check_License_File PATH_TO_FILE license)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_License_File| replace:: ``resolve_License_File``
+#  .. _resolve_License_File:
+#
+#  resolve_License_File
+#  ------------------
+#
+#   .. command:: resolve_License_File(PATH_TO_FILE license)
+#
+#      get the path to a license file, update contribution spaces if not found first time.
+#
+#      :license: name of the license.
+#
+#      :RESULT_PATH: output variable containing path to the license file if found, empty otherwise.
+function(resolve_License_File PATH_TO_FILE license)
   get_Path_To_License_File(PATH_TO_LICENSE ${license})
   if(NOT PATH_TO_LICENSE)
     update_Contribution_Spaces(UPDATED)
     if(UPDATED)
       get_Path_To_License_File(PATH_TO_LICENSE ${license})
-      if(PATH_TO_LICENSE)
-        include (${PATH_TO_LICENSE}) #get the information about the framework
-      endif()
     endif()
   endif()
   set(${PATH_TO_FILE} ${PATH_TO_LICENSE} PARENT_SCOPE)
-endfunction(check_License_File)
-
+endfunction(resolve_License_File)
 
 ##########################################################################################
 ############################ find files resolution #######################################
 ##########################################################################################
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Path_To_Find_File| replace:: ``get_Path_To_Find_File``
+#  .. _get_Path_To_Find_File:
+#
+#  get_Path_To_Find_File
+#  ---------------------
+#
+#   .. command:: get_Path_To_Find_File(RESULT_PATH deployment_unit)
+#
+#      get the path to the a find file for a given deployment unit.
+#
+#      :deployment_unit: name of the deployment unit (e.g. name of the package).
+#
+#      :RESULT_PATH: output variable containing path to the find file if found, empty otherwise.
+#
 function(get_Path_To_Find_File RESULT_PATH deployment_unit)
   find_File_In_Contribution_Spaces(FIND_FILE_PATH CONTRIB finds Find${deployment_unit}.cmake)
   set(${RESULT_PATH} ${FIND_FILE_PATH} PARENT_SCOPE)
 endfunction(get_Path_To_Find_File)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Path_To_Find_File| replace:: ``resolve_Path_To_Find_File``
+#  .. _resolve_Path_To_Find_File:
+#
+#  resolve_Path_To_Find_File
+#  -------------------------
+#
+#   .. command:: resolve_Path_To_Find_File(RESULT_PATH deployment_unit)
+#
+#      get the path to a find file for a given deployment unit, update contribution spaces if not found first time.
+#
+#      :deployment_unit: name of the deployment unit (e.g. name of the package).
+#
+#      :RESULT_PATH: output variable containing path to deployment_unit's find file if found, empty otherwise.
+#
 function(resolve_Path_To_Find_File RESULT_PATH deployment_unit)
   get_Path_To_Find_File(PATH_TO_FILE ${deployment_unit})
   if(NOT PATH_TO_FILE)
@@ -217,6 +496,22 @@ function(resolve_Path_To_Find_File RESULT_PATH deployment_unit)
   set(${RESULT_PATH} ${PATH_TO_FILE} PARENT_SCOPE)
 endfunction(resolve_Path_To_Find_File)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |include_Find_File| replace:: ``include_Find_File``
+#  .. _include_Find_File:
+#
+#  include_Find_File
+#  -----------------
+#
+#   .. command:: include_Find_File(RESULT_PATH deployment_unit)
+#
+#      include in current context the find file of a given deployment unit.
+#
+#      :deployment_unit: name of the deployment unit (e.g. name of the package).
+#
 macro(include_Find_File deployment_unit)
   resolve_Path_To_Find_File(PATH_TO_FILE ${deployment_unit})
   if(PATH_TO_FILE)
@@ -229,31 +524,129 @@ endmacro(include_Find_File)
 ############################ reference files resolution ##################################
 ##########################################################################################
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Path_To_Package_Reference_File| replace:: ``get_Path_To_Package_Reference_File``
+#  .. _get_Path_To_Package_Reference_File:
+#
+#  get_Path_To_Package_Reference_File
+#  ----------------------------------
+#
+#   .. command:: get_Path_To_Package_Reference_File(RESULT_PATH RESULT_CONTRIB_SPACE package)
+#
+#      get the path to the the reference file of a native package.
+#
+#      :package: name of the package.
+#
+#      :RESULT_PATH: output variable containing path to the reference file if found, empty otherwise.
+#
+#      :RESULT_CONTRIB_SPACE: output variable containing path to the contribution space with highest priority that contains the reference file.
+#
 function(get_Path_To_Package_Reference_File RESULT_PATH RESULT_CONTRIB_SPACE package)
   find_File_In_Contribution_Spaces(FIND_FILE_RESULT_PATH PACKAGE_CONTRIB_SPACE references Refer${package}.cmake)
   set(${RESULT_PATH} ${FIND_FILE_RESULT_PATH} PARENT_SCOPE)
   set(${RESULT_CONTRIB_SPACE} ${PACKAGE_CONTRIB_SPACE} PARENT_SCOPE)
 endfunction(get_Path_To_Package_Reference_File)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Path_To_External_Reference_File| replace:: ``get_Path_To_External_Reference_File``
+#  .. _get_Path_To_External_Reference_File:
+#
+#  get_Path_To_External_Reference_File
+#  -----------------------------------
+#
+#   .. command:: get_Path_To_External_Reference_File(RESULT_PATH RESULT_CONTRIB_SPACE package)
+#
+#      get the path to the the reference file of an external package.
+#
+#      :package: name of the package.
+#
+#      :RESULT_PATH: output variable containing path to the reference file if found, empty otherwise.
+#
+#      :RESULT_CONTRIB_SPACE: output variable containing path to the contribution space with highest priority that contains the reference file.
+#
 function(get_Path_To_External_Reference_File RESULT_PATH RESULT_CONTRIB_SPACE package)
   find_File_In_Contribution_Spaces(FIND_FILE_RESULT_PATH PACKAGE_CONTRIB_SPACE references ReferExternal${package}.cmake)
   set(${RESULT_PATH} ${FIND_FILE_RESULT_PATH} PARENT_SCOPE)
   set(${RESULT_CONTRIB_SPACE} ${PACKAGE_CONTRIB_SPACE} PARENT_SCOPE)
 endfunction(get_Path_To_External_Reference_File)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Path_To_Framework_Reference_File| replace:: ``get_Path_To_Framework_Reference_File``
+#  .. _get_Path_To_Framework_Reference_File:
+#
+#  get_Path_To_Framework_Reference_File
+#  ------------------------------------
+#
+#   .. command:: get_Path_To_Framework_Reference_File(RESULT_PATH RESULT_CONTRIB_SPACE framework)
+#
+#      get the path to the the reference file of a framework.
+#
+#      :framework: name of the framework.
+#
+#      :RESULT_PATH: output variable containing path to the reference file if found, empty otherwise.
+#
+#      :RESULT_CONTRIB_SPACE: output variable containing path to the contribution space with highest priority that contains the reference file.
+#
 function(get_Path_To_Framework_Reference_File RESULT_PATH RESULT_CONTRIB_SPACE framework)
   find_File_In_Contribution_Spaces(FIND_FILE_RESULT_PATH PACKAGE_CONTRIB_SPACE references ReferFramework${framework}.cmake)
   set(${RESULT_PATH} ${FIND_FILE_RESULT_PATH} PARENT_SCOPE)
   set(${RESULT_CONTRIB_SPACE} ${PACKAGE_CONTRIB_SPACE} PARENT_SCOPE)
 endfunction(get_Path_To_Framework_Reference_File)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Path_To_Environment_Reference_File| replace:: ``get_Path_To_Environment_Reference_File``
+#  .. _get_Path_To_Environment_Reference_File:
+#
+#  get_Path_To_Environment_Reference_File
+#  --------------------------------------
+#
+#   .. command:: get_Path_To_Environment_Reference_File(RESULT_PATH RESULT_CONTRIB_SPACE environment)
+#
+#      get the path to the the reference file of an environment.
+#
+#      :environment: name of the environment.
+#
+#      :RESULT_PATH: output variable containing path to the reference file if found, empty otherwise.
+#
+#      :RESULT_CONTRIB_SPACE: output variable containing path to the contribution space with highest priority that contains the reference file.
+#
 function(get_Path_To_Environment_Reference_File RESULT_PATH RESULT_CONTRIB_SPACE environment)
   find_File_In_Contribution_Spaces(FIND_FILE_RESULT_PATH PACKAGE_CONTRIB_SPACE references ReferEnvironment${environment}.cmake)
   set(${RESULT_PATH} ${FIND_FILE_RESULT_PATH} PARENT_SCOPE)
   set(${RESULT_CONTRIB_SPACE} ${PACKAGE_CONTRIB_SPACE} PARENT_SCOPE)
 endfunction(get_Path_To_Environment_Reference_File)
 
-#will work as a function since variables are in cache inside reference files
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |include_Package_Reference_File| replace:: ``include_Package_Reference_File``
+#  .. _include_Package_Reference_File:
+#
+#  include_Package_Reference_File
+#  ------------------------------
+#
+#   .. command:: include_Package_Reference_File(PATH_TO_FILE package)
+#
+#     Include the reference file of a native package in current context (CMake scope).
+#     Note: works as a function since CMake variables of a reference file are all in cache.
+#
+#      :package: name of the package.
+#
+#      :PATH_TO_FILE: output variable containing path to the reference file if found, empty otherwise.
+#
 function(include_Package_Reference_File PATH_TO_FILE package)
   get_Path_To_Package_Reference_File(PATH_TO_REF PATH_TO_CS ${package})
   if(PATH_TO_REF)
@@ -270,7 +663,25 @@ function(include_Package_Reference_File PATH_TO_FILE package)
   set(${PATH_TO_FILE} ${PATH_TO_REF} PARENT_SCOPE)
 endfunction(include_Package_Reference_File)
 
-#will work as a function since variables are in cache inside reference files
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |include_External_Reference_File| replace:: ``include_External_Reference_File``
+#  .. _include_External_Reference_File:
+#
+#  include_External_Reference_File
+#  -------------------------------
+#
+#   .. command:: include_External_Reference_File(PATH_TO_FILE package)
+#
+#     Include the reference file of an external package in current context (CMake scope).
+#     Note: works as a function since CMake variables of a reference file are all in cache.
+#
+#      :package: name of the package.
+#
+#      :PATH_TO_FILE: output variable containing path to the reference file if found, empty otherwise.
+#
 function(include_External_Reference_File PATH_TO_FILE package)
   get_Path_To_External_Reference_File(PATH_TO_REF PATH_TO_CS ${package})
   if(PATH_TO_REF)
@@ -287,7 +698,25 @@ function(include_External_Reference_File PATH_TO_FILE package)
   set(${PATH_TO_FILE} ${PATH_TO_REF} PARENT_SCOPE)
 endfunction(include_External_Reference_File)
 
-#will work as a function since variables are in cache inside reference files
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |include_Framework_Reference_File| replace:: ``include_Framework_Reference_File``
+#  .. _include_Framework_Reference_File:
+#
+#  include_Framework_Reference_File
+#  --------------------------------
+#
+#   .. command:: include_Framework_Reference_File(PATH_TO_FILE framework)
+#
+#     Include the reference file of a framework in current context (CMake scope).
+#     Note: works as a function since CMake variables of a reference file are all in cache.
+#
+#      :framework: name of the framework.
+#
+#      :PATH_TO_FILE: output variable containing path to the reference file if found, empty otherwise.
+#
 function(include_Framework_Reference_File PATH_TO_FILE framework)
   get_Path_To_Framework_Reference_File(PATH_TO_REF PATH_TO_CS ${framework})
   if(PATH_TO_REF)
@@ -304,7 +733,25 @@ function(include_Framework_Reference_File PATH_TO_FILE framework)
   set(${PATH_TO_FILE} ${PATH_TO_REF} PARENT_SCOPE)
 endfunction(include_Framework_Reference_File)
 
-#will work as a function since variables are in cache inside reference files
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |include_Environment_Reference_File| replace:: ``include_Environment_Reference_File``
+#  .. _include_Environment_Reference_File:
+#
+#  include_Environment_Reference_File
+#  ----------------------------------
+#
+#   .. command:: include_Environment_Reference_File(PATH_TO_FILE environment)
+#
+#     Include the reference file of an environment in current context (CMake scope).
+#     Note: works as a function since CMake variables of a reference file are all in cache.
+#
+#      :environment: name of the environment.
+#
+#      :PATH_TO_FILE: output variable containing path to the reference file if found, empty otherwise.
+#
 function(include_Environment_Reference_File PATH_TO_FILE environment)
   get_Path_To_Environment_Reference_File(PATH_TO_REF PATH_TO_CS ${environment})
   if(PATH_TO_REF)
@@ -321,6 +768,26 @@ function(include_Environment_Reference_File PATH_TO_FILE environment)
   set(${PATH_TO_FILE} ${PATH_TO_REF} PARENT_SCOPE)
 endfunction(include_Environment_Reference_File)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Available_References_For_Contribution_Space| replace:: ``get_Available_References_For_Contribution_Space``
+#  .. _get_Available_References_For_Contribution_Space:
+#
+#  get_Available_References_For_Contribution_Space
+#  -----------------------------------------------
+#
+#   .. command:: get_Available_References_For_Contribution_Space(RES_LIST contribution_space prefix)
+#
+#      get all available reference files referenced in a given contribution space
+#
+#      :contribution_space: name of the contribution space
+#
+#      :prefix: prefix for name (depends on type of deployment unit)
+#
+#      :RES_LIST: output variable containing the list of licenses provided by contribution_space.
+#
 function(get_Available_References_For_Contribution_Space RES_LIST contribution_space prefix)
   set(${RES_LIST} PARENT_SCOPE)
   set(PATH_TO_REF ${WORKSPACE_DIR}/contributions/${contribution_space}/references)
@@ -330,6 +797,24 @@ function(get_Available_References_For_Contribution_Space RES_LIST contribution_s
   endif()
 endfunction(get_Available_References_For_Contribution_Space)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_All_Available_References| replace:: ``get_All_Available_References``
+#  .. _get_All_Available_References:
+#
+#  get_All_Available_References
+#  ----------------------------
+#
+#   .. command:: get_All_Available_References(REF_LIST type)
+#
+#      get all available reference files from all contribution spaces in use, filetered by type.
+#
+#      :type: type for searched deployment units. Mays take value in: Environment, Framework, External or empty (for native package)
+#
+#      :REF_LIST: output variable containing the list of references.
+#
 function(get_All_Available_References REF_LIST prefix)
   set(FINAL_LIST)
   foreach(contrib IN LISTS CONTRIBUTION_SPACES)#CONTRIBUTION_SPACES is supposed to be ordered from highest to lowest priority contribution spaces
@@ -339,13 +824,27 @@ function(get_All_Available_References REF_LIST prefix)
   if(FINAL_LIST)
     list(REMOVE_DUPLICATES FINAL_LIST)
   endif()
-  set(${PLUGINS_LIST} ${FINAL_LIST} PARENT_SCOPE)
+  set(${REF_LIST} ${FINAL_LIST} PARENT_SCOPE)
 endfunction(get_All_Available_References)
 
 #################################################################################################
 ############################ Contribution_Spaces global management ##############################
 #################################################################################################
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_Contribution_Spaces| replace:: ``update_Contribution_Spaces``
+#  .. _update_Contribution_Spaces:
+#
+#  update_Contribution_Spaces
+#  --------------------------
+#
+#   .. command:: update_Contribution_Spaces()
+#
+#      Update repositories of all contribution spaces in use.
+#
 function(update_Contribution_Spaces)
   check_Contribution_Spaces_Updated_In_Current_Process(ALREADY_UPDATED)
   if(NOT ALREADY_UPDATED)
@@ -356,7 +855,23 @@ function(update_Contribution_Spaces)
   endif()
 endfunction(update_Contribution_Spaces)
 
-#Note: use a macro to stay in same scope as caller
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |configure_Contribution_Space_CMake_Path| replace:: ``configure_Contribution_Space_CMake_Path``
+#  .. _configure_Contribution_Space_CMake_Path:
+#
+#  configure_Contribution_Space_CMake_Path
+#  ---------------------------------------
+#
+#   .. command:: configure_Contribution_Space_CMake_Path(contribution_space)
+#
+#      Set the CMAKE_MODULE_PATH in current context to make it find content located in a given contrbution space.
+#      Note: use a macro to stay in same scope as caller
+#
+#      :contribution_space: name of the contribution space.
+#
 macro(configure_Contribution_Space_CMake_Path contribution_space)
   set(path_to_cs ${WORKSPACE_DIR}/contributions/${contribution_space})
   if(EXISTS ${path_to_cs})
@@ -371,6 +886,21 @@ macro(configure_Contribution_Space_CMake_Path contribution_space)
   endif()
 endmacro(configure_Contribution_Space_CMake_Path)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |configure_Contribution_Spaces| replace:: ``configure_Contribution_Spaces``
+#  .. _configure_Contribution_Spaces:
+#
+#  configure_Contribution_Spaces
+#  -----------------------------
+#
+#   .. command:: configure_Contribution_Spaces()
+#
+#      Set the CMAKE_MODULE_PATH in current context to make it find content located in all used contribution, while preserving priority between contrbution spaces.
+#      Note: use a macro to stay in same scope as caller
+#
 macro(configure_Contribution_Spaces)
   set(PID_WORKSPACE_MODULES_PATH CACHE INTERNAL "")
   # configure the CMAKE_MODULE_PATH according to the list of available contribution_spaces
@@ -379,6 +909,24 @@ macro(configure_Contribution_Spaces)
   endforeach()
 endmacro(configure_Contribution_Spaces)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Path_To_Contribution_Space| replace:: ``get_Path_To_Contribution_Space``
+#  .. _get_Path_To_Contribution_Space:
+#
+#  get_Path_To_Contribution_Space
+#  ------------------------------
+#
+#   .. command:: get_Path_To_Contribution_Space(PATH_TO_DIR space)
+#
+#      get the path to a contribution space.
+#
+#      :space: name of the contribution space.
+#
+#      :PATH_TO_DIR: output variable containing path to the contribution space if found, empty otherwise.
+#
 function(get_Path_To_Contribution_Space PATH_TO_DIR space)
   set(path ${WORKSPACE_DIR}/contributions/${space})
   if(EXISTS ${path} AND IS_DIRECTORY ${path})
@@ -388,6 +936,24 @@ function(get_Path_To_Contribution_Space PATH_TO_DIR space)
   endif()
 endfunction(get_Path_To_Contribution_Space)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces| replace:: ``get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces``
+#  .. _get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces:
+#
+#  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces
+#  -------------------------------------------------------------------------
+#
+#   .. command:: get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces( PUBLISHING_CONTRIB_SPACES  deployment_unit)
+#
+#      get the path to all contribution spaces publishing references of a given depoyment unit.
+#
+#      :deployment_unit: name of the deployment unit.
+#
+#      :PUBLISHING_CONTRIB_SPACES: output variable containing the list of path to the contribution spaces that contain references to deployment_unit.
+#
 function(get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces PUBLISHING_CONTRIB_SPACES deployment_unit)
   set(list_of_spaces)
   if(TARGET_CONTRIBUTION_SPACE)
@@ -408,6 +974,20 @@ function(get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spac
   set(${PUBLISHING_CONTRIB_SPACES} ${list_of_spaces} PARENT_SCOPE)
 endfunction(get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Cache_Entry_For_Default_Contribution_Space| replace:: ``set_Cache_Entry_For_Default_Contribution_Space``
+#  .. _set_Cache_Entry_For_Default_Contribution_Space:
+#
+#  set_Cache_Entry_For_Default_Contribution_Space
+#  ----------------------------------------------
+#
+#   .. command:: set_Cache_Entry_For_Default_Contribution_Space()
+#
+#      create the cache entry TARGET_CONTRIBUTION_SPACE used to define the default contribution space where a deployment unit will publish its references.
+#
 function(set_Cache_Entry_For_Default_Contribution_Space)
   set(TARGET_CONTRIBUTION_SPACE "" CACHE STRING "Contribution space used for publishing. Possible values are: ${CONTRIBUTION_SPACES} (first is default)")
   if(TARGET_CONTRIBUTION_SPACE)
@@ -419,6 +999,26 @@ function(set_Cache_Entry_For_Default_Contribution_Space)
   endif()
 endfunction(set_Cache_Entry_For_Default_Contribution_Space)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Contribution_Space| replace:: ``add_Contribution_Space``
+#  .. _add_Contribution_Space:
+#
+#  add_Contribution_Space
+#  ----------------------
+#
+#   .. command:: add_Contribution_Space(name update publish)
+#
+#      add to cache the description of a contribution space
+#
+#      :name: name of the contribution space.
+#
+#      :update: URL used to update local content.
+#
+#      :publish: URL used to publish local content.
+#
 function(add_Contribution_Space name update publish)
   append_Unique_In_Cache(CONTRIBUTION_SPACES ${name})#simply add the only update contribution space
   set(CONTRIBUTION_SPACE_${name}_UPDATE_REMOTE ${update} CACHE INTERNAL "")
@@ -429,6 +1029,26 @@ function(add_Contribution_Space name update publish)
   endif()
 endfunction(add_Contribution_Space)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deploy_Contribution_Space| replace:: ``deploy_Contribution_Space``
+#  .. _deploy_Contribution_Space:
+#
+#  deploy_Contribution_Space
+#  -------------------------
+#
+#   .. command:: deploy_Contribution_Space(name update publish)
+#
+#      Deploy a contrbution space in local workspace.
+#
+#      :name: name of the contribution space.
+#
+#      :update: URL used to update local content.
+#
+#      :publish: URL used to publish local content.
+#
 function(deploy_Contribution_Space DEPLOYED name update publish)
   set(${DEPLOYED} FALSE PARENT_SCOPE)
   clone_Contribution_Space_Repository(CLONED ${publish})
@@ -446,7 +1066,22 @@ function(deploy_Contribution_Space DEPLOYED name update publish)
   set(${DEPLOYED} TRUE PARENT_SCOPE)
 endfunction(deploy_Contribution_Space)
 
-function(reset_Contribution_Spaces)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Contribution_Spaces| replace:: ``reset_Contribution_Spaces``
+#  .. _reset_Contribution_Spaces:
+#
+#  reset_Contribution_Spaces
+#  -------------------------
+#
+#   .. command:: reset_Contribution_Spaces()
+#
+#      Reset any information about contribution spaces and reload them from a contributions description file.
+#      May lead to deploy the official PID contribution repository.
+#
+macro(reset_Contribution_Spaces)
   set(path_to_description_file ${WORKSPACE_DIR}/contributions/contribution_spaces_list.cmake)
   set(official_cs_name "pid")
   set(official_cs_update_remote "https://gite.lirmm.fr/pid/pid-contributions.git")
@@ -486,8 +1121,29 @@ function(reset_Contribution_Spaces)
   write_Contribution_Spaces_Description_File()
   # configure workspace (set CMAKE_MODULE_PATH adequately)
   configure_Contribution_Spaces()
-endfunction(reset_Contribution_Spaces)
+endmacro(reset_Contribution_Spaces)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |PID_Contribution_Space| replace:: ``PID_Contribution_Space``
+#  .. _PID_Contribution_Space:
+#
+#  PID_Contribution_Space
+#  ----------------------
+#
+#   .. command:: PID_Contribution_Space(NAME ... UPDATE ... [PUBLISH ...])
+#
+#      Declare a contribution space in the contributions description file.
+#      Note: to be used only in contributions description file.
+#
+#      :NAME <string>: name of the contribution space.
+#
+#      :UPDATE <URL>: URL used to update local content.
+#
+#      :PUBLISH <URL>: URL used to publish local content.
+#
 function(PID_Contribution_Space)
   set(oneValueArgs NAME UPDATE PUBLISH)
   cmake_parse_arguments(PID_CONTRIBUTION_SPACE "" "${oneValueArgs}" "" ${ARGN} )
@@ -503,6 +1159,20 @@ function(PID_Contribution_Space)
   add_Contribution_Space(${PID_CONTRIBUTION_SPACE_NAME} ${PID_CONTRIBUTION_SPACE_UPDATE} "${PID_CONTRIBUTION_SPACE_PUBLISH}")
 endfunction(PID_Contribution_Space)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Contribution_Spaces_Variables| replace:: ``reset_Contribution_Spaces_Variables``
+#  .. _reset_Contribution_Spaces_Variables:
+#
+#  reset_Contribution_Spaces_Variables
+#  -----------------------------------
+#
+#   .. command:: reset_Contribution_Spaces_Variables()
+#
+#      Reset internal cache variables used for contribution spaces description.
+#
 function(reset_Contribution_Spaces_Variables)
   foreach(contrib_space IN LISTS CONTRIBUTION_SPACES)
     set(CONTRIBUTION_SPACE_${contrib_space}_UPDATE_REMOTE CACHE INTERNAL "")
@@ -511,6 +1181,22 @@ function(reset_Contribution_Spaces_Variables)
   set(CONTRIBUTION_SPACES CACHE INTERNAL "")
 endfunction(reset_Contribution_Spaces_Variables)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |read_Contribution_Spaces_Description_File| replace:: ``read_Contribution_Spaces_Description_File``
+#  .. _read_Contribution_Spaces_Description_File:
+#
+#  read_Contribution_Spaces_Description_File
+#  -----------------------------------------
+#
+#   .. command:: read_Contribution_Spaces_Description_File(READ_SUCCESS)
+#
+#      Read the contributions description file and load its content into current context.
+#
+#      :READ_SUCCESS: output variable that is TRUE is file read, FALSE oetherwise.
+#
 function(read_Contribution_Spaces_Description_File READ_SUCCESS)
   set(target_file_path ${WORKSPACE_DIR}/contributions/contribution_spaces_list.cmake)
   if(EXISTS ${target_file_path})#if file exists it means there is a description
@@ -522,6 +1208,20 @@ function(read_Contribution_Spaces_Description_File READ_SUCCESS)
   set(${READ_SUCCESS} FALSE PARENT_SCOPE)
 endfunction(read_Contribution_Spaces_Description_File)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |write_Contribution_Spaces_Description_File| replace:: ``write_Contribution_Spaces_Description_File``
+#  .. _write_Contribution_Spaces_Description_File:
+#
+#  write_Contribution_Spaces_Description_File
+#  ------------------------------------------
+#
+#   .. command:: write_Contribution_Spaces_Description_File()
+#
+#      Write current contribution space description into the contributions description file.
+#
 function(write_Contribution_Spaces_Description_File)
   set(target_file_path ${WORKSPACE_DIR}/contributions/contribution_spaces_list.cmake)
   file(WRITE ${target_file_path} "")#reset file content
@@ -536,6 +1236,34 @@ function(write_Contribution_Spaces_Description_File)
   endforeach()
 endfunction(write_Contribution_Spaces_Description_File)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_All_Matching_Contributions| replace:: ``get_All_Matching_Contributions``
+#  .. _get_All_Matching_Contributions:
+#
+#  get_All_Matching_Contributions
+#  ------------------------------
+#
+#   .. command:: get_All_Matching_Contributions(LICENSE REFERENCE FIND FORMAT CONFIGURATION cs name)
+#
+#      Get all contributions of a contribution space that match a pattern name
+#
+#      :cs: name of the contribution space.
+#
+#      :name: name of the contribution (license, format, configuration, reference, etc.).
+#
+#      :LICENSE: output variable that contains a license file name if anyone matches, empty otherwise.
+#
+#      :REFERENCE: output variable that contains a reference file name if anyone matches, empty otherwise.
+#
+#      :FIND: output variable that contains a find file name if anyone matches, empty otherwise.
+#
+#      :FORMAT: output variable that contains a format file name if anyone matches, empty otherwise.
+#
+#      :CONFIGURATION: output variable that contains a configuration folder name if anyone matches, empty otherwise.
+#
 function(get_All_Matching_Contributions LICENSE REFERENCE FIND FORMAT CONFIGURATION cs name)
   get_Path_To_Contribution_Space(PATH_TO_CS ${cs})
   #checking licenses

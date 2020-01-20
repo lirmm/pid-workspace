@@ -500,7 +500,7 @@ endfunction(generate_Framework_Readme_File)
 #
 function(generate_Framework_License_File)
 if(	${PROJECT_NAME}_FRAMEWORK_LICENSE)
-		check_License_File(PATH_TO_FILE ${${PROJECT_NAME}_FRAMEWORK_LICENSE})
+		resolve_License_File(PATH_TO_FILE ${${PROJECT_NAME}_FRAMEWORK_LICENSE})
 	if(NOT PATH_TO_FILE)
 		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_FRAMEWORK_LICENSE} not found in any contribution space installed in workspace, license file will not be generated.")
 	else()

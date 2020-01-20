@@ -24,7 +24,7 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
 macro(check_license license_name)
-	check_License_File(PATH_TO_FILE ${license_name})
+	resolve_License_File(PATH_TO_FILE ${license_name})
 	if(NOT PATH_TO_FILE)
 		message("[PID] ERROR : License ${license_name} does not refer to any known license in contributions spaces of the workspace.")
 		return()

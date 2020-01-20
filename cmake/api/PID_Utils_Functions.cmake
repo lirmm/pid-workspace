@@ -1568,7 +1568,7 @@ function(package_License_Is_Closed_Source CLOSED package is_external)
 	endif()#otherwise license is unknown for now
 	if(NOT found_license_description)
 		#trying to find that license
-    check_License_File(PATH_TO_FILE ${${package}_LICENSE})
+    resolve_License_File(PATH_TO_FILE ${${package}_LICENSE})
     if(NOT PATH_TO_FILE)
       set(${CLOSED} TRUE PARENT_SCOPE)
       message("[PID] ERROR : cannot find description file for license ${${package}_LICENSE}, specified for package ${package}. Package is supposed to be closed source.")
