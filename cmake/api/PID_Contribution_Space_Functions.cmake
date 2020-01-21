@@ -969,7 +969,7 @@ function(get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spac
     list(REMOVE_DUPLICATES list_of_spaces)
   else()
     list(GET CONTRIBUTION_SPACES 0 space)
-    set(list_of_spaces ${space})
+    set(list_of_spaces ${WORKSPACE_DIR}/contributions/${space})
   endif()
   set(${PUBLISHING_CONTRIB_SPACES} ${list_of_spaces} PARENT_SCOPE)
 endfunction(get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces)
