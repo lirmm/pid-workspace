@@ -1372,7 +1372,8 @@ if(RES_PLATFORM_BASE STREQUAL platfom_str) # OK this binary version is theorical
 		endif()
 	endif()
 	foreach(config IN LISTS CONFIGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
-    is_Allowed_System_Configuration(ALLOWED ${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS)
+	parse_Configuration_Arguments_From_Binaries(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+    is_Allowed_System_Configuration(ALLOWED ${config} args_as_list)
     if(NOT ALLOWED)
       set(${CHECK_OK} FALSE PARENT_SCOPE)
       return()
