@@ -171,7 +171,7 @@ endfunction(reset_Wrapper_Description_Cached_Variables)
 #  declare_Wrapper
 #  ---------------
 #
-#   .. command:: declare_Wrapper(author institution mail year license address public_address description readme_file)
+#   .. command:: declare_Wrapper(author institution mail year license address public_address description readme_file contrib_space)
 #
 #     Declare the current CMake project has a PID external project wrapper. Internal counterpart of declare_PID_Wrapper.
 #
@@ -191,7 +191,9 @@ endfunction(reset_Wrapper_Description_Cached_Variables)
 #
 #      :readme_file: user defined  content of wrapper readme file.
 #
-macro(declare_Wrapper author institution mail year license address public_address description readme_file)
+#      :contrib_space: the name of the default contribution space used by the package.
+#
+macro(declare_Wrapper author institution mail year license address public_address description readme_file contrib_space)
 set(${PROJECT_NAME}_ROOT_DIR ${WORKSPACE_DIR}/wrappers/${PROJECT_NAME} CACHE INTERNAL "")
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 
@@ -294,7 +296,7 @@ if(DIR_NAME STREQUAL "build")
   #################################################
   reset_Wrapper_Description_Cached_Variables()
 	declare_Wrapper_Global_Cache_Options()
-	set_Cache_Entry_For_Default_Contribution_Space()
+	set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
 	reset_Documentation_Info()
 	reset_CI_Variables()
 	reset_Packages_Finding_Variables()

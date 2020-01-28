@@ -289,8 +289,8 @@ endfunction(resolve_Path_To_Plugin_Dir)
 #
 function(get_Path_To_Configuration_Dir RESULT_PATH config)
   set(${RESULT_PATH} PARENT_SCOPE)
-  foreach(contribution_space IN LISTS CONTRIBUTION_SPACES)#CONTRIBUTION_SPACES is supposed to be ordered from highest to lowest priority contribution spaces
-    set(PATH_TO_CONFIG ${WORKSPACE_DIR}/contributions/${contribution_space}/configurations/${config})
+  foreach(cs IN LISTS CONTRIBUTION_SPACES)#CONTRIBUTION_SPACES is supposed to be ordered from highest to lowest priority contribution spaces
+    set(PATH_TO_CONFIG ${WORKSPACE_DIR}/contributions/${cs}/configurations/${config})
     if(EXISTS ${PATH_TO_CONFIG} AND IS_DIRECTORY ${PATH_TO_CONFIG})
       set(${RESULT_PATH} ${PATH_TO_CONFIG} PARENT_SCOPE)
       return()
@@ -988,13 +988,16 @@ endfunction(get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_S
 #
 #      create the cache entry TARGET_CONTRIBUTION_SPACE used to define the default contribution space where a deployment unit will publish its references.
 #
-function(set_Cache_Entry_For_Default_Contribution_Space)
-  set(TARGET_CONTRIBUTION_SPACE "" CACHE STRING "Contribution space used for publishing. Possible values are: ${CONTRIBUTION_SPACES} (first is default)")
+#      :user_defined: the user defined contribution space, if any.
+#
+function(set_Cache_Entry_For_Default_Contribution_Space user_defined)
+  set(TARGET_CONTRIBUTION_SPACE ${user_defined} CACHE INTERNAL "")
   if(TARGET_CONTRIBUTION_SPACE)
     list(FIND CONTRIBUTION_SPACES "${TARGET_CONTRIBUTION_SPACE}" INDEX)
     if(INDEX EQUAL -1)#not found => not a good value
+      message(WARNING "[PID] WARNING : in ${PROJECT_NAME} you specified the contribution space ${TARGET_CONTRIBUTION_SPACE} which is unknown in current workspace.")
       #reset cache variable value
-      set(TARGET_CONTRIBUTION_SPACE CACHE STRING "Contribution space used for publishing. Possible values are: ${CONTRIBUTION_SPACES} (first is default)" FORCE)
+      set(TARGET_CONTRIBUTION_SPACE CACHE INTERNAL "")
     endif()
   endif()
 endfunction(set_Cache_Entry_For_Default_Contribution_Space)
@@ -1086,16 +1089,29 @@ macro(reset_Contribution_Spaces)
   set(official_cs_name "pid")
   set(official_cs_update_remote "https://gite.lirmm.fr/pid/pid-contributions.git")
   set(official_cs_publish_remote "git@gite.lirmm.fr:pid/pid-contributions.git")
+  if(FORCE_CONTRIBUTION_SPACES)#in CI process contribution spaces may be forced when configuring the workspace
+    set(list_of_pair ${FORCE_CONTRIBUTION_SPACES})
+    while(list_of_pair)
+      list(GET list_of_pair 0 CS)
+      list(GET list_of_pair 1 REMOTE)
+      list(REMOVE_AT list_of_pair 0 1)
+      add_Contribution_Space(${CS} ${REMOTE} "")
+    endwhile()
+    write_Contribution_Spaces_Description_File()#write to the file and proceed next steps as usual
+    set(FORCE_CONTRIBUTION_SPACES CACHE INTERNAL "" FORCE)
+  endif()
   #situations to deal with:
   #- empty contributions folder
   #- missing contributions management file
-
   read_Contribution_Spaces_Description_File(FILE_EXISTS)
-  if(NOT FILE_EXISTS)# this is first configuration run of the workspace, or file has been removed by user to explicitly reset current configuration
-      if(NOT CONTRIBUTION_SPACES)#case at first configuration time just after a clone or a clean (rm -Rf *) of the pid folder
-        add_Contribution_Space(${official_cs_name} ${official_cs_update_remote} ${official_cs_publish_remote})# pid official CS is the default one and must be present
-      endif()
-  endif()#otherwise CS related cache variables have been reset with their value coming from the description file
+  if(NOT CONTRIBUTION_SPACES)#case at first configuration time just after a clone or a clean (rm -Rf *) of the pid folder
+    add_Contribution_Space(${official_cs_name} ${official_cs_update_remote} ${official_cs_publish_remote})# pid official CS is the default one and must be present
+  else()
+    list(FIND CONTRIBUTION_SPACES pid INDEX)
+    if(INDEX EQUAL -1)#official contrbution space not present
+      add_Contribution_Space(${official_cs_name} ${official_cs_update_remote} ${official_cs_publish_remote})# pid official CS is the default one and must be present
+    endif()
+  endif()
   #from here the cache variables are set so we need to align contributions folder content according to their values
   foreach(cs IN LISTS CONTRIBUTION_SPACES)
     if(EXISTS ${WORKSPACE_DIR}/contributions/${cs})
@@ -1303,3 +1319,246 @@ function(get_All_Matching_Contributions LICENSE REFERENCE FIND FORMAT CONFIGURAT
     set(${REFERENCE} PARENT_SCOPE)
   endif()
 endfunction(get_All_Matching_Contributions)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Package_All_Non_Official_Contribtion_Spaces_In_Use| replace:: ``get_Package_All_Non_Official_Contribtion_Spaces_In_Use``
+#  .. _get_Package_All_Non_Official_Contribtion_Spaces_In_Use:
+#
+#  get_Package_All_Non_Official_Contribtion_Spaces_In_Use
+#  ------------------------------------------------------
+#
+#   .. command:: get_Package_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS package default_cs mode)
+#
+#      Get the list of contribution spaces where to find references to configurations used by native or external package.
+#      By default contributions that can be found in official contribution space are not put into this list.
+#      Also the current project default contribution space has always priority over other spaces that may contain references to a dependency.
+#
+#      :package: name of the package.
+#
+#      :default_cs: name of the contribution space considered as default for the current project.
+#
+#      :LIST_OF_CS: output variable that contains the list of contribution spaces in use in current package.
+#
+function(get_Configuration_All_Non_Official_Contribtion_Spaces_In_Use LIST_OF_CS config default_cs)
+  set(res_list)
+  foreach(check IN LISTS ${config}_CONFIGURATION_DEPENDENCIES)
+    parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
+    get_Configuration_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${CONFIG_NAME} "${default_cs}")
+    list(APPEND res_list ${LIST_OF_CS})
+  endforeach()
+  find_Provider_Contribution_Space(PROVIDER ${config} CONFIG "${default_cs}")
+  list(APPEND res_list ${PROVIDER})
+  if(res_list)
+    list(REMOVE_DUPLICATES res_list)
+  endif()
+  set(${LIST_OF_CS} ${res_list} PARENT_SCOPE)
+endfunction(get_Configuration_All_Non_Official_Contribtion_Spaces_In_Use)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Package_All_Non_Official_Contribtion_Spaces_In_Use| replace:: ``get_Package_All_Non_Official_Contribtion_Spaces_In_Use``
+#  .. _get_Package_All_Non_Official_Contribtion_Spaces_In_Use:
+#
+#  get_Package_All_Non_Official_Contribtion_Spaces_In_Use
+#  ------------------------------------------------------
+#
+#   .. command:: get_Package_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS package default_cs mode)
+#
+#      Get the list of contribution spaces where to find references to dependencies used by current native package.
+#      By default contributions that can be found in official contribution space are not put into this list.
+#      Also the current project default contribution space has always priority over other spaces that may contain references to a dependency.
+#
+#      :package: name of the package.
+#
+#      :type: type of the package.
+#
+#      :default_cs: name of the contribution space considered as default for the current project.
+#
+#      :mode: build mode to consider.
+#
+#      :LIST_OF_CS: output variable that contains the list of contribution spaces in use in current package.
+#
+function(get_Package_All_Non_Official_Contribtion_Spaces_In_Use LIST_OF_CS package type default_cs mode)
+  set(res_list)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATION${VAR_SUFFIX})
+    #need to recurse to manage depenencies
+    get_Configuration_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${config} "${default_cs}")
+    list(APPEND res_list ${LIST_OF_CS})
+  endforeach()
+  foreach(dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+    get_Package_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${dep} EXTERNAL "${default_cs}" ${mode})
+    list(APPEND res_list ${LIST_OF_CS})
+  endforeach()
+  foreach(dep IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
+    get_Package_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${dep} NATIVE "${default_cs}" ${mode})
+    list(APPEND res_list ${LIST_OF_CS})
+  endforeach()
+  find_Provider_Contribution_Space(PROVIDER ${package} ${type} "${default_cs}")
+  list(APPEND res_list ${PROVIDER})
+  if(res_list)
+    list(REMOVE_DUPLICATES res_list)
+  endif()
+  set(${LIST_OF_CS} ${res_list} PARENT_SCOPE)
+endfunction(get_Package_All_Non_Official_Contribtion_Spaces_In_Use)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Wrapper_All_Non_Official_Contribtion_Spaces_In_Use| replace:: ``get_Wrapper_All_Non_Official_Contribtion_Spaces_In_Use``
+#  .. _get_Wrapper_All_Non_Official_Contribtion_Spaces_In_Use:
+#
+#  get_Wrapper_All_Non_Official_Contribtion_Spaces_In_Use
+#  ------------------------------------------------------
+#
+#   .. command:: get_Wrapper_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS wrapper default_cs)
+#
+#      Get the list of contribution spaces where to find references to dependencies used by current external package wrapper.
+#      By default contributions that can be found in official contribution space are not put into this list.
+#      Also the current project contribution space has always priority over other spaces that may contain references to a dependency.
+#
+#      :wrapper: name of the external package.
+#
+#      :default_cs: name of the contribution space considered as default for the current project.
+#
+#      :LIST_OF_CS: output variable that contains the list of contribution spaces in use in current package.
+#
+function(get_Wrapper_All_Non_Official_Contribtion_Spaces_In_Use LIST_OF_CS wrapper default_cs)
+  set(res_list)
+  foreach(version IN LISTS ${wrapper}_KNOWN_VERSIONS)
+  	#reset configurations
+  	foreach(config IN LISTS ${wrapper}_KNOWN_VERSION_${version}_CONFIGURATIONS)
+      get_Configuration_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${config} "${default_cs}")
+      list(APPEND res_list ${LIST_OF_CS})
+  	endforeach()
+  	#reset package dependencies
+  	foreach(package IN LISTS ${wrapper}_KNOWN_VERSION_${version}_DEPENDENCIES)
+      get_Package_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${package} EXTERNAL "${default_cs}" Release)
+      list(APPEND res_list ${LIST_OF_CS})
+    endforeach()
+  endforeach()
+  find_Provider_Contribution_Space(PROVIDER ${wrapper} EXTERNAL "${default_cs}")
+  list(APPEND res_list ${PROVIDER})
+  if(res_list)
+    list(REMOVE_DUPLICATES res_list)
+  endif()
+  set(${LIST_OF_CS} ${res_list} PARENT_SCOPE)
+endfunction(get_Wrapper_All_Non_Official_Contribtion_Spaces_In_Use)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Update_Remote_Of_Contribution_Space| replace:: ``get_Update_Remote_Of_Contribution_Space``
+#  .. _get_Update_Remote_Of_Contribution_Space:
+#
+#  get_Update_Remote_Of_Contribution_Space
+#  ---------------------------------------
+#
+#   .. command:: get_Update_Remote_Of_Contribution_Space(UPDATE_REMOTE cs)
+#
+#      Get the address of the update remote of a contribution space
+#
+#      :cs: name of the contribution space.
+#
+#      :CONFIGURATION: output variable that contains the update remote of the contribution space.
+#
+function(get_Update_Remote_Of_Contribution_Space UPDATE_REMOTE cs)
+  set(${UPDATE_REMOTE} ${CONTRIBUTION_SPACE_${cs}_UPDATE_REMOTE} PARENT_SCOPE)
+endfunction(get_Update_Remote_Of_Contribution_Space)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |find_Provider_Contribution_Space| replace:: ``find_Provider_Contribution_Space``
+#  .. _find_Provider_Contribution_Space:
+#
+#  find_Provider_Contribution_Space
+#  --------------------------------
+#
+#   .. command:: find_Provider_Contribution_Space(PROVIDER_CS content)
+#
+#      Find contribution space that is providing refereces for a content
+#      By default contributions that can be found in official contribution returns nothing.
+#      Also the current project contribution space has always priority over other spaces that may contain references to a dependency.
+#
+#      :content: name of the content (native or external package, configuration).
+#
+#      :type: type of the content (NATIVE,EXTERNAL,CONFIG)
+#
+#      :default_cs: name of the contribution space that is considered as default one.
+#
+#      :PROVIDER_CS: output variable that contains the name of the provider contribution space.
+#
+function(find_Provider_Contribution_Space PROVIDER_CS content type default_cs)
+  set(${PROVIDER_CS} PARENT_SCOPE)
+  if(type STREQUAL "NATIVE")
+    if(EXISTS ${WORKSPACE_DIR}/contributions/pid/references/Refer${content}.cmake
+    AND EXISTS ${WORKSPACE_DIR}/contributions/pid/finds/Find${content}.cmake)
+      return()#if in official contribution space, no need to add it
+    endif()
+
+    if(default_cs)#use default CS of the current project
+      if(EXISTS ${WORKSPACE_DIR}/contributions/${default_cs}/references/Refer${content}.cmake
+      AND EXISTS ${WORKSPACE_DIR}/contributions/${default_cs}/finds/Find${content}.cmake)
+        set(${PROVIDER_CS} ${default_cs} PARENT_SCOPE)
+        return()
+      endif()
+    endif()
+
+    #search CS with priority order
+    foreach(cs IN LISTS CONTRIBUTION_SPACES)
+      if(EXISTS ${WORKSPACE_DIR}/contributions/${cs}/references/Refer${content}.cmake
+      AND EXISTS ${WORKSPACE_DIR}/contributions/${cs}/finds/Find${content}.cmake)
+        set(${PROVIDER_CS} ${cs} PARENT_SCOPE)
+        return()
+      endif()
+    endforeach()
+  elseif(type STREQUAL "EXTERNAL")
+    if(EXISTS ${WORKSPACE_DIR}/contributions/pid/references/ReferExternal${content}.cmake
+    AND EXISTS ${WORKSPACE_DIR}/contributions/pid/finds/Find${content}.cmake)
+      return()#if in official contribution space, no need to add it
+    endif()
+    if(default_cs)#use default CS of the current project
+      if(EXISTS ${WORKSPACE_DIR}/contributions/${default_cs}/references/ReferExternal${content}.cmake
+      AND EXISTS ${WORKSPACE_DIR}/contributions/${default_cs}/finds/Find${content}.cmake)
+        set(${PROVIDER_CS} ${default_cs} PARENT_SCOPE)
+      endif()
+    endif()
+    #search CS with priority order
+    foreach(cs IN LISTS CONTRIBUTION_SPACES)
+      if(EXISTS ${WORKSPACE_DIR}/contributions/${cs}/references/ReferExternal${content}.cmake
+      AND EXISTS ${WORKSPACE_DIR}/contributions/${cs}/finds/Find${content}.cmake)
+        set(${PROVIDER_CS} ${cs} PARENT_SCOPE)
+        return()
+      endif()
+    endforeach()
+  elseif(type STREQUAL "CONFIG")
+    if(EXISTS ${WORKSPACE_DIR}/contributions/pid/configurations/${content}
+      AND IS_DIRECTORY ${WORKSPACE_DIR}/contributions/pid/configurations/${content})
+      return()#if in official contribution space, no need to add it
+    endif()
+
+    if(default_cs)#use default CS of the current project
+      if(EXISTS ${WORKSPACE_DIR}/contributions/${default_cs}/configurations/${content}
+      AND IS_DIRECTORY ${WORKSPACE_DIR}/contributions/${default_cs}/configurations/${content})
+        set(${PROVIDER_CS} ${default_cs} PARENT_SCOPE)
+      endif()
+    endif()
+    #search CS with priority order
+    foreach(cs IN LISTS CONTRIBUTION_SPACES)
+      if(EXISTS ${WORKSPACE_DIR}/contributions/${cs}/configurations/${content}
+      AND IS_DIRECTORY ${WORKSPACE_DIR}/contributions/${cs}/configurations/${content})
+        set(${PROVIDER_CS} ${cs} PARENT_SCOPE)
+        return()
+      endif()
+    endforeach()
+  endif()
+endfunction(find_Provider_Contribution_Space)

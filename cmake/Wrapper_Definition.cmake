@@ -78,6 +78,8 @@ include(CMakeParseArguments)
 #
 #     :README <path relative to share folder>: Used to define a user-defined README file for the package.
 #
+#     :CONTRIBUTION_SPACE <name>: name of the contribution space to use.
+#
 #     .. admonition:: Constraints
 #        :class: warning
 #
@@ -108,7 +110,7 @@ macro(PID_Wrapper)
 endmacro(PID_Wrapper)
 
 macro(declare_PID_Wrapper)
-set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS README)
+set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS README CONTRIBUTION_SPACE)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
 cmake_parse_arguments(DECLARE_PID_WRAPPER "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_AUTHOR)
@@ -135,7 +137,7 @@ endif()
 declare_Wrapper(	"${DECLARE_PID_WRAPPER_AUTHOR}" "${DECLARE_PID_WRAPPER_INSTITUTION}" "${DECLARE_PID_WRAPPER_MAIL}"
 			"${DECLARE_PID_WRAPPER_YEAR}" "${DECLARE_PID_WRAPPER_LICENSE}"
 			"${DECLARE_PID_WRAPPER_ADDRESS}" "${DECLARE_PID_WRAPPER_PUBLIC_ADDRESS}"
-		"${DECLARE_PID_WRAPPER_DESCRIPTION}" "${DECLARE_PID_WRAPPER_README}")
+		"${DECLARE_PID_WRAPPER_DESCRIPTION}" "${DECLARE_PID_WRAPPER_README}" "${DECLARE_PID_WRAPPER_CONTRIBUTION_SPACE}")
 endmacro(declare_PID_Wrapper)
 
 #.rst:

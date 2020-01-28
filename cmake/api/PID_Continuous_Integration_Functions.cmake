@@ -166,6 +166,13 @@ else()
 	endif()
 endif()
 
+set(PACKAGE_CI_CONTRIBUTION_SPACES)
+get_Package_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${PROJECT_NAME} NATIVE "${TARGET_CONTRIBUTION_SPACE}" ${CMAKE_BUILD_TYPE})
+foreach(cs IN LISTS LIST_OF_CS)
+  get_Update_Remote_Of_Contribution_Space(UPDATE_REMOTE ${cs})
+  list(APPEND PACKAGE_CI_CONTRIBUTION_SPACES ${cs} ${UPDATE_REMOTE})
+endforeach()
+
 #configuring pattern file
 set(TARGET_TEMPORARY_FILE ${CMAKE_BINARY_DIR}/.gitlab-ci.yml)
 configure_file(${WORKSPACE_DIR}/cmake/patterns/packages/.gitlab-ci.yml.in ${TARGET_TEMPORARY_FILE} @ONLY)#adding the gitlab-ci configuration file to the repository
@@ -327,6 +334,13 @@ else()
 		set(PACKAGE_CI_PUBLISH_BINARIES "false")
 	endif()
 endif()
+
+set(PACKAGE_CI_CONTRIBUTION_SPACES)
+get_Wrapper_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${PROJECT_NAME} "${TARGET_CONTRIBUTION_SPACE}")
+foreach(cs IN LISTS LIST_OF_CS)
+  get_Update_Remote_Of_Contribution_Space(UPDATE_REMOTE ${cs})
+  list(APPEND PACKAGE_CI_CONTRIBUTION_SPACES ${cs} ${UPDATE_REMOTE})
+endforeach()
 
 #configuring pattern file
 set(TARGET_TEMPORARY_FILE ${CMAKE_BINARY_DIR}/.gitlab-ci.yml)

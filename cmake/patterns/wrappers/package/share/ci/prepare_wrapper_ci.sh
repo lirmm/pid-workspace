@@ -25,9 +25,9 @@ fi
 echo "[PID] CI : initializing workspace ..."
 #initializing the pid-workspace
 if [ ! -d "./binaries/pid-workspace" ]; then
-  cd binaries && git clone git@gite.lirmm.fr:pid/pid-workspace.git && cd pid-workspace/pid && cmake -DIN_CI_PROCESS=ON .. && cd ../../..
+  cd binaries && git clone git@gite.lirmm.fr:pid/pid-workspace.git && cd pid-workspace/pid && cmake -DIN_CI_PROCESS=ON -DFORCE_CONTRIBUTION_SPACE="$PACKAGE_CONTRIBUTION_SPACES" .. && cd ../../..
 else
-  cd binaries/pid-workspace/pid && git pull -f official master && cmake -DIN_CI_PROCESS=ON .. && cd ../../..
+  cd binaries/pid-workspace/pid && git pull -f official master && cmake -DIN_CI_PROCESS=ON -DFORCE_CONTRIBUTION_SPACE="$PACKAGE_CONTRIBUTION_SPACES" .. && cd ../../..
 fi
 
 # previous to an execution we need to set a link into the workspace that point to the current package

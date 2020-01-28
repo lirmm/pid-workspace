@@ -291,7 +291,9 @@ endfunction(declare_Site)
 #
 #      :welcome: path relative to src/pages folder, that targets a welcome page in markdown or html format.
 #
-function(declare_Framework author institution mail year site license git_address repo_site description welcome)
+#      :contrib_space: name of the default contribution space for the package.
+#
+function(declare_Framework author institution mail year site license git_address repo_site description welcome contrib_space)
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 if(DIR_NAME STREQUAL "build")
 
@@ -322,7 +324,7 @@ if(DIR_NAME STREQUAL "build")
 	set(${PROJECT_NAME}_FRAMEWORK_LICENSE ${license} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_FRAMEWORK_WELCOME ${welcome} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_FRAMEWORK_CATEGORIES CACHE INTERNAL "")#categories are reset
-	set_Cache_Entry_For_Default_Contribution_Space()
+	set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
 
 	#searching for jekyll (static site generator)
 	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searcinh for the jekyll executable in standard paths

@@ -64,6 +64,7 @@ include(CMakeParseArguments)
 #     :LOGO <path to image file>: The path to the image used as logo for the framework. This path is relative to framework src/assets folder.
 #     :BANNER <path to image file>: The path to the image used as a banner for the framework index page. This path is relative to framework src/assets folder.
 #     :WELCOME <path to markdown file>: The path to the mardown use for the welcome. This path is relative to framework src/pages folder.
+#     :CONTRIBUTION_SPACE <name>: the name of the default contribution space used by the framework to publish its references.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -99,7 +100,7 @@ macro(PID_Framework)
 endmacro(PID_Framework)
 
 macro(declare_PID_Framework)
-set(oneValueArgs GIT_ADDRESS ADDRESS MAIL SITE PROJECT LICENSE LOGO BANNER WELCOME)
+set(oneValueArgs GIT_ADDRESS ADDRESS MAIL SITE PROJECT LICENSE LOGO BANNER WELCOME CONTRIBUTION_SPACE)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION CATEGORIES)
 cmake_parse_arguments(DECLARE_PID_FRAMEWORK "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_FRAMEWORK_AUTHOR)
@@ -133,7 +134,7 @@ endif()
 declare_Framework(	"${DECLARE_PID_FRAMEWORK_AUTHOR}" "${DECLARE_PID_FRAMEWORK_INSTITUTION}" "${DECLARE_PID_FRAMEWORK_MAIL}"
 			"${DECLARE_PID_FRAMEWORK_YEAR}" "${DECLARE_PID_FRAMEWORK_SITE}" "${DECLARE_PID_FRAMEWORK_LICENSE}"
 			"${address}" "${DECLARE_PID_FRAMEWORK_PROJECT}" "${DECLARE_PID_FRAMEWORK_DESCRIPTION}"
-      "${DECLARE_PID_FRAMEWORK_WELCOME}")
+    "${DECLARE_PID_FRAMEWORK_WELCOME}" "${DECLARE_PID_FRAMEWORK_CONTRIBUTION_SPACE}")
 if(DECLARE_PID_FRAMEWORK_LOGO)
 	declare_Framework_Image(${DECLARE_PID_FRAMEWORK_LOGO} FALSE)
 endif()

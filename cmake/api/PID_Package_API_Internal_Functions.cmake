@@ -54,7 +54,7 @@ include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
 #  declare_Package
 #  ---------------
 #
-#   .. command:: declare_Package(author institution mail year license address public_address description readme_file)
+#   .. command:: declare_Package(author institution mail year license address public_address description readme_file code_style contrib_space)
 #
 #     Declare the current CMake project as a native package. Internal counterpart to declare_PID_Package.
 #
@@ -68,8 +68,9 @@ include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
 #     :description: a short description of the package.
 #     :readme_file: the path to a user-defined content of the readme file of the package.
 #     :code_style: determines which clang-format file will be used to format the source code.
+#     :contrib_space: determines the default contribution space of the package.
 #
-macro(declare_Package author institution mail year license address public_address description readme_file code_style)
+macro(declare_Package author institution mail year license address public_address description readme_file code_style contrib_space)
 set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")#to avoid the use of -isystem that may be not so well managed by some compilers
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 manage_Current_Platform("${DIR_NAME}") #loading the current platform configuration and perform adequate actions if any changes
@@ -116,7 +117,7 @@ elseif(DIR_NAME STREQUAL "build/debug")
 	endif()
 elseif(DIR_NAME STREQUAL "build")
 	declare_Native_Global_Cache_Options() #first of all declaring global options so that the package is preconfigured with default options values and adequate comments for each variable
-	set_Cache_Entry_For_Default_Contribution_Space()
+	set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/checksources "")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/rebuilt "")
 

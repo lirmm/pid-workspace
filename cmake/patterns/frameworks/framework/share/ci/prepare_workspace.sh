@@ -16,11 +16,9 @@ if [ ! -d "./binaries" ]; then
   mkdir binaries
 fi
 
-#initializing the pid-workspace 
+#initializing the pid-workspace
 if [ ! -d "./binaries/pid-workspace" ]; then
   cd binaries && git clone git@gite.lirmm.fr:pid/pid-workspace.git && cd pid-workspace/pid && cmake .. && cd ../../..
 else
-  cd binaries/pid-workspace/pid && git pull -f official master && cmake .. && cd ../../..
+  cd binaries/pid-workspace/pid && git pull -f official master && cmake -DFORCE_CONTRIBUTION_SPACE="$FRAMEWORK_CONTRIBUTION_SPACES" .. && cd ../../..
 fi
-
-

@@ -146,22 +146,16 @@ endfunction(reset_Environment_Description)
 #   Define current project as a PID environment. Internal counterpart to declare_PID_Environment.
 #
 #      :author: the name of environment contact author.
-#
 #      :institution: the name of the institution of the contact author
-#
 #      :mail: the mail of contact author
-#
 #      :year: the dates of project lifecyle.
-#
 #      :license: the name of the license applying to the environment's content.
-#
 #      :address: the push url of the environment repository.
-#
 #      :public_address: the push url of the environment repository.
-#
 #      :description: description of the environment.
+#      :contrib_space: determines the default contribution space of the environment.
 #
-macro(declare_Environment author institution mail year license address public_address description)
+macro(declare_Environment author institution mail year license address public_address description contrib_space)
   reset_Environment_Description()
   file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
   if(DIR_NAME STREQUAL "build")
@@ -194,7 +188,7 @@ macro(declare_Environment author institution mail year license address public_ad
   	else()
   		set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}" CACHE INTERNAL "")
   	endif()
-    set_Cache_Entry_For_Default_Contribution_Space()
+    set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
   else()
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : please run cmake in the build folder of the environment ${PROJECT_NAME}.")
   	return()
