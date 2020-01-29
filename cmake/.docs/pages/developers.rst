@@ -1,7 +1,7 @@
 Contributing
 ************
 
-Contributions are welcome and should be done using pull-requests on
+Contributions are welcome and should be done using merge-requests on
 https://gite.lirmm.fr/pid/pid-workspace.
 
 Update the doc

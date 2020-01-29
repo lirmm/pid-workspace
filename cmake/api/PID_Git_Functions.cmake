@@ -722,7 +722,7 @@ endfunction(register_Repository_Version)
 #  .. _update_Contribution_Space_Repository:
 #
 #  update_Contribution_Space_Repository
-#  -----------------------------------
+#  ------------------------------------
 #
 #   .. command:: update_Contribution_Space_Repository(contrib_space)
 #

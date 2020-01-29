@@ -124,14 +124,6 @@ Process Progress Utilities
 .. cmake-module:: ../../api/PID_Progress_Management_Functions.cmake
 
 
-Policies
-========
-
-.. setmode:: internal
-
-.. cmake-module:: ../../api/PID_Set_Policies.cmake
-
-
 PID Version Compatibility
 =========================
 
