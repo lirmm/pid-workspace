@@ -776,8 +776,7 @@ if(export) # if dependancy library is exported then we need to register its dep_
 	if(exported_options)
     append_Unique_In_Cache(${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX} "${exported_options}")
 	endif()
-
-	# links are exported since we will need to resolve symbols in the third party components that will the use the component
+  # links are exported since we will need to resolve symbols in the third party components that will the use the component
 	if(shared_links)
     append_Unique_In_Cache(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} "${shared_links}")
 	endif()

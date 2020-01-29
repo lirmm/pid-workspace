@@ -2356,18 +2356,18 @@ if (IS_HF_COMP) #no header to the component
 		configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "" "" "" "" "" "" "${runtime_resources}")
 	endif()
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${DECLARED_COMP} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+	fill_Component_Target_With_External_Dependency(${DECLARED_COMP} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
 elseif(IS_BUILT_COMP)
 	#prepare the dependancy export
 	configure_Install_Variables(${DECLARED_COMP} ${export} "${inc_dirs}" "${lib_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}")
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${DECLARED_COMP} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+	fill_Component_Target_With_External_Dependency(${DECLARED_COMP} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
 
 elseif(	${PROJECT_NAME}_${DECLARED_COMP}_TYPE STREQUAL "HEADER")
 	#prepare the dependancy export
 	configure_Install_Variables(${DECLARED_COMP} TRUE "${inc_dirs}" "${lib_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}") #export is necessarily true for a pure header library
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${DECLARED_COMP} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+	fill_Component_Target_With_External_Dependency(${DECLARED_COMP} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
 else()
 	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${DECLARED_COMP}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 endif()
@@ -2441,18 +2441,17 @@ else()
 			configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "" "" "" "${shared_links}" "" "" "${runtime_resources}")
 		endif()
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${DECLARED_COMP} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+		fill_Component_Target_With_External_Dependency(${DECLARED_COMP} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
 		configure_Install_Variables(${DECLARED_COMP} ${export} "${inc_dirs}" "" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}")
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${DECLARED_COMP} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+		fill_Component_Target_With_External_Dependency(${DECLARED_COMP} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
 	elseif(	${PROJECT_NAME}_${DECLARED_COMP}_TYPE STREQUAL "HEADER")
 		#prepare the dependancy export
 		configure_Install_Variables(${DECLARED_COMP} TRUE "${inc_dirs}" "" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}") #export is necessarily true for a pure header library
-
 		# setting compile definitions for the "fake" target
-		fill_Component_Target_With_External_Dependency(${DECLARED_COMP} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+		fill_Component_Target_With_External_Dependency(${DECLARED_COMP} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
 	else()
 		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${DECLARED_COMP}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 	endif()

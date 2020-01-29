@@ -1938,21 +1938,40 @@ else()#no target package => 2 cases OS dependency OR ERROR
       endforeach()
       #same call as an hand-made one but using automatically standard configuration variables
       set(all_dep_defs ${${config}_DEFINITIONS} ${dep_defs})#preprocessor definition that appy to the interface of the configuration's components come from : 1) the component definition itself (i.e. configuration description) and 2) can be set directly by the user component
+
+      #only transmit configuration variable if the configuration defines those variables (even if standard they are not all always defined)
+      set(includes)
+      if(DEFINED ${config}_INCLUDE_DIRS)
+        set(includes ${config}_INCLUDE_DIRS)
+      endif()
+      set(lib_dirs)
+      if(DEFINED ${config}_LIBRARY_DIRS)
+        set(lib_dirs ${config}_LIBRARY_DIRS)
+      endif()
+      set(opts)
+      if(DEFINED ${config}_COMPILER_OPTIONS)
+        set(opts ${config}_COMPILER_OPTIONS)
+      endif()
+      set(rpath)
+      if(DEFINED ${config}_RPATH)
+        set(rpath ${config}_RPATH)
+      endif()
+
       declare_System_Component_Dependency(
     			${component_name}
     			${export}
-    			${config}_INCLUDE_DIRS
-    			${config}_LIBRARY_DIRS
+    			"${includes}"
+    		  "${lib_dirs}"
     			"${comp_defs}"#only definitions can come from the description of the dependency
     			"${comp_exp_defs}"#only definitions can come from the description of the dependency
     			"${all_dep_defs}"#only definitions can come from the description of the dependency
-    			${config}_COMPILER_OPTIONS
+    			"${opts}"
     			"${all_static_links}"
     			"${all_shared_links}"
     			"${${config}_C_STANDARD}"
     			"${${config}_CXX_STANDARD}"
-    			${config}_RPATH)
-
+    			"${rpath}"
+       )
     else()
       declare_System_Component_Dependency(
     			${component_name}

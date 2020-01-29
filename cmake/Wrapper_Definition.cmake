@@ -1140,15 +1140,34 @@ else()#this is a dependency to another component defined in the same external pa
     if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CONFIGURATION)
       set(config ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CONFIGURATION})
       set(all_defs ${${config}_DEFINITIONS} ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS})
+
+      #only transmit configuration variable if the configuration defines those variables (even if standard they are not all always defined)
+      set(includes)
+      if(DEFINED ${config}_INCLUDE_DIRS)
+        set(includes ${config}_INCLUDE_DIRS)
+      endif()
+      set(lib_dirs)
+      if(DEFINED ${config}_LIBRARY_DIRS)
+        set(lib_dirs ${config}_LIBRARY_DIRS)
+      endif()
+      set(opts)
+      if(DEFINED ${config}_COMPILER_OPTIONS)
+        set(opts ${config}_COMPILER_OPTIONS)
+      endif()
+      set(rpath)
+      if(DEFINED ${config}_RPATH)
+        set(rpath ${config}_RPATH)
+      endif()
+      
       declare_Wrapped_Component_System_Dependency(${component_name}
-        ${config}_INCLUDE_DIRS
-        ${config}_LIBRARY_DIRS
+        "${includes}"
+        "${lib_dirs}"
         "${${config}_LINK_OPTIONS}"
         "${all_defs}"
-        ${config}_COMPILER_OPTIONS
+        "${opts}"
         "${${config}_C_STANDARD}"
         "${${config}_CXX_STANDARD}"
-        ${config}_RPATH
+        "${rpath}"
       )
       set(config)
     else()

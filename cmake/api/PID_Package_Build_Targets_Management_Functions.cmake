@@ -995,6 +995,8 @@ endfunction(fill_Component_Target_With_External_Component_Dependency)
 #
 #     :ext_inc_dirs: list of include path, either absolute or relative to external packages.
 #
+#     :ext_opts: list of compiler options.
+#
 #     :ext_lib_dirs: list of path, either absolute or relative to external packages, to folders that contain libraries to use at build time.
 #
 #     :ext_links_shared: list of path to shared libraries, either absolute or relative to external packages, or linker options.
@@ -1005,7 +1007,7 @@ endfunction(fill_Component_Target_With_External_Component_Dependency)
 #
 #     :cxx_standard: C++ language standard to use when using these dependencies.
 #
-function(fill_Component_Target_With_External_Dependency component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_lib_dirs ext_links_shared ext_links_static c_standard cxx_standard)
+function(fill_Component_Target_With_External_Dependency component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_opts ext_lib_dirs ext_links_shared ext_links_static c_standard cxx_standard)
 if(ext_links_shared)
   evaluate_Variables_In_List(EVAL_SH_LINKS ext_links_shared) #first evaluate element of the list => if they are variables they are evaluated
 	resolve_External_Libs_Path(COMPLETE_SH_LINKS_PATH "${EVAL_SH_LINKS}" ${CMAKE_BUILD_TYPE})
@@ -1043,6 +1045,9 @@ if(ext_inc_dirs)
   evaluate_Variables_In_List(EVAL_INCS ext_inc_dirs)#first evaluate element of the list => if they are variables they are evaluated
 	resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${EVAL_INCS}" ${CMAKE_BUILD_TYPE})
 endif()
+if(ext_opts)
+  evaluate_Variables_In_List(EVAL_OPTS ext_opts)#first evaluate element of the list => if they are variables they are evaluated
+endif()
 if(ext_lib_dirs)
   evaluate_Variables_In_List(EVAL_LDIRS ext_lib_dirs)
 	resolve_External_Libs_Path(COMPLETE_LIB_DIRS_PATH "${EVAL_LDIRS}" ${CMAKE_BUILD_TYPE})
@@ -1061,14 +1066,14 @@ endif()
 if(export)
 	if(NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")#if component is a not header, everything is used to build
 		set(INTERNAL_DEFS ${comp_exp_defs} ${EVAL_DEFS} ${comp_defs})
-    manage_Additional_Component_Internal_Flags(${component} "${EVAL_CSTD}" "${EVAL_CXXSTD}" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${COMPLETE_LIB_DIRS_PATH}" "${INTERNAL_DEFS}" "" "${EXT_LINKS}")
+    manage_Additional_Component_Internal_Flags(${component} "${EVAL_CSTD}" "${EVAL_CXXSTD}" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${COMPLETE_LIB_DIRS_PATH}" "${INTERNAL_DEFS}" "${EVAL_OPTS}" "${EXT_LINKS}")
 	endif()
 	set(EXPORTED_DEFS ${comp_exp_defs} ${EVAL_DEFS})#only definitions belonging to interfaces are exported (interface of current component + interface of exported component) also all linker options are exported
-	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${COMPLETE_LIB_DIRS_PATH}" "${EXPORTED_DEFS}" "" "${EXT_LINKS}")
+	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${COMPLETE_LIB_DIRS_PATH}" "${EXPORTED_DEFS}" "${EVAL_OPTS}" "${EXT_LINKS}")
 
 else()#otherwise only definitions for interface of the current component is exported
 	set(INTERNAL_DEFS ${comp_defs} ${EVAL_DEFS} ${comp_defs})#everything define for building current component
-	manage_Additional_Component_Internal_Flags(${component} "${EVAL_CSTD}" "${EVAL_CXXSTD}" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${COMPLETE_LIB_DIRS_PATH}" "${INTERNAL_DEFS}" "" "${EXT_LINKS}")
+	manage_Additional_Component_Internal_Flags(${component} "${EVAL_CSTD}" "${EVAL_CXXSTD}" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${COMPLETE_LIB_DIRS_PATH}" "${INTERNAL_DEFS}" "${EVAL_OPTS}" "${EXT_LINKS}")
 	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${COMPLETE_LIB_DIRS_PATH}" "${comp_exp_defs}" "" "${EXT_LINKS}")#only linker options and exported definitions are in the public interface
 endif()
 endfunction(fill_Component_Target_With_External_Dependency)
@@ -1345,7 +1350,6 @@ if(NOT TARGET ${target_name})#check that this target does not exist, otherwise n
 	list_Public_Definitions(DEFS ${dep_package} ${comp_name_to_use} ${mode})
 	list_Public_Options(OPTS ${dep_package} ${comp_name_to_use} ${mode})
   list_External_Links(SHARED_LNKS STATIC_LNKS ${dep_package} ${comp_name_to_use} ${mode})
-
   # 1) create dependent targets for each binary (also allow same global management of links as for legacy package dependencies)
   #shared first
   foreach(link IN LISTS SHARED_LNKS)

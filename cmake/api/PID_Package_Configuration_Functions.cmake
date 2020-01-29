@@ -305,6 +305,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(FILTERED_OPTS)
 if(${package}_${component}_OPTS${VAR_SUFFIX})
   evaluate_Variables_In_List(EVAL_OPTS ${package}_${component}_OPTS${VAR_SUFFIX})
+  message("evaluating ${package}_${component}_OPTS${VAR_SUFFIX} = ${EVAL_OPTS}")
   foreach(opt IN LISTS EVAL_OPTS)
   	#checking for CXX_STANDARD
   	is_CXX_Standard_Option(STANDARD_NUMBER ${opt})
