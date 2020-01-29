@@ -16,7 +16,7 @@ PID is designed for solving most common (and sometimes difficult) problems we ca
 
 + **Standardization of C/C++ projects**:
    - same basic structure, concepts, commands and options to manage the life cycle of projects.  
-   - `CMake` APIs for description of projects.
+   - `CMake` APIs for a clean description of projects.
    - based on `git` and `Gitlab` tools for lifecycle management and continuous integration.
 
 + **Languages supported**:
@@ -53,82 +53,68 @@ Installing the PID framework is a simple task, as soon as you have adequate depe
 
 - CMake, version 3.0.2 or greater
 - git, version 1.7.6 or greater
+- git-lfs, version 2.6 or greater
 
-## if you are a project manager and want to put in place a common isolated environment for your team(s)
+Other dependencies may be required, but their need is not mandatory by default.
 
-+ fork this repository here or clone it into another git repositories hosting service. The newly generated repository is now called the **official repository** of pid-workspace in your team.
+## Basic install procedure  
 
-The fork is usefull if you want to easily publish your packages to other teams and people around the world. Indeed the current repository may be used as the global "marketplace" for everyone (this is mainly interesting for open source projects).
+This procedure is the standard one and should be the preferred one for most of the users.
 
-+ clone **your team's pid-workspace official repository** in your workstation:
++ clone this repository somewhiere in your filesystem
 
 ```bash
-git clone <your team pid-workspace official repository>
+cd /path/to/somewhere
+git clone <pid-workspace repository>
 ```
+Change `<pid-workspace repository>` by the address of this project in the hosting service (github, gitlab) you are currenlty using.
 
-+ configure **your local repository**:
++ configure **your local repository**
 
 ```bash
 cd pid-workspace/pid
-cmake -DPID_OFFICIAL_REMOTE_ADDRESS=<your team pid-workspace official repository> ..
-#or use cmake gui to set PID_OFFICIAL_REMOTE_ADDRESS variable
-```
-
-That's it your team can start working in an isolated environment. This action ensures that you will not be affected by modifications of this current repository unless you specifically decide it (using a dedicated git remote pointing to the current repository).
-
-
-## if you are member of a team with a specific team official repository
-
-+ fork **your team's pid-workspace official repository** (the address should be given by your team leader). The forked repository is **your private repository**, it will be usefull to share your contributions with other members of the team.
-
-+ clone **your private repository** on your workstation(s):
-
-```bash
-git clone <your private repository>
-```
-
-+ configure **your local repository**:
-
-```bash
-cd pid-workspace/pid
-cmake -DPID_OFFICIAL_REMOTE_ADDRESS=<your team pid-workspace official repository> ..
-```
-
-## if you are a developper and want to publish open source packages
-
-+ fork this repository so that you can use merge requests to provide your contributions. The forked repository becomes **your pid-workspace official repository**.
-
-+ clone **your pid-workspace official repository** in your workstation:
-
-```bash
-git clone <your pid-workspace official repository>
-```
-
-+ configure **your local repository**:
-
-```bash
-cd pid-workspace/pid
-cmake -DPID_OFFICIAL_REMOTE_ADDRESS=<your pid-workspace official repository> ..
-```
-
-That's it you can start working in an isolated environment. This action ensures that you will not be affected by modifications of the current repository unless you specifically decide it (using a dedicated git remote pointing to the current repository).
-
-
-## if you just want to use PID to install some packages provided by third-parties
-
-+ simply clone **this repository** into your workstation.
-
-```bash
-git clone **this repository**
-```
-+ Then configure your workspace:
-
-```bash
-cd pid-workspace/pid
-cmake -DPID_OFFICIAL_REMOTE_ADDRESS=<this repository> ..
-# or use the LIRMM official repository (recommended for LIRMM members or teams working with LIRMM)
 cmake ..
 ```
+
+This step initializes the PID system, more precisely:
++ the current host platform you are using is automatically identified
++ official contributions are automatically configured so that you can use some default material already provided by pid.
++ configure the workspace repository to make it capable of upgrading CMake APIs.  
+
+You can now start using PID methdology. To test if everything works you can do:
+
+```bash
+cd pid-workspace/pid
+make deploy package=pid-rpath
+```
+
+This should end in the deployment of a package named `pid-rpath`.
+
+## Install for users that want to contribute to the API (advanced users only)
+
+If you want to contribute to the APIs of PID you need to use a fork of this project.
+
+To do this:
+
++ **fork** the current repository here or in your favorite hosting service. Copy the http address of this fork.
++ **clone the fork** on your workstation (same as for basic install)
++ configure **your local repository** (same as for basic install)
+
+You will still be capable of getting upgrades of the APIs while your fork gives you the possibility to push and propose merge request for APIs modification.
+
+### Install for testers of your API changes (advanced users only)
+
+If you want your collaborators to test the modifications you made to the API (this is most of time usefull before proposing a merge request), let them:
+
++ clone **your fork of pid-workspace repository** in their workstation, or **clone a fork of your fork** if you need them to be able to publish some patches of the APIs.
++ configure **their local repository**:
+
+```bash
+cd pid-workspace/pid
+cmake -DPID_OFFICIAL_REMOTE_ADDRESS=<your fork of pid-workspace repository> ..
+```
+
+That's it your team of testers can work in an isolated environment: anytime they will upgrade their workspace with API changes, they will pull the content from your fork workspace instead of PID official one.
 
 ## Final steps
 
@@ -139,7 +125,6 @@ I recommend to read the documentation in this [website](http://pid.lirmm.net/pid
 pid-workspace and PID base packages are licensed with the CeCILL-C open source license. A copy of the license is available in the file license.txt.
 
 CeCILL-C is an open source software license equivalent to and compatible with GNU LGPL. The difference is that it is governed by French law and disagreements or disputes shall be referred to the Paris Courts having jurisdiction.
-
 
 # Contact
 
