@@ -102,8 +102,7 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 
 			COMMAND ${LCOV_PATH} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --zerocounters #prepare coverage generation
 			COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG} # Run tests
-
-			COMMAND ${LCOV_PATH} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --capture --output-file ${coverage_info}
+			COMMAND ${LCOV_PATH} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --capture --output-file ${coverage_info} --no-external
 			COMMAND ${LCOV_PATH} --remove ${coverage_info} 'test/*' '/usr/*' 'install/*' --output-file ${coverage_cleaned} #configure the filter of output (remove everything that is not related to
 			COMMAND ${GENHTML_PATH} -o ${coverage_dir} ${coverage_cleaned} #generating output
 			COMMAND ${CMAKE_COMMAND} -E remove ${coverage_info} ${coverage_cleaned} #cleanup lcov files

@@ -35,7 +35,7 @@ for an_arg in "$@"
 do
   if [ $an_arg = "test" ]; then
     with_tests="ON"
-  if [ $an_arg = "sanitizers" ]; then
+  elif [ $an_arg = "sanitizers" ]; then
     with_sanitizers="ON"
   elif [ $an_arg = "example" ]; then
     with_examples="ON"
