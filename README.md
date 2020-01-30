@@ -40,7 +40,6 @@ PID is designed for solving most common (and sometimes difficult) problems we ca
    - wrap projects that are not based on PID (e.g. boost).
    - provide a **plugin mechanism** to add new functionalities to PID : support of an IDE, like `atom` ; build management tools like `pkg-config`.
 
-
 # Known Limitation
 
  + **Operating systems**: PID should work on most of UNIX platforms. It has been tested on Ubuntu, Arch Linux and Raspbian. Many UNIX systems have never or rarely been tested like SolarisOS, FreeBSD, iOS or MACOS as well as many Linux distributions (RedHat, Gentoo) and derivatives (Android). But these OS can be supported with little effort (PID being mostly cross-platform). For now **Windows is not supported**.
@@ -90,35 +89,9 @@ make deploy package=pid-rpath
 
 This should end in the deployment of a package named `pid-rpath`.
 
-## Install for users that want to contribute to the API (advanced users only)
-
-If you want to contribute to the APIs of PID you need to use a fork of this project.
-
-To do this:
-
-+ **fork** the current repository here or in your favorite hosting service. Copy the http address of this fork.
-+ **clone the fork** on your workstation (same as for basic install)
-+ configure **your local repository** (same as for basic install)
-
-You will still be capable of getting upgrades of the APIs while your fork gives you the possibility to push and propose merge request for APIs modification.
-
-### Install for testers of your API changes (advanced users only)
-
-If you want your collaborators to test the modifications you made to the API (this is most of time usefull before proposing a merge request), let them:
-
-+ clone **your fork of pid-workspace repository** in their workstation, or **clone a fork of your fork** if you need them to be able to publish some patches of the APIs.
-+ configure **their local repository**:
-
-```bash
-cd pid-workspace/pid
-cmake -DPID_OFFICIAL_REMOTE_ADDRESS=<your fork of pid-workspace repository> ..
-```
-
-That's it your team of testers can work in an isolated environment: anytime they will upgrade their workspace with API changes, they will pull the content from your fork workspace instead of PID official one.
-
 ## Final steps
 
-I recommend to read the documentation in this [website](http://pid.lirmm.net/pid-framework). You will find many resources explaining how to start using PID.
+Now read the [documentation of PID](http://pid.lirmm.net/pid-framework). You will find many resources explaining how to start using PID.
 
 # About the license
 
