@@ -243,7 +243,8 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "                 and publish commands to migrate contributions from one contribution space to another."
 	COMMAND ${CMAKE_COMMAND} -E echo "               - move: move a contribution from one contribution space to another."
 	COMMAND ${CMAKE_COMMAND} -E echo "               - copy: copy a contribution from one contribution space to another."
-	COMMAND ${CMAKE_COMMAND} -E echo "             --- Argument for add, rm, churl, prio_min, prio_max, status, publish, update, move, copy [mandatory]---"
+	COMMAND ${CMAKE_COMMAND} -E echo "               - delete: delete a contribution from one contribution space."
+	COMMAND ${CMAKE_COMMAND} -E echo "             --- Argument for add, rm, churl, prio_min, prio_max, status, publish, update, move, copy, delete [mandatory]---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - space=*name*: name of the target contribution space. This argument is mandatory."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments for add and churl commands [optional or mandatory]---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - update=*URL*: URL of the remote used to update the contribution space. Mandatory for add command."
@@ -252,10 +253,11 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments for move and copy commands [mandatory]---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - from=*contribution space*: name of the contribution space to move or copy content from."
 	COMMAND ${CMAKE_COMMAND} -E echo "                target space is the one specified using space argument."
-	COMMAND ${CMAKE_COMMAND} -E echo "             - content=*name*: name of the content to move or copy. This content must belong to contribution"
+	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments for move, copy and delete commands [mandatory]---"
+	COMMAND ${CMAKE_COMMAND} -E echo "             - content=*name*: name of the content to move, copy or delete. This content must belong to contribution"
 	COMMAND ${CMAKE_COMMAND} -E echo "               space specified by from argument. The content may refer to configruation and or reference files,"
 	COMMAND ${CMAKE_COMMAND} -E echo "               and/or find files, and/or licenses and/or plugin. All files and folders matching the given name will"
-	COMMAND ${CMAKE_COMMAND} -E echo "               be moved or copied."
+	COMMAND ${CMAKE_COMMAND} -E echo "               be moved / copied / deleted."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )

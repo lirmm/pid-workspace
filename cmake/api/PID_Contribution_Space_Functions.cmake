@@ -960,7 +960,7 @@ function(get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spac
     list(APPEND list_of_spaces ${WORKSPACE_DIR}/contributions/${TARGET_CONTRIBUTION_SPACE})
   endif()
   foreach(cs IN LISTS CONTRIBUTION_SPACES)
-    get_All_Matching_Contributions(LICENSE REFERENCE FIND FORMAT CONFIGURATION ${cs} ${deployment_unit})
+    get_All_Matching_Contributions(LICENSE REFERENCE FIND FORMAT CONFIGURATION PLUGIN ${cs} ${deployment_unit})
     if(REFERENCE OR FIND)
       list(APPEND list_of_spaces ${WORKSPACE_DIR}/contributions/${cs})
     endif()
@@ -1280,7 +1280,9 @@ endfunction(write_Contribution_Spaces_Description_File)
 #
 #      :CONFIGURATION: output variable that contains a configuration folder name if anyone matches, empty otherwise.
 #
-function(get_All_Matching_Contributions LICENSE REFERENCE FIND FORMAT CONFIGURATION cs name)
+#      :PLUGIN: output variable that contains a plugin folder name if anyone matches, empty otherwise.
+#
+function(get_All_Matching_Contributions LICENSE REFERENCE FIND FORMAT CONFIGURATION PLUGIN cs name)
   get_Path_To_Contribution_Space(PATH_TO_CS ${cs})
   #checking licenses
   if(EXISTS ${PATH_TO_CS}/licenses/License${name}.cmake)
@@ -1299,6 +1301,12 @@ function(get_All_Matching_Contributions LICENSE REFERENCE FIND FORMAT CONFIGURAT
     set(${CONFIGURATION} ${name} PARENT_SCOPE)
   else()
     set(${CONFIGURATION} PARENT_SCOPE)
+  endif()
+  #checking plugins
+  if(EXISTS ${PATH_TO_CS}/plugins/${name} AND IS_DIRECTORY ${PATH_TO_CS}/plugins/${name})
+    set(${PLUGIN} ${name} PARENT_SCOPE)
+  else()
+    set(${PLUGIN} PARENT_SCOPE)
   endif()
   #checking find files
   if(EXISTS ${PATH_TO_CS}/finds/Find${name}.cmake)
