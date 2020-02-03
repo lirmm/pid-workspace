@@ -146,7 +146,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
 
   	### new targets ###
   	# creating the specific target to run doxygen
-    add_custom_target(doxygen
+    add_custom_target(doxygen-pid
   		${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/share/Doxyfile
   		DEPENDS ${CMAKE_BINARY_DIR}/share/Doxyfile
   		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
@@ -164,7 +164,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
   		add_custom_target(doc)
   	endif()
 
-  	add_dependencies(doc doxygen)
+  	add_dependencies(doc doxygen-pid)
 
   	### end new targets ###
 
