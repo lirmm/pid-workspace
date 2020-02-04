@@ -1494,17 +1494,20 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 	file(APPEND ${file_for_version} "declare_PID_External_Package(PACKAGE ${package})\n")
 
 	#add checks for required platform configurations
-	set(list_of_configs)
+	set(list_of_configs_checks)
+	set(list_of_configs_names)
 	foreach(config IN LISTS ${package}_KNOWN_VERSION_${version}_CONFIGURATIONS)
 		if(${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config} STREQUAL "all"
 			OR ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config} STREQUAL "${platform}")#this configuration is required for any platform
 			generate_Configuration_Constraints(RESULTING_EXPRESSION ${config} "${${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS}")
-			list(APPEND list_of_configs ${RESULTING_EXPRESSION})
+			list(APPEND list_of_configs_checks ${RESULTING_EXPRESSION})
+			list(APPEND list_of_configs_names ${config})
+			generate_Configuration_Constraints_For_Dependency(list_of_configs_checks list_of_configs_names ${config})
 		endif()
 	endforeach()
-	if(list_of_configs)
+	if(list_of_configs_checks)
 		file(APPEND ${file_for_version} "#description of external package ${package} version ${version} required platform configurations\n")
-		fill_String_From_List(list_of_configs RES_CONFIG)
+		fill_String_From_List(list_of_configs_checks RES_CONFIG)
 		file(APPEND ${file_for_version} "check_PID_External_Package_Platform(PACKAGE ${package} PLATFORM ${platform} CONFIGURATION ${RES_CONFIG})\n")
 	endif()
 

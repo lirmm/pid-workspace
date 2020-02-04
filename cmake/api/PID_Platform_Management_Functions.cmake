@@ -430,7 +430,6 @@ function(get_Library_ELF_Symbol_Max_Version MAX_VERSION path_to_library symbol)
 endfunction(get_Library_ELF_Symbol_Max_Version)
 
 
-
 #.rst:
 #
 # .. ifmode:: internal
@@ -907,12 +906,14 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   set(no_arg)
   foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
-    #get SONAME and SYMBOLS coming from package configuration
     parse_Configuration_Arguments_From_Binaries(PACKAGE_SPECS ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
-    get_Soname_Symbols_Values(PACKAGE_SONAME PACKAGE_SYMBOLS PACKAGE_SPECS)
     #get SONAME and SYMBOLS coming from platform configuration
-    check_System_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${config} no_arg ${mode})
+    #WARNING Note: use same arguments as binary !!
+    check_System_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${config} PACKAGE_SPECS ${mode})
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS PLATFORM_SPECS)
+
+    #get SONAME and SYMBOLS coming from package configuration
+    get_Soname_Symbols_Values(PACKAGE_SONAME PACKAGE_SYMBOLS PACKAGE_SPECS)
 
     #from here we have the value to compare with
     if(PACKAGE_SONAME)#package defines constraints on SONAMES
@@ -1055,6 +1056,50 @@ function(generate_Configuration_Constraints RESULTING_EXPRESSION config_name con
   endif()
   set(${RESULTING_EXPRESSION} "${final_expression}" PARENT_SCOPE)
 endfunction(generate_Configuration_Constraints)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Configuration_Constraints_For_Dependency| replace:: ``generate_Configuration_Constraints_For_Dependency``
+#  .. _generate_Configuration_Constraints_For_Dependency:
+#
+#  generate_Configuration_Constraints_For_Dependency
+#  -------------------------------------------------
+#
+#   .. command:: generate_Configuration_Constraints_For_Dependency(RESULTING_EXPRESSION config)
+#
+#     Generate an expression (string) that describes the configuration checks neeed to manage dependencies of a given configuration.
+#
+#     :config: the name of the system configuration.
+#
+#     :RESULTING_EXPRESSION: the input/output variable containing the configuration check equivalent expression.
+#
+#     :RESULTING_CONFIG: the input/output variable containing the list of configuration names already managed.
+#
+function(generate_Configuration_Constraints_For_Dependency RESULTING_EXPRESSION RESULTING_CONFIG_LIST config)
+  if(${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY)
+    set(temp_list_of_config_written ${${RESULTING_CONFIG_LIST}})
+    set(temp_list_of_expressions_written ${${RESULTING_EXPRESSION}})
+    foreach(dep_conf IN LISTS ${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY)
+      list(FIND temp_list_of_config_written ${dep_conf} INDEX)
+      if(INDEX EQUAL -1)#not already written !!
+        list(APPEND temp_list_of_config_written ${dep_conf})
+        if(${dep_conf}_CONSTRAINTS_IN_BINARY)
+          generate_Configuration_Constraints(RES_EXPRESSION ${dep_conf} "${${dep_conf}_CONSTRAINTS_IN_BINARY}")
+          list(APPEND temp_list_of_expressions_written ${RES_EXPRESSION})
+        else()
+          list(APPEND temp_list_of_expressions_written ${dep_conf})
+        endif()
+        #recursion to manage dependencies of dependencies (and so on)
+        generate_Configuration_Constraints_For_Dependency(temp_list_of_expressions_written temp_list_of_config_written ${dep_conf})
+      endif()
+    endforeach()
+    set(${RESULTING_EXPRESSION} ${temp_list_of_expressions_written} PARENT_SCOPE)
+    set(${RESULTING_CONFIG_LIST} ${temp_list_of_config_written} PARENT_SCOPE)
+  endif()
+endfunction(generate_Configuration_Constraints_For_Dependency)
 
 #.rst:
 #
@@ -1282,6 +1327,7 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
     endif()
 
     # checking dependencies
+    set(dep_configurations)
     foreach(check IN LISTS ${config_name}_CONFIGURATION_DEPENDENCIES)
       check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${check} ${mode})#check that dependencies are OK
       if(NOT RESULT_OK)
@@ -1289,6 +1335,9 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
         set_Configuration_Temporary_Optimization_Variables(${config_name} Release FALSE "")
         return()
       endif()
+      #here need to manage resulting binary contraints
+      append_Unique_In_Cache(${config_name}_CONFIGURATION_DEPENDENCIES_IN_BINARY ${CONFIG_NAME})
+      append_Unique_In_Cache(${CONFIG_NAME}_CONSTRAINTS_IN_BINARY "${CONFIG_CONSTRAINTS}")
     endforeach()
 
     #extracting variables to make them usable in calling context
@@ -1540,6 +1589,11 @@ function(reset_Configuration_Cache_Variables config)
   endforeach()
   set(${config}_IN_BINARY_CONSTRAINTS CACHE INTERNAL "")
   set(${config}_CONFIGURATION_DEPENDENCIES CACHE INTERNAL "")
+  foreach(dep_config IN LISTS ${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY)
+    reset_Configuration_Cache_Variables(${dep_config})
+  endforeach()
+  set(${config}_CONSTRAINTS_IN_BINARY CACHE INTERNAL "")
+  set(${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY CACHE INTERNAL "")
 endfunction(reset_Configuration_Cache_Variables)
 
 

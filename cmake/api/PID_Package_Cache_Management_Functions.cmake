@@ -2139,6 +2139,47 @@ endfunction(find_Packages_Containing_Component)
 #
 # .. ifmode:: internal
 #
+#  .. |write_In_Binary_Configuration_Dependency_In_Use_File| replace:: ``write_In_Binary_Configuration_Dependency_In_Use_File``
+#  .. -write_In_Binary_Configuration_Dependency_In_Use_File:
+#
+#  write_In_Binary_Configuration_Dependency_In_Use_File
+#  ----------------------------------------------------
+#
+#   .. command:: write_In_Binary_Configuration_Dependency_In_Use_File(file package mode_suffix config configs_already_written)
+#
+#   Write in the use file the variable containing arguments used for a dependent configuration check.
+#
+#     :file: the path to file to write in.
+#
+#     :package: the name of the package.
+#
+#     :mode_suffix: the suffix to use dependencing on mode
+#
+#     :config: the name of configuration that may have dependencies
+#
+#     :configs_already_written: the IN OUT variable containing the list of configurations already written in use file
+#
+function(write_In_Binary_Configuration_Dependency_In_Use_File file package mode_suffix config configs_already_written)
+  if(${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY)
+    set(temp_list_of_config_written ${${configs_already_written}})
+    foreach(dep_conf IN LISTS ${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY)
+      list(FIND temp_list_of_config_written ${dep_conf} INDEX)
+      if(INDEX EQUAL -1)#not already written !!
+        list(APPEND temp_list_of_config_written ${dep_conf})
+        if(${dep_conf}_CONSTRAINTS_IN_BINARY)
+          file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATION_${dep_conf}_ARGS${mode_suffix} ${${dep_conf}_CONSTRAINTS_IN_BINARY} CACHE INTERNAL \"\")\n")
+        endif()
+        write_In_Binary_Configuration_Dependency_In_Use_File(${file} ${package} "${mode_suffix}" ${dep_conf} temp_list_of_config_written)
+      endif()
+    endforeach()
+    set(${configs_already_written} ${temp_list_of_config_written} PARENT_SCOPE)
+  endif()
+endfunction(write_In_Binary_Configuration_Dependency_In_Use_File)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |write_Use_File| replace:: ``write_Use_File``
 #  .. _write_Use_File:
 #
@@ -2249,6 +2290,7 @@ foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX})
     if(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX})
       file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
     endif()
+    write_In_Binary_Configuration_Dependency_In_Use_File(${file} ${package} "${MODE_SUFFIX}" ${config} memorized_configs)
   endif()
 endforeach()
 file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX} ${memorized_configs} CACHE INTERNAL \"\")\n")
