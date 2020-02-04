@@ -63,7 +63,7 @@ else()
 	endif()
 endif()
 
-if(NOT ${ROS_DISTRIBUTION} STREQUAL "$ENV{ROS_DISTRO}")
+if(NOT ROS_DISTRIBUTION STREQUAL "$ENV{ROS_DISTRO}")
 	message("[PID] CRITICAL ERROR: The selected distribution (${ROS_DISTRIBUTION}) does not match the currently sourced one ($ENV{ROS_DISTRO})")
 	return()
 endif()

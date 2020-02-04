@@ -31,4 +31,4 @@ PID_Configuration_Constraints(x11			IN_BINARY extensions     soname
 # If extensions options is required, EXTENTIONS vars are sort in EXTENSIONS_NAMES order
 
 # dependencies
-PID_Configuration_Dependencies(ros DEPEND posix)
+PID_Configuration_Dependencies(x11 DEPEND posix)
