@@ -2,7 +2,7 @@
 Language:        Cpp
 BasedOnStyle:  LLVM
 PointerAlignment: Left
-BreakBeforeBraces: Attach
+BreakBeforeBraces: Allman
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 AllowShortFunctionsOnASingleLine: false
 SortIncludes:    false
