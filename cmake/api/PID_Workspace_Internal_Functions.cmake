@@ -2567,28 +2567,29 @@ endfunction(release_PID_Package)
 #
 #   .. command:: update_PID_Source_Package(package)
 #
-#     Update a native package based on git tags of its source repository.
+#     Update a native or external package based on git tags of its source repository.
 #
 #      :package: the name of the native package to update.
 #
 function(update_PID_Source_Package package)
 get_Platform_Variables(BASENAME platform_name)
 set(INSTALLED FALSE)
-get_Package_Type(${package} PACK_TYPE)
 list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${platform_name}/${package})
-	if(PACK_TYPE STREQUAL "NATIVE")
-		message("[PID] INFO : launch the update of native package ${package} from sources...")
-		deploy_Source_Native_Package(INSTALLED ${package} "${version_dirs}" FALSE)
-	else()
-		message("[PID] INFO : launch the update of external package ${package} from its wrapper...")
-		deploy_Source_External_Package(INSTALLED ${package} "${version_dirs}")
-	endif()
+get_Package_Type(${package} PACK_TYPE)
+if(PACK_TYPE STREQUAL "NATIVE")
+	message("[PID] INFO : launch the update of native package ${package} from sources...")
+	deploy_Source_Native_Package(INSTALLED ${package} "${version_dirs}" FALSE)
+else()
+	message("[PID] INFO : launch the update of external package ${package} from its wrapper...")
+	deploy_Source_External_Package(INSTALLED ${package} "${version_dirs}")
+endif()
 if(NOT INSTALLED)
 	message("[PID] ERROR : cannot update ${package}.")
 else()
 	message("[PID] INFO : package ${package} update finished.")
 endif()
 endfunction(update_PID_Source_Package)
+
 
 #.rst:
 #
@@ -2602,7 +2603,7 @@ endfunction(update_PID_Source_Package)
 #
 #   .. command:: update_PID_Binary_Package(package)
 #
-#     Update a native package based on references on its available binary archives.
+#     Update a native or external package based on references on its available binary archives.
 #
 #      :package: the name of the naive package to update.
 #
@@ -2610,7 +2611,12 @@ function(update_PID_Binary_Package package)
 get_Platform_Variables(BASENAME platform_name)
 message("[PID] INFO : launch the update of binary package ${package}...")
 list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${platform_name}/${package})
-deploy_Binary_Native_Package(DEPLOYED ${package} "${version_dirs}")
+get_Package_Type(${package} PACK_TYPE)
+if(PACK_TYPE STREQUAL "NATIVE")
+	deploy_Binary_Native_Package(DEPLOYED ${package} "${version_dirs}")
+else()
+	deploy_Binary_External_Package(DEPLOYED ${package} "${version_dirs}")
+endif()
 if(NOT DEPLOYED)
 	message("[PID] ERROR : cannot update ${package}.")
 else()

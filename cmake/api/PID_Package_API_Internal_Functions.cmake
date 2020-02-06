@@ -149,7 +149,7 @@ elseif(DIR_NAME STREQUAL "build")
 			COMMAND ${CMAKE_MAKE_PROGRAM} rebuild_cache
 			COMMAND ${CMAKE_COMMAND} -E touch ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/rebuilt
 			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/checksources
-			COMMENT "[PID] Reconfiguring the package ..."
+			COMMENT "[PID] Reconfiguring the package ${PROJECT_NAME} ..."
     	)
 	add_custom_target(reconfigure
 			DEPENDS ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/rebuilt
@@ -160,10 +160,12 @@ elseif(DIR_NAME STREQUAL "build")
 
 	# update target (update the package from upstream git repository)
 	add_custom_target(update
-		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+		COMMAND ${CMAKE_COMMAND}
+		        -DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-P ${WORKSPACE_DIR}/cmake/commands/Update_PID_Package.cmake
-		COMMENT "[PID] Updating the package ..."
+					  -DFORCE_SOURCE=TRUE
+						-P ${WORKSPACE_DIR}/cmake/commands/Update_PID_Deployment_Unit.cmake
+		COMMENT "[PID] Updating the package ${PROJECT_NAME} ..."
 		VERBATIM
 	)
 

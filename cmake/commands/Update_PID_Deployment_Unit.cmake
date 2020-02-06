@@ -43,30 +43,77 @@ remove_Progress_File() #reset the build progress information (sanity action)
 begin_Progress(workspace NEED_REMOVE)
 
 #first check that commmand parameters are not passed as environment variables
-
 if(NOT TARGET_PACKAGE AND DEFINED ENV{package})
 	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
 
-#perform actions of the commands
+if(NOT TARGET_FRAMEWORK AND DEFINED ENV{framework})
+	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "" FORCE)
+endif()
 
+if(NOT TARGET_ENVIRONMENT AND DEFINED ENV{environment})
+	set(TARGET_ENVIRONMENT $ENV{environment} CACHE INTERNAL "" FORCE)
+endif()
+
+if(NOT FORCE_SOURCE AND DEFINED ENV{force_source})
+	set(FORCE_SOURCE $ENV{force_source} CACHE INTERNAL "" FORCE)
+endif()
+
+#perform actions of the commands
 if(TARGET_PACKAGE)
 	if(TARGET_PACKAGE STREQUAL "all")
 		update_PID_All_Packages()
 	else()
-		if(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
-			update_PID_Source_Package(${TARGET_PACKAGE})
+		list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${platform_name}/${package})
+
+		get_Package_Type(${TARGET_PACKAGE} PACK_TYPE)
+		if(PACK_TYPE STREQUAL "NATIVE")
+			if(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE}
+				 AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
+				 deploy_Source_Native_Package(INSTALLED ${TARGET_PACKAGE} "${version_dirs}" FALSE)
+			 endif()
 		else()
+			if(EXISTS ${WORKSPACE_DIR}/wrappers/${TARGET_PACKAGE}
+			AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${TARGET_PACKAGE})
+				 deploy_Source_External_Package(INSTALLED ${TARGET_PACKAGE} "${version_dirs}")
+			 endif()
+		endif()
+		if(NOT INSTALLED)
+			if(FORCE_SOURCE)
+				if(PACK_TYPE STREQUAL "NATIVE")
+					message("[PID] ERROR : no source repository exists in local workspace for native package ${TARGET_PACKAGE}.")
+				else()
+					message("[PID] ERROR : no wrapper repository exists in local workspace for external package ${TARGET_PACKAGE}.")
+				endif()
+				return()
+			endif()
 			load_Package_Binary_References(REFERENCES_OK ${TARGET_PACKAGE})
 			if(NOT REFERENCES_OK)
-				message("[PID] ERROR : no binary reference exists for the package ${TARGET_PACKAGE}. Cannot update it ! Please contact the maintainer of package ${package} to have more information about this problem.")
+				message("[PID] ERROR : no binary reference exists in local workspace for package ${TARGET_PACKAGE}. Cannot update it ! Please contact the maintainer of package ${package} to have more information about this problem.")
 			endif()
-			# it may be a binary package
-			update_PID_Binary_Package(${TARGET_PACKAGE})
+			if(PACK_TYPE STREQUAL "NATIVE")
+				update_PID_Binary_Package(${TARGET_PACKAGE})
+			else()
+				update_PID_External_Package(${TARGET_PACKAGE})
+			endif()
 		endif()
 	endif()
+elseif(TARGET_FRAMEWORK)
+	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK}
+	   AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK})
+		update_Framework_Repository(${TARGET_FRAMEWORK})
+	else()
+		message("[PID] ERROR : No framework ${TARGET_FRAMEWORK} exist in workspace. Cannot update it !")
+	endif()
+elseif(TARGET_ENVIRONMENT)
+	if(EXISTS ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}
+	   AND IS_DIRECTORY ${WORKSPACE_DIR}environments/${TARGET_ENVIRONMENT})
+		update_Environment_Repository(${TARGET_ENVIRONMENT})
+	else()
+		message("[PID] ERROR : No environment ${TARGET_ENVIRONMENT} exist in workspace. Cannot update it !")
+	endif()
 else()
-	message("[PID] ERROR : You must specify the name of the package to update using name= argument. If you use all as name, all packages will be updated, either they are binary or source.")
+	message("[PID] ERROR : You must specify the deployment unit to update using either 'package', 'wrapper', 'framework' or 'environment' argument. If you use the value 'all' instead of a deployment unit name, all deployment units of the corresponding type will be updated, either they are binary or source.")
 endif()
 
 ## global management of the process

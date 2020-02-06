@@ -158,41 +158,47 @@ endfunction(reset_Environment_Description)
 macro(declare_Environment author institution mail year license address public_address description contrib_space)
   reset_Environment_Description()
   file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
-  if(DIR_NAME STREQUAL "build")
-    set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
-
-    init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}) # getting the workspace version used to generate the code
-    set(res_string)
-    if(NOT "${author}" STREQUAL "")#cannot use directly author because we are in a macro
-      foreach(string_el IN ITEMS ${author})
-    		set(res_string "${res_string}_${string_el}")
-    	endforeach()
-    endif()
-    set(${PROJECT_NAME}_MAIN_AUTHOR "${res_string}" CACHE INTERNAL "")
-    set(res_string "")
-    if(NOT "${institution}" STREQUAL "")#cannot use directly institution because we are in a macro
-    	foreach(string_el IN ITEMS ${institution})
-    		set(res_string "${res_string}_${string_el}")
-    	endforeach()
-    endif()
-    set(${PROJECT_NAME}_MAIN_INSTITUTION ${res_string} CACHE INTERNAL "")
-    set(${PROJECT_NAME}_MAIL ${mail} CACHE INTERNAL "")
-    set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
-    set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
-    set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
-    set(${PROJECT_NAME}_PUBLIC_ADDRESS ${public_address} CACHE INTERNAL "")
-    set(${PROJECT_NAME}_DESCRIPTION ${description} CACHE INTERNAL "")
-
-  	if(${PROJECT_NAME}_MAIN_INSTITUTION)
-  		set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}(${${PROJECT_NAME}_MAIN_INSTITUTION})" CACHE INTERNAL "")
-  	else()
-  		set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}" CACHE INTERNAL "")
-  	endif()
-    set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
-  else()
+  configure_Git()#checking git usable
+  if(NOT GIT_CONFIGURED)
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR: your git tool is NOT configured. To use PID you need to configure git:\ngit config --global user.name \"Your Name\"\ngit config --global user.email <your email address>\n")
+  	return()
+  endif()
+  if(NOT DIR_NAME STREQUAL "build")
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : please run cmake in the build folder of the environment ${PROJECT_NAME}.")
   	return()
   endif()
+
+  #reset environment description
+  set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
+  init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}) # getting the workspace version used to generate the code
+  set(res_string)
+  if(NOT "${author}" STREQUAL "")#cannot use directly author because we are in a macro
+    foreach(string_el IN ITEMS ${author})
+      set(res_string "${res_string}_${string_el}")
+    endforeach()
+  endif()
+  set(${PROJECT_NAME}_MAIN_AUTHOR "${res_string}" CACHE INTERNAL "")
+  set(res_string "")
+  if(NOT "${institution}" STREQUAL "")#cannot use directly institution because we are in a macro
+    foreach(string_el IN ITEMS ${institution})
+      set(res_string "${res_string}_${string_el}")
+    endforeach()
+  endif()
+  set(${PROJECT_NAME}_MAIN_INSTITUTION ${res_string} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_MAIL ${mail} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_YEARS ${year} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_PUBLIC_ADDRESS ${public_address} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_DESCRIPTION ${description} CACHE INTERNAL "")
+
+  if(${PROJECT_NAME}_MAIN_INSTITUTION)
+    set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}(${${PROJECT_NAME}_MAIN_INSTITUTION})" CACHE INTERNAL "")
+  else()
+    set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_MAIN_AUTHOR}" CACHE INTERNAL "")
+  endif()
+  set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
+
 endmacro(declare_Environment)
 
 #.rst:
@@ -343,6 +349,15 @@ macro(build_Environment_Project)
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   )
 
+  # update target (update the environment from upstream git repository)
+  add_custom_target(update
+    COMMAND ${CMAKE_COMMAND}
+            -DWORKSPACE_DIR=${WORKSPACE_DIR}
+            -DTARGET_ENVIRONMENT=${PROJECT_NAME}
+            -P ${WORKSPACE_DIR}/cmake/commands/Update_PID_Deployment_Unit.cmake
+    COMMENT "[PID] Updating the environment ${PROJECT_NAME} ..."
+    VERBATIM
+  )
   #########################################################################################################################
   ######### writing the global reference file for the package with all global info contained in the CMakeFile.txt #########
   #########################################################################################################################

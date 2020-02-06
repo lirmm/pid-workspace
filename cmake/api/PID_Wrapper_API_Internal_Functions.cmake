@@ -204,6 +204,11 @@ macro(declare_Wrapper author institution mail year license address public_addres
 set(${PROJECT_NAME}_ROOT_DIR ${WORKSPACE_DIR}/wrappers/${PROJECT_NAME} CACHE INTERNAL "")
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 
+configure_Git()
+if(NOT GIT_CONFIGURED)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR: your git tool is NOT configured. To use PID you need to configure git:\ngit config --global user.name \"Your Name\"\ngit config --global user.email <your email address>\n")
+	return()
+endif()
 #############################################################
 ############ Managing path into workspace ###################
 #############################################################
@@ -298,6 +303,17 @@ if(DIR_NAME STREQUAL "build")
 	    COMMENT "[PID] memorizing new wrapper implementation ..."
 	  )
 
+
+	  # update target (update the framework from upstream git repository)
+	  add_custom_target(update
+	    COMMAND ${CMAKE_COMMAND}
+	            -DWORKSPACE_DIR=${WORKSPACE_DIR}
+	            -DTARGET_PACKAGE=${PROJECT_NAME}
+	            -DFORCE_SOURCE=TRUE
+	            -P ${WORKSPACE_DIR}/cmake/commands/Update_PID_Deployment_Unit.cmake
+	    COMMENT "[PID] Updating the external package ${PROJECT_NAME} ..."
+	    VERBATIM
+	  )
   #################################################
   ######## Initializing cache variables ###########
   #################################################

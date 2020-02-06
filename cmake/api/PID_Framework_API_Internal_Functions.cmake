@@ -295,6 +295,11 @@ endfunction(declare_Site)
 #
 function(declare_Framework author institution mail year site license git_address repo_site description welcome contrib_space)
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+configure_Git()
+if(NOT GIT_CONFIGURED)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR: your git tool is NOT configured. To use PID you need to configure git:\ngit config --global user.name \"Your Name\"\ngit config --global user.email <your email address>\n")
+	return()
+endif()
 if(DIR_NAME STREQUAL "build")
 
 	set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
@@ -330,29 +335,39 @@ if(DIR_NAME STREQUAL "build")
 	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searcinh for the jekyll executable in standard paths
 
 	if(JEKYLL_EXECUTABLE)
-	get_Jekyll_URLs(${${PROJECT_NAME}_FRAMEWORK_SITE} PUBLIC_URL BASE_URL)
-	set(STATIC_SITE_BASEURL "${BASE_URL}")
+		get_Jekyll_URLs(${${PROJECT_NAME}_FRAMEWORK_SITE} PUBLIC_URL BASE_URL)
+		set(STATIC_SITE_BASEURL "${BASE_URL}")
 
-	add_custom_target(build
-		COMMAND ${CMAKE_COMMAND}	-DFRAMEWORK_PATH=${CMAKE_SOURCE_DIR}
-						-DTARGET_FRAMEWORK=${PROJECT_NAME}
-						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
-						-P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Framework.cmake
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-		COMMENT "[PID] Building framework ${PROJECT_NAME} ..."
-		VERBATIM
-	)
+		add_custom_target(build
+			COMMAND ${CMAKE_COMMAND}	-DFRAMEWORK_PATH=${CMAKE_SOURCE_DIR}
+							-DTARGET_FRAMEWORK=${PROJECT_NAME}
+							-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+							-P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Framework.cmake
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+			COMMENT "[PID] Building framework ${PROJECT_NAME} ..."
+			VERBATIM
+		)
 
-	add_custom_target(serve
-		COMMAND ${CMAKE_COMMAND}	-DFRAMEWORK_PATH=${CMAKE_SOURCE_DIR}
-						-DTARGET_FRAMEWORK=${PROJECT_NAME}
-						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
-						-DFRAMEWORK_BASE_URL=${STATIC_SITE_BASEURL}
-						-P ${WORKSPACE_DIR}/cmake/commands/Serve_PID_Framework.cmake
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-		COMMENT "[PID] Serving the static site of the framework ${PROJECT_NAME} ..."
-		VERBATIM
-	)
+		add_custom_target(serve
+			COMMAND ${CMAKE_COMMAND}	-DFRAMEWORK_PATH=${CMAKE_SOURCE_DIR}
+							-DTARGET_FRAMEWORK=${PROJECT_NAME}
+							-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+							-DFRAMEWORK_BASE_URL=${STATIC_SITE_BASEURL}
+							-P ${WORKSPACE_DIR}/cmake/commands/Serve_PID_Framework.cmake
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+			COMMENT "[PID] Serving the static site of the framework ${PROJECT_NAME} ..."
+			VERBATIM
+		)
+
+	  # update target (update the framework from upstream git repository)
+	  add_custom_target(update
+	    COMMAND ${CMAKE_COMMAND}
+	            -DWORKSPACE_DIR=${WORKSPACE_DIR}
+	            -DTARGET_FRAMEWORK=${PROJECT_NAME}
+	            -P ${WORKSPACE_DIR}/cmake/commands/Update_PID_Deployment_Unit.cmake
+	    COMMENT "[PID] Updating the framework ${PROJECT_NAME} ..."
+	    VERBATIM
+	  )
 	else()
 		message("[PID] ERROR: the jekyll executable cannot be found in the system, please install it and put it in a standard path.")
 	endif()

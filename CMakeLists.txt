@@ -397,9 +397,13 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 
 ## updating a package
 add_custom_target(update
-COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
+COMMAND ${CMAKE_COMMAND}
+					-DTARGET_PACKAGE=\${package}
+					-DTARGET_ENVIRONMENT=\${environment}
+					-DTARGET_FRAMEWORK=\${framework}
+					-DFORCE_SOURCE=\${force_source}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Update_PID_Package.cmake
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Update_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
