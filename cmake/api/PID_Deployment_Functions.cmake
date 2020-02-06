@@ -1015,7 +1015,7 @@ function(deploy_Source_Native_Package DEPLOYED package already_installed_version
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
-update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available released modifications
+update_Package_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available released modifications
 if(NOT UPDATE_OK)
 	message("[PID] ERROR : source package ${package} master branch cannot be updated from its official repository. Try to solve the problem by hand or contact the administrator of the official package.")
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
@@ -1202,7 +1202,7 @@ function(deploy_Source_Native_Package_Version DEPLOYED package min_version is_ex
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 # go to package source and find all version matching the pattern of min_version : if exact taking min_version, otherwise taking the greatest version number
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
-update_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available modifications
+update_Package_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available modifications
 if(NOT UPDATE_OK)
 	message("[PID] WARNING : source package ${package} master branch cannot be updated from its official repository. Try to solve the problem by hand.")
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
@@ -1305,7 +1305,7 @@ get_Version_String_Numbers(${version_or_branch} MAJOR MINOR PATCH)
 
 if(NOT DEFINED MAJOR)#not a version string => it is a branch
   track_Repository_Branch(${package} official ${version_or_branch})
-  go_To_Commit(${package} ${version_or_branch})
+  go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${version_or_branch})
   build_And_Install_Source(IS_BUILT ${package} "" ${version_or_branch} "${run_tests}") # 2) building sources from a branch
 else()
   go_To_Version(${package} ${version_or_branch})# 1) going to the adequate git tag matching the selected version

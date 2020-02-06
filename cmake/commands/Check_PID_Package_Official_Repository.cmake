@@ -25,20 +25,20 @@ include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 load_Current_Platform() #loading the current platform configuration
 
-is_Package_Connected(CONNECTED ${TARGET_PACKAGE} official)
+is_Repository_Connected(CONNECTED ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} official)
 if(CONNECTED)
-	get_Package_Repository_Address(${TARGET_PACKAGE} OFFICIAL_URL OFFICIAL_PUBLIC_URL)
-	get_Remotes_Address(${TARGET_PACKAGE} ADDR_OFFICIAL_FETCH ADDR_OFFICIAL_PUSH ADDR_ORIGIN_FETCH ADDR_ORIGIN_PUSH)
+	get_Deployment_Unit_Repository_Address_In_Description(${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} OFFICIAL_URL OFFICIAL_PUBLIC_URL)
+	get_Remotes_Address(${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} ADDR_OFFICIAL_FETCH ADDR_OFFICIAL_PUSH ADDR_ORIGIN_FETCH ADDR_ORIGIN_PUSH)
 	if(NOT ADDR_OFFICIAL_PUSH STREQUAL OFFICIAL_URL
 		 AND NOT ADDR_OFFICIAL_FETCH STREQUAL OFFICIAL_PUBLIC_URL)# the remote address does not match address specified in the package
-		reconnect_Repository_Remote(${TARGET_PACKAGE} ${OFFICIAL_URL} "${OFFICIAL_PUBLIC_URL}" official)
+		reconnect_Repository_Remote(${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} ${OFFICIAL_URL} "${OFFICIAL_PUBLIC_URL}" official)
 		if(OFFICIAL_PUBLIC_URL)
 			message("[PID] INFO : reconfiguing official repository address to fetch=${OFFICIAL_URL} push=${OFFICIAL_PUBLIC_URL}")
 		else()
 			message("[PID] INFO : reconfiguing official repository address to ${OFFICIAL_URL}")
 		endif()
 		if(ADDR_OFFICIAL STREQUAL ADDR_ORIGIN_FETCH)#origin was also official
-			reconnect_Repository_Remote(${TARGET_PACKAGE} ${OFFICIAL_URL} "${OFFICIAL_PUBLIC_URL}" origin)
+			reconnect_Repository_Remote(${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} ${OFFICIAL_URL} "${OFFICIAL_PUBLIC_URL}" origin)
 			if(OFFICIAL_PUBLIC_URL)
 				message("[PID] INFO : reconfiguing origin repository address to fetch=${OFFICIAL_URL} push=${OFFICIAL_PUBLIC_URL} (keep it same as official)")
 			else()

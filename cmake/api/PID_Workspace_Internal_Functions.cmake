@@ -1629,7 +1629,7 @@ if(NOT version)#no specific version required
 		#now build the package
 		if(branch)#deploying a specific branch
 			deploy_Source_Native_Package_From_Branch(INSTALLED ${package} ${branch} "${run_tests}")
-			go_To_Commit(${package} ${branch})#finally checkout the repository state to the target branch
+			go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${branch})#finally checkout the repository state to the target branch
 			if(NOT INSTALLED)
 				message("[PID] ERROR : cannot build ${package} after cloning its repository. Abort deployment !")
 				return()
@@ -2368,14 +2368,14 @@ if(HAS_MODIFS)
 endif() # from here we can navigate between branches freely
 
 # udpate the master branch from official remote repository
-update_Repository_Versions(UPDATE_OK ${package})
+update_Package_Repository_Versions(UPDATE_OK ${package})
 if(NOT UPDATE_OK)
 	message("[PID] ERROR : impossible to release package ${package} because its master branch cannot be updated from official one. Maybe you have no clone rights from official or local master branch of package ${package} is not synchronizable with official master branch.")
-	go_To_Commit(${package} ${CURRENT_BRANCH})#always go back to original branch
+	go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${CURRENT_BRANCH})#always go back to original branch
 	return()
 endif() #from here graph of commits and version tags are OK
 
-go_To_Commit(${package} ${CURRENT_BRANCH}) #always release from the development branch (integration by default)
+go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${CURRENT_BRANCH}) #always release from the development branch (integration by default)
 
 # registering current version
 get_Version_Number_And_Repo_From_Package(${package} DIGITS STRING FORMAT METHOD ADDRESS)

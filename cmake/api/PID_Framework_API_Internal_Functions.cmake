@@ -283,7 +283,9 @@ endfunction(declare_Site)
 #
 #      :license: the name of the license applying to the framework's content.
 #
-#      :git_address: the url of the framework repository.
+#      :git_address: the url of the framework repository for push and pull actions.
+#
+#      :public_address: the url of the framework repository for public pull actions.
 #
 #      :repo_site: the online url of framework project page.
 #
@@ -293,7 +295,7 @@ endfunction(declare_Site)
 #
 #      :contrib_space: name of the default contribution space for the package.
 #
-function(declare_Framework author institution mail year site license git_address repo_site description welcome contrib_space)
+function(declare_Framework author institution mail year site license git_address public_address repo_site description welcome contrib_space)
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 configure_Git()
 if(NOT GIT_CONFIGURED)
@@ -325,6 +327,7 @@ if(DIR_NAME STREQUAL "build")
 	set(${PROJECT_NAME}_FRAMEWORK_YEARS ${year} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_FRAMEWORK_SITE ${site} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_FRAMEWORK_ADDRESS ${git_address} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_FRAMEWORK_PUBLIC_ADDRESS ${public_address} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_FRAMEWORK_PROJECT_PAGE ${repo_site} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_FRAMEWORK_LICENSE ${license} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_FRAMEWORK_WELCOME ${welcome} CACHE INTERNAL "")
@@ -663,6 +666,7 @@ file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_PROJECT_PAGE ${${PROJECT_NAME
 file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_DESCRIPTION ${${PROJECT_NAME}_FRAMEWORK_DESCRIPTION} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_LICENSE ${${PROJECT_NAME}_FRAMEWORK_LICENSE} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_ADDRESS ${${PROJECT_NAME}_FRAMEWORK_ADDRESS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_PUBLIC_ADDRESS ${${PROJECT_NAME}_FRAMEWORK_PUBLIC_ADDRESS} CACHE INTERNAL \"\")\n")
 
 # writing concise author information
 set(res_string "")

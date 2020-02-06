@@ -42,8 +42,8 @@ if(NOT BRANCH_NAME STREQUAL "integration")
 endif()
 
 # check if the package has a remote
-is_Package_Connected(ORIGIN_CONNECTED ${TARGET_PACKAGE} origin)
-is_Package_Connected(OFFICIAL_CONNECTED ${TARGET_PACKAGE} official)
+is_Repository_Connected(ORIGIN_CONNECTED ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} origin)
+is_Repository_Connected(OFFICIAL_CONNECTED ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} official)
 if(NOT ORIGIN_CONNECTED OR NOT OFFICIAL_CONNECTED)
 	message("[PID] INFO : nothing to integrate because ${TARGET_PACKAGE} has no origin AND official remote repositories defined. Simply define an ADDRESS with in the declare_PID_Package function, in the package root CMakeLists.txt.")
 	return()

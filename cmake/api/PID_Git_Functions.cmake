@@ -109,17 +109,17 @@ endfunction(git_Provides_GETURL)
 #  prepare_Repository_Context_Switch
 #  ---------------------------------
 #
-#   .. command:: prepare_Repository_Context_Switch(package)
+#   .. command:: prepare_Repository_Context_Switch(path)
 #
 #     Clean the git repository, which must be done before any git context switch (i.e. checkout).
 #
-#     :package: The target source package whose repository is cleaned
+#     :path: path to the repository whose repository is cleaned
 #
-function(prepare_Repository_Context_Switch package)
+function(prepare_Repository_Context_Switch path)
 execute_process(
     COMMAND git reset --hard # remove any change applied to the previous repository state
 		COMMAND git clean -ff -d # remove unstracked files
-    WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
+    WORKING_DIRECTORY ${path}
     OUTPUT_QUIET ERROR_QUIET)#this is a mandatory step due to the generation of versionned files in source dir when build takes place (this should let the repository in same state as initially)
 endfunction(prepare_Repository_Context_Switch)
 
@@ -159,15 +159,15 @@ endfunction(checkout_To_Commit)
 #
 #   .. command:: go_To_Commit(package commit_or_branch)
 #
-#     Checkout to the integration branch of the target source package.
+#     Checkout to a target commit of a repository.
 #
-#     :package: The target source package
+#     :path: path to the target repository
 #
 #     :commit_or_branch: The target commit to go to
 #
-function(go_To_Commit package commit_or_branch)
-  prepare_Repository_Context_Switch(${package})
-  checkout_To_Commit(${WORKSPACE_DIR}/packages/${package} ${commit_or_branch})
+function(go_To_Commit path commit_or_branch)
+  prepare_Repository_Context_Switch(${path})
+  checkout_To_Commit(${path} ${commit_or_branch})
 endfunction(go_To_Commit)
 
 #.rst:
@@ -187,7 +187,7 @@ endfunction(go_To_Commit)
 #     :package: The target source package
 #
 function(go_To_Integration package)
-  go_To_Commit(${package} integration)
+  go_To_Commit(${WORKSPACE_DIR}/packages/${package} integration)
 endfunction(go_To_Integration)
 
 #.rst:
@@ -207,7 +207,7 @@ endfunction(go_To_Integration)
 #     :package: The target source package
 #
 function(go_To_Master package)
-  go_To_Commit(${package} master)
+  go_To_Commit(${WORKSPACE_DIR}/packages/${package} master)
 endfunction(go_To_Master)
 
 #.rst:
@@ -247,7 +247,7 @@ endfunction(go_To_Workspace_Master)
 #     :version: the target version
 #
 function(go_To_Version package version)
-  go_To_Commit(${package} tags/v${version})
+  go_To_Commit(${WORKSPACE_DIR}/packages/${package} tags/v${version})
 endfunction(go_To_Version)
 
 #.rst:
@@ -437,7 +437,7 @@ endfunction(save_Repository_Context)
 #     :saved_content: if TRUE then stashed content will be pop
 #
 function(restore_Repository_Context package initial_commit saved_content)
-  prepare_Repository_Context_Switch(${package})
+  prepare_Repository_Context_Switch(${WORKSPACE_DIR}/packages/${package})
   checkout_To_Commit(${WORKSPACE_DIR}/packages/${package} ${initial_commit})
   if(saved_content)
   	execute_process(COMMAND git stash pop --index
@@ -1130,47 +1130,38 @@ endfunction(publish_Repository_Version)
 #  test_Remote_Connection
 #  ----------------------
 #
-#   .. command:: test_Remote_Connection(CONNECTED package remote)
+#   .. command:: test_Remote_Connection(CONNECTED path_to_repo remote)
 #
-#     Test if a package (native or external wrapper) is trully connected to a given remote.
+#     Test if a deployment unit's repository is trully connected to a given remote.
 #
-#     :package: the name of target package
+#     :path_to_repo: the path to deployment unit's repository
 #
 #     :remote: the name of the target remote (origin or official)
 #
 #     :CONNECTED: the output variable that is TRUE if package connected to the target remote, FALSE otherwise
 #
-function(test_Remote_Connection CONNECTED package remote)
-get_Package_Type(${package} PACK_TYPE)
-if(PACK_TYPE STREQUAL "NATIVE")
+function(test_Remote_Connection CONNECTED path_to_repo remote)
   execute_process(COMMAND git remote show ${remote}
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
+                  WORKING_DIRECTORY ${path_to_repo}
                   OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE res)
-elseif(PACK_TYPE STREQUAL "EXTERNAL")
-  execute_process(COMMAND git remote show ${remote}
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}
-                  OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE res)
-else()
-  set(res 0)
-endif()
-if(res EQUAL 0)
-	set(${CONNECTED} TRUE PARENT_SCOPE)
-else()
-	set(${CONNECTED} FALSE PARENT_SCOPE)
-endif()
+  if(res EQUAL 0)
+  	set(${CONNECTED} TRUE PARENT_SCOPE)
+  else()
+  	set(${CONNECTED} FALSE PARENT_SCOPE)
+  endif()
 endfunction(test_Remote_Connection)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |update_Repository_Versions| replace:: ``update_Repository_Versions``
-#  .. _update_Repository_Versions:
+#  .. |update_Package_Repository_Versions| replace:: ``update_Package_Repository_Versions``
+#  .. _update_Package_Repository_Versions:
 #
-#  update_Repository_Versions
-#  --------------------------
+#  update_Package_Repository_Versions
+#  ----------------------------------
 #
-#   .. command:: update_Repository_Versions(CONNECTED package remote)
+#   .. command:: update_Package_Repository_Versions(CONNECTED package remote)
 #
 #     Update local package's repository known versions.
 #
@@ -1178,9 +1169,9 @@ endfunction(test_Remote_Connection)
 #
 #     :RESULT: the output variable that is TRUE if package versions are up to date, FALSE otherwise
 #
-function(update_Repository_Versions RESULT package)
+function(update_Package_Repository_Versions RESULT package)
 go_To_Master(${package})
-adjust_Official_Remote_Address(OFFICIAL_CONNECTED ${package} TRUE)
+adjust_Official_Remote_Address(OFFICIAL_CONNECTED ${WORKSPACE_DIR}/packages/${package} TRUE)
 if(NOT OFFICIAL_CONNECTED)
   message("[PID] WARNING : cannot get connection with official remote (see previous outputs). Aborting ${package} update !")
 	set(${RESULT} TRUE PARENT_SCOPE) #this is not an error since no official defined
@@ -1193,12 +1184,12 @@ execute_process(COMMAND git pull --ff-only official master
                 WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
                 RESULT_VARIABLE res OUTPUT_QUIET ERROR_QUIET)#pulling master branch of official
 if(NOT res EQUAL 0)#not a fast forward !! => there is a problem
-	message("[PID] WARNING : local package ${package} master branch and corresponding branch in official repository have diverge ! If you committed no modification to the local master branch (use gitk or git log to see that), ask to the administrator of this repository to solve the problem !")
+	message("[PID] WARNING : local package ${package} master branch and corresponding branch in official repository have diverge ! If you committed no modification to the local master branch (check using git GUI or git log), ask to the administrator of this repository to solve the problem !")
 	set(${RESULT} FALSE PARENT_SCOPE)
 	return()
 endif()
 set(${RESULT} TRUE PARENT_SCOPE)
-endfunction(update_Repository_Versions)
+endfunction(update_Package_Repository_Versions)
 
 #.rst:
 #
@@ -1210,38 +1201,39 @@ endfunction(update_Repository_Versions)
 #  adjust_Official_Remote_Address
 #  ------------------------------
 #
-#   .. command:: adjust_Official_Remote_Address(OFFICIAL_REMOTE_CONNECTED package verbose)
+#   .. command:: adjust_Official_Remote_Address(OFFICIAL_REMOTE_CONNECTED path_to_repo verbose)
 #
-#     Check connection to remote VS official remote address specified in package description. If they differ, performs corrective actions.
+#     Check connection to remote VS official remote address specified in deployment unit description. If they differ, performs corrective actions.
 #
-#     :package: the name of the package.
+#     :path_to_repo: the path to the deployment unit's repository in local workspace.
 #
-#     :git_url: the url of the package's official repository.
+#     :git_url: the url of the deployment unit's official repository.
 #
-function(adjust_Official_Remote_Address OFFICIAL_REMOTE_CONNECTED package verbose)
+function(adjust_Official_Remote_Address OFFICIAL_REMOTE_CONNECTED path_to_repo verbose)
 set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE)
-is_Package_Connected(CONNECTED ${package} official) #check if the package has a repository URL defined (fetch)
-get_Package_Repository_Address(${package} URL PUBLIC_URL) #get addresses of official remote from package description
-if(NOT CONNECTED)#no official remote (due to old package style or due to a misuse of git command within a package)
-  if(URL)#the package has an official repository declared
-    connect_Repository_Remote(${package} ${URL} "${PUBLIC_URL}" official)
-    test_Remote_Connection(CONNECTED ${package} official) #test again connection
+
+is_Repository_Connected(CONNECTED ${path_to_repo} official) #check if the repository has a fetch URL defined
+get_Deployment_Unit_Repository_Address_In_Description(${path_to_repo} URL PUBLIC_URL) #get addresses of official remote from deployment unit description
+if(NOT CONNECTED)#no official remote (due to old deployment unit style or due to a misuse of git command within a deployment unit)
+  if(URL)#the deployment unit has an official repository declared
+    connect_Repository_Remote(${path_to_repo} ${URL} "${PUBLIC_URL}" official)
+    test_Remote_Connection(CONNECTED ${path_to_repo} official) #test again connection
 
     if(NOT CONNECTED)#remote currently in use is a bad one (migration took place and for any reason the official remote has been deleted)
-      get_Package_Reference_Info(${package} REF_FILE_EXISTS REF_ADDR REF_PUB_ADDR)
-			if(NOT REF_FILE_EXISTS) #reference not found, may mean the package has been removed
+      get_Deployment_Unit_Reference_Info(${path_to_repo} REF_FILE_EXISTS REF_ADDR REF_PUB_ADDR)
+			if(NOT REF_FILE_EXISTS) #reference not found, may mean the deployment unit has been removed
         if(verbose)
-          message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable, and ${package} is not referenced into workspace ! Please check that the package still exists or try upgrading your workspace.")
+          message("[PID] WARNING : repository ${path_to_repo} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable, and no reference file found into workspace ! Please check that the repository still exists or try upgrading your workspace.")
         endif()
-        disconnect_Repository_Remote(${package} official) #remove the remote
+        disconnect_Repository_Remote(${path_to_repo} official) #remove the remote
         set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
 				return()
 			endif()
-			#from here the package is known and its reference related variables have been updated
+			#from here the deployment unit is known and its reference related variables have been updated
       if(NOT REF_ADDR)#Nothing more to do
-        disconnect_Repository_Remote(${package} official) #remove the remote
+        disconnect_Repository_Remote(${path_to_repo} official) #remove the remote
         if(verbose)
-          message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable, and ${package} reference defines no official address ! Please check that the package still exists or try upgrading your workspace.")
+          message("[PID] WARNING : repository ${path_to_repo} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable, and reference file defines no official address ! Please check that the repository still exists or try upgrading your workspace.")
         endif()
         set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
 				return()
@@ -1249,20 +1241,20 @@ if(NOT CONNECTED)#no official remote (due to old package style or due to a misus
 				    OR REF_ADDR STREQUAL URL)#OK so no problem detected but cannot interact with the remote repository
         #do not remove the remote as it is supposed to be the good one !
         if(verbose)
-          message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable ! Please check your network connection.")
+          message("[PID] WARNING : repository ${path_to_repo} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable ! Please check your network connection.")
         endif()
         set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
 				return()
 			else()
         #for now only updating the official remote address so that update can occur
-        reconnect_Repository_Remote(${package} ${REF_ADDR} "${REF_PUB_ADDR}" official)
-        test_Remote_Connection(CONNECTED ${package} official) #test again connection
+        reconnect_Repository_Remote(${path_to_repo} ${REF_ADDR} "${REF_PUB_ADDR}" official)
+        test_Remote_Connection(CONNECTED ${path_to_repo} official) #test again connection
         if(NOT CONNECTED)#cannot do mush more, even the referenced address is bad
           if(verbose)
-            if(PUBLIC_URL)#the package has a public address where anyone can get it
-              message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its reference (${${package}_PUBLIC_ADDRESS}) is no more reachable ! Please check your network connection.")
+            if(PUBLIC_URL)#the repository has a public address where anyone can get it
+              message("[PID] WARNING : repository ${path_to_repo} lost connection with its official remote : no official remote defined, address from its reference (${PUBLIC_URL}) is no more reachable ! Please check your network connection.")
             else()
-              message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its reference (${${package}_ADDRESS}) is no more reachable ! Please check your network connection or that you still have rights to clone this package.")
+              message("[PID] WARNING : repository ${path_to_repo} lost connection with its official remote : no official remote defined, address from its reference (${URL}) is no more reachable ! Please check your network connection or that you still have rights to clone this repository.")
             endif()
           endif()
           set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
@@ -1271,37 +1263,37 @@ if(NOT CONNECTED)#no official remote (due to old package style or due to a misus
       	# once the update will be done the official address in description should have changed accordingly
 			endif()
     endif()
-	else() #no official repository and no URL defined for the package => the package has never been connected since last release (normal situation)
+	else() #no official repository and no URL defined for the repository => the repository has never been connected since last release (normal situation)
 		set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE)
 		return()
 	endif()
-elseif(URL) # official package is connected and has an official repository declared
-	get_Remotes_Address(${package} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN_FETCH RES_ORIGIN_PUSH)#get the adress of the official and origin git remotes
+elseif(URL) # official repository is connected and has an official repository declared
+	get_Remotes_Address(${path_to_repo} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN_FETCH RES_ORIGIN_PUSH)#get the adress of the official and origin git remotes
   if((NOT RES_OFFICIAL_FETCH STREQUAL URL)
       AND (NOT RES_OFFICIAL_FETCH STREQUAL PUBLIC_URL))
-      # the address of official is not the same as the one specified in the package description
+      # the address of official is not the same as the one specified in the deployment unit description
       # this can be due to a migration of the repository since last release
-      test_Remote_Connection(CONNECTED ${package} official)
+      test_Remote_Connection(CONNECTED ${path_to_repo} official)
   		if(NOT CONNECTED)#remote currently in use is a bad one (strange situation, maybe due to a bad command from user)
         #try with declared one
-        reconnect_Repository_Remote(${package} ${URL} "${PUBLIC_URL}" official)
-        test_Remote_Connection(CONNECTED ${package} official)
+        reconnect_Repository_Remote(${path_to_repo} ${URL} "${PUBLIC_URL}" official)
+        test_Remote_Connection(CONNECTED ${path_to_repo} official)
         if(NOT CONNECTED)#remote defined by description is also a bad one
           # put again original addresses
-          reconnect_Repository_Remote(${package} ${RES_OFFICIAL_PUSH} "${RES_OFFICIAL_FETCH}" official)
-          get_Package_Reference_Info(${package} REF_FILE_EXISTS REF_ADDR REF_PUB_ADDR)
-    			if(NOT REF_FILE_EXISTS) #reference not found, may mean the package has been removed
+          reconnect_Repository_Remote(${path_to_repo} ${RES_OFFICIAL_PUSH} "${RES_OFFICIAL_FETCH}" official)
+          get_Deployment_Unit_Reference_Info(${path_to_repo} REF_FILE_EXISTS REF_ADDR REF_PUB_ADDR)
+    			if(NOT REF_FILE_EXISTS) #reference not found, may mean the deployment unit has been removed
             if(verbose)
-              message("[PID] WARNING : local package ${package} lost connection with its official remote : an unreachable official remote is defined, address from its description (${URL}) is no more reachable, and ${package} is not referenced into workspace ! Please check that the package still exists or try upgrading your workspace.")
+              message("[PID] WARNING : repository ${path_to_repo} lost connection with its official remote : an unreachable official remote is defined, address from its description (${URL}) is no more reachable, and no adequate reference file found into workspace ! Please check that the repository still exists or try upgrading your workspace.")
             endif()
             #do not disconnect as the problem may be due to a bad network connection
             set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
     				return()
     			endif()
-    			#from here the package is known and its reference related variables have been updated
-          if(NOT REF_ADDR)#no address bound to the package
+    			#from here the deployment unit is known and its reference related variables have been updated
+          if(NOT REF_ADDR)#no address bound to the deployment unit
             if(verbose)
-              message("[PID] WARNING : local package ${package} lost connection with its official remote : an unreachable official remote is defined, address from its description (${URL}) is no more reachable, and ${package} reference defines no official address ! Please check that the package still exists or try upgrading your workspace.")
+              message("[PID] WARNING : repository ${path_to_repo} lost connection with its official remote : an unreachable official remote is defined, address from its description (${URL}) is no more reachable, and reference file  defines no official address ! Please check that the deployment unit still exists or try upgrading your workspace.")
             endif()
             set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
     				return()
@@ -1309,21 +1301,21 @@ elseif(URL) # official package is connected and has an official repository decla
     				    OR REF_ADDR STREQUAL URL)#OK so no problem detected but cannot interact with the remote repository
             #do not remove the remote as it is supposed to be the good one !
             if(verbose)
-              message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable ! Please check your network connection.")
+              message("[PID] WARNING : repository ${path_to_repo} lost connection with its official remote : no official remote defined, address from its description (${URL}) is no more reachable ! Please check your network connection.")
             endif()
             set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
     				return()
     			else()
             #for now only updating the official remote address so that update can occur
-            reconnect_Repository_Remote(${package} ${${package}_ADDRESS} "${${package}_PUBLIC_ADDRESS}" official)
-            test_Remote_Connection(CONNECTED ${package} official) #test again connection
-            if(NOT CONNECTED)#cannot do mush more, even the referenced address is bad
-              reconnect_Repository_Remote(${package} ${RES_OFFICIAL_PUSH} "${RES_OFFICIAL_FETCH}" official)
+            reconnect_Repository_Remote(${path_to_repo} ${REF_ADDR} "${REF_PUB_ADDR}" official)
+            test_Remote_Connection(CONNECTED ${path_to_repo} official) #test again connection
+            if(NOT CONNECTED)#cannot do much more, even the referenced address is bad
+              reconnect_Repository_Remote(${path_to_repo} ${RES_OFFICIAL_PUSH} "${RES_OFFICIAL_FETCH}" official)
               if(verbose)
-                if(PUBLIC_URL)#the package has a public address where anyone can get it
-                  message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its reference (${${package}_PUBLIC_ADDRESS}) is no more reachable ! Please check your network connection.")
+                if(PUBLIC_URL)#the deployment unit has a public address where anyone can get it
+                  message("[PID] WARNING : repository ${path_to_repo} lost connection with its official remote : no official remote defined, address from its reference (${REF_ADDR}) is no more reachable ! Please check your network connection.")
                 else()
-                  message("[PID] WARNING : local package ${package} lost connection with its official remote : no official remote defined, address from its reference (${${package}_ADDRESS}) is no more reachable ! Please check your network connection or that you still have rights to clone this package.")
+                  message("[PID] WARNING : repository ${path_to_repo} lost connection with its official remote : no official remote defined, address from its reference (${REF_PUB_ADDR}) is no more reachable ! Please check your network connection or that you still have rights to clone this package.")
                 endif()
               endif()
               set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
@@ -1333,10 +1325,10 @@ elseif(URL) # official package is connected and has an official repository decla
     			endif()
         endif()
       endif()# else the current official remote in use is OK, so description is bad (migration occurred since last release) !
-	else()#package remotes are consistent, but this can be an old version of the package before a migration occurred
+	else()#repository remotes are consistent, but this can be an old version of the package before a migration occurred
     #use the reference file (if any) to deduce if a migration occured
-    get_Package_Reference_Info(${package} REF_FILE_EXISTS REF_ADDR REF_PUB_ADDR)
-    if(NOT REF_FILE_EXISTS) #reference not found, may mean the package has been removed OR has never been referenced (for instance pid tests packages)
+    get_Deployment_Unit_Reference_Info(${path_to_repo} REF_FILE_EXISTS REF_ADDR REF_PUB_ADDR)
+    if(NOT REF_FILE_EXISTS) #reference not found, may mean the deployment unit has been removed OR has never been referenced (for instance pid tests packages)
       #simply considering the result is OK since we have no clue
       set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE) #simply exitting
       return()
@@ -1348,27 +1340,27 @@ elseif(URL) # official package is connected and has an official repository decla
     endif()
     #from here we can deduce that a migration may have occurred for official repository
     #2 possibilities: either the reference is invalid or this is the local package
-    test_Remote_Connection(CONNECTED ${package} official)#testing the connection to know if local package is OK
+    test_Remote_Connection(CONNECTED ${path_to_repo} official)#testing the connection to know if local package is OK
 		if(NOT CONNECTED) # if not connected a migration probably occurred OR network connection is lost !!
-	    reconnect_Repository_Remote(${package} ${REF_ADDR} "${REF_PUB_ADDR}" official)
-      test_Remote_Connection(CONNECTED ${package} official)
+	    reconnect_Repository_Remote(${path_to_repo} ${REF_ADDR} "${REF_PUB_ADDR}" official)
+      test_Remote_Connection(CONNECTED ${path_to_repo} official)
       if(NOT CONNECTED) #problem if not connected a migration occurred but has not been referenced OR network connection is lost
-        disconnect_Repository_Remote(${package} official) #remove the remote
-        reconnect_Repository_Remote(${package} ${RES_OFFICIAL_PUSH} "${RES_OFFICIAL_FETCH}" official)#put back the previous one
+        disconnect_Repository_Remote(${path_to_repo} official) #remove the remote
+        reconnect_Repository_Remote(${path_to_repo} ${RES_OFFICIAL_PUSH} "${RES_OFFICIAL_FETCH}" official)#put back the previous one
         if(verbose)
-          message("[PID] WARNING : local package ${package} lost connection with its official remote:\n- either a migration of this package probably occurred but has not been referenced into workspace ! Please check that the package still exists, or try upgrading your workspace to get an up to date reference of this package.\n- or there is currenlty no possible network connection with this package for an unknown reason.")
+          message("[PID] WARNING : repository ${path_to_repo} lost connection with its official remote:\n- either a migration of this package probably occurred but has not been referenced into workspace ! Please check that the package still exists, or try upgrading your workspace to get an up to date reference of this package.\n- or there is currenlty no possible network connection with this package for an unknown reason.")
         endif()
         set(${OFFICIAL_REMOTE_CONNECTED} FALSE PARENT_SCOPE) #simply exitting
         return()
       else()
         if(verbose)
-          message("[PID] WARNING : local package ${package} lost connection with its official remote due to a migration of this package official repository ! Official remote address has been automatically changed.")
+          message("[PID] WARNING : repository ${path_to_repo} lost connection with its official remote due to a migration of this package official repository ! Official remote address has been automatically changed.")
         endif()
         set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE) #simply exitting
       endif()
 			# once the update will be done the official address in description should have changed accordingly
     else()#in this situation the local address is good BUT the reference file is supposed to be invalid
-      message("[PID] WARNING : local package ${package} is connected with its official remote that is not the same address as the one used in its reference file. Either the reference file is not up to date (solution: upgrade your workspace then relaunch configuration) OR your package is connected to an old repository that is no more the official one (solution: use workspace connect command)")
+      message("[PID] WARNING : repository ${path_to_repo} is connected with its official remote that is not the same address as the one used in its reference file. Either the reference file is not up to date (solution: upgrade your workspace then relaunch configuration) OR your package is connected to an old repository that is no more the official one (solution: use workspace connect command)")
       set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE) #simply exitting
     endif()
 	endif()
@@ -1480,56 +1472,39 @@ endfunction(check_For_New_Commits_To_Release)
 #
 # .. ifmode:: internal
 #
-#  .. |is_Package_Connected| replace:: ``is_Package_Connected``
-#  .. _is_Package_Connected:
+#  .. |is_Repository_Connected| replace:: ``is_Repository_Connected``
+#  .. _is_Repository_Connected:
 #
-#  is_Package_Connected
+#  is_Repository_Connected
 #  --------------------
 #
-#   .. command:: is_Package_Connected(CONNECTED package remote)
+#   .. command:: is_Repository_Connected(CONNECTED path_to_repo remote)
 #
-#     Tell wether a package's repository (native or external) is connected with a given remote (only fetch address is tested).
+#     Tell wether a delpoyment unit's repository (native or external package, framework, environment) is connected with a given remote (only fetch address is tested).
 #
-#     :package: the name of target package
+#     :path_to_repo: the path to target deployment_unit's repository
 #
 #     :remote: the name of the remote
 #
-#     :CONNECTED: the output variable that is TRUE if package is connected to the remote, FALSE otherwise (including if teh remote does not exist)
+#     :CONNECTED: the output variable that is TRUE if deployment_unit is connected to the remote, FALSE otherwise (including if the remote does not exist)
 #
-function(is_Package_Connected CONNECTED package remote)
+function(is_Repository_Connected CONNECTED path_to_repo type remote)
 	git_Provides_GETURL(RESULT)#depending on the version of git we can use the get-url command or not
-  get_Package_Type(${package} PACK_TYPE)
 
   if(RESULT)#the get-url approach is the best one
-    if(PACK_TYPE STREQUAL "NATIVE")
-      execute_process(COMMAND git remote get-url ${remote}
-                      WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
-                      OUTPUT_VARIABLE out RESULT_VARIABLE res)
-    elseif(PACK_TYPE STREQUAL "EXTERNAL")
-      execute_process(COMMAND git remote get-url ${remote}
-                      WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}
-                      OUTPUT_VARIABLE out RESULT_VARIABLE res)
-    else()
-      set(res -1)
-    endif()
+    execute_process(COMMAND git remote get-url ${remote}
+                    WORKING_DIRECTORY ${path_to_repo}
+                    OUTPUT_VARIABLE out RESULT_VARIABLE res)
 		if(NOT res AND NOT out STREQUAL "")
 			set(${CONNECTED} TRUE PARENT_SCOPE)
 		else()
 			set(${CONNECTED} FALSE PARENT_SCOPE)
 		endif()
-		return()
 	else()
-    if(PACK_TYPE STREQUAL "NATIVE")
-      execute_process(COMMAND git remote -v
-                      WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
-                      OUTPUT_VARIABLE out RESULT_VARIABLE res)
-    elseif(PACK_TYPE STREQUAL "EXTERNAL")
-      execute_process(COMMAND git remote -v
-                      WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}
-                      OUTPUT_VARIABLE out RESULT_VARIABLE res)
-    else()
-      set(res -1)
-    endif()
+    execute_process(COMMAND git remote -v
+                    WORKING_DIRECTORY ${path_to_repo}
+                    OUTPUT_VARIABLE out RESULT_VARIABLE res)
+
 		if(NOT res AND NOT out STREQUAL "")
 			string(REPLACE "${remote}" "found" IS_FOUND ${out})
 			if(NOT IS_FOUND STREQUAL ${out})
@@ -1538,9 +1513,8 @@ function(is_Package_Connected CONNECTED package remote)
 			endif()
 		endif()
 		set(${CONNECTED} FALSE PARENT_SCOPE)
-		return()
 	endif()
-endfunction(is_Package_Connected)
+endfunction(is_Repository_Connected)
 
 #.rst:
 #
@@ -1818,8 +1792,8 @@ endfunction(init_Repository)
 #     :url: the url of the package's remote
 #
 function(connect_Package_Repository package url)
-connect_Repository_Remote(${package} ${url} "" origin)
-connect_Repository_Remote(${package} ${url} "" official)
+connect_Repository_Remote(${WORKSPACE_DIR}/packages/${package} ${url} "" origin)
+connect_Repository_Remote(${WORKSPACE_DIR}/packages/${package} ${url} "" official)
 
 execute_process(COMMAND git push origin master
                 WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package} OUTPUT_QUIET ERROR_QUIET)
@@ -1850,7 +1824,7 @@ endfunction(connect_Package_Repository)
 #     :url: the url of the package's remote
 #
 function(reconnect_Repository package url)
-reconnect_Repository_Remote(${package} ${url} ${url} official)
+reconnect_Repository_Remote(${WORKSPACE_DIR}/packages/${package} ${url} ${url} official)
 go_To_Master(${package})
 execute_process(COMMAND git pull official master
                 WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package} )#updating master
@@ -1869,27 +1843,27 @@ endfunction(reconnect_Repository)
 #  connect_Repository_Remote
 #  ---------------------------
 #
-#   .. command:: connect_Repository_Remote(package url public_url remote_name)
+#   .. command:: connect_Repository_Remote(path_to_repo url public_url remote_name)
 #
-#     Add the target remote to a package repository.
+#     Add the target remote to a deployment unit's repository.
 #
-#     :package: the name of the package
+#     :path_to_repo: the path to the repository of the deployment unit in local workspace
 #
-#     :url: the new private url of the package's remote
+#     :url: the new private url of the repository's remote
 #
-#     :public_url: the public counterpart url of the package's remote
+#     :public_url: the public counterpart url of the repository's remote
 #
-#     :remote_name: the name of the package's remote (official or origin)
+#     :remote_name: the name of the repository's remote (official or origin)
 #
-function(connect_Repository_Remote package url public_url remote_name)
+function(connect_Repository_Remote path_to_repo url public_url remote_name)
 	if(public_url) #if there is a public URL the package is clonable from a public address
 		execute_process(COMMAND git remote add ${remote_name} ${public_url}
-                    WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
+                    WORKING_DIRECTORY ${path_to_repo})
 		execute_process(COMMAND git remote set-url --push ${remote_name} ${url}
-                    WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
+                    WORKING_DIRECTORY ${path_to_repo})
 	else()#default case => same push and fetch address for remote
 		execute_process(COMMAND git remote add ${remote_name} ${url}
-                    WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
+                    WORKING_DIRECTORY ${path_to_repo})
 	endif()
 endfunction(connect_Repository_Remote)
 
@@ -1904,11 +1878,11 @@ endfunction(connect_Repository_Remote)
 #  reconnect_Repository_Remote
 #  ---------------------------
 #
-#   .. command:: reconnect_Repository_Remote(package url public_url remote_name)
+#   .. command:: reconnect_Repository_Remote(path_to_repo url public_url remote_name)
 #
-#     Change the target remote of a package repository.
+#     Change the target remote of a deployment unit's repository.
 #
-#     :package: the name of the package
+#     :path_to_repo: the path to deployment unit repository in local workspace
 #
 #     :url: the new private url of the package's remote
 #
@@ -1916,17 +1890,17 @@ endfunction(connect_Repository_Remote)
 #
 #     :remote_name: the name of the package's remote (official or origin)
 #
-function(reconnect_Repository_Remote package url public_url remote_name)
-	if(public_url) #if there is a public URL the package is clonable from a public address
+function(reconnect_Repository_Remote path_to_repo url public_url remote_name)
+	if(public_url) #if there is a public URL, the repository is clonable from a public address
 		execute_process(COMMAND git remote set-url ${remote_name} ${public_url}
-                    WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
+                    WORKING_DIRECTORY ${path_to_repo})
 		execute_process(COMMAND git remote set-url --push ${remote_name} ${url}
-                    WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
+                    WORKING_DIRECTORY ${path_to_repo})
 	else()#default case => same push and fetch address for remote
 		execute_process(COMMAND git remote set-url ${remote_name} ${url}
-                    WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
+                    WORKING_DIRECTORY ${path_to_repo})
 		execute_process(COMMAND git remote set-url --push ${remote_name} ${url}
-                    WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
+                    WORKING_DIRECTORY ${path_to_repo})
 	endif()
 endfunction(reconnect_Repository_Remote)
 
@@ -1941,17 +1915,17 @@ endfunction(reconnect_Repository_Remote)
 #  disconnect_Repository_Remote
 #  ----------------------------
 #
-#   .. command:: disconnect_Repository_Remote(package remote_name)
+#   .. command:: disconnect_Repository_Remote(path_to_repo remote_name)
 #
-#     Disconnect an package's repository from one of its remote.
+#     Disconnect a deployment unit's repository from one of its remote.
 #
-#     :package: the name of the package
+#     :path_to_repo: the path to deployment unit's repository
 #
 #     :remote_name: the name of the package's remote (official or origin)
 #
-function(disconnect_Repository_Remote package remote_name)
+function(disconnect_Repository_Remote path_to_repo remote_name)
 	execute_process(COMMAND git remote remove ${remote_name}
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package})
+                  WORKING_DIRECTORY ${path_to_repo})
 endfunction(disconnect_Repository_Remote)
 
 #.rst:
@@ -2028,14 +2002,14 @@ endfunction(get_Repository_Name)
 #     :verbose: if TRUE the function will echo more messages.
 #
 function(check_For_Remote_Respositories verbose)
-adjust_Official_Remote_Address(OFFICIAL_REMOTE_CONNECTED ${PROJECT_NAME} "${verbose}")
+adjust_Official_Remote_Address(OFFICIAL_REMOTE_CONNECTED ${CMAKE_SOURCE_DIR} "${verbose}")
 if(NOT OFFICIAL_REMOTE_CONNECTED)
   if(verbose)
     message("[PID] WARNING: no official remote defined for ${PROJECT_NAME}.")
   endif()
   return()
 else()#there is a connected remote after adjustment
-  get_Remotes_Address(${PROJECT_NAME} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN_FETCH RES_ORIGIN_PUSH)#get the adress of the official and origin git remotes
+  get_Remotes_Address(${CMAKE_SOURCE_DIR} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN_FETCH RES_ORIGIN_PUSH)#get the adress of the official and origin git remotes
   if(NOT ${PROJECT_NAME}_PUBLIC_ADDRESS)#no public address defined (only adress is used for fetch and push)
     if(NOT ${PROJECT_NAME}_ADDRESS STREQUAL RES_OFFICIAL_PUSH
       OR NOT ${PROJECT_NAME}_ADDRESS STREQUAL RES_OFFICIAL_FETCH)
@@ -2050,17 +2024,17 @@ else()#there is a connected remote after adjustment
     if(NOT ${PROJECT_NAME}_PUBLIC_ADDRESS STREQUAL RES_OFFICIAL_FETCH)
       if(ADDR_OK)
         #we know that the address is correct so we simply need to reconnect the public address
-        reconnect_Repository_Remote(${PROJECT_NAME} ${${PROJECT_NAME}_ADDRESS} ${${PROJECT_NAME}_PUBLIC_ADDRESS} official)
+        reconnect_Repository_Remote(${CMAKE_SOURCE_DIR} ${${PROJECT_NAME}_ADDRESS} ${${PROJECT_NAME}_PUBLIC_ADDRESS} official)
       else()
         message("[PID] WARNING: the public address used in package description (${${PROJECT_NAME}_PUBLIC_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (${RES_OFFICIAL_FETCH}). Using the current remote by default. You should change the address in package description.")
       endif()
     endif()
   endif()
-  #updating local repository from remote one
+  #updating local repository from remote one (also updating tags)
   execute_process(COMMAND git fetch official --tags
                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
   # now checking that there is an origin remote
-  is_Package_Connected(CONNECTED ${PROJECT_NAME} origin)
+  is_Repository_Connected(CONNECTED ${CMAKE_SOURCE_DIR} origin)
   if(NOT CONNECTED) #the package has no origin remote => create it and set it to the same address as official
   	execute_process(COMMAND git remote add origin ${${PROJECT_NAME}_ADDRESS}
                     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
@@ -2086,7 +2060,7 @@ endfunction(check_For_Remote_Respositories)
 #     Check, and eventually perform corrective actions, so that wrapper's repository origin remote is defined.
 #
 function(check_For_Wrapper_Remote_Respositories)
-  is_Package_Connected(CONNECTED ${PROJECT_NAME} origin)
+  is_Repository_Connected(CONNECTED ${CMAKE_SOURCE_DIR} origin)
   if(NOT CONNECTED) #the package has no origin remote => create it and set it to the same address as official
       if(${PROJECT_NAME}_PUBLIC_ADDRESS)
         execute_process(COMMAND git remote add origin ${${PROJECT_NAME}_PUBLIC_ADDRESS}
@@ -2104,7 +2078,7 @@ function(check_For_Wrapper_Remote_Respositories)
       execute_process(COMMAND git fetch origin
                       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
   else()#already connected
-    get_Remotes_Address(${PROJECT_NAME} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN_FETCH RES_ORIGIN_PUSH)#get the adress of the official and origin git remotes
+    get_Remotes_Address(${CMAKE_SOURCE_DIR} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN_FETCH RES_ORIGIN_PUSH)#get the adress of the official and origin git remotes
     if(NOT ${PROJECT_NAME}_PUBLIC_ADDRESS)#no public address defined (only adress is used for fetch and push)
       if(NOT ${PROJECT_NAME}_ADDRESS STREQUAL RES_ORIGIN_FETCH)
         message("[PID] WARNING: the address used in package description (${${PROJECT_NAME}_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (${RES_ORIGIN_FETCH}). Using the current remote by default. You should change the address in package description.")
@@ -2163,35 +2137,27 @@ endfunction(get_Remotes_To_Update)
 #  get_Remotes_Address
 #  --------------------
 #
-#   .. command:: get_Remotes_Address(package RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH  RES_ORIGIN_FETCH RES_ORIGIN_PUSH)
+#   .. command:: get_Remotes_Address(path_to_repo RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH  RES_ORIGIN_FETCH RES_ORIGIN_PUSH)
 #
-#     Get the package's origin and official remotes addresses.
+#     Get a deployment unit's origin and official remotes addresses.
 #
-#     :package: the name of the package.
+#     :path_to_repo: the path to deployment unit's repository in local workspace
 #
-#     :RES_OFFICIAL_FETCH: the output variable containg the address of package's official remote for fetching.
+#     :RES_OFFICIAL_FETCH: the output variable containg the address of repository's official remote for fetching.
 #
-#     :RES_OFFICIAL_PUSH: the output variable containg the address of package's official remote for pushing.
+#     :RES_OFFICIAL_PUSH: the output variable containg the address of repository's official remote for pushing.
 #
-#     :RES_ORIGIN_FETCH: the output variable containg the address of package's origin remote for fetching..
+#     :RES_ORIGIN_FETCH: the output variable containg the address of repository's origin remote for fetching..
 #
-#     :RES_ORIGIN_PUSH: the output variable containg the address of package's origin remote for pushing.
+#     :RES_ORIGIN_PUSH: the output variable containg the address of repository's origin remote for pushing.
 #
-function(get_Remotes_Address package RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN_FETCH RES_ORIGIN_PUSH)
+function(get_Remotes_Address path_to_repo RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN_FETCH RES_ORIGIN_PUSH)
 set(${RES_OFFICIAL_FETCH} PARENT_SCOPE)
 set(${RES_OFFICIAL_PUSH} PARENT_SCOPE)
 set(${RES_ORIGIN_FETCH} PARENT_SCOPE)
 set(${RES_ORIGIN_PUSH} PARENT_SCOPE)
-get_Package_Type(${package} PACK_TYPE)
-if(PACK_TYPE STREQUAL "NATIVE")
-  execute_process(COMMAND git remote -v
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package} OUTPUT_VARIABLE RESULTING_REMOTES)
-elseif(PACK_TYPE STREQUAL "EXTERNAL")
-  execute_process(COMMAND git remote -v
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package} OUTPUT_VARIABLE RESULTING_REMOTES)
-else()
-  return()
-endif()
+execute_process(COMMAND git remote -v
+                WORKING_DIRECTORY ${path_to_repo} OUTPUT_VARIABLE RESULTING_REMOTES)
 
 if(RESULTING_REMOTES)
 	string(REPLACE "\n" ";" LINES ${RESULTING_REMOTES})

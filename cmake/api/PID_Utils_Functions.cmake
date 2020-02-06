@@ -2825,62 +2825,61 @@ endfunction(reset_Package_Repository_Address)
 #
 # .. ifmode:: internal
 #
-#  .. |get_Package_Repository_Address| replace:: ``get_Package_Repository_Address``
+#  .. |get_Deployment_Unit_Repository_Address_In_Description| replace:: ``get_Deployment_Unit_Repository_Address_In_Description``
 #  .. _get_Package_Repository_Address:
 #
-#  get_Package_Repository_Address
+#  get_Deployment_Unit_Repository_Address_In_Description
 #  ------------------------------
 #
-#   .. command:: get_Package_Repository_Address(package RES_URL RES_PUBLIC_URL)
+#   .. command:: get_Deployment_Unit_Repository_Address_In_Description(path_to_repo RES_URL RES_PUBLIC_URL)
 #
-#    Getting git repository addresses of a package from its description.
+#    Getting git repository addresses of a deployment unit from its description.
 #
-#     :package: the name ofthe target source package.
+#     :path_to_repo: the path to deployment unit repository in local workspace.
 #
 #     :RES_URL: the output variable that contains the current git URL of teh pakage respository.
 #
 #     :RES_PUBLIC_URL: the output variable that contains the public counterpart URL of package respotiry.
 #
-function(get_Package_Repository_Address package RES_URL RES_PUBLIC_URL)
-  if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt)
+function(get_Deployment_Unit_Repository_Address_In_Description path_to_repo RES_URL RES_PUBLIC_URL)
+  if(NOT EXISTS ${path_to_repo}/CMakeLists.txt)
 	  set(${RES_URL} PARENT_SCOPE)
     set(${RES_PUBLIC_URL} PARENT_SCOPE)
     return()
   endif()
 
-	file(READ ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt CMAKE_CONTENT)
+	file(READ ${path_to_repo}/CMakeLists.txt CMAKE_CONTENT)
 	#checking for restricted address
-	string(REGEX REPLACE "^.+[ \t\n]ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CMAKE_CONTENT})
-	if(url STREQUAL CMAKE_CONTENT)#no match
-		set(${RES_URL} PARENT_SCOPE)
+	string(REGEX REPLACE url ${CMAKE_CONTENT})
+	if(CMAKE_CONTENT MATCHES "^.+[ \t\n]ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$")
+    set(${RES_URL} ${CMAKE_MATCH_1} PARENT_SCOPE)
 	else()
-		set(${RES_URL} ${url} PARENT_SCOPE)
+    set(${RES_URL} PARENT_SCOPE)
 	endif()
 	#checking for public (fetch only) address
-	string(REGEX REPLACE "^.+[ \t\n]PUBLIC_ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$" "\\1" url ${CMAKE_CONTENT})
-	if(url STREQUAL CMAKE_CONTENT)#no match
-		set(${RES_PUBLIC_URL} PARENT_SCOPE)
+	if(CMAKE_CONTENT MATCHES "^.+[ \t\n]PUBLIC_ADDRESS[ \t\n]+([^ \t\n]+)[ \t\n]+.*$")
+    set(${RES_PUBLIC_URL} ${CMAKE_MATCH_1} PARENT_SCOPE)
 	else()
-		set(${RES_PUBLIC_URL} ${url} PARENT_SCOPE)
+    set(${RES_PUBLIC_URL} PARENT_SCOPE)
 	endif()
-endfunction(get_Package_Repository_Address)
+endfunction(get_Deployment_Unit_Repository_Address_In_Description)
 
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |get_Package_Reference_Info| replace:: ``get_Package_Reference_Info``
+#  .. |get_Deployment_Unit_Reference_Info| replace:: ``get_Deployment_Unit_Reference_Info``
 #  .. _get_Package_Reference_Info:
 #
-#  get_Package_Reference_Info
+#  get_Deployment_Unit_Reference_Info
 #  --------------------------
 #
-#   .. command:: get_Package_Reference_Info(package REF_EXISTS RES_URL RES_PUBLIC_URL)
+#   .. command:: get_Deployment_Unit_Reference_Info(path_to_repo REF_EXISTS RES_URL RES_PUBLIC_URL)
 #
-#    Getting info on a package from its reference file.
+#    Getting info on a deployment unit extracted from its reference file.
 #
-#     :package: the name of the target package.
+#     :path_to_repo: the path to the repository of the deployment unit into local workspace.
 #
 #     :REF_EXISTS: the output variable that is TRUE if reference file exists, FALSE otherwise.
 #
@@ -2888,57 +2887,193 @@ endfunction(get_Package_Repository_Address)
 #
 #     :RES_PUBLIC_URL: the output variable that contains the public counterpart URL of package respotiry.
 #
-function(get_Package_Reference_Info package REF_EXISTS RES_URL RES_PUBLIC_URL)
-  get_Path_To_Package_Reference_File(PATH_TO_FILE PATH_TO_CS ${package})
-  if(NOT PATH_TO_FILE)
-    #TODO contrib => update contrib spaces
-    set(${RES_URL} PARENT_SCOPE)
-    set(${RES_PUBLIC_URL} PARENT_SCOPE)
-    set(${REF_EXISTS} FALSE PARENT_SCOPE)
+function(get_Deployment_Unit_Reference_Info path_to_repo REF_EXISTS RES_URL RES_PUBLIC_URL)
+
+  file(RELATIVE_PATH REL_PATH ${WORKSPACE_DIR} ${path_to_repo})
+  get_filename_component(DU_TYPE ${REL_PATH} DIRECTORY)
+  get_filename_component(DU_NAME ${REL_PATH} NAME)
+  if(DU_TYPE STREQUAL "packages")
+    get_Path_To_Package_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
+  elseif(DU_TYPE STREQUAL "wrappers")
+    get_Path_To_External_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
+  elseif(DU_TYPE STREQUAL "sites/frameworks")
+    get_Path_To_Framework_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
+  elseif(DU_TYPE STREQUAL "environments")
+    get_Path_To_Environment_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
+  else()
+    message("[PID] INTERNAL ERROR: Bad path given to get_Deployment_Unit_Reference_Info: ${path_to_repo}")
     return()
   endif()
-  set(${REF_EXISTS} TRUE PARENT_SCOPE)
-  #saving locally defined addresses
-  set(TEMP_${package}_MAIN_AUTHOR ${${package}_MAIN_AUTHOR})
-  set(TEMP_${package}_MAIN_INSTITUTION ${${package}_MAIN_INSTITUTION})
-  set(TEMP_${package}_CONTACT_MAIL ${${package}_CONTACT_MAIL})
-  set(TEMP_${package}_FRAMEWORK ${${package}_FRAMEWORK})
-  set(TEMP_${package}_SITE_ROOT_PAGE ${${package}_SITE_ROOT_PAGE})
-  set(TEMP_${package}_PROJECT_PAGE ${${package}_PROJECT_PAGE})
-  set(TEMP_${package}_SITE_GIT_ADDRESS ${${package}_SITE_GIT_ADDRESS})
-  set(TEMP_${package}_SITE_INTRODUCTION ${${package}_SITE_INTRODUCTION})
-  set(TEMP_${package}_AUTHORS_AND_INSTITUTIONS ${${package}_AUTHORS_AND_INSTITUTIONS})
-  set(TEMP_${package}_DESCRIPTION ${${package}_DESCRIPTION})
-  set(TEMP_${package}_YEARS ${${package}_YEARS})
-  set(TEMP_${package}_LICENSE ${${package}_LICENSE})
-  set(TEMP_${package}_ADDRESS ${${package}_ADDRESS})
-  set(TEMP_${package}_PUBLIC_ADDRESS ${${package}_PUBLIC_ADDRESS})
-  set(TEMP_${package}_CATEGORIES ${${package}_CATEGORIES})
-  set(TEMP_${package}_REFERENCES ${${package}_REFERENCES})
-  #then include (will modify these cache variables) and extract adequate values
 
+  if(NOT PATH_TO_FILE)
+    update_Contribution_Spaces(UPDATED)
+    if(UPDATED)
+      if(DU_TYPE STREQUAL "packages")
+        get_Path_To_Package_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
+      elseif(DU_TYPE STREQUAL "wrappers")
+        get_Path_To_External_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
+      elseif(DU_TYPE STREQUAL "sites/frameworks")
+        get_Path_To_Framework_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
+      elseif(DU_TYPE STREQUAL "environments")
+        get_Path_To_Environment_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
+      endif()
+    else()
+      set(${RES_URL} PARENT_SCOPE)
+      set(${RES_PUBLIC_URL} PARENT_SCOPE)
+      set(${REF_EXISTS} FALSE PARENT_SCOPE)
+      return()
+    endif()
+  endif()
+  set(${REF_EXISTS} TRUE PARENT_SCOPE)
+
+  #saving locally defined addresses
+  if(DU_TYPE STREQUAL "packages")
+    set(TEMP_${DU_NAME}_MAIN_AUTHOR ${${DU_NAME}_MAIN_AUTHOR})
+    set(TEMP_${DU_NAME}_MAIN_INSTITUTION ${${DU_NAME}_MAIN_INSTITUTION})
+    set(TEMP_${DU_NAME}_CONTACT_MAIL ${${DU_NAME}_CONTACT_MAIL})
+    set(TEMP_${DU_NAME}_FRAMEWORK ${${DU_NAME}_FRAMEWORK})
+    set(TEMP_${DU_NAME}_SITE_ROOT_PAGE ${${DU_NAME}_SITE_ROOT_PAGE})
+    set(TEMP_${DU_NAME}_PROJECT_PAGE ${${DU_NAME}_PROJECT_PAGE})
+    set(TEMP_${DU_NAME}_SITE_GIT_ADDRESS ${${DU_NAME}_SITE_GIT_ADDRESS})
+    set(TEMP_${DU_NAME}_SITE_INTRODUCTION ${${DU_NAME}_SITE_INTRODUCTION})
+    set(TEMP_${DU_NAME}_AUTHORS_AND_INSTITUTIONS ${${DU_NAME}_AUTHORS_AND_INSTITUTIONS})
+    set(TEMP_${DU_NAME}_DESCRIPTION ${${DU_NAME}_DESCRIPTION})
+    set(TEMP_${DU_NAME}_YEARS ${${DU_NAME}_YEARS})
+    set(TEMP_${DU_NAME}_LICENSE ${${DU_NAME}_LICENSE})
+    set(TEMP_${DU_NAME}_ADDRESS ${${DU_NAME}_ADDRESS})
+    set(TEMP_${DU_NAME}_PUBLIC_ADDRESS ${${DU_NAME}_PUBLIC_ADDRESS})
+    set(TEMP_${DU_NAME}_CATEGORIES ${${DU_NAME}_CATEGORIES})
+    set(TEMP_${DU_NAME}_REFERENCES ${${DU_NAME}_REFERENCES})
+  elseif(DU_TYPE STREQUAL "wrappers")
+    set(TEMP_${DU_NAME}_PID_WRAPPER_CONTACT_AUTHOR ${${DU_NAME}_PID_WRAPPER_CONTACT_AUTHOR})
+    set(TEMP_${DU_NAME}_PID_WRAPPER_CONTACT_INSTITUTION ${${DU_NAME}_PID_WRAPPER_CONTACT_INSTITUTION})
+    set(TEMP_${DU_NAME}_PID_WRAPPER_CONTACT_MAIL ${${DU_NAME}_PID_WRAPPER_CONTACT_MAIL})
+    set(TEMP_${DU_NAME}_PID_WRAPPER_SITE_ROOT_PAGE ${${DU_NAME}_PID_WRAPPER_SITE_ROOT_PAGE})
+    set(TEMP_${DU_NAME}_PID_WRAPPER_PROJECT_PAGE ${${DU_NAME}_PID_WRAPPER_PROJECT_PAGE})
+    set(TEMP_${DU_NAME}_PID_WRAPPER_SITE_GIT_ADDRESS ${${DU_NAME}_PID_WRAPPER_SITE_GIT_ADDRESS})
+    set(TEMP_${DU_NAME}_PID_WRAPPER_SITE_INTRODUCTION ${${DU_NAME}_PID_WRAPPER_SITE_INTRODUCTION})
+    set(TEMP_${DU_NAME}_PID_WRAPPER_AUTHORS_AND_INSTITUTIONS ${${DU_NAME}_PID_WRAPPER_AUTHORS_AND_INSTITUTIONS})
+    set(TEMP_${DU_NAME}_PID_WRAPPER_LICENSE ${${DU_NAME}_PID_WRAPPER_LICENSE})
+    set(TEMP_${DU_NAME}_PID_WRAPPER_YEARS ${${DU_NAME}_PID_WRAPPER_YEARS})
+    set(TEMP_${DU_NAME}_PID_WRAPPER_ADDRESS ${${DU_NAME}_PID_WRAPPER_ADDRESS})
+    set(TEMP_${DU_NAME}_PID_WRAPPER_PUBLIC_ADDRESS ${${DU_NAME}_PID_WRAPPER_PUBLIC_ADDRESS})
+    set(TEMP_${DU_NAME}_DESCRIPTION ${${DU_NAME}_DESCRIPTION})
+    set(TEMP_${DU_NAME}_CATEGORIES ${${DU_NAME}_CATEGORIES})
+    set(TEMP_${DU_NAME}_FRAMEWORK ${${DU_NAME}_FRAMEWORK})
+    set(TEMP_${DU_NAME}_REFERENCES ${${DU_NAME}_REFERENCES})
+    #description of original project
+    set(TEMP_${DU_NAME}_AUTHORS ${${DU_NAME}_AUTHORS})
+    set(TEMP_${DU_NAME}_PROJECT_SITE ${${DU_NAME}_PROJECT_SITE})
+    set(TEMP_${DU_NAME}_LICENSES ${${DU_NAME}_LICENSES})
+  elseif(DU_TYPE STREQUAL "sites/frameworks")
+    set(TEMP_${DU_NAME}_FRAMEWORK_MAIN_AUTHOR ${${DU_NAME}_FRAMEWORK_MAIN_AUTHOR})
+    set(TEMP_${DU_NAME}_FRAMEWORK_MAIN_INSTITUTION ${${DU_NAME}_FRAMEWORK_MAIN_INSTITUTION})
+    set(TEMP_${DU_NAME}_FRAMEWORK_CONTACT_MAIL ${${DU_NAME}_FRAMEWORK_CONTACT_MAIL})
+    set(TEMP_${DU_NAME}_FRAMEWORK_YEARS ${${DU_NAME}_FRAMEWORK_YEARS})
+    set(TEMP_${DU_NAME}_FRAMEWORK_SITE ${${DU_NAME}_FRAMEWORK_SITE})
+    set(TEMP_${DU_NAME}_FRAMEWORK_DESCRIPTION ${${DU_NAME}_FRAMEWORK_DESCRIPTION})
+    set(TEMP_${DU_NAME}_FRAMEWORK_PROJECT_PAGE ${${DU_NAME}_FRAMEWORK_PROJECT_PAGE})
+    set(TEMP_${DU_NAME}_FRAMEWORK_LICENSE ${${DU_NAME}_FRAMEWORK_LICENSE})
+    set(TEMP_${DU_NAME}_FRAMEWORK_ADDRESS ${${DU_NAME}_FRAMEWORK_ADDRESS})
+    set(TEMP_${DU_NAME}_FRAMEWORK_PUBLIC_ADDRESS ${${DU_NAME}_FRAMEWORK_PUBLIC_ADDRESS})
+    set(TEMP_${DU_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS ${${DU_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS})
+    set(TEMP_${DU_NAME}_FRAMEWORK_CATEGORIES ${${DU_NAME}_FRAMEWORK_CATEGORIES})
+  elseif(DU_TYPE STREQUAL "environments")
+    set(TEMP_${DU_NAME}_MAIN_AUTHOR ${${DU_NAME}_MAIN_AUTHOR})
+    set(TEMP_${DU_NAME}_MAIN_INSTITUTION ${${DU_NAME}_MAIN_INSTITUTION})
+    set(TEMP_${DU_NAME}_CONTACT_MAIL ${${DU_NAME}_CONTACT_MAIL})
+    set(TEMP_${DU_NAME}_AUTHORS_AND_INSTITUTIONS ${${DU_NAME}_AUTHORS_AND_INSTITUTIONS})
+    set(TEMP_${DU_NAME}_YEARS ${${DU_NAME}_YEARS})
+    set(TEMP_${DU_NAME}_DESCRIPTION ${${DU_NAME}_DESCRIPTION})
+    set(TEMP_${DU_NAME}_LICENSE ${${DU_NAME}_LICENSE})
+    set(TEMP_${DU_NAME}_FRAMEWORK_PROJECT_PAGE ${${DU_NAME}_FRAMEWORK_PROJECT_PAGE})
+    set(TEMP_${DU_NAME}_ADDRESS ${${DU_NAME}_ADDRESS})
+    set(TEMP_${DU_NAME}_PUBLIC_ADDRESS ${${DU_NAME}_PUBLIC_ADDRESS})
+  endif()
+
+  #then include (will modify these cache variables)
   include(${PATH_TO_FILE})
 
-  set(${RES_URL} ${${package}_ADDRESS} PARENT_SCOPE)
-  set(${RES_PUBLIC_URL} ${${package}_PUBLIC_ADDRESS} PARENT_SCOPE)
-  #finally give to the variables their initial value
-  set(${package}_MAIN_AUTHOR ${TEMP_${package}_MAIN_AUTHOR} CACHE INTERNAL "")
-  set(${package}_MAIN_INSTITUTION ${TEMP_${package}_MAIN_INSTITUTION} CACHE INTERNAL "")
-  set(${package}_CONTACT_MAIL ${TEMP_${package}_CONTACT_MAIL} CACHE INTERNAL "")
-  set(${package}_FRAMEWORK ${TEMP_${package}_FRAMEWORK} CACHE INTERNAL "")
-  set(${package}_SITE_ROOT_PAGE ${TEMP_${package}_SITE_ROOT_PAGE} CACHE INTERNAL "")
-  set(${package}_PROJECT_PAGE ${TEMP_${package}_PROJECT_PAGE} CACHE INTERNAL "")
-  set(${package}_SITE_GIT_ADDRESS ${TEMP_${package}_SITE_GIT_ADDRESS} CACHE INTERNAL "")
-  set(${package}_SITE_INTRODUCTION ${TEMP_${package}_SITE_INTRODUCTION} CACHE INTERNAL "")
-  set(${package}_AUTHORS_AND_INSTITUTIONS ${TEMP_${package}_AUTHORS_AND_INSTITUTIONS} CACHE INTERNAL "")
-  set(${package}_DESCRIPTION ${TEMP_${package}_DESCRIPTION} CACHE INTERNAL "")
-  set(${package}_YEARS ${TEMP_${package}_YEARS} CACHE INTERNAL "")
-  set(${package}_LICENSE ${TEMP_${package}_LICENSE} CACHE INTERNAL "")
-  set(${package}_ADDRESS ${TEMP_${package}_ADDRESS} CACHE INTERNAL "")
-  set(${package}_PUBLIC_ADDRESS ${TEMP_${package}_PUBLIC_ADDRESS} CACHE INTERNAL "")
-  set(${package}_CATEGORIES ${TEMP_${package}_CATEGORIES} CACHE INTERNAL "")
-  set(${package}_REFERENCES ${TEMP_${package}_REFERENCES} CACHE INTERNAL "")
-endfunction(get_Package_Reference_Info)
+  #finally return adequate values and give to the variables their initial value
+  if(DU_TYPE STREQUAL "packages")
+    #set returned values
+    set(${RES_URL} ${${DU_NAME}_ADDRESS} PARENT_SCOPE)
+    set(${RES_PUBLIC_URL} ${${DU_NAME}_PUBLIC_ADDRESS} PARENT_SCOPE)
+    #reset description variables
+    set(${DU_NAME}_MAIN_AUTHOR ${TEMP_${DU_NAME}_MAIN_AUTHOR} CACHE INTERNAL "")
+    set(${DU_NAME}_MAIN_INSTITUTION ${TEMP_${DU_NAME}_MAIN_INSTITUTION} CACHE INTERNAL "")
+    set(${DU_NAME}_CONTACT_MAIL ${TEMP_${DU_NAME}_CONTACT_MAIL} CACHE INTERNAL "")
+    set(${DU_NAME}_FRAMEWORK ${TEMP_${DU_NAME}_FRAMEWORK} CACHE INTERNAL "")
+    set(${DU_NAME}_SITE_ROOT_PAGE ${TEMP_${DU_NAME}_SITE_ROOT_PAGE} CACHE INTERNAL "")
+    set(${DU_NAME}_PROJECT_PAGE ${TEMP_${DU_NAME}_PROJECT_PAGE} CACHE INTERNAL "")
+    set(${DU_NAME}_SITE_GIT_ADDRESS ${TEMP_${DU_NAME}_SITE_GIT_ADDRESS} CACHE INTERNAL "")
+    set(${DU_NAME}_SITE_INTRODUCTION ${TEMP_${DU_NAME}_SITE_INTRODUCTION} CACHE INTERNAL "")
+    set(${DU_NAME}_AUTHORS_AND_INSTITUTIONS ${TEMP_${DU_NAME}_AUTHORS_AND_INSTITUTIONS} CACHE INTERNAL "")
+    set(${DU_NAME}_DESCRIPTION ${TEMP_${DU_NAME}_DESCRIPTION} CACHE INTERNAL "")
+    set(${DU_NAME}_YEARS ${TEMP_${DU_NAME}_YEARS} CACHE INTERNAL "")
+    set(${DU_NAME}_LICENSE ${TEMP_${DU_NAME}_LICENSE} CACHE INTERNAL "")
+    set(${DU_NAME}_ADDRESS ${TEMP_${DU_NAME}_ADDRESS} CACHE INTERNAL "")
+    set(${DU_NAME}_PUBLIC_ADDRESS ${TEMP_${DU_NAME}_PUBLIC_ADDRESS} CACHE INTERNAL "")
+    set(${DU_NAME}_CATEGORIES ${TEMP_${DU_NAME}_CATEGORIES} CACHE INTERNAL "")
+    set(${DU_NAME}_REFERENCES ${TEMP_${DU_NAME}_REFERENCES} CACHE INTERNAL "")
+  elseif(DU_TYPE STREQUAL "wrappers")
+    #set returned values
+    set(${RES_URL} ${${DU_NAME}_PID_WRAPPER_ADDRESS} PARENT_SCOPE)
+    set(${RES_PUBLIC_URL} ${${DU_NAME}_PID_WRAPPER_PUBLIC_ADDRESS} PARENT_SCOPE)
+    #reset description variables
+    set(${DU_NAME}_PID_WRAPPER_CONTACT_AUTHOR ${TEMP_${DU_NAME}_PID_WRAPPER_CONTACT_AUTHOR}  CACHE INTERNAL "")
+    set(${DU_NAME}_PID_WRAPPER_CONTACT_INSTITUTION ${TEMP_${DU_NAME}_PID_WRAPPER_CONTACT_INSTITUTION}  CACHE INTERNAL "")
+    set(${DU_NAME}_PID_WRAPPER_CONTACT_MAIL ${TEMP_${DU_NAME}_PID_WRAPPER_CONTACT_MAIL}  CACHE INTERNAL "")
+    set(${DU_NAME}_PID_WRAPPER_SITE_ROOT_PAGE ${TEMP_${DU_NAME}_PID_WRAPPER_SITE_ROOT_PAGE}  CACHE INTERNAL "")
+    set(${DU_NAME}_PID_WRAPPER_PROJECT_PAGE ${TEMP_${DU_NAME}_PID_WRAPPER_PROJECT_PAGE}  CACHE INTERNAL "")
+    set(${DU_NAME}_PID_WRAPPER_SITE_GIT_ADDRESS ${TEMP_${DU_NAME}_PID_WRAPPER_SITE_GIT_ADDRESS}  CACHE INTERNAL "")
+    set(${DU_NAME}_PID_WRAPPER_SITE_INTRODUCTION ${TEMP_${DU_NAME}_PID_WRAPPER_SITE_INTRODUCTION}  CACHE INTERNAL "")
+    set(${DU_NAME}_PID_WRAPPER_AUTHORS_AND_INSTITUTIONS ${TEMP_${DU_NAME}_PID_WRAPPER_AUTHORS_AND_INSTITUTIONS}  CACHE INTERNAL "")
+    set(${DU_NAME}_PID_WRAPPER_LICENSE ${TEMP_${DU_NAME}_PID_WRAPPER_LICENSE}  CACHE INTERNAL "")
+    set(${DU_NAME}_PID_WRAPPER_YEARS ${TEMP_${DU_NAME}_PID_WRAPPER_YEARS}  CACHE INTERNAL "")
+    set(${DU_NAME}_PID_WRAPPER_ADDRESS ${TEMP_${DU_NAME}_PID_WRAPPER_ADDRESS}  CACHE INTERNAL "")
+    set(${DU_NAME}_PID_WRAPPER_PUBLIC_ADDRESS ${TEMP_${DU_NAME}_PID_WRAPPER_PUBLIC_ADDRESS}  CACHE INTERNAL "")
+    set(${DU_NAME}_DESCRIPTION ${TEMP_${DU_NAME}_DESCRIPTION}  CACHE INTERNAL "")
+    set(${DU_NAME}_CATEGORIES ${TEMP_${DU_NAME}_CATEGORIES}  CACHE INTERNAL "")
+    set(${DU_NAME}_FRAMEWORK ${TEMP_${DU_NAME}_FRAMEWORK}  CACHE INTERNAL "")
+    set(${DU_NAME}_REFERENCES ${TEMP_${DU_NAME}_REFERENCES}  CACHE INTERNAL "")
+    set(${DU_NAME}_AUTHORS ${TEMP_${DU_NAME}_AUTHORS} CACHE INTERNAL "")
+    set(${DU_NAME}_PROJECT_SITE ${TEMP_${DU_NAME}_PROJECT_SITE} CACHE INTERNAL "")
+    set(${DU_NAME}_LICENSES ${TEMP_${DU_NAME}_LICENSES} CACHE INTERNAL "")
+  elseif(DU_TYPE STREQUAL "sites/frameworks")
+    #set returned values
+    set(${RES_URL} ${${DU_NAME}_FRAMEWORK_ADDRESS} PARENT_SCOPE)
+    set(${RES_PUBLIC_URL} ${${DU_NAME}_FRAMEWORK_PUBLIC_ADDRESS} PARENT_SCOPE)
+    #reset description variables
+    set(${DU_NAME}_FRAMEWORK_MAIN_AUTHOR ${TEMP_${DU_NAME}_FRAMEWORK_MAIN_AUTHOR} CACHE INTERNAL "")
+    set(${DU_NAME}_FRAMEWORK_MAIN_INSTITUTION ${TEMP_${DU_NAME}_FRAMEWORK_MAIN_INSTITUTION} CACHE INTERNAL "")
+    set(${DU_NAME}_FRAMEWORK_CONTACT_MAIL ${TEMP_${DU_NAME}_FRAMEWORK_CONTACT_MAIL} CACHE INTERNAL "")
+    set(${DU_NAME}_FRAMEWORK_YEARS ${TEMP_${DU_NAME}_FRAMEWORK_YEARS} CACHE INTERNAL "")
+    set(${DU_NAME}_FRAMEWORK_SITE ${TEMP_${DU_NAME}_FRAMEWORK_SITE} CACHE INTERNAL "")
+    set(${DU_NAME}_FRAMEWORK_DESCRIPTION ${TEMP_${DU_NAME}_FRAMEWORK_DESCRIPTION} CACHE INTERNAL "")
+    set(${DU_NAME}_FRAMEWORK_PROJECT_PAGE ${TEMP_${DU_NAME}_FRAMEWORK_PROJECT_PAGE} CACHE INTERNAL "")
+    set(${DU_NAME}_FRAMEWORK_LICENSE ${TEMP_${DU_NAME}_FRAMEWORK_LICENSE} CACHE INTERNAL "")
+    set(${DU_NAME}_FRAMEWORK_ADDRESS ${TEMP_${DU_NAME}_FRAMEWORK_ADDRESS} CACHE INTERNAL "")
+    set(${DU_NAME}_FRAMEWORK_PUBLIC_ADDRESS ${TEMP_${DU_NAME}_FRAMEWORK_PUBLIC_ADDRESS} CACHE INTERNAL "")
+    set(${DU_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS ${TEMP_${DU_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS} CACHE INTERNAL "")
+    set(${DU_NAME}_FRAMEWORK_CATEGORIES ${TEMP_${DU_NAME}_FRAMEWORK_CATEGORIES} CACHE INTERNAL "")
+  elseif(DU_TYPE STREQUAL "environments")
+    #set returned values
+    set(${RES_URL} ${${DU_NAME}_ADDRESS} PARENT_SCOPE)
+    set(${RES_PUBLIC_URL} ${${DU_NAME}_PUBLIC_ADDRESS} PARENT_SCOPE)
+    #reset description variables
+    set(${DU_NAME}_MAIN_AUTHOR ${TEMP_${DU_NAME}_MAIN_AUTHOR} CACHE INTERNAL "")
+    set(${DU_NAME}_MAIN_INSTITUTION ${TEMP_${DU_NAME}_MAIN_INSTITUTION} CACHE INTERNAL "")
+    set(${DU_NAME}_CONTACT_MAIL ${TEMP_${DU_NAME}_CONTACT_MAIL} CACHE INTERNAL "")
+    set(${DU_NAME}_AUTHORS_AND_INSTITUTIONS ${TEMP_${DU_NAME}_AUTHORS_AND_INSTITUTIONS} CACHE INTERNAL "")
+    set(${DU_NAME}_YEARS ${TEMP_${DU_NAME}_YEARS} CACHE INTERNAL "")
+    set(${DU_NAME}_DESCRIPTION ${TEMP_${DU_NAME}_DESCRIPTION} CACHE INTERNAL "")
+    set(${DU_NAME}_LICENSE ${TEMP_${DU_NAME}_LICENSE} CACHE INTERNAL "")
+    set(${DU_NAME}_FRAMEWORK_PROJECT_PAGE ${TEMP_${DU_NAME}_FRAMEWORK_PROJECT_PAGE} CACHE INTERNAL "")
+    set(${DU_NAME}_ADDRESS ${TEMP_${DU_NAME}_ADDRESS} CACHE INTERNAL "")
+    set(${DU_NAME}_PUBLIC_ADDRESS ${TEMP_${DU_NAME}_PUBLIC_ADDRESS} CACHE INTERNAL "")
+  endif()
+endfunction(get_Deployment_Unit_Reference_Info)
 
 
 #.rst:

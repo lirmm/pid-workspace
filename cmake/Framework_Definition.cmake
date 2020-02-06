@@ -58,6 +58,7 @@ include(CMakeParseArguments)
 #
 #     .. rubric:: Optional parameters
 #
+#     :PUBLIC_ADDRESS <url>: The url of the framework repository public address (if package is public only) from where to get modifications of the fraemwork.
 #     :INSTITUTION <institutions>: Define the institution(s) to which the framework maintainer belongs to.
 #     :MAIL <e-mail>: E-mail of the maintainer author.
 #     :PROJECT <url>: The url of the online git repository project page where to find source code of the framework.
@@ -86,6 +87,7 @@ include(CMakeParseArguments)
 #       		MAIL         passama@lirmm.fr
 #       		INSTITUTION  LIRMM
 #       		ADDRESS      git@gite.lirmm.fr:pid/pid-framework.git
+#           PUBLIC_ADDRESS https://gite.lirmm.fr/pid/pid-framework.git
 #       	 	YEAR         2016
 #       		LICENSE      CeCILL-C
 #       		DESCRIPTION  "PID is a global development methodology supported by many tools inclusing a CMake API and dedicated C++ projects."
@@ -100,7 +102,7 @@ macro(PID_Framework)
 endmacro(PID_Framework)
 
 macro(declare_PID_Framework)
-set(oneValueArgs GIT_ADDRESS ADDRESS MAIL SITE PROJECT LICENSE LOGO BANNER WELCOME CONTRIBUTION_SPACE)
+set(oneValueArgs GIT_ADDRESS ADDRESS PUBLIC_ADDRESS MAIL SITE PROJECT LICENSE LOGO BANNER WELCOME CONTRIBUTION_SPACE)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION CATEGORIES)
 cmake_parse_arguments(DECLARE_PID_FRAMEWORK "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_FRAMEWORK_AUTHOR)
@@ -125,15 +127,17 @@ endif()
 
 if(DECLARE_PID_FRAMEWORK_ADDRESS)
 	set(address ${DECLARE_PID_FRAMEWORK_ADDRESS})
-elseif(DECLARE_PID_FRAMEWORK_GIT_ADDRESS)
+elseif(DECLARE_PID_FRAMEWORK_GIT_ADDRESS)#deprecated
 	set(address ${DECLARE_PID_FRAMEWORK_GIT_ADDRESS})
 else()
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : you must define the address of the framework's repository using either ADDRESS or GIT_ADDRESS keyword.")
 endif()
 
+
+
 declare_Framework(	"${DECLARE_PID_FRAMEWORK_AUTHOR}" "${DECLARE_PID_FRAMEWORK_INSTITUTION}" "${DECLARE_PID_FRAMEWORK_MAIL}"
 			"${DECLARE_PID_FRAMEWORK_YEAR}" "${DECLARE_PID_FRAMEWORK_SITE}" "${DECLARE_PID_FRAMEWORK_LICENSE}"
-			"${address}" "${DECLARE_PID_FRAMEWORK_PROJECT}" "${DECLARE_PID_FRAMEWORK_DESCRIPTION}"
+			"${address}" "${DECLARE_PID_FRAMEWORK_PUBLIC_ADDRESS}" "${DECLARE_PID_FRAMEWORK_PROJECT}" "${DECLARE_PID_FRAMEWORK_DESCRIPTION}"
     "${DECLARE_PID_FRAMEWORK_WELCOME}" "${DECLARE_PID_FRAMEWORK_CONTRIBUTION_SPACE}")
 if(DECLARE_PID_FRAMEWORK_LOGO)
 	declare_Framework_Image(${DECLARE_PID_FRAMEWORK_LOGO} FALSE)
