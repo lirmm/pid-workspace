@@ -48,7 +48,9 @@ PID is designed for solving most common (and sometimes difficult) problems we ca
 
 Please refer to [PID framework website](http://pid.lirmm.net/pid-framework) to get the complete install procedure.
 
-Installing the PID framework is a simple task, as soon as you have adequate dependencies:
+## Essential Dependencies  
+
+Installing the PID framework is a simple task, as soon as adequate dependencies are installed on your workstation:
 
 - CMake, version 3.0.2 or greater
 - git, version 1.7.6 or greater

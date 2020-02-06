@@ -133,8 +133,15 @@ else()# a package deployment is required
 	#check if package is known since a deployment supposes that the package is referenced
 	get_Package_Type(${DEPLOYED_PACKAGE} PACK_TYPE)
 	if(PACK_TYPE STREQUAL "UNKNOWN")
+		update_Contribution_Spaces(UPDATED)
+		if(UPDATED)
+			get_Package_Type(${DEPLOYED_PACKAGE} PACK_TYPE)
+		endif()
+		if(PACK_TYPE STREQUAL "UNKNOWN")
+			message("[PID] ERROR : Unknown native or external package ${DEPLOYED_PACKAGE} : it does not refer to any known package in contribution spaces already in use.")
+			return()
+		endif()
 		#TODO CONTRIB update and retry
-		get_Package_Type(${DEPLOYED_PACKAGE} PACK_TYPE)
 	endif()
 	if(PACK_TYPE STREQUAL "NATIVE")
 		include_Package_Reference_File(PATH_TO_FILE ${DEPLOYED_PACKAGE})
