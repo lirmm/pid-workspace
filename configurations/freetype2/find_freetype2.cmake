@@ -27,24 +27,53 @@ found_PID_Configuration(freetype2 FALSE)
 #  freetype2_LIBRARIES    - link against these to use freetype2 library
 if (UNIX)
 
-	find_path(freetype2_INCLUDE_PATH freetype2/ft2build.h)
-	find_library(freetype2_LIB freetype)
+	# execute separate project to extract datas
+	set(path_test_freetype ${WORKSPACE_DIR}/configurations/freetype2/test_freetype/build/${CURRENT_PLATFORM})
+	set(path_freetype_config_vars ${path_test_freetype}/freetype_config_vars.cmake )
 
-	set(freetype2_LIBRARIES) # start with empty list
-	set(IS_FOUND TRUE)
-	if(freetype2_INCLUDE_PATH AND freetype2_LIB)
-		convert_PID_Libraries_Into_System_Links(freetype2_LIB freetype2_LINKS)#getting good system links (with -l)
-		convert_PID_Libraries_Into_Library_Directories(freetype2_LIB freetype2_LIBDIR)#getting good system libraries folders (to be used with -L)
-	else()
-		message("[PID] ERROR : cannot find freetype2 library.")
-		set(IS_FOUND FALSE)
+	if(EXISTS ${path_freetype_config_vars})#file already computed
+		include(${path_freetype_config_vars}) #just to check that same version is required
+		if(FREETYPE_FOUND)#optimization only possible if freetype has been found
+			if(NOT freetype2_version #no specific version to search for
+				OR freetype2_version VERSION_EQUAL FREETYPE_VERSION)# or same version required and already found no need to regenerate
+
+				find_PID_Library_In_Linker_Order("${FREETYPE_LIBRARIES}" ALL FREETYPE_LIB FREETYPE_SONAME)
+				convert_PID_Libraries_Into_System_Links(FREETYPE_LIBRARIES freetype2_LINKS)#getting good system links (with -l)
+				convert_PID_Libraries_Into_Library_Directories(FREETYPE_LIBRARIES freetype2_LIBDIR)
+				found_PID_Configuration(freetype2 TRUE)
+				return()#exit without regenerating (avoid regenerating between debug and release builds due to generated file timestamp change)
+				#also an optimization avoid launching again and again boost config for each package build in debug and release modes (which is widely used)
+			endif()
+		endif()
 	endif()
 
-	if(IS_FOUND)
-		found_PID_Configuration(freetype2 TRUE)
-	endif ()
+	if(NOT EXISTS ${path_test_freetype})
+		file(MAKE_DIRECTORY ${path_test_freetype})
+	endif()
 
-	unset(IS_FOUND)
-	unset(freetype2_INCLUDE_PATH CACHE)
-	unset(freetype2_LIB CACHE)
+	message("[PID] INFO : performing tests for freetype ...")
+	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/configurations/freetype2/test_freetype
+	                WORKING_DIRECTORY ${path_test_freetype} OUTPUT_QUIET)
+
+	# Extract datas from freetypei_config_vars.cmake
+	if(EXISTS ${path_freetype_config_vars} )
+	  include(${path_freetype_config_vars})
+	else()
+		if(ADDITIONNAL_DEBUG_INFO)
+			message("[PID] WARNING : cannot execute tests for freetype !")
+		endif()
+	  return()
+	endif()
+
+	if(FREETYPE_FOUND)#optimization only possible if freetype has been found
+		if(NOT freetype2_version #no specific version to search for
+			OR freetype2_version VERSION_EQUAL FREETYPE_VERSION)# or same version required and already found no need to regenerate
+			find_PID_Library_In_Linker_Order("${FREETYPE_LIBRARIES}" ALL FREETYPE_LIB FREETYPE_SONAME)
+			convert_PID_Libraries_Into_System_Links(FREETYPE_LIBRARIES freetype2_LINKS)#getting good system links (with -l)
+			convert_PID_Libraries_Into_Library_Directories(FREETYPE_LIBRARIES freetype2_LIBDIR)
+			found_PID_Configuration(freetype2 TRUE)
+			return()#exit without regenerating (avoid regenerating between debug and release builds due to generated file timestamp change)
+			#also an optimization avoid launching again and again boost config for each package build in debug and release modes (which is widely used)
+		endif()
+	endif()
 endif ()
