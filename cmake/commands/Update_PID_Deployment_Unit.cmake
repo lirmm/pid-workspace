@@ -107,7 +107,7 @@ elseif(TARGET_FRAMEWORK)
 	endif()
 elseif(TARGET_ENVIRONMENT)
 	if(EXISTS ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}
-	   AND IS_DIRECTORY ${WORKSPACE_DIR}environments/${TARGET_ENVIRONMENT})
+	   AND IS_DIRECTORY ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT})
 		update_Environment_Repository(${TARGET_ENVIRONMENT})
 	else()
 		message("[PID] ERROR : No environment ${TARGET_ENVIRONMENT} exist in workspace. Cannot update it !")

@@ -70,7 +70,7 @@ include(CMakeParseArguments)
 #
 #     :INSTITUTION <institutions>: Define the institution(s) to which the reference author belongs.
 #
-#     :MAIL <e-mail>: E-mail of the reference author.
+#     :MAIL|EMAIL <e-mail>: E-mail of the reference author.
 #
 #     :ADDRESS <url>: The url of the wrapper's official repository. Must be set once the package is published.
 #
@@ -110,7 +110,7 @@ macro(PID_Wrapper)
 endmacro(PID_Wrapper)
 
 macro(declare_PID_Wrapper)
-set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS README CONTRIBUTION_SPACE)
+set(oneValueArgs LICENSE ADDRESS MAIL EMAIL PUBLIC_ADDRESS README CONTRIBUTION_SPACE)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
 cmake_parse_arguments(DECLARE_PID_WRAPPER "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_AUTHOR)
@@ -133,11 +133,16 @@ endif()
 if(NOT DECLARE_PID_WRAPPER_ADDRESS AND DECLARE_PID_WRAPPER_PUBLIC_ADDRESS)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the wrapper must have an adress if a public access adress is declared.")
 endif()
-
-declare_Wrapper(	"${DECLARE_PID_WRAPPER_AUTHOR}" "${DECLARE_PID_WRAPPER_INSTITUTION}" "${DECLARE_PID_WRAPPER_MAIL}"
+if(DECLARE_PID_WRAPPER_MAIL)
+  set(email ${DECLARE_PID_WRAPPER_MAIL})
+elseif(DECLARE_PID_WRAPPER_EMAIL)
+  set(email ${DECLARE_PID_WRAPPER_EMAIL})
+endif()
+declare_Wrapper(	"${DECLARE_PID_WRAPPER_AUTHOR}" "${DECLARE_PID_WRAPPER_INSTITUTION}" "${email}"
 			"${DECLARE_PID_WRAPPER_YEAR}" "${DECLARE_PID_WRAPPER_LICENSE}"
 			"${DECLARE_PID_WRAPPER_ADDRESS}" "${DECLARE_PID_WRAPPER_PUBLIC_ADDRESS}"
 		"${DECLARE_PID_WRAPPER_DESCRIPTION}" "${DECLARE_PID_WRAPPER_README}" "${DECLARE_PID_WRAPPER_CONTRIBUTION_SPACE}")
+unset(email)
 endmacro(declare_PID_Wrapper)
 
 #.rst:
@@ -1158,7 +1163,7 @@ else()#this is a dependency to another component defined in the same external pa
       if(DEFINED ${config}_RPATH)
         set(rpath ${config}_RPATH)
       endif()
-      
+
       declare_Wrapped_Component_System_Dependency(${component_name}
         "${includes}"
         "${lib_dirs}"

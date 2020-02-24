@@ -61,7 +61,7 @@ include(CMakeParseArguments)
 #     .. rubric:: Optional parameters
 #
 #     :INSTITUTION <institutions>: Define the institution(s) to which the reference author belongs.
-#     :MAIL <e-mail>: E-mail of the reference author.
+#     :MAIL|EMAIL <e-mail>: E-mail of the reference author.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -92,7 +92,7 @@ macro(PID_Environment)
 endmacro(PID_Environment)
 
 macro(declare_PID_Environment)
-set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS CONTRIBUTION_SPACE)
+set(oneValueArgs LICENSE ADDRESS MAIL EMAIL PUBLIC_ADDRESS CONTRIBUTION_SPACE)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
 cmake_parse_arguments(DECLARE_PID_ENV "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -116,7 +116,14 @@ if(NOT DECLARE_PID_ENV_DESCRIPTION)
   return()
 endif()
 
-declare_Environment("${DECLARE_PID_ENV_AUTHOR}" "${DECLARE_PID_ENV_INSTITUTION}" "${DECLARE_PID_ENV_MAIL}" "${DECLARE_PID_ENV_YEAR}" "${DECLARE_PID_ENV_LICENSE}" "${DECLARE_PID_ENV_ADDRESS}" "${DECLARE_PID_ENV_PUBLIC_ADDRESS}" "${DECLARE_PID_ENV_DESCRIPTION}" "${DECLARE_PID_ENV_CONTRIBUTION_SPACE}")
+if(DECLARE_PID_ENV_MAIL)
+  set(email ${DECLARE_PID_ENV_MAIL})
+elseif(DECLARE_PID_ENV_EMAIL)
+  set(email ${DECLARE_PID_ENV_EMAIL})
+endif()
+
+declare_Environment("${DECLARE_PID_ENV_AUTHOR}" "${DECLARE_PID_ENV_INSTITUTION}" "${email}" "${DECLARE_PID_ENV_YEAR}" "${DECLARE_PID_ENV_LICENSE}" "${DECLARE_PID_ENV_ADDRESS}" "${DECLARE_PID_ENV_PUBLIC_ADDRESS}" "${DECLARE_PID_ENV_DESCRIPTION}" "${DECLARE_PID_ENV_CONTRIBUTION_SPACE}")
+unset(email)
 endmacro(declare_PID_Environment)
 
 #.rst:

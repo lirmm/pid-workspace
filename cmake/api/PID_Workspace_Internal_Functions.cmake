@@ -118,7 +118,7 @@ function(classify_Framework_Root_Category framework root_category all_packages)
 foreach(package IN LISTS all_packages)
 	if(${package}_FRAMEWORK STREQUAL "${framework}")#check if the package belongs to the framework
 		foreach(a_category IN LISTS ${package}_CATEGORIES)
-			list(FIND ${framework}_FRAMEWORK_CATEGORIES ${a_category} INDEX)
+			list(FIND ${framework}_CATEGORIES ${a_category} INDEX)
 			if(NOT INDEX EQUAL -1)# this category is a category member of the framework
 				classify_Framework_Category(${framework} ${a_category} ${root_category} ${package})
 			endif()
@@ -355,7 +355,7 @@ endfunction(get_Root_Categories)
 #
 function(get_Framework_Root_Categories framework RETURNED_ROOTS)
 	set(ROOTS_FOUND)
-	foreach(a_category IN LISTS ${framework}_FRAMEWORK_CATEGORIES)
+	foreach(a_category IN LISTS ${framework}_CATEGORIES)
 		string(REGEX REPLACE "^([^/]+)/(.+)$" "\\1;\\2" CATEGORY_STRING_CONTENT ${a_category})
 		if(NOT CATEGORY_STRING_CONTENT STREQUAL ${a_category})# it macthes => there are subcategories
 			list(GET CATEGORY_STRING_CONTENT 0 ROOT_OF_CATEGORY)
@@ -891,7 +891,7 @@ function(print_Package_Info package)
 	message("REPOSITORY: ${${package}_ADDRESS}")
 	load_Package_Binary_References(REFERENCES_OK ${package})
 	if(${package}_FRAMEWORK)
-		message("DOCUMENTATION: ${${${package}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${package}")
+		message("DOCUMENTATION: ${${${package}_FRAMEWORK}_SITE}/packages/${package}")
 	elseif(${package}_SITE_GIT_ADDRESS)
 		message("DOCUMENTATION: ${${package}_SITE_GIT_ADDRESS}")
 	endif()
@@ -933,9 +933,9 @@ function(print_External_Package_Info package)
 	message("EXTERNAL PACKAGE: ${package}")
 	fill_String_From_List(${package}_DESCRIPTION descr_string)
 	message("DESCRIPTION: ${descr_string}")
-	message("LICENSES: ${${package}_LICENSES}")
+	message("OFFICIAL PROJECT LICENSES: ${${package}_ORIGINAL_PROJECT_LICENSES}")
 	print_External_Package_Contact(${package})
-	message("AUTHORS: ${${package}_AUTHORS}")
+	message("OFFICIAL PROJECT AUTHORS: ${${package}_ORIGINAL_PROJECT_AUTHORS}")
 	if(${package}_CATEGORIES)
 		message("CATEGORIES:")
 		foreach(category IN LISTS ${package}_CATEGORIES)
@@ -966,17 +966,17 @@ endfunction(print_External_Package_Info)
 #      :package: the name of the external package.
 #
 function(print_External_Package_Contact package)
-	fill_String_From_List(${package}_PID_WRAPPER_CONTACT_AUTHOR AUTHOR_STRING)
-	fill_String_From_List(${package}_PID_WRAPPER_CONTACT_INSTITUTION INSTITUTION_STRING)
+	fill_String_From_List(${package}_MAIN_AUTHOR AUTHOR_STRING)
+	fill_String_From_List(${package}_MAIN_INSTITUTION INSTITUTION_STRING)
 	if(NOT INSTITUTION_STRING STREQUAL "")
-		if(${package}_PID_WRAPPER_CONTACT_MAIL)
-			message("PID PACKAGE CONTACT: ${AUTHOR_STRING} (${${package}_PID_WRAPPER_CONTACT_MAIL}) - ${INSTITUTION_STRING}")
+		if(${package}_CONTACT_MAIL)
+			message("PID PACKAGE CONTACT: ${AUTHOR_STRING} (${${package}_CONTACT_MAIL}) - ${INSTITUTION_STRING}")
 		else()
 			message("PID PACKAGE CONTACT: ${AUTHOR_STRING} - ${INSTITUTION_STRING}")
 		endif()
 	else()
-		if(${package}_PID_WRAPPER_CONTACT_MAIL)
-			message("PID PACKAGE CONTACT: ${AUTHOR_STRING} (${${package}_PID_WRAPPER_CONTACT_MAIL})")
+		if(${package}_CONTACT_MAIL)
+			message("PID PACKAGE CONTACT: ${AUTHOR_STRING} (${${package}_CONTACT_MAIL})")
 		else()
 			message("PID PACKAGE CONTACT: ${AUTHOR_STRING}")
 		endif()
@@ -1152,20 +1152,20 @@ endfunction(print_Platform_Compatible_Binary)
 #
 function(print_Framework_Info framework)
 	message("FRAMEWORK: ${framework}")
-	fill_String_From_List(${framework}_FRAMEWORK_DESCRIPTION descr_string)
+	fill_String_From_List(${framework}_DESCRIPTION descr_string)
 	message("DESCRIPTION: ${descr_string}")
-	message("WEB SITE: ${${framework}_FRAMEWORK_SITE}")
-	message("LICENSE: ${${framework}_FRAMEWORK_LICENSE}")
-	message("DATES: ${${framework}_FRAMEWORK_YEARS}")
-	message("REPOSITORY: ${${framework}_FRAMEWORK_ADDRESS}")
+	message("WEB SITE: ${${framework}_SITE}")
+	message("LICENSE: ${${framework}_LICENSE}")
+	message("DATES: ${${framework}_YEARS}")
+	message("REPOSITORY: ${${framework}_ADDRESS}")
 	print_Package_Contact(${framework})
 	message("AUTHORS:")
-	foreach(author IN LISTS ${framework}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS)
+	foreach(author IN LISTS ${framework}_AUTHORS_AND_INSTITUTIONS)
 		print_Author(${author})
 	endforeach()
-	if(${framework}_FRAMEWORK_CATEGORIES)
+	if(${framework}_CATEGORIES)
 		message("CATEGORIES:")
-		foreach(category IN LISTS ${framework}_FRAMEWORK_CATEGORIES)
+		foreach(category IN LISTS ${framework}_CATEGORIES)
 			message("	${category}")
 		endforeach()
 	endif()
@@ -3806,14 +3806,6 @@ function(write_Platform_Description file)
 	#managing CI
 	file(APPEND ${file} "set(IN_CI_PROCESS ${IN_CI_PROCESS} CACHE INTERNAL \"\" FORCE)\n")
 
-	#managing contributions
-	file(APPEND ${file} "set(CONTRIBUTION_SPACES ${CONTRIBUTION_SPACES} CACHE INTERNAL \"\" FORCE)\n")
-	foreach(cs IN LISTS CONTRIBUTION_SPACES)
-		file(APPEND ${file} "set(CONTRIBUTION_SPACE_${cs}_UPDATE_REMOTE ${CONTRIBUTION_SPACE_${cs}_UPDATE_REMOTE} CACHE INTERNAL \"\" FORCE)\n")
-		file(APPEND ${file} "set(CONTRIBUTION_SPACE_${cs}_PUBLISH_REMOTE ${CONTRIBUTION_SPACE_${cs}_PUBLISH_REMOTE} CACHE INTERNAL \"\" FORCE)\n")
-	endforeach()
-	file(APPEND ${file} "set(PID_WORKSPACE_MODULES_PATH \"${PID_WORKSPACE_MODULES_PATH}\" CACHE INTERNAL \"\" FORCE)\n")
-
 	# store the CMake generator
 	file(APPEND ${file} "set(CMAKE_MAKE_PROGRAM ${CMAKE_MAKE_PROGRAM} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_GENERATOR \"${CMAKE_GENERATOR}\" CACHE INTERNAL \"\" FORCE)\n")
@@ -3822,6 +3814,33 @@ function(write_Platform_Description file)
 	file(APPEND ${file} "set(CMAKE_GENERATOR_PLATFORM \"${CMAKE_GENERATOR_PLATFORM}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_GENERATOR_INSTANCE \"${CMAKE_GENERATOR_INSTANCE}\" CACHE INTERNAL \"\" FORCE)\n")
 endfunction(write_Platform_Description)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |write_Contribution_Spaces| replace:: ``write_Contribution_Spaces``
+#  .. _write_Contribution_Spaces:
+#
+#  write_Contribution_Spaces
+#  --------------------------
+#
+#   .. command:: write_Contribution_Spaces(file)
+#
+#     (Re)Writing to a given file the cache variables of the workspace defining the contribution spaces in use.
+#
+#      :file: the path to the file to write in.
+#
+function(write_Contribution_Spaces file)
+	file(WRITE ${file} "")#reset the file
+	#managing contributions
+	file(APPEND ${file} "set(CONTRIBUTION_SPACES ${CONTRIBUTION_SPACES} CACHE INTERNAL \"\" FORCE)\n")
+	foreach(cs IN LISTS CONTRIBUTION_SPACES)
+		file(APPEND ${file} "set(CONTRIBUTION_SPACE_${cs}_UPDATE_REMOTE ${CONTRIBUTION_SPACE_${cs}_UPDATE_REMOTE} CACHE INTERNAL \"\" FORCE)\n")
+		file(APPEND ${file} "set(CONTRIBUTION_SPACE_${cs}_PUBLISH_REMOTE ${CONTRIBUTION_SPACE_${cs}_PUBLISH_REMOTE} CACHE INTERNAL \"\" FORCE)\n")
+	endforeach()
+	file(APPEND ${file} "set(PID_WORKSPACE_MODULES_PATH \"${PID_WORKSPACE_MODULES_PATH}\" CACHE INTERNAL \"\" FORCE)\n")
+endfunction(write_Contribution_Spaces)
 
 #.rst:
 #
@@ -3845,6 +3864,8 @@ write_Platform_Description(${CMAKE_BINARY_DIR}/Workspace_Platforms_Description.c
 file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Platforms_Description.cmake NO_POLICY_SCOPE)\n")
 write_Current_Configuration_Build_Related_Variables(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake)
 file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake NO_POLICY_SCOPE)\n")
+write_Contribution_Spaces(${CMAKE_BINARY_DIR}/Workspace_Configuration_Spaces.cmake)
+file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Configuration_Spaces.cmake NO_POLICY_SCOPE)\n")
 # defining all build configuration variables related to the current platform
 endfunction(write_Current_Configuration)
 

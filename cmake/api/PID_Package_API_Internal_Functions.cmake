@@ -73,7 +73,7 @@ include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
 macro(declare_Package author institution mail year license address public_address description readme_file code_style contrib_space)
 set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")#to avoid the use of -isystem that may be not so well managed by some compilers
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
-manage_Current_Platform("${DIR_NAME}") #loading the current platform configuration and perform adequate actions if any changes
+manage_Current_Platform("${DIR_NAME}" "NATIVE") #loading the current platform configuration and perform adequate actions if any changes
 set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 activate_Adequate_Languages()
 #################################################
@@ -89,11 +89,13 @@ endif()
 set(${PROJECT_NAME}_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL "")#to keep compatibility with PID v1 released package versions
 initialize_Build_System()#initializing PID specific settings for build
 
+manage_Parrallel_Build_Option()
+
 #################################################
 ############ MANAGING build mode ################
 #################################################
-manage_Parrallel_Build_Option()
 if(DIR_NAME STREQUAL "build/release")
+	unset(DIR_NAME)
 	reset_Mode_Cache_Options(CACHE_POPULATED)
 	#setting the variables related to the current build mode
 	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "the type of build is dependent from build location" FORCE)
@@ -105,6 +107,7 @@ if(DIR_NAME STREQUAL "build/release")
 		return()
 	endif()
 elseif(DIR_NAME STREQUAL "build/debug")
+	unset(DIR_NAME)
 	reset_Mode_Cache_Options(CACHE_POPULATED)
 	#setting the variables related to the current build mode
 	set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "the type of build is dependent from build location" FORCE)
@@ -116,6 +119,7 @@ elseif(DIR_NAME STREQUAL "build/debug")
 		return()
 	endif()
 elseif(DIR_NAME STREQUAL "build")
+	unset(DIR_NAME)
 	declare_Native_Global_Cache_Options() #first of all declaring global options so that the package is preconfigured with default options values and adequate comments for each variable
 	set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/checksources "")
@@ -405,7 +409,7 @@ elseif(DIR_NAME STREQUAL "build")
 	set(PACKAGE_FORMAT_FILE ${PACKAGE_FORMAT_FOLDER}/.clang-format)
 	# if a code style is provided, copy the configuration file to the package root folder
 	set(no_format TRUE)
-	if(code_style)
+	if(NOT "${code_style}" STREQUAL "")# a code style is defined
 		resolve_Path_To_Format_File(PATH_TO_STYLE ${code_style})
 		if(NOT PATH_TO_STYLE)
 			message(WARNING "[PID] WARNING: you use an undefined code format ${code_style}")
@@ -428,6 +432,7 @@ elseif(DIR_NAME STREQUAL "build")
 			endif()
 		endif()
 	elseif(EXISTS ${PACKAGE_FORMAT_FILE})
+		message("????")
 		# code style has been removed, removing the configuration file
 		file(REMOVE ${PACKAGE_FORMAT_FILE})
 		set(format_cmd_message "no format defined.")
@@ -440,6 +445,7 @@ elseif(DIR_NAME STREQUAL "build")
 			COMMENT "[PID] formatting the source files"
 		)
 	endif()
+	unset(no_format)
 
 	if(BUILD_DEPENDENT_PACKAGES AND ADDITIONNAL_DEBUG_INFO)
 		message("[PID] INFO : build process of ${PROJECT_NAME} will be recursive.")
@@ -479,7 +485,7 @@ reset_CI_Variables()
 reset_Package_Platforms_Variables()
 reset_Packages_Finding_Variables()
 init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
-init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
+init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "")
 reset_Version_Cache_Variables()
 reset_Temporary_Optimization_Variables(${CMAKE_BUILD_TYPE}) #resetting temporary variables used in optimization of configruation process
 check_For_Remote_Respositories("${ADDITIONNAL_DEBUG_INFO}")

@@ -9,7 +9,9 @@ has_checks: @PACKAGE_HAS_STATIC_CHECKS@
 has_coverage: @PACKAGE_HAS_COVERAGE@
 ---
 
-<h2>Welcome to {{ page.package }} package !</h2>
+<center>
+<h2>{{ page.package }} package documentation</h2>
+</center>
 
 <br>
 

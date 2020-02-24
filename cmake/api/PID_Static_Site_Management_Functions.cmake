@@ -316,5 +316,5 @@ endfunction(load_Framework)
 #      :SITE: the output variable that contains the URL of framework.
 #
 function(get_Framework_Site framework SITE)
-set(${SITE} ${${framework}_FRAMEWORK_SITE} PARENT_SCOPE)
+set(${SITE} ${${framework}_SITE} PARENT_SCOPE)
 endfunction(get_Framework_Site)

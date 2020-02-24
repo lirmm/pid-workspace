@@ -40,25 +40,6 @@ include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 #
 # .. ifmode:: internal
 #
-#  .. |reconfigure_Wrapper_Build| replace:: ``reconfigure_Wrapper_Build``
-#  .. _reconfigure_Wrapper_Build:
-#
-#  reconfigure_Wrapper_Build
-#  -------------------------
-#
-#   .. command:: reconfigure_Wrapper_Build()
-#
-#     Reconfigure the currently built wrapper (i.e. launch cmake configuration).
-#
-function(reconfigure_Wrapper_Build package)
-set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${package}/build)
-execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${TARGET_BUILD_FOLDER})
-endfunction(reconfigure_Wrapper_Build)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
 #  .. |reset_Wrapper_Description_Cached_Variables| replace:: ``reset_Wrapper_Description_Cached_Variables``
 #  .. _reset_Wrapper_Description_Cached_Variables:
 #
@@ -201,8 +182,11 @@ endfunction(reset_Wrapper_Description_Cached_Variables)
 #      :contrib_space: the name of the default contribution space used by the package.
 #
 macro(declare_Wrapper author institution mail year license address public_address description readme_file contrib_space)
+set(CMAKE_BUILD_TYPE Release CACHE INTERNAL "")
+set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")#to avoid the use of -isystem that may be not so well managed by some compilers
 set(${PROJECT_NAME}_ROOT_DIR ${WORKSPACE_DIR}/wrappers/${PROJECT_NAME} CACHE INTERNAL "")
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+manage_Current_Platform("${DIR_NAME}" "EXTERNAL") #loading the current platform configuration and perform adequate actions if any changes
 
 configure_Git()
 if(NOT GIT_CONFIGURED)
@@ -216,44 +200,11 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake) # adding the cmake scri
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/platforms) # using platform check modules
 
 #############################################################
-############ Managing current platform ######################
-#############################################################
-
-if(CURRENT_PLATFORM AND NOT CURRENT_PLATFORM STREQUAL "")# a current platform is already defined
-  #if any of the following variable changed, the cache of the CMake project needs to be regenerated from scratch
-  set(TEMP_PLATFORM ${CURRENT_PLATFORM})
-  set(TEMP_C_COMPILER ${CMAKE_C_COMPILER})
-  set(TEMP_CXX_COMPILER ${CMAKE_CXX_COMPILER})
-  set(TEMP_CMAKE_LINKER ${CMAKE_LINKER})
-  set(TEMP_CMAKE_RANLIB ${CMAKE_RANLIB})
-  set(TEMP_CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID})
-  set(TEMP_CMAKE_CXX_COMPILER_VERSION ${CMAKE_CXX_COMPILER_VERSION})
-endif()
-
-load_Current_Platform() #loading the current platform configuration
-if(TEMP_PLATFORM) #check if any change occurred
-  if( (NOT TEMP_PLATFORM STREQUAL CURRENT_PLATFORM) #the current platform has changed so we need to regenerate
-      OR (NOT TEMP_C_COMPILER STREQUAL CMAKE_C_COMPILER)
-      OR (NOT TEMP_CXX_COMPILER STREQUAL CMAKE_CXX_COMPILER)
-      OR (NOT TEMP_CMAKE_LINKER STREQUAL CMAKE_LINKER)
-      OR (NOT TEMP_CMAKE_RANLIB STREQUAL CMAKE_RANLIB)
-      OR (NOT TEMP_CMAKE_CXX_COMPILER_ID STREQUAL CMAKE_CXX_COMPILER_ID)
-      OR (NOT TEMP_CMAKE_CXX_COMPILER_VERSION STREQUAL CMAKE_CXX_COMPILER_VERSION)
-    )
-    message("[PID] INFO : cleaning the build folder after major environment change")
-    hard_Clean_Wrapper(${PROJECT_NAME})
-		reconfigure_Wrapper_Build(${PROJECT_NAME})
-  endif()
-endif()
-
-set(CMAKE_BUILD_TYPE Release CACHE INTERNAL "")
-set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")#to avoid the use of -isystem that may be not so well managed by some compilers
-#############################################################
 ############ Managing build process #########################
 #############################################################
 
 if(DIR_NAME STREQUAL "build")
-
+		unset(DIR_NAME)
 	  #################################################
 	  ######## create global targets ##################
 	  #################################################
@@ -303,7 +254,6 @@ if(DIR_NAME STREQUAL "build")
 	    COMMENT "[PID] memorizing new wrapper implementation ..."
 	  )
 
-
 	  # update target (update the framework from upstream git repository)
 	  add_custom_target(update
 	    COMMAND ${CMAKE_COMMAND}
@@ -324,8 +274,8 @@ if(DIR_NAME STREQUAL "build")
 	reset_CI_Variables()
 	reset_Packages_Finding_Variables()
   init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
-  init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}")
-	check_For_Wrapper_Remote_Respositories()
+  init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "")
+	check_For_Remote_Respositories("${ADDITIONNAL_DEBUG_INFO}")#configuring git remotes
 	begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
 else()
   message("[PID] ERROR : please run cmake in the build folder of the wrapper ${PROJECT_NAME}.")
@@ -403,9 +353,9 @@ endfunction(set_Wrapper_Option name type default_value)
 #      :original_project_url: the url of the original project site.
 #
 function(define_Wrapped_Project authors_references licenses original_project_url)
-set(${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_AUTHORS ${authors_references} CACHE INTERNAL "")
-set(${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_LICENSES ${licenses} CACHE INTERNAL "")
-set(${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_SITE ${original_project_url} CACHE INTERNAL "")
+set(${PROJECT_NAME}_ORIGINAL_PROJECT_AUTHORS ${authors_references} CACHE INTERNAL "")
+set(${PROJECT_NAME}_ORIGINAL_PROJECT_LICENSES ${licenses} CACHE INTERNAL "")
+set(${PROJECT_NAME}_ORIGINAL_PROJECT_SITE ${original_project_url} CACHE INTERNAL "")
 endfunction(define_Wrapped_Project)
 
 #.rst:
@@ -431,7 +381,7 @@ function(get_Wrapper_Site_Address SITE_ADDRESS wrapper)
 	if(${wrapper}_FRAMEWORK) #package belongs to a framework
 		include_Framework_Reference_File(PATH_TO_FILE ${${wrapper}_FRAMEWORK})
 		if(PATH_TO_FILE)
-			set(${SITE_ADDRESS} ${${${wrapper}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${wrapper} PARENT_SCOPE)
+			set(${SITE_ADDRESS} ${${${wrapper}_FRAMEWORK}_SITE}/packages/${wrapper} PARENT_SCOPE)
 		endif()
 	elseif(${wrapper}_SITE_GIT_ADDRESS AND ${wrapper}_SITE_ROOT_PAGE)
 		set(${SITE_ADDRESS} ${${wrapper}_SITE_ROOT_PAGE} PARENT_SCOPE)

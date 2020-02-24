@@ -115,23 +115,23 @@ set(file ${pathtonewfile})
 #1) write information related only to the wrapper project itself (not used in resulting installed external package description)
 file(WRITE ${file} "")
 file(APPEND ${file} "#### referencing wrapper of external package ${PROJECT_NAME} ####\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_CONTACT_AUTHOR ${${PROJECT_NAME}_MAIN_AUTHOR} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_CONTACT_INSTITUTION ${${PROJECT_NAME}_MAIN_INSTITUTION} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_CONTACT_MAIL ${${PROJECT_NAME}_CONTACT_MAIL} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_SITE_ROOT_PAGE ${${PROJECT_NAME}_SITE_ROOT_PAGE} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_PROJECT_PAGE ${${PROJECT_NAME}_PROJECT_PAGE} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_SITE_GIT_ADDRESS ${${PROJECT_NAME}_SITE_GIT_ADDRESS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_MAIN_AUTHOR ${${PROJECT_NAME}_MAIN_AUTHOR} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_MAIN_INSTITUTION ${${PROJECT_NAME}_MAIN_INSTITUTION} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_CONTACT_MAIL ${${PROJECT_NAME}_CONTACT_MAIL} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_SITE_ROOT_PAGE ${${PROJECT_NAME}_SITE_ROOT_PAGE} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_PROJECT_PAGE ${${PROJECT_NAME}_PROJECT_PAGE} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_SITE_GIT_ADDRESS ${${PROJECT_NAME}_SITE_GIT_ADDRESS} CACHE INTERNAL \"\")\n")
 fill_String_From_List(${PROJECT_NAME}_SITE_INTRODUCTION RES_SI_STRING)
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_SITE_INTRODUCTION \"${RES_SI_STRING}\" CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_SITE_INTRODUCTION \"${RES_SI_STRING}\" CACHE INTERNAL \"\")\n")
 set(res_string "")
 foreach(auth IN LISTS ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS)
 	list(APPEND res_string ${auth})
 endforeach()
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_AUTHORS_AND_INSTITUTIONS \"${res_string}\" CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_YEARS ${${PROJECT_NAME}_YEARS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_LICENSE ${${PROJECT_NAME}_LICENSE} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_ADDRESS ${${PROJECT_NAME}_ADDRESS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PID_WRAPPER_PUBLIC_ADDRESS ${${PROJECT_NAME}_PUBLIC_ADDRESS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS \"${res_string}\" CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_YEARS ${${PROJECT_NAME}_YEARS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_LICENSE ${${PROJECT_NAME}_LICENSE} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_ADDRESS ${${PROJECT_NAME}_ADDRESS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_PUBLIC_ADDRESS ${${PROJECT_NAME}_PUBLIC_ADDRESS} CACHE INTERNAL \"\")\n")
 
 #2) write information shared between wrapper and its external packages
 file(APPEND ${file} "set(${PROJECT_NAME}_DESCRIPTION \"${${PROJECT_NAME}_DESCRIPTION}\" CACHE INTERNAL \"\")\n")
@@ -143,9 +143,9 @@ file(APPEND ${file} "set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL \"\")\n")
 endif()
 
 #3) write information related to original project only
-file(APPEND ${file} "set(${PROJECT_NAME}_AUTHORS \"${${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_AUTHORS}\" CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PROJECT_SITE ${${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_SITE} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_LICENSES ${${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_LICENSES} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_ORIGINAL_PROJECT_AUTHORS \"${${PROJECT_NAME}_ORIGINAL_PROJECT_AUTHORS}\" CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_ORIGINAL_PROJECT_SITE ${${PROJECT_NAME}_ORIGINAL_PROJECT_SITE} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_ORIGINAL_PROJECT_LICENSES ${${PROJECT_NAME}_ORIGINAL_PROJECT_LICENSES} CACHE INTERNAL \"\")\n")
 
 
 ############################################################################
@@ -786,7 +786,7 @@ if(${package}_FRAMEWORK) #references are deployed in a framework
   include_Framework_Reference_File(PATH_TO_FILE ${${package}_FRAMEWORK})
 	if(PATH_TO_REF)
 		#when package is in a framework there is one more indirection to get references (we need to get information about this framework before downloading the reference file)
-		set(FRAMEWORK_ADDRESS ${${${package}_FRAMEWORK}_FRAMEWORK_SITE})#get the address of the framework static site
+		set(FRAMEWORK_ADDRESS ${${${package}_FRAMEWORK}_SITE})#get the address of the framework static site
     file(DOWNLOAD ${FRAMEWORK_ADDRESS}/packages/${package}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
 		list(GET res 0 numeric_error)
 
@@ -2015,17 +2015,17 @@ endfunction(build_And_Install_External_Package_Version)
 #      :IS_DEPLOYED: the output variable that is TRUE if external package wrapper has been deployed in workspace, FALSE otherwise.
 #
 function(deploy_Wrapper_Repository IS_DEPLOYED package)
-if(${package}_PID_WRAPPER_ADDRESS)
+if(${package}_ADDRESS)
 	if(ADDITIONNAL_DEBUG_INFO)
 		message("[PID] INFO : cloning the repository of wrapper for external package ${package}...")
 	endif()
-	if(${package}_PID_WRAPPER_PUBLIC_ADDRESS)#there is a public address where to fetch (without any )
-		clone_Wrapper_Repository(DEPLOYED ${package} ${${package}_PID_WRAPPER_PUBLIC_ADDRESS})#we clone from public address
+	if(${package}_PUBLIC_ADDRESS)#there is a public address where to fetch (without any )
+		clone_Wrapper_Repository(DEPLOYED ${package} ${${package}_PUBLIC_ADDRESS})#we clone from public address
 		if(DEPLOYED)
-			initialize_Wrapper_Git_Repository_Push_Address(${package} ${${package}_PID_WRAPPER_ADDRESS})#the push address is modified accordingly
+			initialize_Wrapper_Git_Repository_Push_Address(${package} ${${package}_ADDRESS})#the push address is modified accordingly
 		endif()
 	else() #basic case where package deployment requires identification : push/fetch address are the same
-		clone_Wrapper_Repository(DEPLOYED ${package} ${${package}_PID_WRAPPER_ADDRESS})
+		clone_Wrapper_Repository(DEPLOYED ${package} ${${package}_ADDRESS})
 	endif()
 	if(DEPLOYED)
 		if(ADDITIONNAL_DEBUG_INFO)
@@ -2937,11 +2937,11 @@ endfunction(configure_Binary_Package)
 #      :IS_DEPLOYED: the output variable that is TRUE if framework has ben deployed.
 #
 function(deploy_Framework_Repository IS_DEPLOYED framework)
-if(${framework}_FRAMEWORK_ADDRESS)
+if(${framework}_ADDRESS)
 	if(ADDITIONNAL_DEBUG_INFO)
 		message("[PID] INFO : cloning the repository of framework ${framework}...")
 	endif()
-	clone_Framework_Repository(DEPLOYED ${framework} ${${framework}_FRAMEWORK_ADDRESS})
+	clone_Framework_Repository(DEPLOYED ${framework} ${${framework}_ADDRESS})
 	if(DEPLOYED)
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : repository of framework ${framework} has been cloned.")

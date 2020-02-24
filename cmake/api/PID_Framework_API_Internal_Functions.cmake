@@ -31,6 +31,7 @@ include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
+include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 
 ##################################################################################
 ##################  declaration of a lone package static site ####################
@@ -295,50 +296,31 @@ endfunction(declare_Site)
 #
 #      :contrib_space: name of the default contribution space for the package.
 #
-function(declare_Framework author institution mail year site license git_address public_address repo_site description welcome contrib_space)
+macro(declare_Framework author institution mail year site license git_address public_address repo_site description welcome contrib_space)
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+manage_Current_Platform("${DIR_NAME}" "FRAMEWORK") #loading the current platform configuration and perform adequate actions if any changes
+
 configure_Git()
 if(NOT GIT_CONFIGURED)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR: your git tool is NOT configured. To use PID you need to configure git:\ngit config --global user.name \"Your Name\"\ngit config --global user.email <your email address>\n")
 	return()
 endif()
 if(DIR_NAME STREQUAL "build")
-
+	unset(DIR_NAME)
 	set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
-	set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake ${CMAKE_MODULE_PATH} PARENT_SCOPE) # adding the cmake scripts files from the framework
+	set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake ${CMAKE_MODULE_PATH}) # adding the cmake scripts files from the framework
+
 	init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}) # getting the workspace version used to generate the code
-	set(res_string)
-	foreach(string_el IN ITEMS ${author})
-		set(res_string "${res_string}_${string_el}")
-	endforeach()
-	set(${PROJECT_NAME}_FRAMEWORK_MAIN_AUTHOR "${res_string}" CACHE INTERNAL "")
-	set(res_string "")
-	foreach(string_el IN LISTS institution)
-		set(res_string "${res_string}_${string_el}")
-	endforeach()
-	set(${PROJECT_NAME}_FRAMEWORK_MAIN_INSTITUTION "${res_string}" CACHE INTERNAL "")
-	set(${PROJECT_NAME}_FRAMEWORK_CONTACT_MAIL ${mail} CACHE INTERNAL "")
-	if(${PROJECT_NAME}_FRAMEWORK_MAIN_INSTITUTION)
-		set(${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_FRAMEWORK_MAIN_AUTHOR}(${${PROJECT_NAME}_FRAMEWORK_MAIN_INSTITUTION})" CACHE INTERNAL "")
-	else()
-		set(${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_FRAMEWORK_MAIN_AUTHOR}" CACHE INTERNAL "")
-	endif()
-	set(${PROJECT_NAME}_FRAMEWORK_DESCRIPTION "${description}" CACHE INTERNAL "")
-	set(${PROJECT_NAME}_FRAMEWORK_YEARS ${year} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_FRAMEWORK_SITE ${site} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_FRAMEWORK_ADDRESS ${git_address} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_FRAMEWORK_PUBLIC_ADDRESS ${public_address} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_FRAMEWORK_PROJECT_PAGE ${repo_site} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_FRAMEWORK_LICENSE ${license} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_FRAMEWORK_WELCOME ${welcome} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_FRAMEWORK_CATEGORIES CACHE INTERNAL "")#categories are reset
+	init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${git_address}" "${public_address}" "" "${site}" "${repo_site}" "${welcome}")
 	set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
+	declare_Framework_Global_Cache_Options()
+	check_For_Remote_Respositories("${ADDITIONNAL_DEBUG_INFO}")#configuring git remotes
 
 	#searching for jekyll (static site generator)
 	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searcinh for the jekyll executable in standard paths
 
 	if(JEKYLL_EXECUTABLE)
-		get_Jekyll_URLs(${${PROJECT_NAME}_FRAMEWORK_SITE} PUBLIC_URL BASE_URL)
+		get_Jekyll_URLs(${${PROJECT_NAME}_SITE} PUBLIC_URL BASE_URL)
 		set(STATIC_SITE_BASEURL "${BASE_URL}")
 
 		add_custom_target(build
@@ -378,7 +360,27 @@ else()
 	message("[PID] ERROR : please run cmake in the build folder of the framework ${PROJECT_NAME}.")
 	return()
 endif()
-endfunction(declare_Framework)
+endmacro(declare_Framework)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Framework_Global_Cache_Options| replace:: ``declare_Framework_Global_Cache_Options``
+#  .. _declare_Framework_Global_Cache_Options:
+#
+#  declare_Framework_Global_Cache_Options
+#  --------------------------------------
+#
+#   .. command:: declare_Framework_Global_Cache_Options()
+#
+#     Declare configurable options for the currently built framework.
+#
+macro(declare_Framework_Global_Cache_Options)
+option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
+endmacro(declare_Framework_Global_Cache_Options)
+
 
 #.rst:
 #
@@ -435,9 +437,9 @@ function(add_Framework_Author author institution)
 		set(res_string_instit "${res_string_instit}_${string_el}")
 	endforeach()
 	if(res_string_instit)
-		set(${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS};${res_string_author}(${res_string_instit})" CACHE INTERNAL "")
+		set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS};${res_string_author}(${res_string_instit})" CACHE INTERNAL "")
 	else()
-		set(${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS};${res_string_author}" CACHE INTERNAL "")
+		set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS "${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS};${res_string_author}" CACHE INTERNAL "")
 	endif()
 endfunction(add_Framework_Author)
 
@@ -458,7 +460,7 @@ endfunction(add_Framework_Author)
 #      :category: the string describing the category.
 #
 function(add_Framework_Category category)
-	set(${PROJECT_NAME}_FRAMEWORK_CATEGORIES ${${PROJECT_NAME}_FRAMEWORK_CATEGORIES} ${category} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_CATEGORIES ${${PROJECT_NAME}_CATEGORIES} ${category} CACHE INTERNAL "")
 endfunction(add_Framework_Category)
 
 ##################################################################################
@@ -483,17 +485,17 @@ function(generate_Framework_Readme_File)
 set(README_CONFIG_FILE ${WORKSPACE_DIR}/cmake/patterns/frameworks/README.md.in)
 
 set(FRAMEWORK_NAME ${PROJECT_NAME})
-set(FRAMEWORK_SITE ${${PROJECT_NAME}_FRAMEWORK_SITE})
-set(README_OVERVIEW "${${PROJECT_NAME}_FRAMEWORK_DESCRIPTION}") #if no detailed description provided by wiki description use the short one
+set(FRAMEWORK_SITE ${${PROJECT_NAME}_SITE})
+set(README_OVERVIEW "${${PROJECT_NAME}_DESCRIPTION}") #if no detailed description provided by wiki description use the short one
 
-if(${PROJECT_NAME}_FRAMEWORK_LICENSE)
-	set(LICENSE_FOR_README "The license that applies to this repository project is **${${PROJECT_NAME}_FRAMEWORK_LICENSE}**.")
+if(${PROJECT_NAME}_LICENSE)
+	set(LICENSE_FOR_README "The license that applies to this repository project is **${${PROJECT_NAME}_LICENSE}**.")
 else()
 	set(LICENSE_FOR_README "The framework has no license defined yet.")
 endif()
 
 set(README_AUTHORS_LIST "")
-foreach(author IN LISTS ${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS)
+foreach(author IN LISTS ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS)
 	generate_Full_Author_String(${author} STRING_TO_APPEND)
 	set(README_AUTHORS_LIST "${README_AUTHORS_LIST}\n+ ${STRING_TO_APPEND}")
 endforeach()
@@ -519,16 +521,16 @@ endfunction(generate_Framework_Readme_File)
 #   Create the license file within the current framework project.
 #
 function(generate_Framework_License_File)
-if(	${PROJECT_NAME}_FRAMEWORK_LICENSE)
-		resolve_License_File(PATH_TO_FILE ${${PROJECT_NAME}_FRAMEWORK_LICENSE})
+if(	${PROJECT_NAME}_LICENSE)
+	resolve_License_File(PATH_TO_FILE ${${PROJECT_NAME}_LICENSE})
 	if(NOT PATH_TO_FILE)
-		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_FRAMEWORK_LICENSE} not found in any contribution space installed in workspace, license file will not be generated.")
+		message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in any contribution space installed in workspace, license file will not be generated.")
 	else()
 		#prepare license generation
 		set(${PROJECT_NAME}_FOR_LICENSE "${PROJECT_NAME} framework")
-		set(${PROJECT_NAME}_DESCRIPTION_FOR_LICENSE ${${PROJECT_NAME}_FRAMEWORK_DESCRIPTION})
-		set(${PROJECT_NAME}_YEARS_FOR_LICENSE ${${PROJECT_NAME}_FRAMEWORK_YEARS})
-		foreach(author IN LISTS ${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS)
+		set(${PROJECT_NAME}_DESCRIPTION_FOR_LICENSE ${${PROJECT_NAME}_DESCRIPTION})
+		set(${PROJECT_NAME}_YEARS_FOR_LICENSE ${${PROJECT_NAME}_YEARS})
+		foreach(author IN LISTS ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS)
 			generate_Full_Author_String(${author} STRING_TO_APPEND)
 			set(${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE "${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE} ${STRING_TO_APPEND}")
 		endforeach()
@@ -564,8 +566,8 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/to_generate/_data)
 
 # 2) generate the data file containing general information about the framework (generated from a CMake pattern file)
 set(FRAMEWORK_NAME ${PROJECT_NAME})
-if(${PROJECT_NAME}_FRAMEWORK_SITE)
-	get_Jekyll_URLs(${${PROJECT_NAME}_FRAMEWORK_SITE} PUBLIC_URL BASE_URL)
+if(${PROJECT_NAME}_SITE)
+	get_Jekyll_URLs(${${PROJECT_NAME}_SITE} PUBLIC_URL BASE_URL)
 	set(FRAMEWORK_SITE_URL ${PUBLIC_URL})
 	if(BASE_URL)
 		set(FRAMEWORK_SITE_BASE_FOLDER "/${BASE_URL}")
@@ -577,23 +579,23 @@ else()
 	set(FRAMEWORK_SITE_BASE_FOLDER)
 endif()
 
-set(FRAMEWORK_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_FRAMEWORK_PROJECT_PAGE})
+set(FRAMEWORK_PROJECT_REPOSITORY_PAGE ${${PROJECT_NAME}_PROJECT_PAGE})
 get_Formatted_Framework_Contact_String(${PROJECT_NAME} RES_STRING)
 set(FRAMEWORK_MAINTAINER_NAME ${RES_STRING})
-set(FRAMEWORK_MAINTAINER_MAIL ${${PROJECT_NAME}_FRAMEWORK_CONTACT_MAIL})
+set(FRAMEWORK_MAINTAINER_MAIL ${${PROJECT_NAME}_CONTACT_MAIL})
 set(FRAMEWORK_AUTHORS "<ul>")
-foreach(author IN LISTS ${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS)
+foreach(author IN LISTS ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS)
 	get_Formatted_Author_String(${author} RES_STRING)
 	set(FRAMEWORK_AUTHORS "${FRAMEWORK_AUTHORS}\n<li> ${RES_STRING}")
 endforeach()
 set(FRAMEWORK_AUTHORS "${FRAMEWORK_AUTHORS}\n</ul>")
 
-set(FRAMEWORK_DESCRIPTION ${${PROJECT_NAME}_FRAMEWORK_DESCRIPTION})
+set(FRAMEWORK_DESCRIPTION ${${PROJECT_NAME}_DESCRIPTION})
 set(FRAMEWORK_BANNER ${${PROJECT_NAME}_FRAMEWORK_BANNER_IMAGE_FILE_NAME})
 set(FRAMEWORK_LOGO ${${PROJECT_NAME}_FRAMEWORK_LOGO_IMAGE_FILE_NAME})
-if(${PROJECT_NAME}_FRAMEWORK_WELCOME)
-	get_filename_component(WELCOME_ONLY_NAME ${${PROJECT_NAME}_FRAMEWORK_WELCOME} NAME_WE)
-	get_filename_component(WELCOME_ONLY_DIR ${${PROJECT_NAME}_FRAMEWORK_WELCOME} DIRECTORY)
+if(${PROJECT_NAME}_WELCOME)
+	get_filename_component(WELCOME_ONLY_NAME ${${PROJECT_NAME}_WELCOME} NAME_WE)
+	get_filename_component(WELCOME_ONLY_DIR ${${PROJECT_NAME}_WELCOME} DIRECTORY)
 	if(WELCOME_ONLY_DIR)
 		set(WELCOME_WITHOUT_EXT ${WELCOME_ONLY_DIR}/${WELCOME_ONLY_NAME})
 	else()
@@ -607,7 +609,7 @@ configure_file(${WORKSPACE_DIR}/cmake/patterns/frameworks/framework.yml.in ${CMA
 
 # 3) generate the data file defining categories managed by the framework (generated from scratch)
 file(WRITE ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "")
-foreach(cat IN LISTS ${PROJECT_NAME}_FRAMEWORK_CATEGORIES)
+foreach(cat IN LISTS ${PROJECT_NAME}_CATEGORIES)
 	extract_All_Words_From_Path(${cat} "_" LIST_OF_NAMES)
 	list(LENGTH LIST_OF_NAMES SIZE)
 	set(FINAL_NAME "")
@@ -657,30 +659,30 @@ set(file ${pathtonewfile})
 file(WRITE ${file} "")
 
 file(APPEND ${file} "#### referencing framework ${PROJECT_NAME} mode ####\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_MAIN_AUTHOR ${${PROJECT_NAME}_FRAMEWORK_MAIN_AUTHOR} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_MAIN_INSTITUTION ${${PROJECT_NAME}_FRAMEWORK_MAIN_INSTITUTION} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_YEARS ${${PROJECT_NAME}_FRAMEWORK_YEARS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_CONTACT_MAIL ${${PROJECT_NAME}_FRAMEWORK_CONTACT_MAIL} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_SITE ${${PROJECT_NAME}_FRAMEWORK_SITE} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_PROJECT_PAGE ${${PROJECT_NAME}_FRAMEWORK_PROJECT_PAGE} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_DESCRIPTION ${${PROJECT_NAME}_FRAMEWORK_DESCRIPTION} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_LICENSE ${${PROJECT_NAME}_FRAMEWORK_LICENSE} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_ADDRESS ${${PROJECT_NAME}_FRAMEWORK_ADDRESS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_PUBLIC_ADDRESS ${${PROJECT_NAME}_FRAMEWORK_PUBLIC_ADDRESS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_MAIN_AUTHOR ${${PROJECT_NAME}_MAIN_AUTHOR} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_MAIN_INSTITUTION ${${PROJECT_NAME}_MAIN_INSTITUTION} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_YEARS ${${PROJECT_NAME}_YEARS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_CONTACT_MAIL ${${PROJECT_NAME}_CONTACT_MAIL} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_SITE ${${PROJECT_NAME}_SITE} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_PROJECT_PAGE ${${PROJECT_NAME}_PROJECT_PAGE} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_DESCRIPTION ${${PROJECT_NAME}_DESCRIPTION} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_LICENSE ${${PROJECT_NAME}_LICENSE} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_ADDRESS ${${PROJECT_NAME}_ADDRESS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_PUBLIC_ADDRESS ${${PROJECT_NAME}_PUBLIC_ADDRESS} CACHE INTERNAL \"\")\n")
 
 # writing concise author information
 set(res_string "")
-foreach(auth IN LISTS ${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS)
+foreach(auth IN LISTS ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS)
 	list(APPEND res_string ${auth})
 endforeach()
 set(printed_authors "${res_string}")
-file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_AUTHORS_AND_INSTITUTIONS \"${res_string}\" CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS \"${res_string}\" CACHE INTERNAL \"\")\n")
 
 # writing concise category information
-if(${PROJECT_NAME}_FRAMEWORK_CATEGORIES)
-	file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_CATEGORIES \"${${PROJECT_NAME}_FRAMEWORK_CATEGORIES}\" CACHE INTERNAL \"\")\n")
+if(${PROJECT_NAME}_CATEGORIES)
+	file(APPEND ${file} "set(${PROJECT_NAME}_CATEGORIES \"${${PROJECT_NAME}_CATEGORIES}\" CACHE INTERNAL \"\")\n")
 else()
-	file(APPEND ${file} "set(${PROJECT_NAME}_FRAMEWORK_CATEGORIES CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL \"\")\n")
 endif()
 endfunction(generate_Framework_Reference_File)
 
@@ -800,8 +802,8 @@ else()
 	fill_String_From_List(${package}_DESCRIPTION DESCRIPTION_STRING)
 	set(EXTERNAL_PACKAGE_DESCRIPTION ${DESCRIPTION_STRING})
 
-	fill_String_From_List(${package}_AUTHORS EXTERNAL_PACKAGE_AUTHORS)
-	fill_String_From_List(${package}_LICENSES EXTERNAL_PACKAGE_LICENSE)
+	fill_String_From_List(${package}_ORIGINAL_PROJECT_AUTHORS EXTERNAL_PACKAGE_AUTHORS)
+	fill_String_From_List(${package}_ORIGINAL_PROJECT_LICENSES EXTERNAL_PACKAGE_LICENSE)
 
 	# managing categories
 	if(NOT ${package}_CATEGORIES)
@@ -923,19 +925,19 @@ foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os f
 			if(native AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)
 				set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version})
 				set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform})
-				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)# release version must exist for native packages
+				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)# release version must exist for native packages
 
 				if(EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)# debug version may no exist for native packages
-					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)
+					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)
 				endif()
 			elseif(NOT native AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz) #at least a release version is required for external packages
 
 				set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version})
 				set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform})
-				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)
+				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_SITE}/external/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)
 				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER ${package}-${ref_version}-${RES_PLATFORM_BASE})
 				if(EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)
-					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_FRAMEWORK_SITE}/external/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)
+					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE}/external/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)
 					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG ${package}-${ref_version}-dbg-${RES_PLATFORM_BASE})
 				endif()
 			endif()
@@ -1005,7 +1007,7 @@ update_Environment_CI_Config_File() #update CI file with version coming from fra
 #########################################################################################################################
 ######### writing the global reference file for the package with all global info contained in the CMakeFile.txt #########
 #########################################################################################################################
-if(${PROJECT_NAME}_FRAMEWORK_ADDRESS)
+if(${PROJECT_NAME}_ADDRESS)
 	generate_Framework_Reference_File(${CMAKE_BINARY_DIR}/share/ReferFramework${PROJECT_NAME}.cmake)
 	#copy the reference file of the package into the "references" folder of the workspace
 	get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${PROJECT_NAME})

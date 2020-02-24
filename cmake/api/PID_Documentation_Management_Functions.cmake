@@ -896,8 +896,8 @@ if(EXPORTS_SOMETHING) #defines those dependencies that are exported
 		#defining the target documentation page of the package
 		if(${a_pack}_SITE_ROOT_PAGE)
 			set(TARGET_PAGE ${${a_pack}_SITE_ROOT_PAGE})
-		elseif(${a_pack}_FRAMEWORK AND ${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE)
-			set(TARGET_PAGE ${${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE}/external/${a_pack})
+		elseif(${a_pack}_FRAMEWORK AND ${${a_pack}_FRAMEWORK}_SITE)
+			set(TARGET_PAGE ${${${a_pack}_FRAMEWORK}_SITE}/external/${a_pack})
 		else()
 			set(TARGET_PAGE)
 		endif()
@@ -1052,8 +1052,8 @@ else()
   endif()
 endif()
 
-set(PACKAGE_ORIGINAL_PROJECT_SITE ${${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_SITE}) #useful only for wrappers
-set(PACKAGE_ORIGINAL_PROJECT_LICENSES ${${PROJECT_NAME}_WRAPPER_ORIGINAL_PROJECT_LICENSES}) #useful only for wrappers
+set(PACKAGE_ORIGINAL_PROJECT_SITE ${${PROJECT_NAME}_ORIGINAL_PROJECT_SITE}) #useful only for wrappers
+set(PACKAGE_ORIGINAL_PROJECT_LICENSES ${${PROJECT_NAME}_ORIGINAL_PROJECT_LICENSES}) #useful only for wrappers
 
 #released version info
 if(${PROJECT_NAME}_VERSION) #only native package have a current version
@@ -1227,7 +1227,7 @@ function(generate_Dependency_Site dependency RES_CONTENT)
 if(${dependency}_SITE_ROOT_PAGE)
 	set(RES "+ [${dependency}](${${dependency}_SITE_ROOT_PAGE})") #creating a link to the package site
 elseif(${dependency}_FRAMEWORK) #the package belongs to a framework, creating a link to this page in the framework
-	if(NOT ${${dependency}_FRAMEWORK}_FRAMEWORK_SITE) #getting framework online site
+	if(NOT ${${dependency}_FRAMEWORK}_SITE) #getting framework online site
     include_Framework_Reference_File(PATH_TO_FILE ${${dependency}_FRAMEWORK})
     if(NOT PATH_TO_FILE)
       message(FATAL_ERROR "[PID] Cannot find any reference to framework ${${dependency}_FRAMEWORK}")
@@ -1235,8 +1235,8 @@ elseif(${dependency}_FRAMEWORK) #the package belongs to a framework, creating a 
     endif()
 	endif()
 
-	if(${${dependency}_FRAMEWORK}_FRAMEWORK_SITE) #get the information about the framework
-		set(RES "+ [${dependency}](${${${dependency}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${dependency})")
+	if(${${dependency}_FRAMEWORK}_SITE) #get the information about the framework
+		set(RES "+ [${dependency}](${${${dependency}_FRAMEWORK}_SITE}/packages/${dependency})")
 	else()#in case of a problem (framework unknown), do not create the link
 		set(RES "+ ${dependency}")
 	endif()
@@ -1294,15 +1294,15 @@ function(generate_External_Dependency_Site RES_CONTENT dependency list_of_versio
   endif()
 
   if(${dependency}_FRAMEWORK)
-  	if(NOT ${${dependency}_FRAMEWORK}_FRAMEWORK_SITE)#getting framework online site
+  	if(NOT ${${dependency}_FRAMEWORK}_SITE)#getting framework online site
       include_Framework_Reference_File(PATH_TO_FILE ${${dependency}_FRAMEWORK})
       if(NOT PATH_TO_FILE)
         message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot find any reference to framework ${${dependency}_FRAMEWORK}")
         return()
       endif()
   	endif()
-  	if(${${dependency}_FRAMEWORK}_FRAMEWORK_SITE)
-  		set(RES "+ [${dependency}](${${${dependency}_FRAMEWORK}_FRAMEWORK_SITE}/external/${dependency})")
+  	if(${${dependency}_FRAMEWORK}_SITE)
+  		set(RES "+ [${dependency}](${${${dependency}_FRAMEWORK}_SITE}/external/${dependency})")
   	else()#in case of a problem (framework unknown, problem in framework description), do not create the link
   		set(RES "+ ${dependency}")
   	endif()
@@ -1442,8 +1442,8 @@ if(NOT IS_HF)
 			#defining the target documentation page of the package
 			if(${a_pack}_SITE_ROOT_PAGE)
 				set(TARGET_PAGE ${${a_pack}_SITE_ROOT_PAGE})
-			elseif(${a_pack}_FRAMEWORK AND ${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE)
-				set(TARGET_PAGE ${${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${a_pack})
+			elseif(${a_pack}_FRAMEWORK AND ${${a_pack}_FRAMEWORK}_SITE)
+				set(TARGET_PAGE ${${${a_pack}_FRAMEWORK}_SITE}/packages/${a_pack})
 			else()
 				set(TARGET_PAGE)
 			endif()
@@ -1464,8 +1464,8 @@ if(NOT IS_HF)
 		endforeach()
 
 		foreach(a_pack IN LISTS EXT_EXPORTED_DEPS)
-			if(${a_pack}_FRAMEWORK AND ${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE)
-				set(TARGET_PAGE ${${${a_pack}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${a_pack})
+			if(${a_pack}_FRAMEWORK AND ${${a_pack}_FRAMEWORK}_SITE)
+				set(TARGET_PAGE ${${${a_pack}_FRAMEWORK}_SITE}/packages/${a_pack})
 			else()
 				set(TARGET_PAGE)
 			endif()
@@ -1746,7 +1746,7 @@ if(${package}_FRAMEWORK) #package belongs to a framework
     message(FATAL_ERROR "[PID] Cannot find any reference to framework ${${package}_FRAMEWORK} containing package ${package}")
     return()
   endif()
-  set(${SITE_ADDRESS} ${${${package}_FRAMEWORK}_FRAMEWORK_SITE}/packages/${package} PARENT_SCOPE)
+  set(${SITE_ADDRESS} ${${${package}_FRAMEWORK}_SITE}/packages/${package} PARENT_SCOPE)
 elseif(${package}_SITE_GIT_ADDRESS AND ${package}_SITE_ROOT_PAGE)
 	set(${SITE_ADDRESS} ${${package}_SITE_ROOT_PAGE} PARENT_SCOPE)
 endif()

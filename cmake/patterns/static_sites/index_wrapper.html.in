@@ -9,7 +9,9 @@ has_checks: false
 has_coverage: false
 ---
 
-<h2>Welcome to {{ page.package }} external package wrapper !</h2>
+<center>
+<h2>{{ page.package }} external package wrapper documentation</h2>
+</center>
 
 <br>
 

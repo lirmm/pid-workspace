@@ -1268,6 +1268,7 @@ if(NOT CONNECTED)#no official remote (due to old deployment unit style or due to
 		return()
 	endif()
 elseif(URL) # official repository is connected and has an official repository declared
+
 	get_Remotes_Address(${path_to_repo} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN_FETCH RES_ORIGIN_PUSH)#get the adress of the official and origin git remotes
   if((NOT RES_OFFICIAL_FETCH STREQUAL URL)
       AND (NOT RES_OFFICIAL_FETCH STREQUAL PUBLIC_URL))
@@ -1337,7 +1338,11 @@ elseif(URL) # official repository is connected and has an official repository de
         AND REF_ADDR STREQUAL RES_OFFICIAL_PUSH)#OK no change from official => nothing to do
       set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE) #simply exitting
       return()
+    elseif(NOT REF_PUB_ADDR AND REF_ADDR STREQUAL RES_OFFICIAL_FETCH)#no public address defined in reference but fetch addr in reference matches the official address
+      set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE) #simply exitting
+      return()
     endif()
+
     #from here we can deduce that a migration may have occurred for official repository
     #2 possibilities: either the reference is invalid or this is the local package
     test_Remote_Connection(CONNECTED ${path_to_repo} official)#testing the connection to know if local package is OK
@@ -1360,7 +1365,7 @@ elseif(URL) # official repository is connected and has an official repository de
       endif()
 			# once the update will be done the official address in description should have changed accordingly
     else()#in this situation the local address is good BUT the reference file is supposed to be invalid
-      message("[PID] WARNING : repository ${path_to_repo} is connected with its official remote that is not the same address as the one used in its reference file. Either the reference file is not up to date (solution: upgrade your workspace then relaunch configuration) OR your package is connected to an old repository that is no more the official one (solution: use workspace connect command)")
+      message("[PID] WARNING : repository ${path_to_repo} is connected with its official remote that is not the same address (push =${RES_OFFICIAL_PUSH} fetch=${RES_OFFICIAL_FETCH}) as the one used in its reference file (push=${REF_ADDR}, fetch=${REF_PUB_ADDR}). Either the reference file is not up to date (solution: upgrade your workspace then relaunch configuration) OR your package is connected to an old repository that is no more the official one (solution: use workspace connect command)")
       set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE) #simply exitting
     endif()
 	endif()
@@ -1476,7 +1481,7 @@ endfunction(check_For_New_Commits_To_Release)
 #  .. _is_Repository_Connected:
 #
 #  is_Repository_Connected
-#  --------------------
+#  -----------------------
 #
 #   .. command:: is_Repository_Connected(CONNECTED path_to_repo remote)
 #
@@ -1488,7 +1493,7 @@ endfunction(check_For_New_Commits_To_Release)
 #
 #     :CONNECTED: the output variable that is TRUE if deployment_unit is connected to the remote, FALSE otherwise (including if the remote does not exist)
 #
-function(is_Repository_Connected CONNECTED path_to_repo type remote)
+function(is_Repository_Connected CONNECTED path_to_repo remote)
 	git_Provides_GETURL(RESULT)#depending on the version of git we can use the get-url command or not
 
   if(RESULT)#the get-url approach is the best one
@@ -1997,7 +2002,7 @@ endfunction(get_Repository_Name)
 #
 #   .. command:: check_For_Remote_Respositories(verbose)
 #
-#     Check, and eventually perform corrective actions, that package's repository origin and official remotes are defined.
+#     Check, and eventually perform corrective actions, that deployment unit's repository origin and official remotes are defined.
 #
 #     :verbose: if TRUE the function will echo more messages.
 #
@@ -2044,53 +2049,6 @@ else()#there is a connected remote after adjustment
   endif()
 endif()
 endfunction(check_For_Remote_Respositories)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |check_For_Wrapper_Remote_Respositories| replace:: ``check_For_Wrapper_Remote_Respositories``
-#  .. _check_For_Wrapper_Remote_Respositories:
-#
-#  check_For_Wrapper_Remote_Respositories
-#  --------------------------------------
-#
-#   .. command:: check_For_Wrapper_Remote_Respositories()
-#
-#     Check, and eventually perform corrective actions, so that wrapper's repository origin remote is defined.
-#
-function(check_For_Wrapper_Remote_Respositories)
-  is_Repository_Connected(CONNECTED ${CMAKE_SOURCE_DIR} origin)
-  if(NOT CONNECTED) #the package has no origin remote => create it and set it to the same address as official
-      if(${PROJECT_NAME}_PUBLIC_ADDRESS)
-        execute_process(COMMAND git remote add origin ${${PROJECT_NAME}_PUBLIC_ADDRESS}
-                        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
-        if(${PROJECT_NAME}_ADDRESS)
-          execute_process(COMMAND git remote set-url --push origin ${${PROJECT_NAME}_ADDRESS}
-                          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
-        endif()
-      elseif(${PROJECT_NAME}_ADDRESS)
-        execute_process(COMMAND git remote add origin ${${PROJECT_NAME}_ADDRESS}
-                        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
-      else()#no need to check more the package is not connected and this is normal
-        return()
-      endif()
-      execute_process(COMMAND git fetch origin
-                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
-  else()#already connected
-    get_Remotes_Address(${CMAKE_SOURCE_DIR} RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN_FETCH RES_ORIGIN_PUSH)#get the adress of the official and origin git remotes
-    if(NOT ${PROJECT_NAME}_PUBLIC_ADDRESS)#no public address defined (only adress is used for fetch and push)
-      if(NOT ${PROJECT_NAME}_ADDRESS STREQUAL RES_ORIGIN_FETCH)
-        message("[PID] WARNING: the address used in package description (${${PROJECT_NAME}_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (${RES_ORIGIN_FETCH}). Using the current remote by default. You should change the address in package description.")
-      endif()
-    else()#a public address is defined !
-      if(NOT ${PROJECT_NAME}_ADDRESS STREQUAL RES_ORIGIN_PUSH
-        AND NOT ${PROJECT_NAME}_PUBLIC_ADDRESS STREQUAL RES_ORIGIN_FETCH)
-        message("[PID] WARNING: none of the addresses used in package description (${${PROJECT_NAME}_ADDRESS} and ${${PROJECT_NAME}_PUBLIC_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (${RES_ORIGIN_FETCH}). Using the current remote by default. You should change the address in package description.")
-      endif()
-    endif()
-  endif()
-endfunction(check_For_Wrapper_Remote_Respositories)
 
 #.rst:
 #

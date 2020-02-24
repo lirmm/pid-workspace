@@ -59,7 +59,7 @@ include(CMakeParseArguments)
 #     .. rubric:: Optional parameters
 #
 #     :INSTITUTION <institutions>: Define the institution(s) to which the reference author belongs.
-#     :MAIL <e-mail>: E-mail of the reference author.
+#     :MAIL|EMAIL <e-mail>: E-mail of the reference author.
 #     :ADDRESS <url>: url of the package's official repository. Must be set once the package is published.
 #     :PUBLIC_ADDRESS <url>: provide a public counterpart to the repository `ADDRESS`
 #     :README <path relative to share folder>: Used to define a user-defined README file for the package.
@@ -96,7 +96,7 @@ macro(PID_Package)
 endmacro(PID_Package)
 
 macro(declare_PID_Package)
-set(oneValueArgs LICENSE ADDRESS MAIL PUBLIC_ADDRESS README CODE_STYLE CONTRIBUTION_SPACE)
+set(oneValueArgs LICENSE ADDRESS MAIL EMAIL PUBLIC_ADDRESS README CODE_STYLE CONTRIBUTION_SPACE)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION VERSION)
 cmake_parse_arguments(DECLARE_PID_PACKAGE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_PACKAGE_AUTHOR)
@@ -120,11 +120,16 @@ if(NOT DECLARE_PID_PACKAGE_ADDRESS AND DECLARE_PID_PACKAGE_PUBLIC_ADDRESS)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the package must have an adress if a public access adress is declared.")
 endif()
 
-declare_Package(	"${DECLARE_PID_PACKAGE_AUTHOR}" "${DECLARE_PID_PACKAGE_INSTITUTION}" "${DECLARE_PID_PACKAGE_MAIL}"
+if(DECLARE_PID_PACKAGE_MAIL)
+  set(email ${DECLARE_PID_PACKAGE_MAIL})
+elseif(DECLARE_PID_PACKAGE_EMAIL)
+  set(email ${DECLARE_PID_PACKAGE_EMAIL})
+endif()
+declare_Package(	"${DECLARE_PID_PACKAGE_AUTHOR}" "${DECLARE_PID_PACKAGE_INSTITUTION}" "${email}"
 			"${DECLARE_PID_PACKAGE_YEAR}" "${DECLARE_PID_PACKAGE_LICENSE}"
 			"${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_PUBLIC_ADDRESS}"
 		"${DECLARE_PID_PACKAGE_DESCRIPTION}" "${DECLARE_PID_PACKAGE_README}" "${DECLARE_PID_PACKAGE_CODE_STYLE}" "${DECLARE_PID_PACKAGE_CONTRIBUTION_SPACE}")
-
+unset(email)
 if(DECLARE_PID_PACKAGE_VERSION) #version directly declared in the declaration (NEW WAY to specify version)
   set_PID_Package_Version(${DECLARE_PID_PACKAGE_VERSION})#simply pass the list to the "final" function
 endif()
