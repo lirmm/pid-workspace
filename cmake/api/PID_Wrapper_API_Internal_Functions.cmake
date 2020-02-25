@@ -631,10 +631,11 @@ endif()
 if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done within a lone static site
 
 	add_custom_target(site
-		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+		COMMAND ${CMAKE_COMMAND}
+		        -DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DIN_CI_PROCESS=${IN_CI_PROCESS}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DKNOWN_VERSIONS="${${PROJECT_NAME}_KNOWN_VERSIONS}"
+						"-DKNOWN_VERSIONS=${${PROJECT_NAME}_KNOWN_VERSIONS}"
 						-DTARGET_PLATFORM=${curr_platform_str}
 						-DTARGET_INSTANCE=${CURRENT_PLATFORM_INSTANCE}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
@@ -645,13 +646,17 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done
 						-DSITE_GIT="${${PROJECT_NAME}_SITE_GIT_ADDRESS}"
 						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
 						-DPACKAGE_SITE_URL="${${PROJECT_NAME}_SITE_ROOT_PAGE}"
-			 -P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Site.cmake)
+			 -P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Site.cmake
+		   VERBATIM
+		 )
 elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done with a framework
+
 	add_custom_target(site
-		COMMAND ${CMAKE_COMMAND} 	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+		COMMAND ${CMAKE_COMMAND}
+		        -DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DIN_CI_PROCESS=${IN_CI_PROCESS}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DKNOWN_VERSIONS="${${PROJECT_NAME}_KNOWN_VERSIONS}"
+						"-DKNOWN_VERSIONS=${${PROJECT_NAME}_KNOWN_VERSIONS}"
 						-DTARGET_PLATFORM=${curr_platform_str}
 						-DTARGET_INSTANCE=${CURRENT_PLATFORM_INSTANCE}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
@@ -662,6 +667,7 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 						-DFORCED_UPDATE=\${force}
 						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
 			 -P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Site.cmake
+			 VERBATIM
 	)
 endif()
 endfunction(create_Wrapper_Documentation_Target)

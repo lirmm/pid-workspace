@@ -24,8 +24,9 @@ include(PID_Documentation_Management_Functions NO_POLICY_SCOPE)
 include(PID_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
+include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 
-
+load_Current_Platform() #loading the current platform configuration
 #manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
 if(NOT SYNCHRO AND DEFINED ENV{synchro})
 	set(SYNCHRO $ENV{synchro} CACHE INTERNAL "" FORCE)
@@ -129,9 +130,6 @@ endif()
 if(is_native)
 	produce_Package_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${TARGET_VERSION}" ${TARGET_PLATFORM} "${TARGET_INSTANCE}" ${include_api_doc}  ${include_coverage} ${include_staticchecks} ${include_installer} ${forced_update}) # copy everything needed
 else()
-	#need to parse the version argument as there may have many versions
-	include(CMakeParseArguments)
-	separate_arguments(KNOWN_VERSIONS)
 	produce_Wrapper_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${KNOWN_VERSIONS}" ${TARGET_PLATFORM} "${TARGET_INSTANCE}" ${include_installer} ${forced_update}) # copy everything needed
 endif()
 
