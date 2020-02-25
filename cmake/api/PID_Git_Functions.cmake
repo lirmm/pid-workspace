@@ -264,7 +264,7 @@ endfunction(go_To_Version)
 #
 #     Get all version tags of a package.
 #
-#     :package: The target source package
+#     :package: The target package
 #
 #     :AVAILABLE_VERSIONS: the variable that contains the list of all tagged versions
 #

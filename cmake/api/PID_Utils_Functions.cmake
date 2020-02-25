@@ -3084,25 +3084,81 @@ endfunction(list_All_Binary_Packages_In_Workspace)
 #  package_Already_Built
 #  ---------------------
 #
-#   .. command:: package_Already_Built(ANSWER package reference_package)
+#   .. command:: package_Already_Built(ANSWER package version reference_package)
 #
-#    Tells Wether a source package used as a depeendency by another package needs to be rebuilt or not.
+#    Tells Wether a source package used as a dependency by another package needs is already built from is using package point of view.
 #
 #     :package: the name of the package used as a dependency.
+#
+#     :version: the version of the package used as a dependency.
 #
 #     :reference_package: the name of the package using the dependency.
 #
 #     :ANSWER: the output variable that is TRUE if package needs to be rebuilt, FALSE otherwise.
 #
-function(package_Already_Built ANSWER package reference_package)
-set(${ANSWER} TRUE PARENT_SCOPE)
-if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build/build_process)
-	if(${WORKSPACE_DIR}/packages/${package}/build/build_process IS_NEWER_THAN ${WORKSPACE_DIR}/packages/${reference_package}/build/build_process)
-		message("package ${package} is newer than package ${reference_package}")
-		set(${ANSWER} FALSE PARENT_SCOPE)
-	endif()
-endif()
+function(package_Already_Built ANSWER package version reference_package)
+  set(${ANSWER} FALSE PARENT_SCOPE)
+  set(use_file_dep ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${version}/share/Use${package}-${version}.cmake)
+  set(build_file ${WORKSPACE_DIR}/packages/${reference_package}/build/build_process)
+  if(NOT EXISTS ${use_file_dep})#no use file installed so package is not already considered as built
+    return()
+  elseif(NOT EXISTS ${build_file} OR ${use_file_dep} IS_NEWER_THAN ${build_file})
+    set(${ANSWER} TRUE PARENT_SCOPE)#no need to rebuild since we know that dependency package has been built since last build of reference_package
+    return()#not built after cleaning => not already built
+  endif()
+  #otherwise we are not sure so package is considered as not already built
 endfunction(package_Already_Built)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |package_Dependency_Needs_To_Be_Rebuilt| replace:: ``package_Dependency_Needs_To_Be_Rebuilt``
+#  .. _package_Dependency_Needs_To_Be_Rebuilt:
+#
+#  package_Dependency_Needs_To_Be_Rebuilt
+#  ------------------------------------
+#
+#   .. command:: package_Dependency_Needs_To_Be_Rebuilt(ANSWER package version reference_package)
+#
+#    Tells Wether a source package used as a dependency by another package needs to be rebuilt or not.
+#
+#     :package: the name of the package used as a dependency.
+#
+#     :version: the version of the package used as a dependency.
+#
+#     :reference_package: the name of the package using the dependency.
+#
+#     :ANSWER: the output variable that is TRUE if package needs to be rebuilt, FALSE otherwise.
+#
+function(package_Dependency_Needs_To_Be_Rebuilt ANSWER package version reference_package)
+  set(${ANSWER} FALSE PARENT_SCOPE)
+  package_Already_Built(ALREADY_BUILT ${package} ${version} ${reference_package})
+  if(NOT ALREADY_BUILT)# if not already built since last build of reference package there may have modifications to build
+    get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${package})
+    if(BRANCH_NAME AND NOT BRANCH_NAME STREQUAL "master")#check if package currently in development
+      # if on integration branch or another feature specific branch (not on master or on an "isolated" commit like one pointed by a tag)
+      # then the dependency may have to be rebuilt
+      # 1) check if the rebuild of the package dependency is not newer than refenrence package (if true it means that this later has been
+      # rebuild since last build of reference package and did not generate the use file !)
+      set(build_file ${WORKSPACE_DIR}/packages/${reference_package}/build/build_process)
+      set(build_file_dep ${WORKSPACE_DIR}/packages/${package}/build/build_process)
+      if(${build_file_dep} IS_NEWER_THAN ${build_file})
+        return()
+      endif()
+      # 2) check if the version used is not already released, in this case it is not an in development version by definition
+      # so no need to rebuild.
+      get_Repository_Version_Tags(AVAILABLE_VERSION_TAGS ${package})
+      normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSION_TAGS}")
+      list(FIND VERSION_NUMBERS ${version} INDEX)
+      if(INDEX EQUAL -1)
+        #OK target version is not release yet we suppose the package can have modifications
+        set(${ANSWER} TRUE PARENT_SCOPE)
+      endif()
+    endif()
+  endif()
+endfunction(package_Dependency_Needs_To_Be_Rebuilt)
+
 
 #.rst:
 #

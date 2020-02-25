@@ -1124,34 +1124,20 @@ if(	BUILD_DEPENDENT_PACKAGES
 		foreach(dep_pack IN LISTS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 			list(FIND RESULT_PACKAGES ${dep_pack} id)
 			if(NOT id LESS "0")#the package is a dependent source package
-				list(APPEND DEPENDENT_SOURCE_PACKAGES ${dep_pack})
+				list(APPEND DEPENDENT_SOURCE_PACKAGES ${dep_pack} ${${dep_pack}_VERSION_STRING})
 			endif()
 		endforeach()
 	endif()
 	if(DEPENDENT_SOURCE_PACKAGES)#there are some dependency managed with source package
-		list(LENGTH  DEPENDENT_SOURCE_PACKAGES SIZE)
-		if(SIZE EQUAL 1)
-			add_custom_target(build-dependencies
-				COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-								-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-								-DDEPENDENT_PACKAGES=${DEPENDENT_SOURCE_PACKAGES}
-								-DPACKAGE_LAUCHING_BUILD=${PROJECT_NAME}
-								-P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Package_Dependencies.cmake
-					COMMENT "[PID] INFO : building dependencies of ${PROJECT_NAME} ..."
-					VERBATIM
-			)
-		else()
-			add_custom_target(build-dependencies
-				COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-								-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-								-DDEPENDENT_PACKAGES="${DEPENDENT_SOURCE_PACKAGES}"
-								-DPACKAGE_LAUCHING_BUILD=${PROJECT_NAME}
-								-P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Package_Dependencies.cmake
-					COMMENT "[PID] INFO : building dependencies of ${PROJECT_NAME} ..."
-					VERBATIM
-			)
-
-		endif()
+		add_custom_target(build-dependencies
+			COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+							-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+							"-DDEPENDENT_PACKAGES=${DEPENDENT_SOURCE_PACKAGES}"
+							-DPACKAGE_LAUCHING_BUILD=${PROJECT_NAME}
+							-P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Package_Dependencies.cmake
+				COMMENT "[PID] INFO : building dependencies of ${PROJECT_NAME} ..."
+				VERBATIM
+		)
 		add_dependencies(build build-dependencies)# first building dependencies if necessary
 	endif()
 else()
