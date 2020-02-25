@@ -40,6 +40,9 @@ platform=$1
 platform=${platform/pid/""}
 platform=${platform/","/""}
 platform=${platform/" "/""}
+platform=${platform/site/""}
+platform=${platform/","/""}
+platform=${platform/" "/""}
 
 # 2 separate platform and environment names
 instance=""

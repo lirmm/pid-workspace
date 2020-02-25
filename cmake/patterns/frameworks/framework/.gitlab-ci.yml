@@ -24,6 +24,7 @@ build_framework:
     - master
   tags:
     - pid
+    - site
 
 ### upload the static site (using gitlab pages)
 pages:
@@ -37,3 +38,4 @@ pages:
     - master
   tags:
     - pid
+    - site

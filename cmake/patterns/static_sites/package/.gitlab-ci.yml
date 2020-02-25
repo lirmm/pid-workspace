@@ -24,6 +24,7 @@ build_site:
     - master
   tags:
     - pid
+    - site
 
 ### upload the static site (using gitlab pages)
 pages:
@@ -38,6 +39,7 @@ pages:
     - master
   tags:
     - pid
+    - site
 
 
 ## cleaning everything at the end
@@ -51,3 +53,4 @@ cleanup_build:
     - master
   tags:
     - pid
+    - site
