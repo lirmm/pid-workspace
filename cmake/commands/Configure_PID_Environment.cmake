@@ -38,6 +38,7 @@ include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 include(PID_Environment_API_Internal_Functions NO_POLICY_SCOPE)
 include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
 
+load_Current_Contribution_Spaces()
 ### script used to configure the environment to another one
 
 #first check that commmand parameters are not passed as environment variables
