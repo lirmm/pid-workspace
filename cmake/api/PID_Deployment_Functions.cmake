@@ -1223,7 +1223,7 @@ if(is_exact)
 else()
 	select_Best_Native_Version(RES_VERSION ${min_version} "${VERSION_NUMBERS}")
 endif()
-if(NOT RES_VERSION)#no adequate version found, this may be due to the use of a non release version
+if(NOT RES_VERSION)#no adequate version found, this may be due to the use of a non released version
   try_In_Development_Version(RES_VERSION ${package} ${min_version} ${is_exact} "${run_tests}")#mainly usefull in CI process to build unreleased dependencies
   if(RES_VERSION)
     message("[PID] INFO : deployed version ${RES_VERSION} of source package ${package} is in development (found on integration branch).")

@@ -139,27 +139,35 @@ get_Version_String_Numbers(${minimum_version} MAJOR MINOR PATCH)
 if(NOT DEFINED MAJOR)#not a valid version string
   set(${RES_VERSION} PARENT_SCOPE)
 endif()
-set(version_found FALSE)
 if(DEFINED PATCH)
 	set(curr_max_patch_number ${PATCH})
-else()
+  foreach(version IN LISTS available_versions)
+    if(version VERSION_EQUAL minimum_version)
+      set(${RES_VERSION} ${version} PARENT_SCOPE)
+      return()
+    endif()
+  endforeach()
+  set(${RES_VERSION} PARENT_SCOPE)
+else() #if patch not defined use same pattern as for minor version
+  set(version_found FALSE)
 	set(curr_max_patch_number -1)
+  foreach(version IN LISTS available_versions)
+  	get_Version_String_Numbers("${version}" COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH)
+    if(	COMPARE_MAJOR EQUAL MAJOR
+  		AND COMPARE_MINOR EQUAL MINOR
+      AND (NOT COMPARE_PATCH LESS curr_max_patch_number)) # COMPARE_PATCH >= current patch
+  		set(curr_max_patch_number ${COMPARE_PATCH})# taking the last patch version available for this major.minor
+      set(version_found TRUE)
+    endif()
+  endforeach()
+
+  if(NOT version_found)
+  	set(${RES_VERSION} PARENT_SCOPE)
+  else()
+  	set(${RES_VERSION} "${MAJOR}.${MINOR}.${curr_max_patch_number}" PARENT_SCOPE)
+  endif()
 endif()
 
-foreach(version IN LISTS available_versions)
-	get_Version_String_Numbers("${version}" COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH)
-  if(	COMPARE_MAJOR EQUAL MAJOR
-		AND COMPARE_MINOR EQUAL MINOR
-    AND (NOT COMPARE_PATCH LESS curr_max_patch_number)) # COMPARE_PATCH >= current patch
-		set(curr_max_patch_number ${COMPARE_PATCH})# taking the last patch version available for this major.minor
-    set(version_found TRUE)
-  endif()
-endforeach()
-if(NOT version_found)
-	set(${RES_VERSION} PARENT_SCOPE)
-else()
-	set(${RES_VERSION} "${MAJOR}.${MINOR}.${curr_max_patch_number}" PARENT_SCOPE)
-endif()
 endfunction(select_Exact_Native_Version)
 
 #.rst:
@@ -204,7 +212,7 @@ endfunction(select_Exact_External_Version)
 #
 #   .. command:: select_Best_Native_Version(RES_VERSION exact_version available_versions)
 #
-#    Select the best compatible version among a list of versions, considering that the policy is native: major must match, while greater minor numbers can be used and finally greatest patch from this minor is used.
+#    Select the best compatible version among a list of versions, considering that the policy is native: major.minor must match, while greatest patch from this minor is used.
 #
 #     :minimum_version: the minimum version to match.
 #
@@ -223,25 +231,20 @@ if(DEFINED PATCH)
 else()
 	set(curr_max_patch_number -1)
 endif()
-set(curr_max_minor_number ${MINOR})
 foreach(version IN LISTS available_versions)
 	get_Version_String_Numbers("${version}" COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH)
 	if(COMPARE_MAJOR EQUAL MAJOR)
 		if(	COMPARE_MINOR EQUAL curr_max_minor_number
-      AND (NOT COMPARE_PATCH LESS curr_max_patch_number))#do not use GREATER as if a patch version is defined we can be in a situation where PATCH=PATCH and curr_major has never been set
+      AND (NOT COMPARE_PATCH LESS MINOR))#do not use GREATER as if a patch version is defined we can be in a situation where PATCH=PATCH and curr_major has never been set
       set(curr_major ${COMPARE_MAJOR})
       set(curr_max_patch_number ${COMPARE_PATCH})# taking the newest patch version for the current major.minor
-		elseif(COMPARE_MINOR GREATER curr_max_minor_number)
-      set(curr_major ${COMPARE_MAJOR})
-      set(curr_max_patch_number ${COMPARE_PATCH})# taking the patch version of this major.minor
-			set(curr_max_minor_number ${COMPARE_MINOR})# taking the last minor version available for this major
 		endif()
 	endif()
 endforeach()
 if(curr_max_patch_number EQUAL -1 OR curr_major EQUAL -1)#i.e. nothing found
 	set(${RES_VERSION} PARENT_SCOPE)
 else()
-	set(${RES_VERSION} "${curr_major}.${curr_max_minor_number}.${curr_max_patch_number}" PARENT_SCOPE)
+	set(${RES_VERSION} "${curr_major}.${MINOR}.${curr_max_patch_number}" PARENT_SCOPE)
 endif()
 endfunction(select_Best_Native_Version)
 
@@ -353,19 +356,26 @@ list_Version_Subdirectories(version_dirs ${install_dir})
 if(version_dirs)#seaking for a good version only if there are versions installed
   if(patch)
     update_Package_Installed_Version(${package} ${major} ${minor} ${patch} true "${version_dirs}")#updating only if there are installed versions
-    set(curr_patch_version ${patch})
-  else()#any patch version can be used
+    set(curr_patch_version )
+    foreach(patch_num IN LISTS version_dirs)
+      if(version MATCHES "^${major}\\.${minor}\\.${patch}$")
+        set(result TRUE)
+        set(curr_patch_version ${patch})
+  		endif()
+  	endforeach()
+  else()#any patch version can be used => same as select best version
     update_Package_Installed_Version(${package} ${major} ${minor} "" true "${version_dirs}")#updating only if there are installed versions
     set(curr_patch_version -1)
+    foreach(patch_num IN LISTS version_dirs)
+      if(version MATCHES "^${major}\\.${minor}\\.([0-9]+)$")
+  			if(NOT (CMAKE_MATCH_1 LESS curr_patch_version)) #=minor >= patch
+  				set(result TRUE)
+  				#a more recent patch version found with same minor version
+  				set(curr_patch_version ${CMAKE_MATCH_1})
+  			endif()
+  		endif()
+  	endforeach()
   endif()
-	foreach(patch_num IN LISTS version_dirs)
-		string(REGEX REPLACE "^${major}\\.${minor}\\.([0-9]+)$" "\\1" A_VERSION "${patch_num}")
-		if((NOT A_VERSION STREQUAL patch_num) #there is a match
-			 AND (NOT A_VERSION LESS curr_patch_version)) #newer patch version
-			set(curr_patch_version ${A_VERSION})
-			set(result TRUE)
-		endif()
-	endforeach()
 
 	if(result)#at least a good version has been found
 		set(${VERSION_FOUND} TRUE PARENT_SCOPE)
@@ -403,7 +413,6 @@ endfunction(check_Exact_Version)
 #
 function(check_Best_Version VERSION_FOUND package install_dir major minor patch)#major version cannot be increased
 set(${VERSION_FOUND} FALSE PARENT_SCOPE)
-set(curr_max_minor_version ${minor})
 list_Version_Subdirectories(version_dirs ${install_dir})
 if(version_dirs)#seaking for a good version only if there are versions installed
   if(patch)
@@ -413,28 +422,17 @@ if(version_dirs)#seaking for a good version only if there are versions installed
   endif()
   update_Package_Installed_Version(${package} ${major} ${minor} "${patch}" false "${version_dirs}")#updating only if there are installed versions
 	foreach(version IN LISTS version_dirs)
-		string(REGEX REPLACE "^${major}\\.([0-9]+)\\.([0-9]+)$" "\\1;\\2" A_VERSION "${version}")
-		if(NOT (A_VERSION STREQUAL version))#there is a match
-			list(GET A_VERSION 0 minor_num)
-			list(GET A_VERSION 1 patch_num)
-			if(minor_num EQUAL curr_max_minor_version
-  			AND (patch_num EQUAL curr_patch_version
-            OR patch_num GREATER curr_patch_version)#=minor >= patch
-        )
+		if(version MATCHES "^${major}\\.${minor}\\.([0-9]+)$")
+			if(NOT (CMAKE_MATCH_1 LESS curr_patch_version)) #=minor >= patch
 				set(result TRUE)
-				#a more recent patch version found with same max minor version
-				set(curr_patch_version ${patch_num})
-			elseif(minor_num GREATER curr_max_minor_version)#>=minor
-				set(result TRUE)
-				#a greater minor version found
-				set(curr_max_minor_version ${minor_num})
-				set(curr_patch_version ${patch_num})
+				#a more recent patch version found with same minor version
+				set(curr_patch_version ${CMAKE_MATCH_1})
 			endif()
 		endif()
 	endforeach()
 	if(result)#at least a good version has been found
 		set(${VERSION_FOUND} TRUE PARENT_SCOPE)
-		set_Version_Strings(${package} ${major} ${curr_max_minor_version} ${curr_patch_version})
+		set_Version_Strings(${package} ${major} ${minor} ${curr_patch_version})
 	endif()
 endif()
 endfunction(check_Best_Version)
@@ -902,7 +900,7 @@ foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
 	if(NOT required_major EQUAL curr_major)
 		return()#not compatible since the new version has a greater version number
 	elseif(required_minor GREATER curr_max_minor)
-		set(curr_max_minor ${required_minor})#TODO HERE VERIFY
+		set(curr_max_minor ${required_minor})
 	endif()
 endforeach()
 set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
