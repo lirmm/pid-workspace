@@ -3117,7 +3117,7 @@ endfunction(package_Already_Built)
 #  .. _package_Dependency_Needs_To_Be_Rebuilt:
 #
 #  package_Dependency_Needs_To_Be_Rebuilt
-#  ------------------------------------
+#  --------------------------------------
 #
 #   .. command:: package_Dependency_Needs_To_Be_Rebuilt(ANSWER package version reference_package)
 #

@@ -3766,6 +3766,9 @@ function(write_Platform_Description file)
 	file(APPEND ${file} "set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CURRENT_DISTRIBUTION_VERSION ${CURRENT_DISTRIBUTION_VERSION} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(PID_KNOWN_PACKAGING_SYSTEMS ${PID_KNOWN_PACKAGING_SYSTEMS} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_PACKAGING_SYSTEM ${CURRENT_PACKAGING_SYSTEM} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_PACKAGING_SYSTEM_EXE ${CURRENT_PACKAGING_SYSTEM_EXE} CACHE INTERNAL \"\" FORCE)\n")
 
 	file(APPEND ${file} "set(CURRENT_PLATFORM_TYPE ${CURRENT_PLATFORM_TYPE} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CURRENT_PLATFORM_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL \"\" FORCE)\n")
@@ -3864,8 +3867,8 @@ write_Platform_Description(${CMAKE_BINARY_DIR}/Workspace_Platforms_Description.c
 file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Platforms_Description.cmake NO_POLICY_SCOPE)\n")
 write_Current_Configuration_Build_Related_Variables(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake)
 file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake NO_POLICY_SCOPE)\n")
-write_Contribution_Spaces(${CMAKE_BINARY_DIR}/Workspace_Configuration_Spaces.cmake)
-file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Configuration_Spaces.cmake NO_POLICY_SCOPE)\n")
+write_Contribution_Spaces(${CMAKE_BINARY_DIR}/Workspace_Contribution_Spaces.cmake)
+file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Contribution_Spaces.cmake NO_POLICY_SCOPE)\n")
 # defining all build configuration variables related to the current platform
 endfunction(write_Current_Configuration)
 
