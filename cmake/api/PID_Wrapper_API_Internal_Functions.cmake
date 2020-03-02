@@ -140,6 +140,25 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 endforeach()
 set(${PROJECT_NAME}_KNOWN_VERSIONS CACHE INTERNAL "")
 
+#reset system configuration description
+set(${PROJECT_NAME}_SYSTEM_CONFIGURATION_DEFINED FALSE CACHE INTERNAL "")
+set(${PROJECT_NAME}_EVAL_FILE CACHE INTERNAL "")
+foreach(var IN LISTS ${PROJECT_NAME}_RETURNED_VARIABLES)
+	set(${PROJECT_NAME}_${var}_RETURNED_VARIABLE CACHE INTERNAL "")
+endforeach()
+set(${PROJECT_NAME}_RETURNED_VARIABLES CACHE INTERNAL "")
+set(${PROJECT_NAME}_FIND_PACKAGES CACHE INTERNAL "")
+set(${PROJECT_NAME}_INSTALL_PACKAGER CACHE INTERNAL "")
+set(${PROJECT_NAME}_INSTALL_PACKAGES CACHE INTERNAL "")
+set(${PROJECT_NAME}_INSTALL_PROCEDURE CACHE INTERNAL "")
+set(${PROJECT_NAME}_REQUIRED_CONSTRAINTS CACHE INTERNAL "")
+set(${PROJECT_NAME}_OPTIONAL_CONSTRAINTS CACHE INTERNAL "")
+foreach(constraint IN LISTS ${PROJECT_NAME}_IN_BINARY_CONSTRAINTS)
+	set(${PROJECT_NAME}_${constraint}_BINARY_VALUE CACHE INTERNAL "")
+endforeach()
+set(${PROJECT_NAME}_IN_BINARY_CONSTRAINTS CACHE INTERNAL "")
+set(${PROJECT_NAME}_CONFIGURATION_DEPENDENCIES CACHE INTERNAL "")
+
 #reset user options
 foreach(opt IN LISTS ${PROJECT_NAME}_USER_OPTIONS)
 	set(${PROJECT_NAME}_USER_OPTION_${opt}_TYPE CACHE INTERNAL "")
@@ -588,6 +607,28 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 	endforeach()
 endforeach()
 
+file(APPEND ${path_to_file} "set(${PROJECT_NAME}_SYSTEM_CONFIGURATION_DEFINED ${${PROJECT_NAME}_SYSTEM_CONFIGURATION_DEFINED} CACHE INTERNAL \"\")\n")
+if(${PROJECT_NAME}_SYSTEM_CONFIGURATION_DEFINED)
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_EVAL_FILE ${${PROJECT_NAME}_EVAL_FILE} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_RETURNED_VARIABLES ${${PROJECT_NAME}_RETURNED_VARIABLES} CACHE INTERNAL \"\")\n")
+  foreach(var IN LISTS ${PROJECT_NAME}_RETURNED_VARIABLES)
+		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_${var}_RETURNED_VARIABLE ${${PROJECT_NAME}_${var}_RETURNED_VARIABLE} CACHE INTERNAL \"\")\n")
+	endforeach()
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_FIND_PACKAGES ${${PROJECT_NAME}_FIND_PACKAGES} CACHE INTERNAL \"\")\n")
+	#management of system install
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_INSTALL_PACKAGER ${${PROJECT_NAME}_INSTALL_PACKAGER} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_INSTALL_PACKAGES ${${PROJECT_NAME}_INSTALL_PACKAGES} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_INSTALL_PROCEDURE ${${PROJECT_NAME}_INSTALL_PROCEDURE} CACHE INTERNAL \"\")\n")
+	#management of constraints
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_REQUIRED_CONSTRAINTS ${${PROJECT_NAME}_REQUIRED_CONSTRAINTS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_OPTIONAL_CONSTRAINTS ${${PROJECT_NAME}_OPTIONAL_CONSTRAINTS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_IN_BINARY_CONSTRAINTS ${${PROJECT_NAME}_IN_BINARY_CONSTRAINTS} CACHE INTERNAL \"\")\n")
+	foreach(constraint IN LISTS ${PROJECT_NAME}_IN_BINARY_CONSTRAINTS)
+		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_${constraint}_BINARY_VALUE ${${PROJECT_NAME}_${constraint}_BINARY_VALUE} CACHE INTERNAL \"\")\n")
+	endforeach()
+	#management of dependencies
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_CONFIGURATION_DEPENDENCIES ${${PROJECT_NAME}_CONFIGURATION_DEPENDENCIES} CACHE INTERNAL \"\")\n")
+endif()
 #writing options that can be useful to control the build process
 file(APPEND ${path_to_file} "set(ENABLE_PARALLEL_BUILD ${ENABLE_PARALLEL_BUILD} CACHE INTERNAL \"\")\n")
 file(APPEND ${path_to_file} "set(ADDITIONNAL_DEBUG_INFO ${ADDITIONNAL_DEBUG_INFO} CACHE INTERNAL \"\")\n")
@@ -692,11 +733,26 @@ macro(build_Wrapped_Project)
 ######## recursion into version subdirectories to describe the content of the external package ######################
 #####################################################################################################################
 
+# versions for which the build can be managed
 list_Version_Subdirectories(VERSIONS_DIRS ${CMAKE_SOURCE_DIR}/src)
-
 foreach(version IN LISTS VERSIONS_DIRS)
  	add_subdirectory(src/${version})
 endforeach()
+
+# system folder
+if(EXISTS ${CMAKE_SOURCE_DIR}/src/system)
+	add_subdirectory(src/system)
+	add_custom_target(gen
+		COMMAND ${CMAKE_COMMAND}
+		        -DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DIN_CI_PROCESS=${IN_CI_PROCESS}
+						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+						-DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
+						-DTARGET_SOURCE_DIR=${CMAKE_SOURCE_DIR}/system
+			 -P ${WORKSPACE_DIR}/cmake/commands/Install_PID_System_Configuration.cmake
+			 VERBATIM
+	)
+endif()
 
 ################################################################################
 ######## generating CMake configuration files used by PID ######################
@@ -2676,3 +2732,54 @@ function(resolve_Wrapper_Dependencies package version os_variant)
 		endif()
 	endforeach()
 endfunction(resolve_Wrapper_Dependencies)
+
+function(generate_Wrapper_System_Configuration_Check_Scripts package path_to_sources path_to_install_dir)
+	#copy the eval file "as is"
+	file(COPY ${path_to_sources}/${${package}_EVAL_FILE} DESTINATION ${path_to_install_dir})
+	# copy additionnal cmake find package scripts if they ly in source folder
+	foreach(pack IN LISTS ${package}_FIND_PACKAGES)
+		if(EXISTS ${path_to_sources}/Find${pack}.cmake)
+			file(COPY ${path_to_sources}/Find${pack}.cmake DESTINATION ${path_to_install_dir})
+		endif()
+	endforeach()
+	#generate the check script used to get informations
+	set(path_to_main_check_script ${path_to_install_dir}/check_${package}.cmake)
+	file(WRITE ${path_to_main_check_script} "set(${package}_EVAL_FILE ${${package}_EVAL_FILE} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_main_check_script} "set(${package}_RETURNED_VARIABLES ${${package}_RETURNED_VARIABLES} CACHE INTERNAL \"\")\n")
+	foreach(var IN LISTS ${package}_RETURNED_VARIABLES)
+		file(APPEND ${path_to_main_check_script} "set(${package}_${var}_RETURNED_VARIABLE ${${package}_${var}_RETURNED_VARIABLE} CACHE INTERNAL \"\")\n")
+	endforeach()
+	file(APPEND ${path_to_main_check_script} "set(${package}_INSTALL_PACKAGER ${${package}_INSTALL_PACKAGER} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_main_check_script} "set(${package}_INSTALL_PACKAGES ${${package}_INSTALL_PACKAGES} CACHE INTERNAL \"\")\n")
+	if(${package}_INSTALL_PROCEDURE)#copy file defining the specific install procedure
+		file(COPY ${path_to_sources}/${${package}_INSTALL_PROCEDURE} DESTINATION ${path_to_install_dir})
+	endif()
+	file(APPEND ${path_to_main_check_script} "set(${package}_INSTALL_PROCEDURE ${${package}_INSTALL_PROCEDURE} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_main_check_script} "set(${package}_REQUIRED_CONSTRAINTS ${${package}_REQUIRED_CONSTRAINTS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_main_check_script} "set(${package}_OPTIONAL_CONSTRAINTS ${${package}_OPTIONAL_CONSTRAINTS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_main_check_script} "set(${package}_IN_BINARY_CONSTRAINTS ${${package}_IN_BINARY_CONSTRAINTS} CACHE INTERNAL \"\")\n")
+	foreach(constraint IN LISTS ${package}_IN_BINARY_CONSTRAINTS)
+		file(APPEND ${path_to_main_check_script} "set(${package}_${constraint}_BINARY_VALUE ${${package}_${constraint}_BINARY_VALUE} CACHE INTERNAL \"\")\n")
+	endforeach()
+	file(APPEND ${path_to_main_check_script} "set(${package}_CONFIGURATION_DEPENDENCIES ${${package}_CONFIGURATION_DEPENDENCIES} CACHE INTERNAL \"\")\n")
+endfunction(generate_Wrapper_System_Configuration_Check_Scripts)
+
+# function(generate_Wrapper_System_Configuration_Check_Project path_to_build)
+# 	if(NOT EXISTS ${path_to_build}/build)#create the directory for building that version
+# 		file(MAKE_DIRECTORY ${path_to_build}/build)
+# 	endif()
+# 	set(path_to_project_file ${path_to_build}/CMakeLists.txt)
+# 	#create the CMake project file used to check if system components are available
+# 	file(WRITE ${path_to_project_file} "
+# 		cmake_minimum_required(VERSION 3.0.2)\n
+# 		project(test_${TARGET_EXTERNAL_PACKAGE})\n
+# 		set(CMAKE_MODULE_PATH ${TARGET_SOURCE_DIR} \${CMAKE_MODULE_PATH})\n
+# 		include(${${TARGET_EXTERNAL_PACKAGE}_EVAL_FILE})\n
+# 		if(NOT ${TARGET_EXTERNAL_PACKAGE}_CONFIG_FOUND)\n
+# 		message(FATAL_ERROR \"\")\n
+# 		endif()\n
+# 		configure_file(\${CMAKE_SOURCE_DIR}/config_vars.cmake.in \${CMAKE_SOURCE_DIR}/config_vars.cmake @ONLY) # generate the output file
+# 	")
+#
+#
+# endfunction(generate_Wrapper_System_Configuration_Check_Project)
