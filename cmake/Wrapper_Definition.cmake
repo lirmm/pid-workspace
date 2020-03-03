@@ -419,7 +419,7 @@ endmacro(define_PID_Wrapper_User_Option)
 #     :FRAMEWORK <name of the framework>:  If this argument is set, then it means that the wrapper belongs to a framework. It will so contribute to the framework site. You must use either this argument or GIT one.
 #     :GIT <repository address>: This is the address of the lone static site repository for the wrapper. It is used to automatically clone/update the static site of the wrapper. With this option the wrapper will not contribute to a framework but will have its own isolated deployment. You must use either this argument or FRAMEWORK one.
 #     :PAGE <url>:  This is the online URL of the static site index page. Must be used if you use the GIT argument.
-#
+#     :CATEGORIES <list>: list of categories the package belongs to into the framework
 #     .. admonition:: Constraints
 #        :class: warning
 #
@@ -451,7 +451,7 @@ endmacro(PID_Wrapper_Publishing)
 macro(declare_PID_Wrapper_Publishing)
 set(optionArgs PUBLISH_BINARIES)
 set(oneValueArgs PROJECT FRAMEWORK GIT PAGE)
-set(multiValueArgs DESCRIPTION ALLOWED_PLATFORMS)
+set(multiValueArgs DESCRIPTION ALLOWED_PLATFORMS CATEGORIES)
 cmake_parse_arguments(DECLARE_PID_WRAPPER_PUBLISHING "${optionArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
 	#manage configuration of CI
@@ -480,6 +480,11 @@ if(DECLARE_PID_WRAPPER_PUBLISHING_FRAMEWORK)
 	endif()
 	init_Documentation_Info_Cache_Variables("${DECLARE_PID_WRAPPER_PUBLISHING_FRAMEWORK}" "${DECLARE_PID_WRAPPER_PUBLISHING_PROJECT}" "" "" "${DECLARE_PID_WRAPPER_PUBLISHING_DESCRIPTION}")
 	set(PUBLISH_DOC TRUE)
+  if(DECLARE_PID_WRAPPER_PUBLISHING_CATEGORIES)
+    foreach(category IN LISTS DECLARE_PID_WRAPPER_PUBLISHING_CATEGORIES)
+      PID_Wrapper_Category(${category})
+    endforeach()
+  endif()
 elseif(DECLARE_PID_WRAPPER_PUBLISHING_GIT)
 	if(NOT DECLARE_PID_WRAPPER_PUBLISHING_PROJECT)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
