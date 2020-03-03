@@ -68,7 +68,7 @@ endmacro(set_Project_Module_Path_From_Workspace)
 #
 #      AUxiliary funciton to find a file or directory in the contribution space with highest priority and returns its path and the path to its contribution space
 #
-#      :file_type: type of the file (licenses, formats, plugins, references, finds, configurations)
+#      :file_type: type of the file (licenses, formats, plugins, references, finds)
 #
 #      :file_name: name of file or folder
 #
@@ -264,69 +264,6 @@ function(resolve_Path_To_Plugin_Dir RESULT_PATH plugin)
   endif()
   set(${RESULT_PATH} ${PATH_TO_DIR} PARENT_SCOPE)
 endfunction(resolve_Path_To_Plugin_Dir)
-
-##########################################################################################
-############################ configuration dirs resolution ###############################
-##########################################################################################
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |get_Path_To_Configuration_Dir| replace:: ``get_Path_To_Configuration_Dir``
-#  .. _get_Path_To_Configuration_Dir:
-#
-#  get_Path_To_Configuration_Dir
-#  -----------------------------
-#
-#   .. command:: get_Path_To_Configuration_Dir(RESULT_PATH config)
-#
-#      get the path to the folder containing a configuration definition
-#
-#      :config: name of the configuration
-#
-#      :RESULT_PATH: output variable containing path to the configuration folder if found, empty otherwise.
-#
-function(get_Path_To_Configuration_Dir RESULT_PATH config)
-  set(${RESULT_PATH} PARENT_SCOPE)
-  foreach(cs IN LISTS CONTRIBUTION_SPACES)#CONTRIBUTION_SPACES is supposed to be ordered from highest to lowest priority contribution spaces
-    set(PATH_TO_CONFIG ${WORKSPACE_DIR}/contributions/${cs}/configurations/${config})
-    if(EXISTS ${PATH_TO_CONFIG} AND IS_DIRECTORY ${PATH_TO_CONFIG})
-      set(${RESULT_PATH} ${PATH_TO_CONFIG} PARENT_SCOPE)
-      return()
-    endif()
-  endforeach()
-endfunction(get_Path_To_Configuration_Dir)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |resolve_Path_To_Configuration_Dir| replace:: ``resolve_Path_To_Configuration_Dir``
-#  .. _resolve_Path_To_Configuration_Dir:
-#
-#  resolve_Path_To_Configuration_Dir
-#  ---------------------------------
-#
-#   .. command:: resolve_Path_To_Configuration_Dir(RESULT_PATH config)
-#
-#      get the path to a configuration folder, update contribution spaces if not found first time.
-#
-#      :config: name of the config.
-#
-#      :RESULT_PATH: output variable containing path to the configuration directory if found, empty otherwise.
-#
-function(resolve_Path_To_Configuration_Dir RESULT_PATH config)
-  set(${RESULT_PATH} PARENT_SCOPE)
-  get_Path_To_Configuration_Dir(PATH_TO_DIR ${config})
-  if(NOT PATH_TO_DIR)
-    update_Contribution_Spaces(UPDATED)
-    if(UPDATED)
-      get_Path_To_Configuration_Dir(PATH_TO_DIR ${config})
-    endif()
-  endif()
-  set(${RESULT_PATH} ${PATH_TO_DIR} PARENT_SCOPE)
-endfunction(resolve_Path_To_Configuration_Dir)
 
 ##########################################################################################
 ############################ license files resolution ####################################
@@ -960,7 +897,7 @@ function(get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spac
     list(APPEND list_of_spaces ${WORKSPACE_DIR}/contributions/${TARGET_CONTRIBUTION_SPACE})
   endif()
   foreach(cs IN LISTS CONTRIBUTION_SPACES)
-    get_All_Matching_Contributions(LICENSE REFERENCE FIND FORMAT CONFIGURATION PLUGIN ${cs} ${deployment_unit})
+    get_All_Matching_Contributions(LICENSE REFERENCE FIND FORMAT PLUGIN ${cs} ${deployment_unit})
     if(REFERENCE OR FIND)
       list(APPEND list_of_spaces ${WORKSPACE_DIR}/contributions/${cs})
     endif()
@@ -1262,7 +1199,7 @@ endfunction(write_Contribution_Spaces_Description_File)
 #  get_All_Matching_Contributions
 #  ------------------------------
 #
-#   .. command:: get_All_Matching_Contributions(LICENSE REFERENCE FIND FORMAT CONFIGURATION cs name)
+#   .. command:: get_All_Matching_Contributions(LICENSE REFERENCE FIND FORMAT cs name)
 #
 #      Get all contributions of a contribution space that match a pattern name
 #
@@ -1278,11 +1215,9 @@ endfunction(write_Contribution_Spaces_Description_File)
 #
 #      :FORMAT: output variable that contains a format file name if anyone matches, empty otherwise.
 #
-#      :CONFIGURATION: output variable that contains a configuration folder name if anyone matches, empty otherwise.
-#
 #      :PLUGIN: output variable that contains a plugin folder name if anyone matches, empty otherwise.
 #
-function(get_All_Matching_Contributions LICENSE REFERENCE FIND FORMAT CONFIGURATION PLUGIN cs name)
+function(get_All_Matching_Contributions LICENSE REFERENCE FIND FORMAT PLUGIN cs name)
   get_Path_To_Contribution_Space(PATH_TO_CS ${cs})
   #checking licenses
   if(EXISTS ${PATH_TO_CS}/licenses/License${name}.cmake)
@@ -1295,12 +1230,6 @@ function(get_All_Matching_Contributions LICENSE REFERENCE FIND FORMAT CONFIGURAT
     set(${FORMAT} .clang-format.${name} PARENT_SCOPE)
   else()
     set(${FORMAT} PARENT_SCOPE)
-  endif()
-  #checking configurations
-  if(EXISTS ${PATH_TO_CS}/configurations/${name} AND IS_DIRECTORY ${PATH_TO_CS}/configurations/${name})
-    set(${CONFIGURATION} ${name} PARENT_SCOPE)
-  else()
-    set(${CONFIGURATION} PARENT_SCOPE)
   endif()
   #checking plugins
   if(EXISTS ${PATH_TO_CS}/plugins/${name} AND IS_DIRECTORY ${PATH_TO_CS}/plugins/${name})
@@ -1350,20 +1279,20 @@ endfunction(get_All_Matching_Contributions)
 #
 #      :LIST_OF_CS: output variable that contains the list of contribution spaces in use in current package.
 #
-function(get_Configuration_All_Non_Official_Contribtion_Spaces_In_Use LIST_OF_CS config default_cs)
+function(get_System_Configuration_All_Non_Official_Contribtion_Spaces_In_Use LIST_OF_CS config default_cs)
   set(res_list)
   foreach(check IN LISTS ${config}_CONFIGURATION_DEPENDENCIES)
     parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
-    get_Configuration_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${CONFIG_NAME} "${default_cs}")
+    get_System_Configuration_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${CONFIG_NAME} "${default_cs}")
     list(APPEND res_list ${LIST_OF_CS})
   endforeach()
-  find_Provider_Contribution_Space(PROVIDER ${config} CONFIG "${default_cs}")
+  find_Provider_Contribution_Space(PROVIDER ${config} EXTERNAL "${default_cs}")#configuration checks are implemented into external packages
   list(APPEND res_list ${PROVIDER})
   if(res_list)
     list(REMOVE_DUPLICATES res_list)
   endif()
   set(${LIST_OF_CS} ${res_list} PARENT_SCOPE)
-endfunction(get_Configuration_All_Non_Official_Contribtion_Spaces_In_Use)
+endfunction(get_System_Configuration_All_Non_Official_Contribtion_Spaces_In_Use)
 
 #.rst:
 #
@@ -1396,7 +1325,7 @@ function(get_Package_All_Non_Official_Contribtion_Spaces_In_Use LIST_OF_CS packa
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATION${VAR_SUFFIX})
     #need to recurse to manage depenencies
-    get_Configuration_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${config} "${default_cs}")
+    get_System_Configuration_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${config} "${default_cs}")
     list(APPEND res_list ${LIST_OF_CS})
   endforeach()
   foreach(dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
@@ -1442,7 +1371,7 @@ function(get_Wrapper_All_Non_Official_Contribtion_Spaces_In_Use LIST_OF_CS wrapp
   foreach(version IN LISTS ${wrapper}_KNOWN_VERSIONS)
   	#reset configurations
   	foreach(config IN LISTS ${wrapper}_KNOWN_VERSION_${version}_CONFIGURATIONS)
-      get_Configuration_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${config} "${default_cs}")
+      get_System_Configuration_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${config} "${default_cs}")
       list(APPEND res_list ${LIST_OF_CS})
   	endforeach()
   	#reset package dependencies
@@ -1499,7 +1428,7 @@ endfunction(get_Update_Remote_Of_Contribution_Space)
 #
 #      :content: name of the content (native or external package, configuration).
 #
-#      :type: type of the content (NATIVE,EXTERNAL,CONFIG)
+#      :type: type of the content (NATIVE,EXTERNAL)
 #
 #      :default_cs: name of the contribution space that is considered as default one.
 #
@@ -1544,26 +1473,6 @@ function(find_Provider_Contribution_Space PROVIDER_CS content type default_cs)
     foreach(cs IN LISTS CONTRIBUTION_SPACES)
       if(EXISTS ${WORKSPACE_DIR}/contributions/${cs}/references/ReferExternal${content}.cmake
       AND EXISTS ${WORKSPACE_DIR}/contributions/${cs}/finds/Find${content}.cmake)
-        set(${PROVIDER_CS} ${cs} PARENT_SCOPE)
-        return()
-      endif()
-    endforeach()
-  elseif(type STREQUAL "CONFIG")
-    if(EXISTS ${WORKSPACE_DIR}/contributions/pid/configurations/${content}
-      AND IS_DIRECTORY ${WORKSPACE_DIR}/contributions/pid/configurations/${content})
-      return()#if in official contribution space, no need to add it
-    endif()
-
-    if(default_cs)#use default CS of the current project
-      if(EXISTS ${WORKSPACE_DIR}/contributions/${default_cs}/configurations/${content}
-      AND IS_DIRECTORY ${WORKSPACE_DIR}/contributions/${default_cs}/configurations/${content})
-        set(${PROVIDER_CS} ${default_cs} PARENT_SCOPE)
-      endif()
-    endif()
-    #search CS with priority order
-    foreach(cs IN LISTS CONTRIBUTION_SPACES)
-      if(EXISTS ${WORKSPACE_DIR}/contributions/${cs}/configurations/${content}
-      AND IS_DIRECTORY ${WORKSPACE_DIR}/contributions/${cs}/configurations/${content})
         set(${PROVIDER_CS} ${cs} PARENT_SCOPE)
         return()
       endif()

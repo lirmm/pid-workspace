@@ -3898,7 +3898,8 @@ if((EXISTS ${WORKSPACE_DIR}/configurations AND IS_DIRECTORY ${WORKSPACE_DIR}/con
 endif()
 if(EXISTS ${WORKSPACE_DIR}/configurations AND IS_DIRECTORY ${WORKSPACE_DIR}/configurations)
 	file(REMOVE_RECURSE ${WORKSPACE_DIR}/configurations)
-endif()
+endif()#simply remove all configurations as they are provided using wrappers.
+# All previously existing configurations are now wrappers referenced in official pid contribution space
 if(EXISTS ${WORKSPACE_DIR}/external AND IS_DIRECTORY ${WORKSPACE_DIR}/external)
 	file(GLOB installed_platforms RELATIVE ${WORKSPACE_DIR}/external ${WORKSPACE_DIR}/external/*)
 	foreach(platform IN LISTS installed_platforms)
