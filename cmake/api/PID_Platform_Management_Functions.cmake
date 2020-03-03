@@ -1132,15 +1132,24 @@ endfunction(generate_Configuration_Constraints)
 #
 function(generate_Configuration_Constraints_For_Dependency RESULTING_EXPRESSION RESULTING_CONFIG_LIST config)
   if(${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY)
-    set(temp_list_of_config_written ${${RESULTING_CONFIG_LIST}})
+      set(temp_list_of_config_written ${${RESULTING_CONFIG_LIST}})
     set(temp_list_of_expressions_written ${${RESULTING_EXPRESSION}})
     foreach(dep_conf IN LISTS ${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY)
       list(FIND temp_list_of_config_written ${dep_conf} INDEX)
       if(INDEX EQUAL -1)#not already written !!
         list(APPEND temp_list_of_config_written ${dep_conf})
         if(${dep_conf}_CONSTRAINTS_IN_BINARY)
-          generate_Configuration_Constraints(RES_EXPRESSION ${dep_conf} "${${dep_conf}_CONSTRAINTS_IN_BINARY}")
-          list(APPEND temp_list_of_expressions_written ${RES_EXPRESSION})
+          set(gen_constraint "${dep_conf}[")
+          set(first_constraint_written FALSE)
+          foreach(constraint IN LISTS ${dep_conf}_CONSTRAINTS_IN_BINARY)
+            if(first_constraint_written)
+              set(gen_constraint ":${gen_constraint}")
+            endif()
+            set(gen_constraint "${gen_constraint}${constraint}")
+            set(first_constraint_written TRUE)
+          endforeach()
+          set(gen_constraint "${gen_constraint}]")
+          list(APPEND temp_list_of_expressions_written "${gen_constraint}")
         else()
           list(APPEND temp_list_of_expressions_written ${dep_conf})
         endif()
@@ -1301,6 +1310,7 @@ endwhile()
 set(${INCLUDED} TRUE PARENT_SCOPE)
 endfunction(check_Configuration_Arguments_Included_In_Constraints)
 
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -1328,94 +1338,85 @@ endfunction(check_Configuration_Arguments_Included_In_Constraints)
 function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS config_name config_args mode)
   set(${BINARY_CONTRAINTS} PARENT_SCOPE)
   set(${CHECK_OK} FALSE PARENT_SCOPE)
-  resolve_Path_To_Configuration_Dir(RESULT_PATH ${config_name})
-  if(NOT RESULT_PATH)
-    message(WARNING "[PID] WARNING : when checking if system configuration ${config_name} is possibly usable on current platform, configuration cannot be found in currenlty installed contribution spaces. Please either : remove the constraint ${config_name}; check that ${config_name} is well spelled and rename it if necessary; create a new configuration called ${config_name} in one of the contribution spaces you use or configure your workspace with the contribution space defining ${config_name}.")
+
+  install_System_Configuration_Check(PATH_TO_CONFIG ${config_name})
+  if(NOT PATH_TO_CONFIG)
+    message(WARNING "[PID] ERROR : when checking if system configuration ${config_name} is possibly usable on current platform. Please either : remove the constraint ${config_name}; check that ${config_name} is well spelled and rename it if necessary; contact developpers of wrapper ${config_name} to solve the problem, create a new wrapper called ${config_name} or configure your workspace with the contribution space referencing the wrapper of ${config_name}.")
     return()
   endif()
-  if(EXISTS ${RESULT_PATH}/check_${config_name}.cmake)
-    #check if the configuration has already been checked
-    check_Configuration_Temporary_Optimization_Variables(RES_CHECK RES_CONSTRAINTS ${config_name} ${mode})
-    if(RES_CHECK)
-      if(${config_args})#testing if the variable containing arguments is not empty
-        #in this situation we need to check if all args match constraints
-        check_Configuration_Arguments_Included_In_Constraints(INCLUDED ${config_args} ${RES_CONSTRAINTS})
-        if(INCLUDED)#no need to evaluate again
-          set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
-          set(${BINARY_CONTRAINTS} ${${RES_CONSTRAINTS}} PARENT_SCOPE)
-          return()
-        endif()
-      else()#we may not need to reevaluate as there is no argument (so they will not change)
+  #check if the configuration has already been checked
+  check_Configuration_Temporary_Optimization_Variables(RES_CHECK RES_CONSTRAINTS ${config_name} ${mode})
+  if(RES_CHECK)
+    if(${config_args})#testing if the variable containing arguments is not empty
+      #in this situation we need to check if all args match constraints
+      check_Configuration_Arguments_Included_In_Constraints(INCLUDED ${config_args} ${RES_CONSTRAINTS})
+      if(INCLUDED)#no need to evaluate again
         set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
         set(${BINARY_CONTRAINTS} ${${RES_CONSTRAINTS}} PARENT_SCOPE)
         return()
       endif()
-    endif()
-    reset_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
-    include(${RESULT_PATH}/check_${config_name}.cmake)#get the description of the configuration check
-    #now preparing args passed to the configruation (generate cmake variables)
-    if(${config_args})#testing if the variable containing arguments is not empty
-      prepare_Configuration_Arguments(${config_name} ${config_args})#setting variables that correspond to the arguments passed to the check script
-    endif()
-    check_Configuration_Arguments(ARGS_TO_SET ${config_name})
-    if(ARGS_TO_SET)#there are unset required arguments
-      fill_String_From_List(ARGS_TO_SET RES_STRING)
-      message("[PID] WARNING : when checking arguments of configuration ${config_name}, there are required arguments that are not set : ${RES_STRING}")
+    else()#we may not need to reevaluate as there is no argument (so they will not change)
+      set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
+      set(${BINARY_CONTRAINTS} ${${RES_CONSTRAINTS}} PARENT_SCOPE)
       return()
     endif()
+  endif()
+  reset_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
+  include(${PATH_TO_CONFIG}/check_${config_name}.cmake)#get the description of the configuration check
+  #now preparing args passed to the configruation (generate cmake variables)
+  if(${config_args})#testing if the variable containing arguments is not empty
+    prepare_Configuration_Arguments(${config_name} ${config_args})#setting variables that correspond to the arguments passed to the check script
+  endif()
+  check_Configuration_Arguments(ARGS_TO_SET ${config_name})
+  if(ARGS_TO_SET)#there are unset required arguments
+    fill_String_From_List(ARGS_TO_SET RES_STRING)
+    message("[PID] WARNING : when checking arguments of configuration ${config_name}, there are required arguments that are not set : ${RES_STRING}")
+    return()
+  endif()
 
-    # finding artifacts to fulfill system configuration
-    find_Configuration(${config_name} ${RESULT_PATH})
-    set(${config_name}_AVAILABLE TRUE CACHE INTERNAL "")
-    if(NOT ${config_name}_CONFIG_FOUND)
-    	install_Configuration(${config_name} ${RESULT_PATH})
-    	if(NOT ${config_name}_INSTALLED)
-        set(${config_name}_AVAILABLE FALSE CACHE INTERNAL "")
-      endif()
+  evaluate_Configuration(${config_name} ${PATH_TO_CONFIG})
+  set(${config_name}_AVAILABLE TRUE CACHE INTERNAL "")
+  if(NOT ${config_name}_CONFIG_FOUND)
+  	install_Configuration(${config_name} ${PATH_TO_CONFIG})
+  	if(NOT ${config_name}_INSTALLED)
+      set(${config_name}_AVAILABLE FALSE CACHE INTERNAL "")
     endif()
-    if(NOT ${config_name}_AVAILABLE)#configuration is not available so we cannot generate output variables
+  endif()
+  if(NOT ${config_name}_AVAILABLE)#configuration is not available so we cannot generate output variables
+    set_Configuration_Temporary_Optimization_Variables(${config_name} Release FALSE "")
+    return()
+  endif()
+
+  # checking dependencies
+  set(dep_configurations)
+  foreach(check IN LISTS ${config_name}_CONFIGURATION_DEPENDENCIES)
+    check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${check} ${mode})#check that dependencies are OK
+    if(NOT RESULT_OK)
+      message("[PID] WARNING : when checking configuration of current platform, configuration ${check}, used by ${config_name} cannot be satisfied.")
       set_Configuration_Temporary_Optimization_Variables(${config_name} Release FALSE "")
       return()
     endif()
+    #here need to manage resulting binary contraints
+    append_Unique_In_Cache(${config_name}_CONFIGURATION_DEPENDENCIES_IN_BINARY ${CONFIG_NAME})
+    append_Unique_In_Cache(${CONFIG_NAME}_CONSTRAINTS_IN_BINARY "${CONFIG_CONSTRAINTS}")
+  endforeach()
 
-    # checking dependencies
-    set(dep_configurations)
-    foreach(check IN LISTS ${config_name}_CONFIGURATION_DEPENDENCIES)
-      check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${check} ${mode})#check that dependencies are OK
-      if(NOT RESULT_OK)
-        message("[PID] WARNING : when checking configuration of current platform, configuration ${check}, used by ${config_name} cannot be satisfied.")
-        set_Configuration_Temporary_Optimization_Variables(${config_name} Release FALSE "")
-        return()
-      endif()
-      #here need to manage resulting binary contraints
-      append_Unique_In_Cache(${config_name}_CONFIGURATION_DEPENDENCIES_IN_BINARY ${CONFIG_NAME})
-      append_Unique_In_Cache(${CONFIG_NAME}_CONSTRAINTS_IN_BINARY "${CONFIG_CONSTRAINTS}")
-    endforeach()
+  #extracting variables to make them usable in calling context
+  extract_Configuration_Resulting_Variables(${config_name})
 
-    #extracting variables to make them usable in calling context
-    extract_Configuration_Resulting_Variables(${config_name})
+  #now enforce constraint of using the OS variant of an external package
+  # predefine the use of the external package version with its os variant
+  # no other choice to ensure compatibility with any package using this external package
+  set(${config_name}_VERSION_STRING ${${config_name}_VERSION} CACHE INTERNAL "")
+  set(${config_name}_REQUIRED_VERSION_EXACT ${${config_name}_VERSION} CACHE INTERNAL "")
+  set(${config_name}_REQUIRED_VERSION_SYSTEM TRUE CACHE INTERNAL "")
+  add_Chosen_Package_Version_In_Current_Process(${config_name})#force the use of an os variant
 
-    #now manage the case where the configuration is also managed as an external package
-    get_Package_Type(${config_name} CONFIG_PACK_TYPE)
-    if(CONFIG_PACK_TYPE STREQUAL "EXTERNAL")# the configuration is an OS implementation of an external package
-      # predefine the use of the external package version with its os variant (
-      # no other choice to ensure compatibility with any package using this external package
-      set(${config_name}_VERSION_STRING ${${config_name}_VERSION} CACHE INTERNAL "")
-      set(${config_name}_REQUIRED_VERSION_EXACT ${${config_name}_VERSION} CACHE INTERNAL "")
-      set(${config_name}_REQUIRED_VERSION_SYSTEM TRUE CACHE INTERNAL "")
-      add_Chosen_Package_Version_In_Current_Process(${config_name})#force the use of an os variant
-    endif()
-
-    #return the complete set of binary contraints
-    get_Configuration_Resulting_Constraints(ALL_CONSTRAINTS ${config_name})
-    set(${BINARY_CONTRAINTS} ${ALL_CONSTRAINTS} PARENT_SCOPE)#automatic appending constraints generated by the configuration itself for the given binary package generated
-    set(${CHECK_OK} TRUE PARENT_SCOPE)
-    set_Configuration_Temporary_Optimization_Variables(${config_name} Release TRUE "${ALL_CONSTRAINTS}")
-    return()
-  else()
-    message(WARNING "[PID] WARNING : when checking constraints on current platform, file check_${config_name}.cmake cannot be found. This denotes a badly designed configuration, please ask the authors of the configuration ${config_name} to solve the problem.")
-    return()
-  endif()
+  #return the complete set of binary contraints
+  get_Configuration_Resulting_Constraints(ALL_CONSTRAINTS ${config_name})
+  set(${BINARY_CONTRAINTS} ${ALL_CONSTRAINTS} PARENT_SCOPE)#automatic appending constraints generated by the configuration itself for the given binary package generated
+  set(${CHECK_OK} TRUE PARENT_SCOPE)
+  set_Configuration_Temporary_Optimization_Variables(${config_name} Release TRUE "${ALL_CONSTRAINTS}")
 endfunction(check_System_Configuration_With_Arguments)
 
 #.rst:
@@ -1465,51 +1466,44 @@ endfunction(into_Configuration_Argument_List)
 #
 function(is_Allowed_System_Configuration ALLOWED config_name config_args)
   set(${ALLOWED} FALSE PARENT_SCOPE)
-  resolve_Path_To_Configuration_Dir(RESULT_PATH ${config_name})
-  if(NOT RESULT_PATH)
-    message("[PID] WARNING : when checking if system configuration ${config_name} is possibly usable on current platform, configuration cannot be found in currenlty installed contribution spaces. Add the adequate configuration space to the workspace.")
+  install_System_Configuration_Check(PATH_TO_CONFIG ${config_name})
+  if(NOT PATH_TO_CONFIG)
+    message(WARNING "[PID] ERROR : when checking if system configuration ${config_name} is possibly usable on current platform, configuration cannot be found in currenlty installed contribution spaces. Please either : remove the constraint ${config_name}; check that ${config_name} is well spelled and rename it if necessary; contact developpers of wrapper ${config_name} to solve the problem, create a new wrapper called ${config_name} or configure your workspace with the contribution space referencing the wrapper of ${config_name}.")
     return()
   endif()
-  if( EXISTS ${RESULT_PATH}/check_${config_name}.cmake
-      AND EXISTS ${RESULT_PATH}/find_${config_name}.cmake)
 
-    reset_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
+  reset_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
+  include(${PATH_TO_CONFIG}/check_${config_name}.cmake)#get the description of the configuration check
 
-    include(${RESULT_PATH}/check_${config_name}.cmake)#get the description of the configuration check
+  #now preparing args passed to the configruation (generate cmake variables)
+  if(${config_args})#testing if the variable containing arguments is not empty
+    prepare_Configuration_Arguments(${config_name} ${config_args})#setting variables that correspond to the arguments passed to the check script
+  endif()
+  check_Configuration_Arguments(ARGS_TO_SET ${config_name})
+  if(ARGS_TO_SET)#there are unset required arguments
+    fill_String_From_List(ARGS_TO_SET RES_STRING)
+    message("[PID] WARNING : when testing arguments of configuration ${config_name}, there are required arguments that are not set : ${RES_STRING}")
+    return()
+  endif()
 
-    #now preparing args passed to the configruation (generate cmake variables)
-    if(${config_args})#testing if the variable containing arguments is not empty
-      prepare_Configuration_Arguments(${config_name} ${config_args})#setting variables that correspond to the arguments passed to the check script
-    endif()
-    check_Configuration_Arguments(ARGS_TO_SET ${config_name})
-    if(ARGS_TO_SET)#there are unset required arguments
-      fill_String_From_List(ARGS_TO_SET RES_STRING)
-      message("[PID] WARNING : when testing arguments of configuration ${config_name}, there are required arguments that are not set : ${RES_STRING}")
+  # checking dependencies first
+  foreach(check IN LISTS ${config_name}_CONFIGURATION_DEPENDENCIES)
+    parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${check}")
+    if(NOT CONFIG_NAME)
       return()
     endif()
-
-    # checking dependencies first
-    foreach(check IN LISTS ${config_name}_CONFIGURATION_DEPENDENCIES)
-      parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${check}")
-      if(NOT CONFIG_NAME)
-        return()
-      endif()
-      is_Allowed_System_Configuration(DEP_ALLOWED CONFIG_NAME CONFIG_ARGS)
-      if(NOT DEP_ALLOWED)
-        return()
-      endif()
-    endforeach()
-
-    find_Configuration(${config_name} ${RESULT_PATH}) # find the artifacts used by this configuration
-    if(NOT ${config_name}_CONFIG_FOUND)# not found, trying to see if it can be installed
-      is_Configuration_Installable(INSTALLABLE ${config_name} ${RESULT_PATH})
-      if(NOT INSTALLABLE)
-          return()
-      endif()
+    is_Allowed_System_Configuration(DEP_ALLOWED CONFIG_NAME CONFIG_ARGS)
+    if(NOT DEP_ALLOWED)
+      return()
     endif()
-  else()
-    message("[PID] WARNING : when checking if system configuration ${config_name} is possibly usable on current platform, either file check_${config_name}.cmake or file find_${config_name}.cmake has not been found in ${config_name} folder. ${config_name} is badly described and you should add those files in the folder ${RESULT_PATH}.")
-    return()
+  endforeach()
+
+  evaluate_Configuration(${config_name} ${PATH_TO_CONFIG}) # find the artifacts used by this configuration
+  if(NOT ${config_name}_CONFIG_FOUND)# not found, trying to see if it can be installed
+    is_Configuration_Installable(INSTALLABLE ${config_name} ${PATH_TO_CONFIG})
+    if(NOT INSTALLABLE)
+        return()
+    endif()
   endif()
   set(${ALLOWED} TRUE PARENT_SCOPE)
 endfunction(is_Allowed_System_Configuration)
@@ -1520,13 +1514,13 @@ endfunction(is_Allowed_System_Configuration)
 #
 # .. ifmode:: internal
 #
-#  .. |find_Configuration| replace:: ``find_Configuration``
-#  .. _find_Configuration:
+#  .. |evaluate_Configuration| replace:: ``evaluate_Configuration``
+#  .. _evaluate_Configuration:
 #
-#  find_Configuration
-#  ------------------
+#  evaluate_Configuration
+#  ----------------------
 #
-#   .. command:: find_Configuration(config path_to_config)
+#   .. command:: evaluate_Configuration(config path_to_config)
 #
 #   Call the procedure for finding artefacts related to a configuration. Set the ${config}_FOUND variable, that is TRUE is configuration has been found, FALSE otherwise.
 #
@@ -1534,14 +1528,73 @@ endfunction(is_Allowed_System_Configuration)
 #
 #     :path_to_config: the path to configuration folder.
 #
-macro(find_Configuration config path_to_config)
+macro(evaluate_Configuration config path_to_config)
+  # finding artifacts to fulfill system configuration
   set(${config}_CONFIG_FOUND FALSE)
-  if(EXISTS ${path_to_config}/find_${config}.cmake)
-    include(${path_to_config}/find_${config}.cmake)
-  else()
-    message("[PID] WARNING : configuration ${config} does not define any find script. Find result will always be false ! Please define a script named find_${config}.cmake in the configuration ${config} folder ${path_to_config}")
+  set(eval_file ${path_to_config}/${${config}_EVAL_FILE})
+  set(eval_project_file ${path_to_config}/CMakeLists.txt)
+  set(eval_result_config_file ${path_to_config}/output_vars.cmake.in)
+  set(eval_result_file ${path_to_config}/output_vars.cmake)
+  set(eval_folder ${path_to_config}/build)
+  if(NOT EXISTS ${eval_file})
+    message(WARNING "[PID] ERROR : system configuration check for package ${config} has no evaluation file. Evaluation aborted on error.")
+    return()
   endif()
-endmacro(find_Configuration)
+  #prepare CMake project used for evaluation
+  if(NOT EXISTS ${eval_folder})#create the build folder used for evaluation
+    file(MAKE_DIRECTORY ${eval_folder})
+  endif()
+  if(NOT EXISTS ${eval_project_file})
+    file(WRITE ${eval_project_file} "cmake_minimum_required(VERSION 3.0.2)\n")
+    file(APPEND ${eval_project_file} "set(WORKSPACE_DIR ${WORKSPACE_DIR} CACHE PATH \"root of the PID workspace\")\n")
+    file(APPEND ${eval_project_file} "list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake ${path_to_config})\n")
+    file(APPEND ${eval_project_file} "include(Configuration_Definition NO_POLICY_SCOPE)\n")
+    file(APPEND ${eval_project_file} "project(test_${config})\n")
+    file(APPEND ${eval_project_file} "include(${eval_file})\n")
+    file(APPEND ${eval_project_file} "configure_file(${eval_result_config_file} ${eval_result_file} @ONLY)")
+  endif()
+  if(NOT EXISTS ${eval_result_config_file})
+    set(eval_vars)#getting all meaningfull variables returned from the eval script
+    foreach(var IN LISTS ${config}_RETURNED_VARIABLES)
+      list(APPEND eval_vars ${${config}_${var}_RETURNED_VARIABLE})#getting name of each returned variable
+    endforeach()
+    foreach(var IN LISTS ${config}_IN_BINARY_CONSTRAINTS)
+      list(APPEND eval_vars ${${config}_${var}_BINARY_VALUE})#getting name of each variable used in "required in binary constraint"
+    endforeach()
+    if(eval_vars)
+      list(REMOVE_DUPLICATES eval_vars)
+    endif()
+    file(WRITE ${eval_result_config_file} "set(${config}_CONFIG_FOUND \@${config}_CONFIG_FOUND\@)\n")
+    foreach(var IN LISTS eval_vars)
+      file(APPEND ${eval_result_config_file} "set(${var} @${var}@)\n")#the output file will contain value of variables generated by the eval script
+    endforeach()
+
+    unset(eval_vars)
+  endif()
+
+  #launch evaluation
+  #1) prepare argument as CMake definitions
+  set(calling_defs "")
+  foreach(arg IN LISTS ${config}_arguments)
+    set(calling_defs "-D${config}_${arg}=${${config}_${arg}} ${calling_defs}")
+  endforeach()
+  if(CMAKE_HOST_WIN32)#on a window host path must be resolved
+  	separate_arguments(COMMAND_ARGS_AS_LIST WINDOWS_COMMAND "${calling_defs}")
+  else()#if not on wondows use a UNIX like command syntac
+  	separate_arguments(COMMAND_ARGS_AS_LIST UNIX_COMMAND "${calling_defs}")#always from host perpective
+  endif()
+  #2) evaluate
+  if(EXISTS ${eval_result_file})
+    file(REMOVE ${eval_result_file})
+  endif()
+  execute_process(COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} ${COMMAND_ARGS_AS_LIST} .. WORKING_DIRECTORY ${eval_folder})
+  unset(COMMAND_ARGS_AS_LIST)
+  unset(calling_defs)
+  #3) get the result
+  if(EXISTS ${eval_result_file})
+    include(${eval_result_file})#may set ${config}_CONFIG_FOUND to TRUE
+  endif()
+endmacro(evaluate_Configuration)
 
 #.rst:
 #
@@ -1555,7 +1608,7 @@ endmacro(find_Configuration)
 #
 #   .. command:: is_Configuration_Installable(INSTALLABLE config path_to_config)
 #
-#   Call the procedure telling if a configuratio can be installed.
+#   Call the procedure telling if a configuration can be installed.
 #
 #     :config: the name of the configuration to install.
 #
@@ -1564,13 +1617,19 @@ endmacro(find_Configuration)
 #     :INSTALLABLE: the output variable that is TRUE is configuartion can be installed, FALSE otherwise.
 #
 function(is_Configuration_Installable INSTALLABLE config path_to_config)
-  set(${INSTALLABLE} FALSE PARENT_SCOPE)
-  if(EXISTS ${path_to_config}/installable_${config}.cmake)
-    include(${path_to_config}/installable_${config}.cmake)
+  if(${config}_INSTALL_PACKAGES)#there is a simple install procedure based on system packages
+    set(${INSTALLABLE} TRUE PARENT_SCOPE)
+    return()
+  endif()
+  if(${config}_INSTALL_PROCEDURE AND EXISTS ${path_to_config}/${${config}_INSTALL_PROCEDURE})#there is an install procedure defined in a cmake script file
+    set(DO_NOT_INSTALL TRUE)#only evaluate if the system package can be installed, do not proceed
+    include(${path_to_config}/${${config}_INSTALL_PROCEDURE})
     if(${config}_CONFIG_INSTALLABLE)
       set(${INSTALLABLE} TRUE PARENT_SCOPE)
+      return()
     endif()
   endif()
+  set(${INSTALLABLE} FALSE PARENT_SCOPE)
 endfunction(is_Configuration_Installable)
 
 #.rst:
@@ -1596,18 +1655,22 @@ macro(install_Configuration config path_to_config)
   is_Configuration_Installable(INSTALLABLE ${config} ${path_to_config})
   if(INSTALLABLE)
     message("[PID] INFO : installing configuration ${config}...")
-  	if(EXISTS ${path_to_config}/install_${config}.cmake)
-      include(${path_to_config}/install_${config}.cmake)
-      find_Configuration(${config} ${path_to_config})
-      if(${config}_CONFIG_FOUND)
-        message("[PID] INFO : configuration ${config} installed !")
-        set(${config}_INSTALLED TRUE)
-      else()
-        message("[PID] WARNING : install of configuration ${config} has failed !")
-      endif()
+    if(${config}_INSTALL_PACKAGES)
+      execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} ${${config}_INSTALL_PACKAGES})
     else()
-      message("[PID] WARNING : configuration ${config} does not define any install script while it is supposed to be installable. Install result will always be false ! Please define a script named install_${config}.cmake in the configuration ${config} folder ${path_to_config}")
+      set(DO_NOT_INSTALL FALSE)# apply installation instructions
+      include(${path_to_config}/${${config}_INSTALL_PROCEDURE})
     endif()
+    #now evaluate configuration check after install
+    evaluate_Configuration(${config} ${path_to_config})
+    if(${config}_CONFIG_FOUND)
+      message("[PID] INFO : configuration ${config} installed !")
+      set(${config}_INSTALLED TRUE)
+    else()
+      message("[PID] WARNING : install of configuration ${config} has failed !")
+    endif()
+  else()
+    message("[PID] WARNING : ${config} cannot be installed. Please contact developpers of ${config} wrapper or if you are the developper define an install procedures in ${config} wrapper.")
   endif()
 endmacro(install_Configuration)
 
@@ -1628,6 +1691,9 @@ endmacro(install_Configuration)
 #     :config: the name of the configuration to be reset.
 #
 function(reset_Configuration_Cache_Variables config)
+  set(${config}_EVAL_FILE CACHE INTERNAL "")
+  set(${config}_INSTALL_PACKAGES CACHE INTERNAL "")
+  set(${config}_INSTALL_PROCEDURE CACHE INTERNAL "")
   if(${config}_RETURNED_VARIABLES)
     foreach(var IN LISTS ${config}_RETURNED_VARIABLES)
       set(${config}_${var} CACHE INTERNAL "")
@@ -1724,6 +1790,7 @@ function(prepare_Configuration_Arguments config arguments)
   if(NOT arguments OR NOT ${arguments})
     return()
   endif()
+  set(all_args_set)
   set(argument_couples ${${arguments}})
   while(argument_couples)
     list(GET argument_couples 0 name)
@@ -1751,6 +1818,7 @@ function(prepare_Configuration_Arguments config arguments)
       endif()
     endif()
     if(GENERATE_VAR)
+      list(APPEND all_args_set ${name})
       #now interpret variables contained in the list
       set(final_list_of_values)
       foreach(element IN LISTS VAL_LIST)#for each value in the list
@@ -1763,6 +1831,8 @@ function(prepare_Configuration_Arguments config arguments)
       set(${config}_${name} ${final_list_of_values} PARENT_SCOPE)
     endif()
   endwhile()
+  set(${config}_arguments ${all_args_set} PARENT_SCOPE)
+
 endfunction(prepare_Configuration_Arguments)
 
 #.rst:

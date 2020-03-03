@@ -25,17 +25,20 @@ if(CURRENT_DISTRIBUTION AND NOT PID_CROSSCOMPILATION) #there is a pâckaging sys
     find_program(PATH_TO_APT NAMES apt NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)
     if(PATH_TO_APT)
       set(CURRENT_PACKAGING_SYSTEM APT CACHE INTERNAL "")#sudo apt install -y ...
-      set(CURRENT_PACKAGING_SYSTEM_EXE apt  CACHE INTERNAL "")#sudo apt install -y ...
+      set(CURRENT_PACKAGING_SYSTEM_EXE apt CACHE INTERNAL "")
+      set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS install -y CACHE INTERNAL "")
     else()
       find_program(PATH_TO_PACMAN NAMES pacman NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)
       if(PATH_TO_PACMAN)
-        set(CURRENT_PACKAGING_SYSTEM PACMAN  CACHE INTERNAL "")#sudo apt install -y ...
-        set(CURRENT_PACKAGING_SYSTEM_EXE pacman  CACHE INTERNAL "")#sudo pacman -S ... --noconfirm
+        set(CURRENT_PACKAGING_SYSTEM PACMAN  CACHE INTERNAL "")#sudo pacman -S ... --noconfirm
+        set(CURRENT_PACKAGING_SYSTEM_EXE pacman  CACHE INTERNAL "")
+        set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS -S --noconfirm CACHE INTERNAL "")
       else()
         find_program(PATH_TO_YUM NAMES yum NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)
         if(PATH_TO_YUM)
           set(CURRENT_PACKAGING_SYSTEM YUM  CACHE INTERNAL "")
           set(CURRENT_PACKAGING_SYSTEM_EXE yum  CACHE INTERNAL "")#sudo yum install -y ...
+          set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS install -y CACHE INTERNAL "")
         else()
           #TODO add more package management front end when necessary
         endif()
@@ -43,25 +46,28 @@ if(CURRENT_DISTRIBUTION AND NOT PID_CROSSCOMPILATION) #there is a pâckaging sys
     endif()
 
   elseif(CURRENT_PLATFORM_OS STREQUAL "macos")
-    find_program(PATH_TO_BREW NAMES brew NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH) #sudo brew install ...
+    find_program(PATH_TO_BREW NAMES brew NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)
     if(PATH_TO_BREW)
-      set(CURRENT_PACKAGING_SYSTEM BREW  CACHE INTERNAL "")
+      set(CURRENT_PACKAGING_SYSTEM BREW  CACHE INTERNAL "")#sudo brew install ...
       set(CURRENT_PACKAGING_SYSTEM_EXE brew  CACHE INTERNAL "")
+      set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS install CACHE INTERNAL "")
     else()
-      find_program(PATH_TO_PORTS NAMES ports NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH) #sudo ports install ...
+      find_program(PATH_TO_PORTS NAMES ports NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)
       if(PATH_TO_PORTS)
-        set(CURRENT_PACKAGING_SYSTEM PORTS  CACHE INTERNAL "")
+        set(CURRENT_PACKAGING_SYSTEM PORTS  CACHE INTERNAL "")#sudo ports install ...
         set(CURRENT_PACKAGING_SYSTEM_EXE ports  CACHE INTERNAL "")
+        set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS install CACHE INTERNAL "")
       else()
         #TODO add more package manager when necessary
       endif()
     endif()
 
   elseif(CURRENT_PLATFORM_OS STREQUAL "windows") #only chocolatey for now
-    find_program(PATH_TO_CHOCO NAMES choco NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH) #choco install -y ...
+    find_program(PATH_TO_CHOCO NAMES choco NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)
     if(PATH_TO_CHOCO)
-      set(CURRENT_PACKAGING_SYSTEM CHOCO  CACHE INTERNAL "")
+      set(CURRENT_PACKAGING_SYSTEM CHOCO  CACHE INTERNAL "")#choco install -y ...
       set(CURRENT_PACKAGING_SYSTEM_EXE choco  CACHE INTERNAL "")
+      set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS install -y CACHE INTERNAL "")
     else()
       #TODO add more package manager when necessary
     endif()

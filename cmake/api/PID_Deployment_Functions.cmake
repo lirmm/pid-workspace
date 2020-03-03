@@ -2338,7 +2338,6 @@ endfunction(memorize_Binary_References)
 #      :INSTALL_OK: the output variable that is TRUE is external package is installed, FALSE otherwise.
 #
 function(install_External_Package INSTALL_OK package reinstall from_sources)
-#TODO from here
 set(USE_SOURCES FALSE)#by default try to install from binaries, if they are available
 set(SELECTED)
 set(IS_EXACT FALSE)
@@ -2465,6 +2464,49 @@ else()
 endif()
 set(${INSTALL_OK} FALSE PARENT_SCOPE)
 endfunction(install_External_Package)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_System_Configuration_Check| replace:: ``install_System_Configuration_Check``
+#  .. _install_System_Configuration_Check:
+#
+#  install_System_Configuration_Check
+#  ----------------------------------
+#
+#   .. command:: install_System_Configuration_Check(INSTALLED package)
+#
+#     Install in workspace the system configuration check used to detect the given external package in operating system filesystem.
+#
+#      :package: The name of the external package for which check scripts must be installed in workspace.
+#
+#      :INSTALLED: the output variable that contains path to system configuration check folder, empty otherwise.
+#
+function(install_System_Configuration_Check INSTALLED package)
+  set(path_to_wrapper ${WORKSPACE_DIR}/wrappers/${package})
+  set(path_to_config ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/system/${package})
+
+  if(EXISTS ${path_to_config}/check_${package}.cmake)#system configuration check is not available
+    set(${INSTALLED} ${path_to_config} PARENT_SCOPE)
+    return()
+  endif()
+  set(${INSTALLED} PARENT_SCOPE)
+  if(NOT EXISTS ${path_to_wrapper})# if the external package wrapper repository does not ly in workspace then install it
+  	deploy_Wrapper_Repository(DEPLOYED ${package})
+  	if(NOT DEPLOYED)
+  		message("[PID] ERROR : cannot clone external package ${package} wrapper repository. Deployment aborted !")
+  		return()
+  	endif()
+  endif()
+  #now repository for wrapper is in workspace, apply its receipe for generating system configuration check
+  execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${path_to_wrapper}/build)#generate the system configuration check
+  execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} gen_system_check WORKING_DIRECTORY ${path_to_wrapper}/build)#generate the system configuration check
+  if(EXISTS ${path_to_config}/check_${package}.cmake)
+    set(${INSTALLED} ${path_to_config} PARENT_SCOPE)
+  endif()
+endfunction(install_System_Configuration_Check)
 
 #.rst:
 #

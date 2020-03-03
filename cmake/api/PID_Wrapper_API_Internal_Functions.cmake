@@ -148,7 +148,6 @@ foreach(var IN LISTS ${PROJECT_NAME}_RETURNED_VARIABLES)
 endforeach()
 set(${PROJECT_NAME}_RETURNED_VARIABLES CACHE INTERNAL "")
 set(${PROJECT_NAME}_FIND_PACKAGES CACHE INTERNAL "")
-set(${PROJECT_NAME}_INSTALL_PACKAGER CACHE INTERNAL "")
 set(${PROJECT_NAME}_INSTALL_PACKAGES CACHE INTERNAL "")
 set(${PROJECT_NAME}_INSTALL_PROCEDURE CACHE INTERNAL "")
 set(${PROJECT_NAME}_REQUIRED_CONSTRAINTS CACHE INTERNAL "")
@@ -616,7 +615,6 @@ if(${PROJECT_NAME}_SYSTEM_CONFIGURATION_DEFINED)
 	endforeach()
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_FIND_PACKAGES ${${PROJECT_NAME}_FIND_PACKAGES} CACHE INTERNAL \"\")\n")
 	#management of system install
-	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_INSTALL_PACKAGER ${${PROJECT_NAME}_INSTALL_PACKAGER} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_INSTALL_PACKAGES ${${PROJECT_NAME}_INSTALL_PACKAGES} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_INSTALL_PROCEDURE ${${PROJECT_NAME}_INSTALL_PROCEDURE} CACHE INTERNAL \"\")\n")
 	#management of constraints
@@ -742,7 +740,7 @@ endforeach()
 # system folder
 if(EXISTS ${CMAKE_SOURCE_DIR}/src/system)
 	add_subdirectory(src/system)
-	add_custom_target(gen
+	add_custom_target(gen_system_check
 		COMMAND ${CMAKE_COMMAND}
 		        -DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DIN_CI_PROCESS=${IN_CI_PROCESS}
@@ -751,6 +749,10 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/src/system)
 						-DTARGET_SOURCE_DIR=${CMAKE_SOURCE_DIR}/system
 			 -P ${WORKSPACE_DIR}/cmake/commands/Install_PID_System_Configuration.cmake
 			 VERBATIM
+	)
+	add_custom_target(rem_system_check
+		COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/system/${PROJECT_NAME}
+	  VERBATIM
 	)
 endif()
 
@@ -2733,6 +2735,27 @@ function(resolve_Wrapper_Dependencies package version os_variant)
 	endforeach()
 endfunction(resolve_Wrapper_Dependencies)
 
+#
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Wrapper_System_Configuration_Check_Scripts| replace:: ``generate_Wrapper_System_Configuration_Check_Scripts``
+#  .. _generate_Wrapper_System_Configuration_Check_Scripts:
+#
+#  generate_Wrapper_System_Configuration_Check_Scripts
+#  ---------------------------------------------------
+#
+#   .. command:: generate_Wrapper_System_Configuration_Check_Scripts(package version os_variant)
+#
+#    Generate and copy all the CMake script files used to check system configuration for the given external package.
+#
+#      :package: the name of target external package.
+#
+#      :path_to_sources: path to the wrapper source file containing system configuration check definitions
+#
+#      :path_to_install_dir: path to the local workspace install dir where configuration check scripts are installed.
+#
 function(generate_Wrapper_System_Configuration_Check_Scripts package path_to_sources path_to_install_dir)
 	#copy the eval file "as is"
 	file(COPY ${path_to_sources}/${${package}_EVAL_FILE} DESTINATION ${path_to_install_dir})
@@ -2749,7 +2772,6 @@ function(generate_Wrapper_System_Configuration_Check_Scripts package path_to_sou
 	foreach(var IN LISTS ${package}_RETURNED_VARIABLES)
 		file(APPEND ${path_to_main_check_script} "set(${package}_${var}_RETURNED_VARIABLE ${${package}_${var}_RETURNED_VARIABLE} CACHE INTERNAL \"\")\n")
 	endforeach()
-	file(APPEND ${path_to_main_check_script} "set(${package}_INSTALL_PACKAGER ${${package}_INSTALL_PACKAGER} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_main_check_script} "set(${package}_INSTALL_PACKAGES ${${package}_INSTALL_PACKAGES} CACHE INTERNAL \"\")\n")
 	if(${package}_INSTALL_PROCEDURE)#copy file defining the specific install procedure
 		file(COPY ${path_to_sources}/${${package}_INSTALL_PROCEDURE} DESTINATION ${path_to_install_dir})
@@ -2763,23 +2785,3 @@ function(generate_Wrapper_System_Configuration_Check_Scripts package path_to_sou
 	endforeach()
 	file(APPEND ${path_to_main_check_script} "set(${package}_CONFIGURATION_DEPENDENCIES ${${package}_CONFIGURATION_DEPENDENCIES} CACHE INTERNAL \"\")\n")
 endfunction(generate_Wrapper_System_Configuration_Check_Scripts)
-
-# function(generate_Wrapper_System_Configuration_Check_Project path_to_build)
-# 	if(NOT EXISTS ${path_to_build}/build)#create the directory for building that version
-# 		file(MAKE_DIRECTORY ${path_to_build}/build)
-# 	endif()
-# 	set(path_to_project_file ${path_to_build}/CMakeLists.txt)
-# 	#create the CMake project file used to check if system components are available
-# 	file(WRITE ${path_to_project_file} "
-# 		cmake_minimum_required(VERSION 3.0.2)\n
-# 		project(test_${TARGET_EXTERNAL_PACKAGE})\n
-# 		set(CMAKE_MODULE_PATH ${TARGET_SOURCE_DIR} \${CMAKE_MODULE_PATH})\n
-# 		include(${${TARGET_EXTERNAL_PACKAGE}_EVAL_FILE})\n
-# 		if(NOT ${TARGET_EXTERNAL_PACKAGE}_CONFIG_FOUND)\n
-# 		message(FATAL_ERROR \"\")\n
-# 		endif()\n
-# 		configure_file(\${CMAKE_SOURCE_DIR}/config_vars.cmake.in \${CMAKE_SOURCE_DIR}/config_vars.cmake @ONLY) # generate the output file
-# 	")
-#
-#
-# endfunction(generate_Wrapper_System_Configuration_Check_Project)

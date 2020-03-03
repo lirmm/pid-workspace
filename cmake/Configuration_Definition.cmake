@@ -27,11 +27,13 @@ set(CONFIGURATION_DEFINITION_INCLUDED TRUE)
 
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
+include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 
 include(CMakeParseArguments)
+load_Current_Platform()
 
 ##################################################################################################
 #################### API to ease the description of system configurations ########################
@@ -41,13 +43,13 @@ include(CMakeParseArguments)
 #
 # .. ifmode:: user
 #
-#  .. |found_PID_Wrapper_System_Configuration| replace:: ``found_PID_Wrapper_System_Configuration``
-#  .. _found_PID_Wrapper_System_Configuration:
+#  .. |found_PID_Configuration| replace:: ``found_PID_Configuration``
+#  .. _found_PID_Configuration:
 #
-#  found_PID_Wrapper_System_Configuration
+#  found_PID_Configuration
 #  --------------------------------------
 #
-#   .. command:: found_PID_Wrapper_System_Configuration(config value)
+#   .. command:: found_PID_Configuration(config value)
 #
 #      Declare the configuration as FOUND or NOT FOUND.
 #
@@ -71,23 +73,23 @@ include(CMakeParseArguments)
 #
 #     .. code-block:: cmake
 #
-#        found_PID_Wrapper_System_Configuration(boost TRUE)
+#        found_PID_Configuration(boost TRUE)
 #
-macro(found_PID_Wrapper_System_Configuration config value)
+macro(found_PID_Configuration config value)
   set(${config}_CONFIG_FOUND ${value})
-endmacro(found_PID_Wrapper_System_Configuration)
+endmacro(found_PID_Configuration)
 
 #.rst:
 #
 # .. ifmode:: user
 #
-#  .. |installable_PID_Wrapper_System_Configuration| replace:: ``installable_PID_Wrapper_System_Configuration``
-#  .. _installable_PID_Wrapper_System_Configuration:
+#  .. |installable_PID_Configuration| replace:: ``installable_PID_Configuration``
+#  .. _installable_PID_Configuration:
 #
-#  installable_PID_Wrapper_System_Configuration
+#  installable_PID_Configuration
 #  --------------------------------------------
 #
-#   .. command:: installable_PID_Wrapper_System_Configuration(config value)
+#   .. command:: installable_PID_Configuration(config value)
 #
 #      Declare the configuration as INSTALLABLE or NOT INSTALLABLE.
 #
@@ -111,11 +113,11 @@ endmacro(found_PID_Wrapper_System_Configuration)
 #
 #     .. code-block:: cmake
 #
-#        installable_PID_Wrapper_System_Configuration(boost TRUE)
+#        installable_PID_Configuration(boost TRUE)
 #
-macro(installable_PID_Wrapper_System_Configuration config value)
+macro(installable_PID_Configuration config value)
   set(${config}_CONFIG_INSTALLABLE ${value})
-endmacro(installable_PID_Wrapper_System_Configuration)
+endmacro(installable_PID_Configuration)
 
 
 #.rst:
@@ -148,10 +150,12 @@ endmacro(installable_PID_Wrapper_System_Configuration)
 #        execute_OS_Configuration_Command(apt-get install -y libgtk2.0-dev libgtkmm-2.4-dev)
 #
 macro(execute_OS_Configuration_Command)
-if(IN_CI_PROCESS)
-  execute_process(COMMAND ${ARGN})
-else()
-  execute_process(COMMAND sudo ${ARGN})#need to have super user privileges except in CI where suding sudi is forbidden
+if(NOT DO_NOT_INSTALL)
+  if(IN_CI_PROCESS)
+    execute_process(COMMAND ${ARGN})
+  else()
+    execute_process(COMMAND sudo ${ARGN})#need to have super user privileges except in CI where suding sudi is forbidden
+  endif()
 endif()
 endmacro(execute_OS_Configuration_Command)
 

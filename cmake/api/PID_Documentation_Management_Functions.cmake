@@ -125,7 +125,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
   					NO_DEFAULT_PATH
   		)
   	if(GENERIC_DOXYFILE_IN MATCHES GENERIC_DOXYFILE_IN-NOTFOUND)
-  		message("[PID] ERROR : no doxygen template file found ... skipping documentation generation !!")
+  		message("[PID] WARNING : no doxygen template file found ... skipping documentation generation !!")
   	else()
   		set(DOXYFILE_PATH ${GENERIC_DOXYFILE_IN})
   	endif()

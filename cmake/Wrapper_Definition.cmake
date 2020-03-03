@@ -31,7 +31,6 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Wrapper_API_Internal_Functions NO_POLICY_SCOPE)
 include(External_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
-include(Configuration_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
 include(Package_Definition NO_POLICY_SCOPE) #to enable the use of get_PID_Platform_Info in find files
 
 include(CMakeParseArguments)
@@ -1273,7 +1272,6 @@ function(declare_PID_Wrapper_System_Configuration)
   foreach(packager IN LISTS PID_KNOWN_PACKAGING_SYSTEMS)
     if( DECLARE_PID_CONFIGURATION_${packager}
         AND packager STREQUAL CURRENT_PACKAGING_SYSTEM)#OK there is a packager specified for the one used in current platform
-      set(${PROJECT_NAME}_INSTALL_PACKAGER ${CURRENT_PACKAGING_SYSTEM_EXE} CACHE INTERNAL "")#memorize exe to use
       set(${PROJECT_NAME}_INSTALL_PACKAGES ${DECLARE_PID_CONFIGURATION_${packager}} CACHE INTERNAL "")
     endif()
   endforeach()
