@@ -355,27 +355,20 @@ set(${VERSION_FOUND} FALSE PARENT_SCOPE)
 list_Version_Subdirectories(version_dirs ${install_dir})
 if(version_dirs)#seaking for a good version only if there are versions installed
   if(patch)
-    update_Package_Installed_Version(${package} ${major} ${minor} ${patch} true "${version_dirs}")#updating only if there are installed versions
-    set(curr_patch_version )
-    foreach(patch_num IN LISTS version_dirs)
-      if(version MATCHES "^${major}\\.${minor}\\.${patch}$")
-        set(result TRUE)
-        set(curr_patch_version ${patch})
-  		endif()
-  	endforeach()
-  else()#any patch version can be used => same as select best version
-    update_Package_Installed_Version(${package} ${major} ${minor} "" true "${version_dirs}")#updating only if there are installed versions
-    set(curr_patch_version -1)
-    foreach(patch_num IN LISTS version_dirs)
-      if(version MATCHES "^${major}\\.${minor}\\.([0-9]+)$")
-  			if(NOT (CMAKE_MATCH_1 LESS curr_patch_version)) #=minor >= patch
-  				set(result TRUE)
-  				#a more recent patch version found with same minor version
-  				set(curr_patch_version ${CMAKE_MATCH_1})
-  			endif()
-  		endif()
-  	endforeach()
+    set(curr_patch_version ${patch})
+  else()#no preliminary contraints applies to version
+    set(curr_patch_version 0)
   endif()
+  update_Package_Installed_Version(${package} ${major} ${minor} "${patch}" true "${version_dirs}")#updating only if there are installed versions
+  foreach(version IN LISTS version_dirs)
+    if(version MATCHES "^${major}\\.${minor}\\.([0-9]+)$")
+      if(NOT (CMAKE_MATCH_1 LESS curr_patch_version)) #=minor >= patch
+        set(result TRUE)
+        #a more recent patch version found with same minor version
+        set(curr_patch_version ${CMAKE_MATCH_1})
+      endif()
+    endif()
+  endforeach()
 
 	if(result)#at least a good version has been found
 		set(${VERSION_FOUND} TRUE PARENT_SCOPE)
