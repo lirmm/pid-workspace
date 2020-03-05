@@ -259,7 +259,6 @@ function(find_PID_Library_In_Linker_Order possible_library_names_ot_path search_
   foreach(name_or_path IN LISTS possible_library_names_ot_path)
     if(EXISTS ${name_or_path})#this is a path
       set(IS_PATH TRUE)
-      if()
     else()
       set(IS_NAME TRUE)
     endif()
@@ -282,7 +281,7 @@ function(find_PID_Library_In_Linker_Order possible_library_names_ot_path search_
       string(FIND "${LIB_NAME_WE}" "${PREFIX}" INDEX)
       if(INDEX EQUAL 0)#avoid removing prefix like "lib" if same string is used within library name
         string(LENGTH "${PREFIX}" PREFIX_LENGTH)
-        string(SUBSTRING "${LIB_NAME_WE}" 0 ${PREFIX_LENGTH} lib_name)
+        string(SUBSTRING "${LIB_NAME_WE}" ${PREFIX_LENGTH} -1 lib_name)
       else()#no prefix for this lib ... not impossible
         set(lib_name ${LIB_NAME_WE})
       endif()
