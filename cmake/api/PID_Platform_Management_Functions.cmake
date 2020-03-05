@@ -275,7 +275,7 @@ endfunction(get_Soname)
 #
 #     :LINK_PATH: the output variable that contains the path to library used at link time, empty if no path found.
 #
-#     :LIB_SONAME: the output variable that contains the only the name of the library if path has been found, empty otherwise.
+#     :LIB_SONAME: the output variable that contains the name of the library if path has been found, empty otherwise.
 #
 function(find_Possible_Library_Path REAL_PATH LINK_PATH LIB_SONAME folder library_name)
   set(${REAL_PATH} PARENT_SCOPE)
@@ -385,27 +385,12 @@ function(find_Library_In_Implicit_System_Dir LIBRARY_PATH LIB_SONAME LIB_SOVERSI
   foreach(dir IN LISTS IMPLICIT_DIRS)#searching for library name in same order as specified by the path to ensure same resolution as the linker
   	find_Possible_Library_Path(REAL_PATH LINK_PATH LIBSONAME ${dir} ${library_name})
   	if(REAL_PATH)#there is a standard library or symlink with that name
-  		get_Binary_Description(DESCRITION ${REAL_PATH})
-  		if(DESCRITION)#preceding commands says OK: means the binary is recognized as an adequate shared object
-        #getting the SONAME
-  			get_Soname(SONAME SOVERSION ${LIBSONAME} DESCRITION)
-        set(${LIBRARY_PATH} ${LINK_PATH} PARENT_SCOPE)
+      get_Soname_Info_From_Library_Path(LIB_PATH SONAME SOVERSION ${library_name} ${LIBSONAME} ${REAL_PATH})
+      if(LIB_PATH)
+        set(${LIBRARY_PATH} ${LIB_PATH} PARENT_SCOPE)
         set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
         set(${LIB_SOVERSION} ${SOVERSION} PARENT_SCOPE)
-        return()
-      else()#here we can check the text content, since the file can be an implicit linker script use as an alias (and more)
-        extract_Library_Path_From_Linker_Script(LIB_PATH ${library_name} ${REAL_PATH})
-        if(LIB_PATH)
-          get_Binary_Description(DESCRITION ${LIB_PATH})
-          if(DESCRITION)#preceding commands says OK: means the binary is recognized as an adequate shared object
-            #getting the SONAME
-            get_Soname(SONAME SOVERSION ${LIBSONAME} DESCRITION)
-            set(${LIBRARY_PATH} ${LIB_PATH} PARENT_SCOPE)
-            set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
-            set(${LIB_SOVERSION} ${SOVERSION} PARENT_SCOPE)
-            return()
-          endif()
-        endif()
+        return()#solution has been found
       endif()
     endif()
   endforeach()
@@ -413,6 +398,58 @@ function(find_Library_In_Implicit_System_Dir LIBRARY_PATH LIB_SONAME LIB_SOVERSI
   set(${LIB_SONAME} PARENT_SCOPE)
   set(${LIB_SOVERSION} PARENT_SCOPE)
 endfunction(find_Library_In_Implicit_System_Dir)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Soname_Info_From_Library_Path| replace:: ``get_Soname_Info_From_Library_Path``
+#  .. _get_Soname_Info_From_Library_Path:
+#
+#  get_Soname_Info_From_Library_Path
+#  ---------------------------------
+#
+#   .. command:: get_Soname_Info_From_Library_Path(LIBRARY_PATH LIB_SONAME LIB_SOVERSION library_name library_soname full_path)
+#
+#    Get link info of a library that is supposed to be located in implicit system folders.
+#
+#     :library_name: the name of the library (without any prefix or suffix specific to system).
+#
+#     :library_soname: the full name of the library (with prefix and soname suffix).
+#
+#     :full_path: the full path to the library file (may be a real soobject or link or a linker script).
+#
+#     :LIBRARY_PATH: the output variable that contains the full path to library, empty if no path found.
+#
+#     :LIB_SONAME: the output variable that contains only the name of the library if path has been found, empty otherwise.
+#
+#     :LIB_SOVERSION: the output variable that contains only the SOVERSION of the library if LIB_SONAME has been found, empty otherwise.
+#
+function(get_Soname_Info_From_Library_Path LIBRARY_PATH LIB_SONAME LIB_SOVERSION library_name library_soname full_path)
+  get_Binary_Description(DESCRIPTION ${full_path})
+  if(DESCRIPTION)#preceding commands says OK: means the binary is recognized as an adequate shared object
+    #getting the SONAME
+    get_Soname(SONAME SOVERSION ${library_soname} DESCRIPTION)
+    set(${LIBRARY_PATH} ${full_path} PARENT_SCOPE)
+    set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
+    set(${LIB_SOVERSION} ${SOVERSION} PARENT_SCOPE)
+  else()#here we can check the text content, since the file can be an implicit linker script use as an alias (and more)
+    extract_Library_Path_From_Linker_Script(LIB_PATH ${library_name} ${full_path})
+    if(LIB_PATH)
+      get_Binary_Description(DESCRIPTION ${LIB_PATH})
+      if(DESCRIPTION)#preceding commands says OK: means the binary is recognized as an adequate shared object
+        #getting the SONAME
+        get_Soname(SONAME SOVERSION ${library_soname} DESCRIPTION)
+        set(${LIBRARY_PATH} ${LIB_PATH} PARENT_SCOPE)
+        set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
+        set(${LIB_SOVERSION} ${SOVERSION} PARENT_SCOPE)
+      endif()
+    endif()
+  endif()
+  set(${LIBRARY_PATH} PARENT_SCOPE)
+  set(${LIB_SONAME} PARENT_SCOPE)
+  set(${LIB_SOVERSION} PARENT_SCOPE)
+endfunction(get_Soname_Info_From_Library_Path)
 
 #.rst:
 #

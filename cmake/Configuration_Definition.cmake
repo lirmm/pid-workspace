@@ -159,24 +159,76 @@ if(NOT DO_NOT_INSTALL)
 endif()
 endmacro(execute_OS_Configuration_Command)
 
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |resolve_PID_System_Libraries_From_Path| replace:: ``resolve_PID_System_Libraries_From_Path``
+#  .. _resolve_PID_System_Libraries_From_Path:
+#
+#  resolve_PID_System_Libraries_From_Path
+#  --------------------------------------
+#
+#   .. command:: resolve_PID_System_Libraries_From_Path(list_of_path ALL_LIBRARIES_REAL_PATH ALL_LIBRARIES_SONAME)
+#
+#      Utility function to be used in system configuration eval script (cf. Wrapper API).
+#      Resolve real path to libraries' binaries (i.e. resolve linker scripts) and get their soname.
+#      Typically used after a call to find_package.
+#
+#     .. rubric:: Required parameters
+#
+#     :<list_of_path>: the list of path to libraries.
+#
+#     :<ALL_LIBRARIES_REAL_PATH>: the output variable that contains the list of path to real binaries in operating system filesystem.
+#
+#     :<ALL_LIBRARIES_SONAME>: the output variable that contains the list of the libraries sonames.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function can be called in the eval script of a system configuration.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#        No side effect.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        find_package(OpenSSL REQUIRED)
+#        resolve_PID_System_Libraries_From_Path("${OpenSSL_LIBRARIES}" ALL OPENSSL_LIBS OPENSSL_SONAMES)
+#
+function(resolve_PID_System_Libraries_From_Path all_libraries ALL_LIBRARIES_REAL_PATH ALL_LIBRARIES_SONAME)
+  set(result_path)
+  set(result_sonames)
+  foreach(lib IN LISTS all_libraries)
+    find_PID_Library_In_Linker_Order(${lib} ALL REAL_PATH SONAME)
+    list(APPEND result_path ${REAL_PATH})
+    list(APPEND result_sonames ${SONAME})
+  endforeach()
+  set(${ALL_LIBRARIES_REAL_PATH} ${result_path} PARENT_SCOPE)
+  set(${ALL_LIBRARIES_SONAME} ${result_sonames} PARENT_SCOPE)
+endfunction(resolve_PID_System_Libraries_From_Path)
 
 #.rst:
 #
 # .. ifmode:: user
 #
-#  .. |find_Library_In_Linker_Order| replace:: ``find_Library_In_Linker_Order``
-#  .. _find_Library_In_Linker_Order:
+#  .. |find_PID_Library_In_Linker_Order| replace:: ``find_PID_Library_In_Linker_Order``
+#  .. _find_PID_Library_In_Linker_Order:
 #
-#  find_Library_In_Linker_Order
-#  ----------------------------
+#  find_PID_Library_In_Linker_Order
+#  --------------------------------
 #
-#   .. command:: find_Library_In_Linker_Order(possible_library_names search_folders_type LIBRARY_PATH LIB_SONAME)
+#   .. command:: find_PID_Library_In_Linker_Order(possible_library_names search_folders_type LIBRARY_PATH LIB_SONAME)
 #
 #      Utility function to be used in configuration find script. Try to find a library in same order as the linker.
 #
 #     .. rubric:: Required parameters
 #
-#     :<possible_library_names>: the name of possible names for the library.
+#     :<possible_library_names_ot_path>: the list of possible names or path for the library.
 #
 #     :<search_folders_type>: if equal to "ALL" all path will be searched in. If equal to "IMPLICIT" only implicit link folders (non user install folders) will be searched in. If equal to "USER" implicit link folders are not used.
 #
@@ -198,12 +250,53 @@ endmacro(execute_OS_Configuration_Command)
 #
 #     .. code-block:: cmake
 #
-#        convert_PID_Libraries_Into_System_Links(BOOST_LIBRARIES BOOST_LINKS)
+#        find_PID_Library_In_Linker_Order("tiff" ALL TIFF_LIB TIFF_SONAME)
 #
-function(find_PID_Library_In_Linker_Order possible_library_names search_folders_type LIBRARY_PATH LIB_SONAME)
+function(find_PID_Library_In_Linker_Order possible_library_names_ot_path search_folders_type LIBRARY_PATH LIB_SONAME)
+  #0)extract name from full path, is any
+  set(IS_PATH FALSE)
+  set(IS_NAME FALSE)
+  foreach(name_or_path IN LISTS possible_library_names_ot_path)
+    if(EXISTS ${name_or_path})#this is a path
+      set(IS_PATH TRUE)
+      if()
+    else()
+      set(IS_NAME TRUE)
+    endif()
+  endforeach()
+  if(IS_PATH AND IS_NAME)
+    message("[PID] ERROR: bad usage of function find_PID_Library_In_Linker_Order, must provide name or path as argument but not both")
+    return()
+  elseif(IS_PATH)
+    list(LENGTH possible_library_names_ot_path SIZE)
+    if(SIZE GREATER 1)
+      message("[PID] ERROR: bad usage of function find_PID_Library_In_Linker_Order, only one path must be provided !")
+      return()
+    endif()
+    #from here only one path given => must resolve everything to be sure we do not target a linker script but we want soname info from real binary
+    list(GET possible_library_names_ot_path 0 the_path)
+    get_filename_component(LIB_NAME_WE ${the_path} NAME_WE)
+    get_filename_component(LIB_FULL_NAME ${the_path} NAME)
+    get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION ${CURRENT_PLATFORM_OS} "SHARED")
+    if(PREFIX)
+      string(FIND "${LIB_NAME_WE}" "${PREFIX}" INDEX)
+      if(INDEX EQUAL 0)#avoid removing prefix like "lib" if same string is used within library name
+        string(LENGTH "${PREFIX}" PREFIX_LENGTH)
+        string(SUBSTRING "${LIB_NAME_WE}" 0 ${PREFIX_LENGTH} lib_name)
+      else()#no prefix for this lib ... not impossible
+        set(lib_name ${LIB_NAME_WE})
+      endif()
+    else()
+      set(lib_name ${LIB_NAME_WE})
+    endif()
+    get_Soname_Info_From_Library_Path(LIB_PATH SONAME SOVERSION ${lib_name} ${LIB_FULL_NAME} ${the_path})
+    set(${LIBRARY_PATH} ${LIB_PATH} PARENT_SCOPE)
+    set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
+    return()
+  endif()
   #1) search in implicit system folders
   if(NOT search_folders_type STREQUAL "USER")
-    foreach(lib IN LISTS possible_library_names)
+    foreach(lib IN LISTS possible_library_names_ot_path)
       find_Library_In_Implicit_System_Dir(IMPLICIT_LIBRARY_PATH RET_SONAME LIB_SOVERSION ${lib})
       if(IMPLICIT_LIBRARY_PATH)#found
         set(${LIBRARY_PATH} ${IMPLICIT_LIBRARY_PATH} PARENT_SCOPE)
@@ -214,7 +307,7 @@ function(find_PID_Library_In_Linker_Order possible_library_names search_folders_
   endif()
   if(NOT search_folders_type STREQUAL "IMPLICIT")
   #2) search in cmake defined system search folders
-    find_library(RET_LIBRARY NAMES ${possible_library_names})
+    find_library(RET_LIBRARY NAMES ${possible_library_names_ot_path})
     if(RET_LIBRARY)
       set(lib_path ${RET_LIBRARY})
       unset(RET_LIBRARY CACHE)
