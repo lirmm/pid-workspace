@@ -1250,7 +1250,7 @@ endmacro(PID_Wrapper_System_Configuration)
 
 function(declare_PID_Wrapper_System_Configuration)
   set(monoValueArg EVAL INSTALL)
-  set(multiValueArg ${PID_KNOWN_PACKAGING_SYSTEMS} FIND_PACKAGES VARIABLES VALUES LANGUAGES ADDITIONAL_CONTENT) #the value may be a list
+  set(multiValueArg ${PID_KNOWN_PACKAGING_SYSTEMS} FIND_PACKAGES VARIABLES VALUES LANGUAGES ADDITIONAL_CONTENT USE) #the value may be a list
   cmake_parse_arguments(DECLARE_PID_CONFIGURATION "" "${monoValueArg}" "${multiValueArg}" ${ARGN})
   if(NOT DECLARE_PID_CONFIGURATION_EVAL)
     message(FATAL_ERROR "[PID] CRITICAL ERROR: Bad usage of function PID_Wrapper_System_Configuration, you must give the cmake file used for configuration evaluation using EVAL keyword")
@@ -1289,6 +1289,10 @@ function(declare_PID_Wrapper_System_Configuration)
 
   if(DECLARE_PID_CONFIGURATION_ADDITIONAL_CONTENT)
     set(${PROJECT_NAME}_EVAL_ADDITIONAL_CONTENT ${DECLARE_PID_CONFIGURATION_ADDITIONAL_CONTENT} CACHE INTERNAL "")
+  endif()
+
+  if(DECLARE_PID_CONFIGURATION_USE)
+    set(${PROJECT_NAME}_USE_FILES ${DECLARE_PID_CONFIGURATION_USE} CACHE INTERNAL "")
   endif()
 endfunction(declare_PID_Wrapper_System_Configuration)
 

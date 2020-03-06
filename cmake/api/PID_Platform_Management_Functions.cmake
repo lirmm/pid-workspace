@@ -1594,6 +1594,12 @@ macro(evaluate_Configuration config path_to_config)
       return()
     endif()
   endforeach()
+  foreach(file IN LISTS ${config}_USE_FILES)
+    if(NOT EXISTS ${path_to_config}/${file})
+      message(ERROR "[PID] ERROR : when evaluating system configuration package ${config}, CMake file ${path_to_config}/${file} not found. Evaluation aborted on error !")
+      return()
+    endif()
+  endforeach()
 
   #prepare CMake project used for evaluation
   if(NOT EXISTS ${eval_folder})#create the build folder used for evaluation
@@ -1650,6 +1656,11 @@ macro(evaluate_Configuration config path_to_config)
   #3) get the result
   if(EXISTS ${eval_result_file})
     include(${eval_result_file})#may set ${config}_CONFIG_FOUND to TRUE
+    if(${config}_CONFIG_FOUND)
+      foreach(file IN LISTS ${config}_USE_FILES)
+        include(${path_to_config}/${file})#drectly provide use files to user
+      endforeach()
+    endif()
   endif()
 endmacro(evaluate_Configuration)
 
@@ -1679,6 +1690,7 @@ function(is_Configuration_Installable INSTALLABLE config path_to_config)
     return()
   endif()
   if(${config}_INSTALL_PROCEDURE AND EXISTS ${path_to_config}/${${config}_INSTALL_PROCEDURE})#there is an install procedure defined in a cmake script file
+    include(Configuration_Definition NO_POLICY_SCOPE)
     set(DO_NOT_INSTALL TRUE)#only evaluate if the system package can be installed, do not proceed
     include(${path_to_config}/${${config}_INSTALL_PROCEDURE})
     if(${config}_CONFIG_INSTALLABLE)
@@ -1715,6 +1727,7 @@ macro(install_Configuration config path_to_config)
     if(${config}_INSTALL_PACKAGES)
       execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} ${${config}_INSTALL_PACKAGES})
     else()
+      include(Configuration_Definition NO_POLICY_SCOPE)
       set(DO_NOT_INSTALL FALSE)# apply installation instructions
       include(${path_to_config}/${${config}_INSTALL_PROCEDURE})
     endif()
