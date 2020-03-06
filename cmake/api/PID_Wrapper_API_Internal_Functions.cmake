@@ -148,6 +148,7 @@ foreach(var IN LISTS ${PROJECT_NAME}_RETURNED_VARIABLES)
 endforeach()
 set(${PROJECT_NAME}_RETURNED_VARIABLES CACHE INTERNAL "")
 set(${PROJECT_NAME}_FIND_PACKAGES CACHE INTERNAL "")
+set(${PROJECT_NAME}_EVAL_LANGUAGES CACHE INTERNAL "")
 set(${PROJECT_NAME}_INSTALL_PACKAGES CACHE INTERNAL "")
 set(${PROJECT_NAME}_INSTALL_PROCEDURE CACHE INTERNAL "")
 set(${PROJECT_NAME}_REQUIRED_CONSTRAINTS CACHE INTERNAL "")
@@ -614,6 +615,7 @@ if(${PROJECT_NAME}_SYSTEM_CONFIGURATION_DEFINED)
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_${var}_RETURNED_VARIABLE ${${PROJECT_NAME}_${var}_RETURNED_VARIABLE} CACHE INTERNAL \"\")\n")
 	endforeach()
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_FIND_PACKAGES ${${PROJECT_NAME}_FIND_PACKAGES} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_EVAL_LANGUAGES ${${PROJECT_NAME}_EVAL_LANGUAGES} CACHE INTERNAL \"\")\n")
 	#management of system install
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_INSTALL_PACKAGES ${${PROJECT_NAME}_INSTALL_PACKAGES} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_INSTALL_PROCEDURE ${${PROJECT_NAME}_INSTALL_PROCEDURE} CACHE INTERNAL \"\")\n")
@@ -761,7 +763,7 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/src/system)
 			 VERBATIM
 	)
 	add_dependencies(eval_system_check gen_system_check)
-	
+
 	add_custom_target(rem_system_check
 		COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/system/${PROJECT_NAME}
 	  VERBATIM
@@ -2788,6 +2790,7 @@ function(generate_Wrapper_System_Configuration_Check_Scripts package path_to_sou
 	if(${package}_INSTALL_PROCEDURE)#copy file defining the specific install procedure
 		file(COPY ${path_to_sources}/${${package}_INSTALL_PROCEDURE} DESTINATION ${path_to_install_dir})
 	endif()
+	file(APPEND ${path_to_main_check_script} "set(${package}_EVAL_LANGUAGES ${${package}_EVAL_LANGUAGES} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_main_check_script} "set(${package}_INSTALL_PROCEDURE ${${package}_INSTALL_PROCEDURE} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_main_check_script} "set(${package}_REQUIRED_CONSTRAINTS ${${package}_REQUIRED_CONSTRAINTS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_main_check_script} "set(${package}_OPTIONAL_CONSTRAINTS ${${package}_OPTIONAL_CONSTRAINTS} CACHE INTERNAL \"\")\n")

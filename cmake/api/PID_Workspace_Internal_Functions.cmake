@@ -3800,6 +3800,10 @@ function(write_Platform_Description file)
 		file(APPEND ${file} "set(CXX_STD_SYMBOL_${symbol}_VERSION ${CXX_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\" FORCE)\n")
 	endforeach()
 
+	file(APPEND ${file} "set(Python_Language_AVAILABLE ${Python_Language_AVAILABLE} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(Fortran_Language_AVAILABLE ${Fortran_Language_AVAILABLE} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CUDA_Language_AVAILABLE ${CUDA_Language_AVAILABLE} CACHE INTERNAL \"\" FORCE)\n")
+
 	#managing python
 	file(APPEND ${file} "set(CURRENT_PYTHON ${CURRENT_PYTHON} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CURRENT_PYTHON_EXECUTABLE ${CURRENT_PYTHON_EXECUTABLE} CACHE INTERNAL \"\" FORCE)\n")
