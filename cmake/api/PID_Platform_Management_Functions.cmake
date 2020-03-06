@@ -1583,10 +1583,17 @@ macro(evaluate_Configuration config path_to_config)
     endif()
   endforeach()
 
+  #preliminary checks for evaluation
   if(NOT EXISTS ${eval_file})
-    message(WARNING "[PID] ERROR : system configuration check for package ${config} has no evaluation file. Evaluation aborted on error.")
+    message(ERROR "[PID] ERROR : system configuration check for package ${config} has no evaluation file. Evaluation aborted on error.")
     return()
   endif()
+  foreach(content IN LISTS ${config}_EVAL_ADDITIONAL_CONTENT)
+    if(NOT EXISTS ${path_to_config}/${content})
+      message(ERROR "[PID] ERROR : when evaluating system configuration package ${config}, evaluation content ${content} not fond in ${path_to_config}/${content}. Evaluation aborted on error !")
+      return()
+    endif()
+  endforeach()
 
   #prepare CMake project used for evaluation
   if(NOT EXISTS ${eval_folder})#create the build folder used for evaluation
