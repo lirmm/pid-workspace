@@ -1282,10 +1282,11 @@ endfunction(get_All_Matching_Contributions)
 function(get_System_Configuration_All_Non_Official_Contribtion_Spaces_In_Use LIST_OF_CS config default_cs)
   set(res_list)
   foreach(check IN LISTS ${config}_CONFIGURATION_DEPENDENCIES)
-    parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
+    parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${check}")
     get_System_Configuration_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${CONFIG_NAME} "${default_cs}")
     list(APPEND res_list ${LIST_OF_CS})
   endforeach()
+
   find_Provider_Contribution_Space(PROVIDER ${config} EXTERNAL "${default_cs}")#configuration checks are implemented into external packages
   list(APPEND res_list ${PROVIDER})
   if(res_list)
@@ -1380,6 +1381,7 @@ function(get_Wrapper_All_Non_Official_Contribtion_Spaces_In_Use LIST_OF_CS wrapp
       list(APPEND res_list ${LIST_OF_CS})
     endforeach()
   endforeach()
+
   find_Provider_Contribution_Space(PROVIDER ${wrapper} EXTERNAL "${default_cs}")
   list(APPEND res_list ${PROVIDER})
   if(res_list)
