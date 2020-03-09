@@ -1508,7 +1508,9 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 	file(APPEND ${file_for_version} "set(${package}_BUILT_OS_VARIANT ${os_variant} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file_for_version} "set(${package}_BUILT_FOR_INSTANCE ${CURRENT_PLATFORM_INSTANCE} CACHE INTERNAL \"\")\n")
 
-  file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_PYTHON_VERSION ${CURRENT_PYTHON} CACHE INTERNAL \"\")\n")
+	if(${package}_BUILT_WITH_Python)#if Fortran used to build the package
+  	file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_PYTHON_VERSION ${CURRENT_PYTHON} CACHE INTERNAL \"\")\n")
+	endif()
 
 	 #writing info about compiler used to build the binary
   file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_COMPILER_IS_GNUCXX \"${CMAKE_COMPILER_IS_GNUCXX}\" CACHE INTERNAL \"\" FORCE)\n")
@@ -1528,6 +1530,16 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 	foreach(symbol IN LISTS CXX_STD_SYMBOLS)
 		file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION ${CXX_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\")\n")
 	endforeach()
+	if(${package}_BUILT_WITH_Fortran)#if Fortran used to build the package
+		file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_Fortran_STD_LIBRARIES ${Fortran_STANDARD_LIBRARIES} CACHE INTERNAL \"\")\n")
+		foreach(lib IN LISTS Fortran_STANDARD_LIBRARIES)
+			file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_Fortran_STD_LIB_${lib}_ABI_SOVERSION ${Fortran_STD_LIB_${lib}_ABI_SOVERSION} CACHE INTERNAL \"\")\n")
+		endforeach()
+		file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_Fortran_STD_SYMBOLS ${Fortran_STD_SYMBOLS} CACHE INTERNAL \"\")\n")
+		foreach(symbol IN LISTS Fortran_STD_SYMBOLS)
+			file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_Fortran_STD_SYMBOL_${symbol}_VERSION ${Fortran_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\")\n")
+		endforeach()
+	endif()
 
 	file(APPEND ${file_for_version} "############# ${package} (version ${version}) specific scripts for deployment #############\n")
 	set(post_install_file_name)

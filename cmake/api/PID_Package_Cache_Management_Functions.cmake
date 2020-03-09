@@ -2226,7 +2226,9 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
   file(APPEND ${file} "set(${package}_BUILT_FOR_INSTANCE ${CURRENT_PLATFORM_INSTANCE} CACHE INTERNAL \"\")\n")
 
 
-  file(APPEND ${file} "set(${package}_BUILT_WITH_PYTHON_VERSION ${CURRENT_PYTHON} CACHE INTERNAL \"\")\n")
+	if(${package}_BUILT_WITH_Python)#if Fortran used to build the package
+  	file(APPEND ${file} "set(${package}_BUILT_WITH_PYTHON_VERSION ${CURRENT_PYTHON} CACHE INTERNAL \"\")\n")
+	endif()
 
   file(APPEND ${file} "set(${package}_BUILT_WITH_COMPILER_IS_GNUCXX \"${CMAKE_COMPILER_IS_GNUCXX}\" CACHE INTERNAL \"\" FORCE)\n")
   file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_COMPILER_ID \"${CMAKE_CXX_COMPILER_ID}\" CACHE INTERNAL \"\" FORCE)\n")
@@ -2245,7 +2247,16 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
   foreach(symbol IN LISTS CXX_STD_SYMBOLS)
     file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION ${CXX_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\")\n")
   endforeach()
-
+  if(${package}_BUILT_WITH_Fortran)
+    file(APPEND ${file} "set(${package}_BUILT_WITH_Fortran_STD_LIBRARIES ${Fortran_STANDARD_LIBRARIES} CACHE INTERNAL \"\")\n")
+    foreach(lib IN LISTS Fortran_STANDARD_LIBRARIES)
+      file(APPEND ${file} "set(${package}_BUILT_WITH_Fortran_STD_LIB_${lib}_ABI_SOVERSION ${Fortran_STD_LIB_${lib}_ABI_SOVERSION} CACHE INTERNAL \"\")\n")
+    endforeach()
+    file(APPEND ${file} "set(${package}_BUILT_WITH_Fortran_STD_SYMBOLS ${Fortran_STD_SYMBOLS} CACHE INTERNAL \"\")\n")
+    foreach(symbol IN LISTS Fortran_STD_SYMBOLS)
+      file(APPEND ${file} "set(${package}_BUILT_WITH_Fortran_STD_SYMBOL_${symbol}_VERSION ${Fortran_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\")\n")
+    endforeach()
+  endif()
 
 	file(APPEND ${file} "######### declaration of package components ########\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")

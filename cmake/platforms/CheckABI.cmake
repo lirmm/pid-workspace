@@ -64,6 +64,12 @@ function(get_Standard_Library_Symbols_Version RES_SYMBOL_VERSIONS operating_syst
 	elseif(library_name MATCHES "gcc")#gcc library
 		get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "GCC_")
 		#what to do ??
+	elseif(library_name MATCHES "gfortran")#gfortran library
+		get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "GFORTRAN_;GFORTRAN_C99_")
+		#what to do ??
+	elseif(library_name MATCHES "quadmath")#quadmath library
+		get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "QUADMATH_")
+		#what to do ??
 	endif()
 	set(${RES_SYMBOL_VERSIONS} ${STD_SYMBOLS} PARENT_SCOPE)
 endfunction(get_Standard_Library_Symbols_Version)
