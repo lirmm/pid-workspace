@@ -228,11 +228,9 @@ endfunction(get_Binary_Description)
 #  get_Soname
 #  ----------
 #
-#   .. command:: get_Soname(SONAME SOVERSION library_name library_description)
+#   .. command:: get_Soname(SONAME SOVERSION library_description)
 #
 #    Get the SONAME from a target library description.
-#
-#     :library_name: the name of the library (binary object name).
 #
 #     :library_description: the PARENT SCOPE variable containing the library description.
 #
@@ -240,13 +238,16 @@ endfunction(get_Binary_Description)
 #
 #     :SOVERSION: the output variable that contains the only the soversion if any, empty otherwise (implies SONAME is not empty).
 #
-function(get_Soname SONAME SOVERSION library_name library_description)
+function(get_Soname SONAME SOVERSION library_description)
   set(full_soname)
   set(so_version)
-  usable_In_Regex(libregex ${library_name})
-  if(${library_description} MATCHES ".*SONAME[ \t]+([^ \t\n]*${libregex}[^ \t\n]+)[ \t\n]*")
+  # usable_In_Regex(libregex ${library_name})
+  if(${library_description} MATCHES ".*SONAME[ \t]+([^ \t\n]+)[ \t\n]*")
     set(full_soname ${CMAKE_MATCH_1})
-    if(full_soname MATCHES "^${libregex}\\.(.+)$")#TODO check with macos
+    get_filename_component(extension ${full_soname} EXT)
+    if(CURRENT_PLATFORM_OS STREQUAL linux AND extension MATCHES "^\\.so\\.([.0-9]+)$")
+      set(so_version ${CMAKE_MATCH_1})
+    elseif(CURRENT_PLATFORM_OS STREQUAL macos AND extension MATCHES "^\\.([.0-9]+)\\.dylib$")
       set(so_version ${CMAKE_MATCH_1})
     endif()
   endif()
@@ -430,7 +431,7 @@ function(get_Soname_Info_From_Library_Path LIBRARY_PATH LIB_SONAME LIB_SOVERSION
   get_Binary_Description(DESCRIPTION ${full_path})
   if(DESCRIPTION)#preceding commands says OK: means the binary is recognized as an adequate shared object
     #getting the SONAME
-    get_Soname(SONAME SOVERSION ${library_soname} DESCRIPTION)
+    get_Soname(SONAME SOVERSION DESCRIPTION)
     set(${LIBRARY_PATH} ${full_path} PARENT_SCOPE)
     set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
     set(${LIB_SOVERSION} ${SOVERSION} PARENT_SCOPE)
@@ -441,7 +442,7 @@ function(get_Soname_Info_From_Library_Path LIBRARY_PATH LIB_SONAME LIB_SOVERSION
       get_Binary_Description(DESCRIPTION ${LIB_PATH})
       if(DESCRIPTION)#preceding commands says OK: means the binary is recognized as an adequate shared object
         #getting the SONAME
-        get_Soname(SONAME SOVERSION ${library_soname} DESCRIPTION)
+        get_Soname(SONAME SOVERSION DESCRIPTION)
         set(${LIBRARY_PATH} ${LIB_PATH} PARENT_SCOPE)
         set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
         set(${LIB_SOVERSION} ${SOVERSION} PARENT_SCOPE)
