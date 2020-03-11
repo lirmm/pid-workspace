@@ -220,6 +220,19 @@ endif()
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake) # adding the cmake scripts files from the package
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/platforms) # using platform check modules
 
+#################################################
+######## Initializing cache variables ###########
+#################################################
+reset_Wrapper_Description_Cached_Variables()
+declare_Wrapper_Global_Cache_Options()
+set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
+reset_Documentation_Info()
+reset_CI_Variables()
+reset_Packages_Finding_Variables()
+init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
+init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "")
+check_For_Remote_Respositories("${ADDITIONNAL_DEBUG_INFO}")#configuring git remotes
+
 #############################################################
 ############ Managing build process #########################
 #############################################################
@@ -285,19 +298,7 @@ if(DIR_NAME STREQUAL "build")
 	    COMMENT "[PID] Updating the external package ${PROJECT_NAME} ..."
 	    VERBATIM
 	  )
-  #################################################
-  ######## Initializing cache variables ###########
-  #################################################
-  reset_Wrapper_Description_Cached_Variables()
-	declare_Wrapper_Global_Cache_Options()
-	set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
-	reset_Documentation_Info()
-	reset_CI_Variables()
-	reset_Packages_Finding_Variables()
-  init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
-  init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "")
-	check_For_Remote_Respositories("${ADDITIONNAL_DEBUG_INFO}")#configuring git remotes
-	begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
+  begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
 else()
   message("[PID] ERROR : please run cmake in the build folder of the wrapper ${PROJECT_NAME}.")
   return()
