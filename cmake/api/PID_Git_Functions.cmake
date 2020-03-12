@@ -2767,8 +2767,6 @@ execute_process(COMMAND git init
                 WORKING_DIRECTORY ${WORKSPACE_DIR}/environments/${environment} )
 execute_process(COMMAND git add -A
                 WORKING_DIRECTORY ${WORKSPACE_DIR}/environments/${environment} )
-execute_process(COMMAND git add -f build/.gitignore
-                WORKING_DIRECTORY ${WORKSPACE_DIR}/environments/${environment} )
 execute_process(COMMAND git commit -m "initialization of environment"
                 WORKING_DIRECTORY ${WORKSPACE_DIR}/environments/${environment} )
 execute_process(COMMAND git lfs track "*.tar.gz"

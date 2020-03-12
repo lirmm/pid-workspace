@@ -1659,10 +1659,10 @@ macro(evaluate_Configuration config path_to_config)
   unset(calling_defs)
   #3) get the result
   if(EXISTS ${eval_result_file})
-    include(${eval_result_file})#may set ${config}_CONFIG_FOUND to TRUE
+    include(${eval_result_file})#may set ${config}_CONFIG_FOUND to TRUE AND load returned variables
     if(${config}_CONFIG_FOUND)
       foreach(file IN LISTS ${config}_USE_FILES)
-        include(${path_to_config}/${file})#drectly provide use files to user
+        include(${path_to_config}/${file})#directly provide use files to user (so they can use provided function/macro definitions)
       endforeach()
     endif()
   endif()
