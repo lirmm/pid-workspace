@@ -1379,13 +1379,10 @@ endif()
 # registering exported flags for all kinds of libs
 init_Component_Cached_Variables_For_Export(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}" "${runtime_resources}")
 
-
 #create local "real" CMake ALIAS target
 if(aliases)
 	add_Alias_To_Cache(${c_name} "${aliases}")
-	foreach(alias IN LISTS aliases)
-		add_library(${alias}${INSTALL_NAME_SUFFIX} ALIAS ${c_name}${INSTALL_NAME_SUFFIX})
-	endforeach()
+	create_Alias_Lib_Target(${PROJECT_NAME} ${c_name} "${aliases}" "${INSTALL_NAME_SUFFIX}")
 endif()
 #updating global variables of the CMake process
 append_Unique_In_Cache(${PROJECT_NAME}_COMPONENTS ${c_name})
@@ -1533,12 +1530,9 @@ endif()
 # registering exported flags for all kinds of apps => empty variables (except runtime resources since applications export no flags)
 init_Component_Cached_Variables_For_Export(${c_name} "${c_standard_used}" "${cxx_standard_used}" "" "" "" "${runtime_resources}" "${aliases}")
 
-if(aliases)
+if(aliases)#create alias target on demand
 	add_Alias_To_Cache(${c_name} "${aliases}")
-	#create alias target on demand
-	foreach(alias IN LISTS aliases)
-		add_executable(${alias}${INSTALL_NAME_SUFFIX} ALIAS ${c_name}${INSTALL_NAME_SUFFIX})
-	endforeach()
+	create_Alias_Exe_Target(${PROJECT_NAME} ${c_name} "${aliases}" "${INSTALL_NAME_SUFFIX}")
 endif()
 
 #updating global variables of the CMake process

@@ -240,16 +240,16 @@ function(configure_Local_Target_With_PID_Components local_target target_type com
       else()#native component target
         create_Dependency_Target(${RES_PACK} ${comp_name_to_use} ${mode}) #create the fake target for component
       endif()
-      target_link_libraries(${local_target} PUBLIC ${RES_PACK}-${comp_name_to_use}${TARGET_SUFFIX})
+      target_link_libraries(${local_target} PUBLIC ${RES_PACK}_${comp_name_to_use}${TARGET_SUFFIX})
 
       target_include_directories(${local_target} PUBLIC
-      $<TARGET_PROPERTY:${RES_PACK}-${comp_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
+      $<TARGET_PROPERTY:${RES_PACK}_${comp_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)
 
       target_compile_definitions(${local_target} PUBLIC
-      $<TARGET_PROPERTY:${RES_PACK}-${comp_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
+      $<TARGET_PROPERTY:${RES_PACK}_${comp_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)
 
       target_compile_options(${local_target} PUBLIC
-      $<TARGET_PROPERTY:${RES_PACK}-${comp_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
+      $<TARGET_PROPERTY:${RES_PACK}_${comp_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)
 
       # manage C/C++ language standards
       if(${RES_PACK}_${comp_name_to_use}_C_STANDARD${VAR_SUFFIX})#the std C is let optional as using a standard may cause error with posix includes

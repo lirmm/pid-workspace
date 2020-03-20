@@ -169,9 +169,9 @@ function(add_Static_Check component is_library)
 		endforeach()
 	else()
 		#getting sources of the target
-		get_target_property(SOURCES_TO_CHECK ${component} SOURCES)
-    append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INCLUDE_DIRECTORIES>, -I>>")
-    append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>>:-D$<JOIN:$<TARGET_PROPERTY:${component},COMPILE_DEFINITIONS>, -D>>")
+		get_target_property(SOURCES_TO_CHECK ${PROJECT_NAME}_${component} SOURCES)
+    append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INCLUDE_DIRECTORIES>, -I>>")
+    append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},COMPILE_DEFINITIONS>>:-D$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},COMPILE_DEFINITIONS>, -D>>")
 	endif()
 
   #filtering sources to keep only C/C++ sources
@@ -180,8 +180,8 @@ function(add_Static_Check component is_library)
 	# getting specific settings of the target (using generator expression to make it robust)
 	is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${component})#no need to check for alias as in current project component only base component names (by construction)
 	if(NOT IS_HF)#component has a public interface
-    append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_INCLUDE_DIRECTORIES>, -I>>")
-    append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>>:-D$<JOIN:$<TARGET_PROPERTY:${component},INTERFACE_COMPILE_DEFINITIONS>, -D>>")
+    append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_INCLUDE_DIRECTORIES>, -I>>")
+    append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_COMPILE_DEFINITIONS>>:-D$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_COMPILE_DEFINITIONS>, -D>>")
 	endif()
 
 	set(CPPCHECK_TEMPLATE_TEST --template="{severity}: {message}")

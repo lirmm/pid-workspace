@@ -355,7 +355,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})#no need to resolve alias since list of components contains only base name in current package
 	if(IS_BUILT_COMP)
-		resolve_Component_Language(${component}${TARGET_SUFFIX})
+		resolve_Component_Language(${PROJECT_NAME}_${component}${TARGET_SUFFIX})
 	endif()
 endforeach()
 endfunction(resolve_Compile_Options_For_Targets)
@@ -426,7 +426,7 @@ endfunction(filter_Compiler_Options)
 #
 function(manage_Python_Scripts c_name dirname)
 	if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE")
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES PREFIX "")#specific requirement for python, not lib prefix at beginning of the module
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES PREFIX "")#specific requirement for python, not lib prefix at beginning of the module
 		# simply copy directory containing script at install time into a specific folder, but select only python script
 		# Important notice: the trailing / at end of DIRECTORY argument is to allow the renaming of the directory into c_name
 		install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${dirname}/
@@ -490,15 +490,15 @@ endfunction(manage_Python_Scripts)
 #     :internal_links: list of private linker options to use when building the library.
 #
 function(create_Module_Lib_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
-	add_library(${c_name}${INSTALL_NAME_SUFFIX} MODULE ${sources})
-	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
+	add_library(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} MODULE ${sources})
+	install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX}
 		LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
 	)
 	#setting the default rpath for the target (rpath target a specific folder of the binary package for the installed version of the component)
 	if(APPLE)
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the library targets a specific folder that contains symbolic links to used shared libraries
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../.rpath/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the library targets a specific folder that contains symbolic links to used shared libraries
 	elseif(UNIX)
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the library targets a specific folder that contains symbolic links to used shared libraries
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "\$ORIGIN/../.rpath/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the library targets a specific folder that contains symbolic links to used shared libraries
 	endif()
 	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 endfunction(create_Module_Lib_Target)
@@ -542,19 +542,19 @@ endfunction(create_Module_Lib_Target)
 #     :internal_links: list of private linker options to use when building the library.
 #
 function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links internal_links)
-	add_library(${c_name}${INSTALL_NAME_SUFFIX} SHARED ${sources})
+	add_library(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} SHARED ${sources})
 
   if(WIN32)
-  	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .dll
-  	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .lib
+  	install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .dll
+  	install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .lib
   else()
-    install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX} LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH})
+    install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH})
   endif()
 	#setting the default rpath for the target (rpath target a specific folder of the binary package for the installed version of the component)
 	if(APPLE)
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the library targets a specific folder that contains symbolic links to used shared libraries
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../.rpath/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the library targets a specific folder that contains symbolic links to used shared libraries
 	elseif(UNIX)
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the library targets a specific folder that contains symbolic links to used shared libraries
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "\$ORIGIN/../.rpath/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the library targets a specific folder that contains symbolic links to used shared libraries
 	endif()
 	set(INC_DIRS ${internal_inc_dirs} ${exported_inc_dirs})
 	set(DEFS ${internal_defs} ${exported_defs})
@@ -601,8 +601,8 @@ endfunction(create_Shared_Lib_Target)
 #     :exported_links: list of linker options exported by the library.
 #
 function(create_Static_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links)
-	add_library(${c_name}${INSTALL_NAME_SUFFIX} STATIC ${sources})
-	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
+	add_library(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} STATIC ${sources})
+	install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX}
 		ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_AR_PATH}
 	)
 	set(INC_DIRS ${internal_inc_dirs} ${exported_inc_dirs})
@@ -641,9 +641,65 @@ endfunction(create_Static_Lib_Target)
 #     :exported_links: list of links exported by the library.
 #
 function(create_Header_Lib_Target c_name c_standard cxx_standard exported_inc_dirs exported_defs exported_compiler_options exported_links)
-	add_library(${c_name}${INSTALL_NAME_SUFFIX} INTERFACE)
+	add_library(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} INTERFACE)
 	manage_Additional_Component_Exported_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${exported_inc_dirs}" "" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
 endfunction(create_Header_Lib_Target)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Alias_Lib_Target| replace:: ``create_Alias_Lib_Target``
+#  .. _create_Alias_Lib_Target:
+#
+#  create_Alias_Lib_Target
+#  ------------------------
+#
+#   .. command:: create_Alias_Lib_Target(package real_name aliases target_suffix)
+#
+#     Create a set of alias targets for a given library.
+#
+#     :package: the name of the package containing library.
+#
+#     :real_name: the name of the library.
+#
+#     :aliases: the list of alias names.
+#
+#     :target_suffix: the suffix to use for target names, depending on build mode.
+#
+function(create_Alias_Lib_Target package real_name aliases target_suffix)
+  foreach(alias IN LISTS aliases)
+    add_library(${package}_${alias}${target_suffix} ALIAS ${package}_${real_name}${target_suffix})
+  endforeach()
+endfunction(create_Alias_Lib_Target)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Alias_Exe_Target| replace:: ``create_Alias_Exe_Target``
+#  .. _create_Alias_Exe_Target:
+#
+#  create_Alias_Exe_Target
+#  ------------------------
+#
+#   .. command:: create_Alias_Exe_Target(package real_name aliases target_suffix)
+#
+#     Create a set of alias targets for a given executable.
+#
+#     :package: the name of the package containing library.
+#
+#     :real_name: the name of the library.
+#
+#     :aliases: the list of alias names.
+#
+#     :target_suffix: the suffix to use for target names, depending on build mode.
+#
+function(create_Alias_Exe_Target package real_name aliases target_suffix)
+  foreach(alias IN LISTS aliases)
+    add_executable(${package}_${alias}${target_suffix} ALIAS ${package}_${real_name}${target_suffix})
+  endforeach()
+endfunction(create_Alias_Exe_Target)
 
 #.rst:
 #
@@ -676,17 +732,17 @@ endfunction(create_Header_Lib_Target)
 #     :internal_links: list of private links to use when building the executable.
 #
 function(create_Executable_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
-	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${sources})
+	add_executable(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} ${sources})
 	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 	# adding the application to the list of installed components when make install is called (not for test applications)
-	install(TARGETS ${c_name}${INSTALL_NAME_SUFFIX}
+	install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX}
 		RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
 	)
 	#setting the default rpath for the target
 	if(APPLE)
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../.rpath/${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the application targets a specific folder that contains symbolic links to used shared libraries
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../.rpath/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the application targets a specific folder that contains symbolic links to used shared libraries
 	elseif(UNIX)
-		set_target_properties(${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "\$ORIGIN/../.rpath/${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the application targets a specific folder that contains symbolic links to used shared libraries
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "\$ORIGIN/../.rpath/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the application targets a specific folder that contains symbolic links to used shared libraries
   elseif(WIN32)#need to install a specific run.bat script file
     install(FILES ${WORKSPACE_DIR}/cmake/patterns/packages/run.bat DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH})
 	endif()
@@ -723,7 +779,7 @@ endfunction(create_Executable_Target)
 #     :internal_links: list of private links to use when building the executable.
 #
 function(create_TestUnit_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
-	add_executable(${c_name}${INSTALL_NAME_SUFFIX} ${sources})
+	add_executable(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} ${sources})
 	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 endfunction(create_TestUnit_Target)
 
@@ -758,25 +814,25 @@ endfunction(create_TestUnit_Target)
 function(manage_Additional_Component_Exported_Flags component_name mode_suffix inc_dirs lib_dirs defs options links)
 # managing compile time flags (-I<path>)
 foreach(dir IN LISTS inc_dirs)
-	target_include_directories(${component_name}${mode_suffix} INTERFACE "${dir}")
+	target_include_directories(${PROJECT_NAME}_${component_name}${mode_suffix} INTERFACE "${dir}")
 endforeach()
 
 # managing compile time flags (-D<preprocessor_defs>)
 foreach(def IN LISTS defs)
-	target_compile_definitions(${component_name}${mode_suffix} INTERFACE "${def}")
+	target_compile_definitions(${PROJECT_NAME}_${component_name}${mode_suffix} INTERFACE "${def}")
 endforeach()
 
 foreach(opt IN LISTS options)
-	target_compile_options(${component_name}${mode_suffix} INTERFACE "${opt}")#keep the option unchanged
+	target_compile_options(${PROJECT_NAME}_${component_name}${mode_suffix} INTERFACE "${opt}")#keep the option unchanged
 endforeach()
 
 # managing link time flags
 foreach(dir IN LISTS lib_dirs)#always putting library dirs flags before other links  (enfore resolution of library path before resolving library links)
-  target_link_libraries(${component_name}${mode_suffix} INTERFACE "-L${dir}")#generate -L linker flags for library dirs
+  target_link_libraries(${PROJECT_NAME}_${component_name}${mode_suffix} INTERFACE "-L${dir}")#generate -L linker flags for library dirs
 endforeach()
 
 foreach(link IN LISTS links)
-	target_link_libraries(${component_name}${mode_suffix} INTERFACE ${link})
+	target_link_libraries(${PROJECT_NAME}_${component_name}${mode_suffix} INTERFACE ${link})
 endforeach()
 
 endfunction(manage_Additional_Component_Exported_Flags)
@@ -816,25 +872,25 @@ endfunction(manage_Additional_Component_Exported_Flags)
 function(manage_Additional_Component_Internal_Flags component_name c_standard cxx_standard mode_suffix inc_dirs lib_dirs defs options links)
 # managing compile time flags
 foreach(dir IN LISTS inc_dirs)
-	target_include_directories(${component_name}${mode_suffix} PRIVATE "${dir}")
+	target_include_directories(${PROJECT_NAME}_${component_name}${mode_suffix} PRIVATE "${dir}")
 endforeach()
 
 # managing compile time flags
 foreach(def IN LISTS defs)
-	target_compile_definitions(${component_name}${mode_suffix} PRIVATE "${def}")
+	target_compile_definitions(${PROJECT_NAME}_${component_name}${mode_suffix} PRIVATE "${def}")
 endforeach()
 
 foreach(opt IN LISTS options)
-	target_compile_options(${component_name}${mode_suffix} PRIVATE "${opt}")
+	target_compile_options(${PROJECT_NAME}_${component_name}${mode_suffix} PRIVATE "${opt}")
 endforeach()
 
 # managing link time flags
 foreach(dir IN LISTS lib_dirs) #put library dirs flags BEFORE library flags in link libraries !!
-  target_link_libraries(${component_name}${mode_suffix} PRIVATE "-L${dir}")#generate -L linker flags for library dirs
+  target_link_libraries(${PROJECT_NAME}_${component_name}${mode_suffix} PRIVATE "-L${dir}")#generate -L linker flags for library dirs
 endforeach()
 
 foreach(link IN LISTS links)
-	target_link_libraries(${component_name}${mode_suffix} PRIVATE ${link})
+	target_link_libraries(${PROJECT_NAME}_${component_name}${mode_suffix} PRIVATE ${link})
 endforeach()
 manage_language_Standard_Flags(${component_name} "${mode_suffix}" "${c_standard}" "${cxx_standard}")
 endfunction(manage_Additional_Component_Internal_Flags)
@@ -852,7 +908,7 @@ endfunction(manage_Additional_Component_Internal_Flags)
 #
 #   .. command:: manage_language_Standard_Flags(component_name c_standard cxx_standard mode_suffix)
 #
-#     Configure a component language standrd in use.
+#     Configure a component language standard in use.
 #
 #     :component_name: the name of the component.
 #
@@ -865,73 +921,18 @@ endfunction(manage_Additional_Component_Internal_Flags)
 function(manage_language_Standard_Flags component mode_suffix c_standard cxx_standard)
 
 #management of standards (setting minimum standard at beginning)
-get_target_property(STD_C ${component}${mode_suffix} PID_C_STANDARD)
+get_target_property(STD_C ${PROJECT_NAME}_${component}${mode_suffix} PID_C_STANDARD)
 is_C_Version_Less(IS_LESS "${STD_C}" "${c_standard}")
 if(IS_LESS AND c_standard)#set the C standard only if necessary (otherwise default legacy ANSI C is used)
-	set_target_properties(${component}${mode_suffix} PROPERTIES PID_C_STANDARD ${c_standard})
+	set_target_properties(${PROJECT_NAME}_${component}${mode_suffix} PROPERTIES PID_C_STANDARD ${c_standard})
 endif()
 
-get_target_property(STD_CXX ${component}${mode_suffix} PID_CXX_STANDARD)
+get_target_property(STD_CXX ${PROJECT_NAME}_${component}${mode_suffix} PID_CXX_STANDARD)
 is_CXX_Version_Less(IS_LESS "${STD_CXX}" "${cxx_standard}")
 if(IS_LESS)
-	set_target_properties(${component}${mode_suffix} PROPERTIES PID_CXX_STANDARD ${cxx_standard})
+	set_target_properties(${PROJECT_NAME}_${component}${mode_suffix} PROPERTIES PID_CXX_STANDARD ${cxx_standard})
 endif()
-
 endfunction(manage_language_Standard_Flags)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |manage_Additional_Component_Inherited_Flags| replace:: ``manage_Additional_Component_Inherited_Flags``
-#  .. _manage_Additional_Component_Inherited_Flags:
-#
-#  manage_Additional_Component_Inherited_Flags
-#  --------------------------------------------
-#
-#   .. command:: manage_Additional_Component_Inherited_Flags(component dep_component mode_suffix export)
-#
-#     Configure a component target with flags (cflags and ldflags) inherited from a dependency.
-#
-#     :component_name: the name of the component to configure.
-#
-#     :dep_component: the name of the component that IS the dependency.
-#
-#     :mode_suffix: the build mode of the target.
-#
-#     :export: TRUE if component exports dep_component.
-#
-function(manage_Additional_Component_Inherited_Flags component dep_component mode_suffix export)
-	if(export)
-		target_include_directories(	${component}${mode_suffix}
-						INTERFACE
-						$<TARGET_PROPERTY:${dep_component}${mode_suffix},INTERFACE_INCLUDE_DIRECTORIES>
-				)
-		target_compile_definitions(	${component}${INSTALL_NAME_SUFFIX}
-						INTERFACE
-						$<TARGET_PROPERTY:${dep_component}${mode_suffix},INTERFACE_COMPILE_DEFINITIONS>
-				)
-		target_compile_options(		${component}${INSTALL_NAME_SUFFIX}
-						INTERFACE
-						$<TARGET_PROPERTY:${dep_component}${mode_suffix},INTERFACE_COMPILE_OPTIONS>
-				)
-	endif()
-	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})#Note: no need to resolve alias because component contains the base component name in current project
-	if(IS_BUILT_COMP)
-		target_include_directories(	${component}${INSTALL_NAME_SUFFIX}
-						PRIVATE
-						$<TARGET_PROPERTY:${dep_component}${mode_suffix},INTERFACE_INCLUDE_DIRECTORIES>
-					)
-		target_compile_definitions(	${component}${INSTALL_NAME_SUFFIX}
-						PRIVATE
-						$<TARGET_PROPERTY:${dep_component}${mode_suffix},INTERFACE_COMPILE_DEFINITIONS>
-					)
-		target_compile_options(		${component}${INSTALL_NAME_SUFFIX}
-						PRIVATE
-						$<TARGET_PROPERTY:${dep_component}${mode_suffix},INTERFACE_COMPILE_OPTIONS>
-		)
-	endif()
-endfunction(manage_Additional_Component_Inherited_Flags)
 
 #.rst:
 #
@@ -1295,7 +1296,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
 rename_If_Alias(comp_name_to_use ${dep_package} FALSE ${dep_component} Release)
 
-if(NOT TARGET ${dep_package}-${comp_name_to_use}${TARGET_SUFFIX})#check that this target does not exist, otherwise naming conflict
+if(NOT TARGET ${dep_package}_${comp_name_to_use}${TARGET_SUFFIX})#check that this target does not exist, otherwise naming conflict
 #create the dependent target (#may produce recursion to build undirect dependencies of targets
 	if(${dep_package}_${comp_name_to_use}_TYPE STREQUAL "APP"
 		OR ${dep_package}_${comp_name_to_use}_TYPE STREQUAL "EXAMPLE")
@@ -1340,7 +1341,7 @@ set(EXT_ST_LINKS_OPTIONS)
 rename_If_Alias(comp_name_to_use ${dep_package} TRUE ${dep_component} ${mode})
 
 #contrarily to native dependencies we do not know the nature of the component
-set(target_name ${dep_package}-${comp_name_to_use}${TARGET_SUFFIX})
+set(target_name ${dep_package}_${comp_name_to_use}${TARGET_SUFFIX})
 if(NOT TARGET ${target_name})#check that this target does not exist, otherwise naming conflict
 
   # 0) create an imported target for the component
@@ -1428,12 +1429,12 @@ function(manage_Additional_Imported_Component_Flags package component mode inc_d
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 # managing include folders (-I<path>)
 foreach(dir IN LISTS inc_dirs)
-	set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${dir}")
+	set_property(TARGET ${package}_${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${dir}")
 endforeach()
 
 # managing compile time flags (-D<preprocessor_defs>)
 foreach(def IN LISTS defs)
-	set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS "${def}")
+	set_property(TARGET ${package}_${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS "${def}")
 endforeach()
 
 foreach(opt IN LISTS options)
@@ -1454,7 +1455,7 @@ foreach(opt IN LISTS options)
 				set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
 			endif()
 		else()
-			set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "${opt}")
+			set_property(TARGET ${package}_${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "${opt}")
 		endif()
 	endif()
 endforeach()
@@ -1463,9 +1464,9 @@ endforeach()
 foreach(link IN LISTS public_links)
 	create_External_Dependency_Target(EXT_TARGET_NAME ${link} "" ${mode})#public links may be path to shared or static libs or linker options (considered as shared by default)
 	if(EXT_TARGET_NAME) #this is a library
-		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${EXT_TARGET_NAME})
+		set_property(TARGET ${package}_${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${EXT_TARGET_NAME})
 	else()#this is an option => simply pass it to the link interface
-		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${link})
+		set_property(TARGET ${package}_${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${link})
 	endif()
 endforeach()
 
@@ -1473,21 +1474,21 @@ endforeach()
 foreach(link IN LISTS private_links)
 	create_External_Dependency_Target(EXT_TARGET_NAME ${link} "" ${mode})#private links are path to shared libraries used by a shared library
   if(EXT_TARGET_NAME) #this is a library
-		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${EXT_TARGET_NAME})
+		set_property(TARGET ${package}_${component}${TARGET_SUFFIX} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${EXT_TARGET_NAME})
 	else()#this is a linker option => simply pass it to the link interface
-		set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${link})
+		set_property(TARGET ${package}_${component}${TARGET_SUFFIX} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${link})
 	endif()
 endforeach()
 
 # managing system link time flags (system static links are always put in the interface)
 foreach(link IN LISTS system_static_links)
 	create_External_Dependency_Target(EXT_TARGET_NAME ${link} STATIC ${mode})# system static links are system liniking flags (-l<name>) pointing to a static library
-  set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${EXT_TARGET_NAME})
+  set_property(TARGET ${package}_${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${EXT_TARGET_NAME})
 endforeach()
 
 #managing library dirs
 foreach(dir IN LISTS public_lib_dirs)
-	set_property(TARGET ${package}-${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES "-L${dir}")
+	set_property(TARGET ${package}_${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_LINK_LIBRARIES "-L${dir}")
 endforeach()
 
 endfunction(manage_Additional_Imported_Component_Flags)
@@ -1549,7 +1550,7 @@ endfunction(get_Imported_Target_Mode)
 #
 function(create_Imported_Header_Library_Target package component mode) #header libraries are never closed by definition
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
-	add_library(${package}-${component}${TARGET_SUFFIX} INTERFACE IMPORTED GLOBAL)#suffix used only for target name
+	add_library(${package}_${component}${TARGET_SUFFIX} INTERFACE IMPORTED GLOBAL)#suffix used only for target name
 	list_Public_Includes(INCLUDES ${package} ${component} ${mode} TRUE)
 	list_Public_Links(LINKS SYSTEM_STATIC LIB_DIRS ${package} ${component} ${mode})
   list_Public_Lib_Dirs(LIBDIRS ${package} ${component} ${mode})
@@ -1582,14 +1583,14 @@ endfunction(create_Imported_Header_Library_Target)
 #
 function(create_Imported_Static_Library_Target package component mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode}) #get variables related to the current build mode
-	add_library(${package}-${component}${TARGET_SUFFIX} STATIC IMPORTED GLOBAL) #create the target for the imported library
+	add_library(${package}_${component}${TARGET_SUFFIX} STATIC IMPORTED GLOBAL) #create the target for the imported library
 
 	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})
 	get_Imported_Target_Mode(MODE_TO_IMPORT ${package} ${LOCATION_RES} ${mode})#get the adequate mode to use for dependency
 	if(NOT MODE_TO_IMPORT MATCHES mode)
 		get_Binary_Location(LOCATION_RES ${package} ${component} ${MODE_TO_IMPORT})#find the adequate release binary
 	endif()
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
+	set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
 
 	list_Public_Includes(INCLUDES ${package} ${component} ${MODE_TO_IMPORT} TRUE)
 	list_Public_Links(LINKS SYSTEM_STATIC ${package} ${component} ${MODE_TO_IMPORT})
@@ -1626,9 +1627,9 @@ endfunction(create_Imported_Static_Library_Target)
 function(create_Imported_Shared_Library_Target package component mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
   if(WIN32)
-    add_library(${package}-${component}${TARGET_SUFFIX} STATIC IMPORTED GLOBAL)#create the target for the imported library
+    add_library(${package}_${component}${TARGET_SUFFIX} STATIC IMPORTED GLOBAL)#create the target for the imported library (on windiws shared library are provided with a .lib static frontend used to link the dll)
   else()
-  	add_library(${package}-${component}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)#create the target for the imported library
+  	add_library(${package}_${component}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)#create the target for the imported library
   endif()
 	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})#find the binary to use depending on build mode
 	get_Imported_Target_Mode(MODE_TO_IMPORT ${package} ${LOCATION_RES} ${mode})#get the adequate mode to use for dependency
@@ -1639,9 +1640,9 @@ function(create_Imported_Shared_Library_Target package component mode)
     #we need to link againts the statis library while the "real" component is the dll
     #so we transform the name of the dll object into a .lib object
     string(REPLACE ".dll" ".lib" STATIC_LOCATION_RES "${LOCATION_RES}")
-    set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${STATIC_LOCATION_RES}")
+    set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${STATIC_LOCATION_RES}")
   else()#for UNIX system everything is automatic
-    set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
+    set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
   endif()
 
 	list_Public_Includes(INCLUDES ${package} ${component} ${MODE_TO_IMPORT} TRUE)
@@ -1678,7 +1679,7 @@ endfunction(create_Imported_Shared_Library_Target)
 #
 function(create_Imported_Module_Library_Target package component mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
-	add_library(${package}-${component}${TARGET_SUFFIX} MODULE IMPORTED GLOBAL)#create the target for the imported library
+	add_library(${package}_${component}${TARGET_SUFFIX} MODULE IMPORTED GLOBAL)#create the target for the imported library
 
 	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})#find the binary to use depending on build mode
 	get_Imported_Target_Mode(MODE_TO_IMPORT ${package} ${LOCATION_RES} ${mode})#get the adequate mode to use for dependency
@@ -1686,7 +1687,7 @@ function(create_Imported_Module_Library_Target package component mode)
 		get_Binary_Location(LOCATION_RES ${package} ${component} ${MODE_TO_IMPORT})#find the adequate release binary
 	endif()
 
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
+	set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
 	#no need to do more, a module is kind of an executable so it stops build recursion
 endfunction(create_Imported_Module_Library_Target)
 
@@ -1712,7 +1713,7 @@ endfunction(create_Imported_Module_Library_Target)
 #
 function(create_Imported_Executable_Target package component mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
-	add_executable(${package}-${component}${TARGET_SUFFIX} IMPORTED GLOBAL)#create the target for the imported executable
+	add_executable(${package}_${component}${TARGET_SUFFIX} IMPORTED GLOBAL)#create the target for the imported executable
 
 	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})
 	get_Imported_Target_Mode(MODE_TO_IMPORT ${package} ${LOCATION_RES} ${mode})#get the adequate mode to use for dependency
@@ -1720,7 +1721,7 @@ function(create_Imported_Executable_Target package component mode)
 		get_Binary_Location(LOCATION_RES ${package} ${component} ${MODE_TO_IMPORT})#find the adequate release binary
 	endif()
 
-	set_target_properties(${package}-${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
+	set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
 	#no need to do more, executable will not be linked in the build process (it stops build recursion)
 endfunction(create_Imported_Executable_Target)
 
@@ -1761,7 +1762,7 @@ is_C_Version_Less(IS_LESS "${STD_C}" "${DEP_STD_C}")
 if( IS_LESS )#dependency has greater or equal level of standard required
 	set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${DEP_STD_C} CACHE INTERNAL "")
 	if(configure_build AND DEP_STD_C)# the build property is set for a target that is built locally (otherwise would produce errors)
-		set_target_properties(${component}${TARGET_SUFFIX} PROPERTIES PID_C_STANDARD ${DEP_STD_C}) #the minimal value in use file is set adequately
+		set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES PID_C_STANDARD ${DEP_STD_C}) #the minimal value in use file is set adequately
 	endif()
 endif()
 
@@ -1769,7 +1770,7 @@ is_CXX_Version_Less(IS_LESS "${STD_CXX}" "${DEP_STD_CXX}")
 if( IS_LESS )#dependency has greater or equal level of standard required
 	set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${DEP_STD_CXX} CACHE INTERNAL "")#the minimal value in use file is set adequately
 	if(configure_build AND DEP_STD_CXX)# the build property is set for a target that is built locally (otherwise would produce errors)
-		set_target_properties(${component}${TARGET_SUFFIX} PROPERTIES PID_CXX_STANDARD ${DEP_STD_CXX})
+		set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES PID_CXX_STANDARD ${DEP_STD_CXX})
 	endif()
 endif()
 endfunction(resolve_Standard_Before_Linking)
@@ -1829,16 +1830,16 @@ if(COMP_IS_BUILT)
 	manage_Additional_Component_Internal_Flags(${comp_name_to_use} "" "" "${TARGET_SUFFIX}" "" "" "${internal_defs}" "" "")
 
 	if(NOT DEP_IS_HF)
-		target_link_libraries(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX})#Note: since dependency is imported we cannot used its alias
+		target_link_libraries(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} PRIVATE ${dep_package}_${dep_name_to_use}${TARGET_SUFFIX})#Note: since dependency is imported we cannot used its alias
 
-    target_include_directories(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
-			$<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)#Note: since dependency is imported we cannot used its alias
+    target_include_directories(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
+			$<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)#Note: since dependency is imported we cannot used its alias
 
-		target_compile_definitions(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
-			$<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)#Note: since dependency is imported we cannot used its alias
+		target_compile_definitions(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
+			$<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)#Note: since dependency is imported we cannot used its alias
 
-		target_compile_options(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
-			$<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)#Note: since dependency is imported we cannot used its alias
+		target_compile_options(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
+			$<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)#Note: since dependency is imported we cannot used its alias
 	endif()
 
 	# set adequately language standard for component depending on the value of dep_component
@@ -1853,19 +1854,19 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 		set(exp_defs ${comp_exp_defs} ${dep_defs})
 		manage_Additional_Component_Exported_Flags(${comp_name_to_use} "${TARGET_SUFFIX}" "" "" "${exp_defs}" "" "")
 
-		target_include_directories(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
-			$<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)#Note: since dependency is imported we cannot used its alias
+		target_include_directories(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
+			$<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)#Note: since dependency is imported we cannot used its alias
 
-		target_compile_definitions(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
-			$<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)#Note: since dependency is imported we cannot used its alias
+		target_compile_definitions(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
+			$<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)#Note: since dependency is imported we cannot used its alias
 
-		target_compile_options(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
-			$<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)#Note: since dependency is imported we cannot used its alias
+		target_compile_options(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
+			$<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)#Note: since dependency is imported we cannot used its alias
 
 	else()#the library do not export anything
 		manage_Additional_Component_Exported_Flags(${comp_name_to_use} "${TARGET_SUFFIX}" "" "" "${comp_exp_defs}" "" "")
 	endif()
-  target_link_libraries(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX})#Note: since dependency is imported we cannot used its alias
+  target_link_libraries(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} INTERFACE ${dep_package}_${dep_name_to_use}${TARGET_SUFFIX})#Note: since dependency is imported we cannot used its alias
 endif()	#else, it is an application or a module => runtime dependency declaration only
 endfunction(bind_Target)
 
@@ -1918,16 +1919,16 @@ if(COMP_IS_BUILT)# interface library cannot receive PRIVATE PROPERTIES
 	manage_Additional_Component_Internal_Flags(${comp_name_to_use} "" "" "${TARGET_SUFFIX}" "" "" "${internal_defs}" "" "")
 
 	if(NOT DEP_IS_HF)#the dependency may export some things, so we need to bind definitions
-		target_link_libraries(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE ${dep_component}${TARGET_SUFFIX})# since dependency is local we can use its alias
+		target_link_libraries(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} PRIVATE ${PROJECT_NAME}_${dep_component}${TARGET_SUFFIX})# since dependency is local we can use its alias
 
-		target_include_directories(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
-			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)# since dependency is local we can use its alias
+		target_include_directories(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
+			$<TARGET_PROPERTY:${PROJECT_NAME}_${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)# since dependency is local we can use its alias
 
-		target_compile_definitions(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
-			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)# since dependency is local we can use its alias
+		target_compile_definitions(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
+			$<TARGET_PROPERTY:${PROJECT_NAME}_${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)# since dependency is local we can use its alias
 
-		target_compile_options(${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
-			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)# since dependency is local we can use its alias
+		target_compile_options(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} PRIVATE
+			$<TARGET_PROPERTY:${PROJECT_NAME}_${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)# since dependency is local we can use its alias
 	endif()
 
 		# set adequately language standard for component depending on the value of dep_component
@@ -1943,20 +1944,20 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it can
 		set(internal_defs ${comp_exp_defs} ${dep_defs})
 		manage_Additional_Component_Exported_Flags(${comp_name_to_use} "${TARGET_SUFFIX}" "" "" "${internal_defs}" "" "")
 
-		target_include_directories(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
-			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)# since dependency is local we can use its alias
+		target_include_directories(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
+			$<TARGET_PROPERTY:${PROJECT_NAME}_${dep_component}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>)# since dependency is local we can use its alias
 
-		target_compile_definitions(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
-			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)# since dependency is local we can use its alias
+		target_compile_definitions(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
+			$<TARGET_PROPERTY:${PROJECT_NAME}_${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>)# since dependency is local we can use its alias
 
-		target_compile_options(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
-			$<TARGET_PROPERTY:${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)# since dependency is local we can use its alias
+		target_compile_options(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} INTERFACE
+			$<TARGET_PROPERTY:${PROJECT_NAME}_${dep_component}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>)# since dependency is local we can use its alias
 
 	else()
 		manage_Additional_Component_Exported_Flags(${comp_name_to_use} "${TARGET_SUFFIX}" "" "" "${comp_exp_defs}" "" "")
 		#else non exported shared
 	endif()
-  target_link_libraries(${comp_name_to_use}${TARGET_SUFFIX} INTERFACE ${dep_component}${TARGET_SUFFIX})# since dependency is local we can use its alias
+  target_link_libraries(${PROJECT_NAME}_${comp_name_to_use}${TARGET_SUFFIX} INTERFACE ${PROJECT_NAME}_${dep_component}${TARGET_SUFFIX})# since dependency is local we can use its alias
 
 endif()	#else, it is an application or a module => runtime dependency declaration only
 endfunction(bind_Internal_Target)
@@ -1994,19 +1995,19 @@ function(bind_Imported_External_Component_Target package component dep_package d
   export_External_Component_Resolving_Alias(IS_EXPORTING ${package} ${comp_name_to_use} ${component} ${dep_package} ${dep_name_to_use} ${dep_component} ${mode})
 
   if(IS_EXPORTING)
-		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>
+		set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>
 		)
-		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>
+		set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>
 		)
-		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>
+		set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>
 		)
 	endif()
   #exporting the linked libraries in any case
-  set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-    INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX}
+  set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+    INTERFACE_LINK_LIBRARIES ${dep_package}_${dep_name_to_use}${TARGET_SUFFIX}
   )
 
 	# set adequately language standard for component depending on the value of dep_component
@@ -2050,26 +2051,26 @@ is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_name_to_use})
 if(NOT DEP_IS_HF)#the required package component is a library with header it defins symbols so it can be exported
 	if(IS_EXPORTING)
 
-		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>
+		set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>
 		)
-		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>
+		set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>
 		)
-		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>
+		set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>
 		)
-		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX}
+		set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_LINK_LIBRARIES ${dep_package}_${dep_name_to_use}${TARGET_SUFFIX}
 		)
 	else()
 		if(${package}_${comp_name_to_use}_TYPE STREQUAL "SHARED")
-      set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-				IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX}
+      set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+				IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}_${dep_name_to_use}${TARGET_SUFFIX}
 			)
     else()#static OR header lib always export links
-    	set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-				INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX}
+    	set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+				INTERFACE_LINK_LIBRARIES ${dep_package}_${dep_name_to_use}${TARGET_SUFFIX}
 			)
 		endif()
 	endif()#exporting the linked libraries in any case
@@ -2113,26 +2114,26 @@ rename_If_Alias(dep_name_to_use ${dep_package} TRUE ${dep_component} ${mode})
 export_External_Component_Resolving_Alias(IS_EXPORTING ${package} ${comp_name_to_use} ${component} ${dep_package} ${dep_name_to_use} ${dep_component} ${mode})
 
 if(IS_EXPORTING)
-	set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-		INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>
+	set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+		INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>
 	)
-	set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-		INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>
+	set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+		INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_DEFINITIONS>
 	)
-	set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-		INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}-${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>
+	set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+		INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_COMPILE_OPTIONS>
 	)
-	set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-		INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX}
+	set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+		INTERFACE_LINK_LIBRARIES ${dep_package}_${dep_name_to_use}${TARGET_SUFFIX}
 	)
 else()
   if(${package}_${comp_name_to_use}_TYPE STREQUAL "SHARED")
-    set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-      IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX}
+    set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+      IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}_${dep_name_to_use}${TARGET_SUFFIX}
     )
   else()#static OR header lib always export links
-		set_property(TARGET ${package}-${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
-			INTERFACE_LINK_LIBRARIES ${dep_package}-${dep_name_to_use}${TARGET_SUFFIX}
+		set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+			INTERFACE_LINK_LIBRARIES ${dep_package}_${dep_name_to_use}${TARGET_SUFFIX}
 		)
 	endif()
 endif()#exporting the linked libraries in any case

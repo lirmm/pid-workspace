@@ -2137,10 +2137,10 @@ if(RUN_PID_TEST_EXE)
 	wrap_CTest_Call(${RUN_PID_TEST_NAME} "${RUN_PID_TEST_EXE}" "${RUN_PID_TEST_ARGUMENTS}")
 elseif(RUN_PID_TEST_COMPONENT)# run test by executing a PID component
 	if(RUN_PID_TEST_PACKAGE)#component coming from another PID package
-		set(target_of_test ${RUN_PID_TEST_PACKAGE}-${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX})
+		set(target_of_test ${RUN_PID_TEST_PACKAGE}_${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX})
 		wrap_CTest_Call(${RUN_PID_TEST_NAME} "${target_of_test}" "${RUN_PID_TEST_ARGUMENTS}")
 	else()#internal component
-		wrap_CTest_Call(${RUN_PID_TEST_NAME} "${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX}" "${RUN_PID_TEST_ARGUMENTS}")
+		wrap_CTest_Call(${RUN_PID_TEST_NAME} "${PROJECT_NAME}_${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX}" "${RUN_PID_TEST_ARGUMENTS}")
 	endif()
 elseif(RUN_PID_TEST_PYTHON)#run PID test with python
 	wrap_CTest_Call(${RUN_PID_TEST_NAME} "${CURRENT_PYTHON_EXECUTABLE}" "${PATH_TO_PYTHON_FILE}")
