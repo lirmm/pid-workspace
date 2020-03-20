@@ -895,21 +895,6 @@ if(NOT DEFINED ${package}_PID_KNOWN_VERSION)
 endif()
 set(ALL_VERSIONS ${${package}_PID_KNOWN_VERSION})
 
-#then perform additionnal actions to get version that are only local (not published yet)
-set(MORE_VERSIONS)
-if(PACK_TYPE STREQUAL "EXTERNAL")
-  load_And_Configure_Wrapper(LOADED ${package})
-  if(LOADED)#wrapper available ... use its build file (maybe more up to date than published versions)
-    get_Wrapper_Known_Versions(MORE_VERSIONS ${package})
-  endif()
-else()#native package
-  #try to get all available versions directly from package repository (maybe more up to date than published ones)
-  get_Repository_Version_Tags(GIT_VERSIONS ${package}) #get all version tags
-  if(GIT_VERSIONS)
-    normalize_Version_Tags(MORE_VERSIONS "${GIT_VERSIONS}")
-  endif()
-endif()
-list(APPEND ALL_VERSIONS ${MORE_VERSIONS})
 if(ALL_VERSIONS)
   list(REMOVE_DUPLICATES ALL_VERSIONS)
   #some corrective actions before calling functions to get version in interval

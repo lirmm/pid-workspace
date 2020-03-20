@@ -1808,7 +1808,6 @@ endfunction(declare_Native_Package_Dependency)
 function(declare_External_Package_Dependency dep_package optional list_of_possible_versions list_of_exact_versions list_of_components)
 set(unused FALSE)
 set_Dependency_Complete_Description(${dep_package} TRUE list_of_possible_versions list_of_exact_versions)
-
 ### 1) setting user cache variable. The goal is to given users the control "by-hand" on the version used for a given dependency ###
 #1.A) preparing message coming with this user cache variable
 if(NOT list_of_possible_versions) # no version constraint specified
