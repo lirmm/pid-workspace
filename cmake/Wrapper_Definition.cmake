@@ -2828,7 +2828,7 @@ function(build_CMake_External_Project)
                             -DCMAKE_INSTALL_BINDIR=bin
                             -DCMAKE_INSTALL_INCLUDEDIR=include
                             -DDATAROOTDIR=share
-                            -C ${WORKSPACE_DIR}/pid/Workspace_Build_Info.cmake
+                            -C ${WORKSPACE_DIR}/pid/${CURRENT_PROFILE}/Workspace_Build_Info.cmake
                             ${COMMAND_ARGS_AS_LIST}
                             ..
     WORKING_DIRECTORY ${project_build_dir}

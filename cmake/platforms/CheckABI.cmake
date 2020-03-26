@@ -25,7 +25,7 @@ if(CURRENT_PLATFORM_OS STREQUAL windows)
 	return ()
 else()#other systems
 	#from here we will look into the symbols
-	try_compile(RES ${WORKSPACE_DIR}/pid
+	try_compile(RES ${CMAKE_BINARY_DIR}
 		SOURCES ${WORKSPACE_DIR}/cmake/platforms/checks/abi_check.cpp
 		COPY_FILE abi_check
 		OUTPUT_VARIABLE out)
@@ -41,7 +41,7 @@ else()#other systems
 		return()
 	endif()
 
-	execute_process(COMMAND ${CMAKE_NM} ${WORKSPACE_DIR}/pid/abi_check OUTPUT_VARIABLE check_symbols)
+	execute_process(COMMAND ${CMAKE_NM} ${CMAKE_BINARY_DIR}/abi_check OUTPUT_VARIABLE check_symbols)
 	string(FIND ${check_symbols} "__cxx11" INDEX)
 	if(INDEX EQUAL -1)#no cxx11 abi symbol found -> it is a legacy abi by default
 		set(${ALLOWED} FALSE PARENT_SCOPE)
@@ -167,7 +167,6 @@ if(NOT CURRENT_ABI)#no ABI explictly specified
 		endif()
 	endif()
 endif()
-
 
 
 # ABI detection is no more based on knowledge of the compiler version

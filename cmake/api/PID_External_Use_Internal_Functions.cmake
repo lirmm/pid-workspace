@@ -31,6 +31,8 @@ include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Finding_Functions NO_POLICY_SCOPE)
 include(PID_Version_Management_Functions NO_POLICY_SCOPE)
 include(PID_Progress_Management_Functions NO_POLICY_SCOPE)
+include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
+include(PID_Profile_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
 include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
@@ -38,6 +40,12 @@ include(PID_Package_Build_Targets_Management_Functions NO_POLICY_SCOPE)
 include(PID_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 include(External_Definition NO_POLICY_SCOPE)
+
+macro(load_Platform_Info)
+  load_Current_Contribution_Spaces()
+  load_Profile_Info()
+  include(${WORKSPACE_DIR}/pid/${CURRENT_PROFILE}/Workspace_Platforms_Description.cmake) #loading the workspace description configuration
+endmacro(load_Platform_Info)
 
 #.rst:
 #

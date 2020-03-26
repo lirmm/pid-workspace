@@ -32,6 +32,7 @@ include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
 include(PID_Deployment_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
+include(PID_Profiles_Functions NO_POLICY_SCOPE)
 include(External_Definition NO_POLICY_SCOPE) #to interpret content description of external packages
 
 ########################################################################
@@ -3148,7 +3149,6 @@ else()#Note: part for native packages
 			#dealing with package dependencies
 			foreach(dep_package IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
 				foreach(dep_component IN LISTS ${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-					#TODO use: export_Component_Resolving_Alias(IS_EXPORTING ${package} ${comp_name_to_use} ${component} ${dep_package} ${dep_name_to_use} ${dep_component} ${mode})
 					rename_If_Alias(dep_name_to_use ${dep_package} FALSE ${dep_component} Release)#dependent component name may be an alias
 					export_Component_Resolving_Alias(IS_EXPORTING ${package} ${component} ${component} ${dep_package} ${dep_name_to_use} ${dep_component} ${CMAKE_BUILD_TYPE})
 					is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_name_to_use})
@@ -3781,7 +3781,6 @@ function(write_Platform_Description file)
 
 	#default install path used for that platform
 	file(APPEND ${file} "set(PACKAGE_BINARY_INSTALL_DIR ${PACKAGE_BINARY_INSTALL_DIR} CACHE INTERNAL \"\" FORCE)\n")
-	file(APPEND ${file} "set(PACKAGE_BINARY_INSTALL_DIR ${PACKAGE_BINARY_INSTALL_DIR} CACHE INTERNAL \"\" FORCE)\n")
 
 	if(CURRENT_ENVIRONMENT)
 		file(APPEND ${file} "set(CURRENT_ENVIRONMENT ${CURRENT_ENVIRONMENT} CACHE INTERNAL \"\" FORCE)\n")
@@ -3881,11 +3880,9 @@ function(write_Current_Configuration file)
 file(WRITE ${file} "")
 write_Platform_Description(${CMAKE_BINARY_DIR}/Workspace_Platforms_Description.cmake)
 file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Platforms_Description.cmake NO_POLICY_SCOPE)\n")
+# defining all build configuration variables related to the current platform
 write_Current_Configuration_Build_Related_Variables(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake)
 file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake NO_POLICY_SCOPE)\n")
-write_Contribution_Spaces(${CMAKE_BINARY_DIR}/Workspace_Contribution_Spaces.cmake)
-file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Contribution_Spaces.cmake NO_POLICY_SCOPE)\n")
-# defining all build configuration variables related to the current platform
 endfunction(write_Current_Configuration)
 
 #.rst:
@@ -3941,21 +3938,11 @@ endfunction(manage_Migrations)
 #  manage_Platforms
 #  ----------------
 #
-#   .. command:: manage_Platforms(path_to_workspace)
+#   .. command:: manage_Platforms()
 #
 #     Define the current platform in use and provide to the user some options to control finally targetted platform.
 #
-#      :path_to_workspace: the path to the workspace root.
-#
-function(manage_Platforms path_to_workspace)
-set(WORKSPACE_DIR ${path_to_workspace} CACHE INTERNAL "")
-if(CURRENT_ENVIRONMENT)
-	#load the environment description
-	include(${CMAKE_SOURCE_DIR}/pid/PID_Environment_Description.cmake)
-	message("[PID] INFO: ${PID_ENVIRONMENT_DESCRIPTION}")
-else()
-	message("[PID] INFO: development environment in use is the host default environment (based on ${CMAKE_CXX_COMPILER_ID} build toolchain).")
-endif()
+function(manage_Platforms)
 
 if(PID_CROSSCOMPILATION)
 	#when cross compiling all artefacts must be found in sysroot including programs
@@ -3978,128 +3965,3 @@ set(CONFIG_FILE ${CMAKE_BINARY_DIR}/Workspace_Platforms_Info.cmake)
 write_Current_Configuration(${CONFIG_FILE})
 
 endfunction(manage_Platforms)
-
-
-########################################################################
-########################## Plugins management ##########################
-########################################################################
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |register_Available_Plugins| replace:: ``register_Available_Plugins``
-#  .. _register_Available_Plugins:
-#
-#  register_Available_Plugins
-#  --------------------------
-#
-#   .. command:: register_Available_Plugins()
-#
-#     Find available plugins in workspace and create user options to (de)activate them.
-#
-function(register_Available_Plugins)
-	get_All_Available_Plugins(ALL_AVAILABLE_PLUGINS)
-	if(NOT ALL_AVAILABLE_PLUGINS)
-		set(WORKSPACE_ALL_PLUGINS CACHE INTERNAL "")
-		set(WORKSPACE_ACTIVE_PLUGINS CACHE INTERNAL "")
-		set(WORKSPACE_INACTIVE_PLUGINS CACHE INTERNAL "")
-		return()
-	endif()
-	set(ALL_PLUGINS_DEFINED)
-	foreach(plugin IN LISTS ALL_AVAILABLE_PLUGINS)#filtering plugins description files (check if these are really cmake files related to plugins description, according to the PID standard)
-		plugin_Description(${plugin})#only get descriptive information
-		if(${plugin}_PLUGIN_DESCRIPTION)
-			list(APPEND ALL_PLUGINS_DEFINED ${plugin})
-			option(PLUGIN_${plugin} "${${plugin}_PLUGIN_DESCRIPTION}" OFF)
-		endif()
-	endforeach()
-	list(REMOVE_DUPLICATES ALL_PLUGINS_DEFINED)
-	if(NOT ALL_PLUGINS_DEFINED)
-		set(WORKSPACE_ALL_PLUGINS CACHE INTERNAL "")
-		set(WORKSPACE_ACTIVE_PLUGINS CACHE INTERNAL "")
-		set(WORKSPACE_INACTIVE_PLUGINS CACHE INTERNAL "")
-		return()
-	endif()
-
-	# detecting which plugins are active
-	set(WORKSPACE_ALL_PLUGINS ${ALL_PLUGINS_DEFINED} CACHE INTERNAL "")
-	set(ALL_PLUGINS_ACTIVE)
-	foreach(plugin IN LISTS WORKSPACE_ALL_PLUGINS)
-		if(PLUGIN_${plugin})
-			list(APPEND ALL_PLUGINS_ACTIVE ${plugin})
-			if(${plugin}_DEPENDS)
-				list(APPEND ALL_PLUGINS_ACTIVE ${${plugin}_DEPENDS})
-			endif()
-		else()
-			list(APPEND ALL_PLUGINS_INACTIVE ${plugin})
-			foreach(dep IN LISTS ${plugin}_DEPENDS)
-				if(NOT PLUGIN_${dep}) # if not manually activated, deactivate it
-					list(APPEND ALL_PLUGINS_INACTIVE ${${plugin}_DEPENDS})
-				endif()
-			endforeach()
-		endif()
-	endforeach()
-	set(WORKSPACE_ACTIVE_PLUGINS ${ALL_PLUGINS_ACTIVE} CACHE INTERNAL "")
-	set(WORKSPACE_INACTIVE_PLUGINS ${ALL_PLUGINS_INACTIVE} CACHE INTERNAL "")
-endfunction(register_Available_Plugins)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |write_Plugins_Info_File| replace:: ``write_Plugins_Info_File``
-#  .. _write_Plugins_Info_File:
-#
-#  write_Plugins_Info_File
-#  -----------------------
-#
-#   .. command:: write_Plugins_Info_File(file)
-#
-#     Write workspace cache variable related to plugins management into a cmake file.
-#
-#      :file: the path to the file to write in.
-#
-function(write_Plugins_Info_File file)
-file(WRITE ${file} "")
-file(APPEND ${file} "set(WORKSPACE_ALL_PLUGINS ${WORKSPACE_ALL_PLUGINS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(WORKSPACE_ACTIVE_PLUGINS ${WORKSPACE_ACTIVE_PLUGINS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(WORKSPACE_INACTIVE_PLUGINS ${WORKSPACE_INACTIVE_PLUGINS} CACHE INTERNAL \"\")\n")
-if(WORKSPACE_ACTIVE_PLUGINS)
-	foreach(plugin IN LISTS WORKSPACE_ACTIVE_PLUGINS)
-		file(APPEND ${file} "set(${plugin}_PLUGIN_ACTIVATION_MESSAGE \"${${plugin}_PLUGIN_ACTIVATION_MESSAGE}\" CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${plugin}_PLUGIN_DEACTIVATION_MESSAGE \"${${plugin}_PLUGIN_DEACTIVATION_MESSAGE}\" CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${plugin}_PLUGIN_RESIDUAL_FILES ${${plugin}_PLUGIN_RESIDUAL_FILES} CACHE INTERNAL \"\")\n")
-	endforeach()
-endif()
-endfunction(write_Plugins_Info_File)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |manage_Plugins| replace:: ``manage_Plugins``
-#  .. _manage_Plugins:
-#
-#  manage_Plugins
-#  --------------
-#
-#   .. command:: manage_Plugins()
-#
-#     Define active plugins among available ones in workspace and depending on user options.
-#
-function(manage_Plugins)
-
-# listing all available plugins from plugins definitions cmake files found in the workspace
-register_Available_Plugins()
-
-if(WORKSPACE_ACTIVE_PLUGINS)
-	message("[PID] INFO : Active plugins")
-	foreach(plugin IN LISTS WORKSPACE_ACTIVE_PLUGINS)
-		message("  + ${plugin} : ${${plugin}_PLUGIN_ACTIVATED_MESSAGE}")
-	endforeach()
-endif()
-
-set(PLUGINS_FILE ${CMAKE_BINARY_DIR}/Workspace_Plugins_Info.cmake)
-write_Plugins_Info_File(${PLUGINS_FILE})
-endfunction(manage_Plugins)

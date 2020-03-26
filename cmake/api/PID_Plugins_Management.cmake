@@ -42,104 +42,55 @@ include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
 #
 #    Manage actions of activated/deactivated plugins in currently built package.
 #
-function(manage_Plugins_In_Package)
-include(${WORKSPACE_DIR}/pid/Workspace_Plugins_Info.cmake OPTIONAL RESULT_VARIABLE res)
-if(NOT res STREQUAL NOTFOUND)
-  foreach(plugin IN LISTS WORKSPACE_INACTIVE_PLUGINS)
-		if(${plugin}_PLUGIN_RESIDUAL_FILES)# if the plugin generates residual files we need to exclude them from source tree using .gitignore
-			dereference_Residual_Files(${plugin})
-		endif()
-		deactivate_Plugin(${plugin})
-	endforeach()
-  foreach(plugin IN LISTS WORKSPACE_ACTIVE_PLUGINS)
-		if(${plugin}_PLUGIN_RESIDUAL_FILES)# if the plugin generates residual files we need to exclude them from source tree using .gitignore
-			dereference_Residual_Files(${plugin})
-		endif()
-		activate_Plugin(${plugin})
-	endforeach()
-endif()
-endfunction(manage_Plugins_In_Package)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |activate_Plugin| replace:: ``activate_Plugin``
-#  .. _activate_Plugin:
-#
-#  activate_Plugin
-#  ---------------
-#
-#   .. command:: activate_Plugin(plugin)
-#
-#    Manage activation of a given plugin in currently built package.
-#
-#      :plugin: The name of the plugin
-#
-function(activate_Plugin plugin)
-  resolve_Path_To_Plugin_Dir(PLUG_PATH ${plugin})
-  if(PLUG_PATH AND EXISTS ${PLUG_PATH}/plugin_activate.cmake)
-    include(${PLUG_PATH}/plugin_activate.cmake)
-  	if(${plugin}_PLUGIN_ACTIVATION_MESSAGE)
-  		message("[PID] INFO : plugin ${plugin}: ${${plugin}_PLUGIN_ACTIVATION_MESSAGE}.")
-  	endif()
-  else()
-    message("[PID] WARNING: plugin ${plugin} is corrupted, no file to activate it.")
-  endif()
-endfunction(activate_Plugin)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |plugin_Description| replace:: ``plugin_Description``
-#  .. _plugin_Description:
-#
-#  plugin_Description
-#  ------------------
-#
-#   .. command:: plugin_Description(plugin)
-#
-#   include the plugin description in current context
-#
-#      :plugin: The name of the plugin
-#
-macro(plugin_Description plugin)
-  resolve_Path_To_Plugin_Dir(PLUG_PATH ${plugin})
-  if(PLUG_PATH)
-    include(${PLUG_PATH}/plugin_description.cmake OPTIONAL)
-  endif()
-  set(PLUG_PATH)
-endmacro(plugin_Description)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |deactivate_Plugin| replace:: ``deactivate_Plugin``
-#  .. _deactivate_Plugin:
-#
-#  deactivate_Plugin
-#  -----------------
-#
-#   .. command:: deactivate_Plugin(plugin)
-#
-#    Manage deactivation of a given plugin in currently built package.
-#
-#      :plugin: The name of the plugin
-#
-function(deactivate_Plugin plugin)
-  resolve_Path_To_Plugin_Dir(PLUG_PATH ${plugin})
-	if(PLUG_PATH AND EXISTS ${PLUG_PATH}/plugin_deactivate.cmake)
-    if(${plugin}_PLUGIN_DEACTIVATION_MESSAGE)
-      message("[PID] INFO : plugin ${plugin} : ${${plugin}_PLUGIN_DEACTIVATION_MESSAGE}.")
+macro(manage_Plugins_In_Package folder)
+  set(target_path ${WORKSPACE_DIR}/pid/plugins/${folder})
+  if(EXISTS ${target_path})#check if the folder exists, otherwise simply do nothing
+    file(GLOB ALL_SCRIPTS ${target_path})
+    if(ALL_SCRIPTS)#check if the folder contains scripts, otherwise simply do nothing
+      foreach(plugin IN LISTS ALL_SCRIPTS)
+        include(${plugin})#simply include the corresponding cmake script
+    	endforeach()
     endif()
-  else()
-    if(ADDITIONNAL_DEBUG_INFO)
-      message("[PID] INFO: plugin ${plugin} defines no file for deactivation.")
-    endif()
-	endif()
-endfunction(deactivate_Plugin)
+  endif()
+endmacro(manage_Plugins_In_Package)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Plugins_In_Package_After_Components_Description| replace:: ``manage_Plugins_In_Package_After_Components_Description``
+#  .. _manage_Plugins_In_Package_After_Components_Description:
+#
+#  manage_Plugins_In_Package_After_Components_Description
+#  ------------------------------------------------------
+#
+#   .. command:: manage_Plugins_In_Package_After_Components_Description()
+#
+#    Callback function used in currently built package to manage specific configuration actions provided by active environments.
+#    This callback is called AFTER components of the package have been described.
+#
+macro(manage_Plugins_In_Package_After_Components_Description)
+  manage_Plugins_In_Package(after)
+endmacro(manage_Plugins_In_Package_After_Components_Description)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Plugins_In_Package_Before_Components_Description| replace:: ``manage_Plugins_In_Package_Before_Components_Description``
+#  .. _manage_Plugins_In_Package_Before_Components_Description:
+#
+#  manage_Plugins_In_Package_Before_Components_Description
+#  -------------------------------------------------------
+#
+#   .. command:: manage_Plugins_In_Package_Before_Components_Description()
+#
+#    Callback function used in currently built package to manage specific configuration actions provided by active environments.
+#    This callback is called BEFORE description of components of the package.
+#
+macro(manage_Plugins_In_Package_Before_Components_Description)
+ manage_Plugins_In_Package(before)
+endmacro(manage_Plugins_In_Package_Before_Components_Description)
 
 #.rst:
 #

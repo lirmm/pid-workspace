@@ -780,7 +780,7 @@ foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX
 		resolve_External_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${PROJECT_NAME} ${dep_pack} ${CMAKE_BUILD_TYPE})#launch again the resolution
 		if(NOT ${dep_pack}_FOUND${USE_MODE_SUFFIX})#this time the package must be found since installed => internal BUG in PID
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_ext_pack}.")
+			message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_pack}.")
 			return()
 		elseif(NOT IS_VERSION_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -869,6 +869,7 @@ else()
 endif()
 
 # recursive call into subdirectories to build, install, test the package
+manage_Plugins_In_Package_Before_Components_Description()
 add_subdirectory(src)
 add_subdirectory(apps)
 
@@ -1167,7 +1168,7 @@ endif()
 #print_Component_Variables()
 
 # dealing with plugins at the end of the configuration process
-manage_Plugins_In_Package()
+manage_Plugins_In_Package_After_Components_Description()
 reset_Removed_Examples_Build_Option()
 finish_Progress(${GLOBAL_PROGRESS_VAR}) #managing the build from a global point of view
 endmacro(build_Package)

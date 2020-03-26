@@ -27,49 +27,58 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 PROJECT(pid-workspace C CXX ASM)
 
-manage_Platforms(${CMAKE_SOURCE_DIR}) # define the current platform in use and provide to the user some options to control finally targetted platform
-manage_Migrations()
+file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+if(DIR_NAME STREQUAL "pid")
 
-set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
-#spefici user entry to manage CI process speicifities
-option(IN_CI_PROCESS "Determine wether the build takes place in a CI environment (ON) or not (default to OFF)." OFF)
-mark_as_advanced(IN_CI_PROCESS)
+	### set global workspace variables ###
+	set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR} CACHE INTERNAL "")
+	option(IN_CI_PROCESS "Determine wether the build takes place in a CI environment (ON) or not (default to OFF)." OFF)
+	mark_as_advanced(IN_CI_PROCESS)
+	set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
 
-configure_Git()
-if(NOT GIT_CONFIGURED)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR: your git tool is NOT configured. To use PID you need to configure git:\n git config --global user.name \"Your Name\" \n git config --global user.email <your email address> \n")
-endif()
-
-reset_Contribution_Spaces() #define what is available
-manage_Plugins() # define available plugins and plugins in use
-
-###### automatically managing reference to official remote repository #####
-set(PID_OFFICIAL_REMOTE_ADDRESS "https://gite.lirmm.fr/pid/pid-workspace.git" CACHE STRING "address of the official PID repository") #this is the "central" repo for PID system
-execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote -v OUTPUT_VARIABLE res)
-string(REPLACE "\n" ";" GIT_REMOTES ${res})
-set(OFFICIAL_EXISTS)
-foreach(remote IN LISTS GIT_REMOTES)# for each git remote defined in repository
-	if(remote)#guard to avoid last semincolon to generate an empty element that makes the reges command crash
-		string(REGEX REPLACE "^[ \t]*official[ \t]+([^ \t]+)[ \t]*\\(fetch\\)(.*)$" "\\1" OFFICIAL_ADDR ${remote})
-		if(NOT "${remote}" STREQUAL "${OFFICIAL_ADDR}")#i.e. match => official already exists
-			set(OFFICIAL_EXISTS ${OFFICIAL_ADDR})
-			break()
-		endif()
+	### management of workspace repository ###
+	configure_Git()
+	if(NOT GIT_CONFIGURED)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR: your git tool is NOT configured. To use PID you need to configure git:\n git config --global user.name \"Your Name\" \n git config --global user.email <your email address> \n")
 	endif()
-endforeach()
-if(NOT OFFICIAL_EXISTS) # automatically create a branch called official that points to the official remote. This is a sanity action to avoid troubles on updates / deployments.
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add official ${PID_OFFICIAL_REMOTE_ADDRESS})
-elseif(NOT OFFICIAL_EXISTS STREQUAL PID_OFFICIAL_REMOTE_ADDRESS)#strange thing remote may have changed
-	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote set-url official ${PID_OFFICIAL_REMOTE_ADDRESS})
+	# automatically managing reference to official remote repository #####
+	set(PID_OFFICIAL_REMOTE_ADDRESS "https://gite.lirmm.fr/pid/pid-workspace.git" CACHE STRING "address of the official PID repository") #this is the "central" repo for PID system
+	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote -v OUTPUT_VARIABLE res)
+	string(REPLACE "\n" ";" GIT_REMOTES ${res})
+	set(OFFICIAL_EXISTS)
+	foreach(remote IN LISTS GIT_REMOTES)# for each git remote defined in repository
+		if(remote)#guard to avoid last semincolon to generate an empty element that makes the reges command crash
+			string(REGEX REPLACE "^[ \t]*official[ \t]+([^ \t]+)[ \t]*\\(fetch\\)(.*)$" "\\1" OFFICIAL_ADDR ${remote})
+			if(NOT "${remote}" STREQUAL "${OFFICIAL_ADDR}")#i.e. match => official already exists
+				set(OFFICIAL_EXISTS ${OFFICIAL_ADDR})
+				break()
+			endif()
+		endif()
+	endforeach()
+	if(NOT OFFICIAL_EXISTS) # automatically create a branch called official that points to the official remote. This is a sanity action to avoid troubles on updates / deployments.
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote add official ${PID_OFFICIAL_REMOTE_ADDRESS})
+	elseif(NOT OFFICIAL_EXISTS STREQUAL PID_OFFICIAL_REMOTE_ADDRESS)#strange thing remote may have changed
+		execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote set-url official ${PID_OFFICIAL_REMOTE_ADDRESS})
+	endif()
+
+	### management of PID version ###
+	# set the current PID version to memorize when updating the workspace.
+	set(PID_SYSTEM_VERSION 4 CACHE INTERNAL "")
+	configure_file(${CMAKE_SOURCE_DIR}/cmake/patterns/PID_version.cmake.in ${CMAKE_BINARY_DIR}/PID_version.cmake @ONLY) #put it into a file to allow packages to easily retrieve PID version information
+
+	### management of workspace configuration ###
+	# manage_Migrations() #specific action to manage migration between workspace versions
+	reset_Contribution_Spaces() #define what is known in the local workspace
+	reset_Profiles() # define the development environment based on current profile
+elseif(DIR_NAME MATCHES "pid/(.+)")#subfolder of pid: profile specific folder
+	load_Current_Contribution_Spaces()#simply load the contribution space from higher level
+	read_Profiles_Description_File(FILE_EXISTS)#from here we are sure the file exists
+	manage_Platforms() # define all properties of the current platform in use (based on current build environment)
+  manage_Plugins() # extract plugins in use from each environment according to the current profile in use
+	return()
 endif()
 
-
-##### management of PID version #####
-# set the current PID version to memorize when updating the workspace.
-set(PID_SYSTEM_VERSION 4 CACHE INTERNAL "")
-configure_file(${CMAKE_SOURCE_DIR}/cmake/patterns/PID_version.cmake.in ${CMAKE_BINARY_DIR}/PID_version.cmake @ONLY) #put it into a file to allow packages to easily retrieve PID version information
-
-
+### memorize local workspace content ###
 #1) reset information about categories
 reset_All_Categories()
 #2) list the content of the workspace to get clean information about packages and framework
@@ -79,7 +88,7 @@ classify_Packages()
 #4) creating the file that will be used to manage information about categories, packages and frameworks in script file
 write_Categories_File()
 
-#adding custom targets providing workspace level commands
+### adding custom targets providing workspace level commands ###
 add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo ""
 	COMMAND ${CMAKE_COMMAND} -E echo "  ----- Available PID commands -----"
@@ -222,7 +231,7 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "             - mode=Debug or Release: The build mode of the binary package to install. If not specified"
 	COMMAND ${CMAKE_COMMAND} -E echo "               the variable CMAKE_BUILD_TYPE defined in workspace project will be used as default -e.g. Release."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
-	COMMAND ${CMAKE_COMMAND} -E echo " configure:  configure the workspace. Used to configure the current build environment for the while workspace."
+	COMMAND ${CMAKE_COMMAND} -E echo " profiles: manage the profiles in use in the workspace. Used to configure build environments for the whole workspace."
 	COMMAND ${CMAKE_COMMAND} -E echo "             Additional arguments can be used to customize the configuration process."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [mandatory] ---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - environment=*name of the environment*: set the given environment as the build environment to use "
@@ -237,7 +246,7 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "             - distrib_version=*string*: set the target distribution version corresponding to the environment."
 	COMMAND ${CMAKE_COMMAND} -E echo "               This is usefull when the environment in use does not define its target distribution version."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
-	COMMAND ${CMAKE_COMMAND} -E echo " manage:     manage contribution spaces in use in the workspace."
+	COMMAND ${CMAKE_COMMAND} -E echo " contributions: manage contribution spaces in use in the workspace."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [mandatory] ---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - cmd=*name of the command*: apply the given command to contribution spaces. Possible values:"
 	COMMAND ${CMAKE_COMMAND} -E echo "               - ls: list currenlty used contribution spaces."
@@ -440,8 +449,12 @@ COMMAND ${CMAKE_COMMAND} 	-DINSTALLED_PACKAGE=\${package}
 )
 
 ## configuring the workspace
-add_custom_target(configure
-COMMAND ${CMAKE_COMMAND} -DTARGET_ENVIRONMENT=\${environment}
+add_custom_target(profiles
+       COMMAND ${CMAKE_COMMAND}
+					-DTARGET_COMMAND=\${cmd}
+					-DTARGET_PROFILE=\${profile}
+					-DTARGET_ENVIRONMENT=\${env}
+					-DTARGET_INSTANCE=\${instance}
 					-DTARGET_SYSROOT=\${sysroot}
 					-DTARGET_STAGING=\${staging}
 					-DTARGET_PLATFORM=\${platform}
@@ -452,17 +465,15 @@ COMMAND ${CMAKE_COMMAND} -DTARGET_ENVIRONMENT=\${environment}
 					-DTARGET_DISTRIBUTION=\${distribution}
 					-DTARGET_DISTRIBUTION_VERSION=\${distrib_version}
 					-DIN_CI_PROCESS=${IN_CI_PROCESS}
-					-DCURRENT_ENVIRONMENT=${CURRENT_ENVIRONMENT}
-					-DCURRENT_PLATFORM=${CURRENT_PLATFORM}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} #using default or current native build system
-					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Configure_PID_Environment.cmake
-	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Manage_PID_Profiles.cmake
+	    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
 ## manage contribution spaces
-add_custom_target(manage
-COMMAND ${CMAKE_COMMAND}
+add_custom_target(contributions
+       COMMAND ${CMAKE_COMMAND}
 					-DTARGET_COMMAND=\${cmd}
 					-DTARGET_CS=\${space}
 					-DUPDATE_URL=\${update}
@@ -473,5 +484,5 @@ COMMAND ${CMAKE_COMMAND}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} #using default or current native build system
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Manage_PID_Contribution_Spaces.cmake
-	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )

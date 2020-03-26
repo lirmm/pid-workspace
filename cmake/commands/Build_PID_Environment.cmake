@@ -17,18 +17,6 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-function(clean_Build_Tree build_folder)
-file(GLOB ALL_FILES "${build_folder}/*")
-if(ALL_FILES)
-	foreach(a_file IN LISTS ALL_FILES)
-		if(NOT ${a_file} STREQUAL "${build_folder}/.gitignore")
-			file(REMOVE_RECURSE ${a_file})
-		endif()
-	endforeach()
-endif()
-endfunction(clean_Build_Tree)
-
-
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Deployment_Functions NO_POLICY_SCOPE)
@@ -38,6 +26,10 @@ include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 include(PID_Environment_API_Internal_Functions NO_POLICY_SCOPE)
 include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
 
+
+if(NOT TARGET_INSTANCE AND DEFINED ENV{instance})
+	set(TARGET_INSTANCE $ENV{instance} CACHE INTERNAL "" FORCE)
+endif()
 
 if(NOT TARGET_SYSROOT AND DEFINED ENV{sysroot})
 	set(TARGET_SYSROOT $ENV{sysroot} CACHE INTERNAL "" FORCE)
@@ -91,10 +83,41 @@ if(NOT TARGET_DISTRIBUTION AND DEFINED ENV{distribution})
 	endif()
 endif()
 
-evaluate_Environment_From_Script(EVAL_OK ${TARGET_ENVIRONMENT} "${TARGET_SYSROOT}" "${TARGET_STAGING}" "${TARGET_PROC_TYPE}" "${TARGET_PROC_ARCH}" "${TARGET_OS}" "${TARGET_ABI}" "${TARGET_DISTRIBUTION}" "${TARGET_DISTRIBUTION_VERSION}")
+load_Profile_Info()
+if(CURRENT_GENERATOR)
+	set(CMAKE_GENERATOR "${CURRENT_GENERATOR}")
+endif()
+if(CURRENT_GENERATOR_EXTRA)
+	set(CMAKE_GENERATOR_EXTRA "${CURRENT_GENERATOR_EXTRA}")
+endif()
+if(CURRENT_GENERATOR_TOOLSET)
+	set(CMAKE_GENERATOR_TOOLSET "${CURRENT_GENERATOR_TOOLSET}")
+endif()
+if(CURRENT_GENERATOR_INSTANCE)
+	set(CMAKE_GENERATOR_INSTANCE "${CURRENT_GENERATOR_INSTANCE}")
+endif()
+if(CURRENT_GENERATOR_PLATFORM)
+	set(CMAKE_GENERATOR_PLATFORM "${CURRENT_GENERATOR_PLATFORM}")
+endif()
+reset_Profile_Info()
+
+evaluate_Environment_From_Script(EVAL_OK ${TARGET_ENVIRONMENT}
+				"${TARGET_INSTANCE}"
+				"${TARGET_SYSROOT}"
+				"${TARGET_STAGING}"
+				"${TARGET_PROC_TYPE}"
+				"${TARGET_PROC_ARCH}"
+				"${TARGET_OS}"
+				"${TARGET_ABI}"
+				"${TARGET_DISTRIBUTION}"
+				"${TARGET_DISTRIBUTION_VERSION}")
 if(NOT EVAL_OK)
   message(FATAL_ERROR "[PID] ERROR : cannot evaluate environment ${TARGET_ENVIRONMENT} on current host.")
   return()
 endif()
 
 message("[PID] INFO : environment ${TARGET_ENVIRONMENT} has been evaluated.")
+
+#print generated variables
+include(${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT}/build/PID_Environment_Solution_Info.cmake)
+print_Evaluated_Environment(${TARGET_ENVIRONMENT})

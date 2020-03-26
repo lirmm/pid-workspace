@@ -147,125 +147,6 @@ function(resolve_Path_To_Format_File RESULT_PATH code_style)
 endfunction(resolve_Path_To_Format_File)
 
 ##########################################################################################
-############################ plugin files resolution #####################################
-##########################################################################################
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |get_Path_To_Plugin_Dir| replace:: ``get_Path_To_Plugin_Dir``
-#  .. _get_Path_To_Plugin_Dir:
-#
-#  get_Path_To_Plugin_Dir
-#  ----------------------
-#
-#   .. command:: get_Path_To_Plugin_Dir(RESULT_PATH plugin)
-#
-#      get the path to the folder containing a plugin definition
-#
-#      :plugin: name of the plugin
-#
-#      :RESULT_PATH: output variable containing path to the plugin folder if found, empty otherwise.
-#
-function(get_Path_To_Plugin_Dir RESULT_PATH plugin)
-  set(${RESULT_PATH} PARENT_SCOPE)
-  foreach(contribution_space IN LISTS CONTRIBUTION_SPACES)#CONTRIBUTION_SPACES is supposed to be ordered from highest to lowest priority contribution spaces
-    set(PATH_TO_PLUGIN ${WORKSPACE_DIR}/contributions/${contribution_space}/plugins/${plugin})
-    if(EXISTS ${PATH_TO_PLUGIN} AND IS_DIRECTORY ${PATH_TO_PLUGIN})
-      set(${RESULT_PATH} ${PATH_TO_PLUGIN} PARENT_SCOPE)
-      return()
-    endif()
-  endforeach()
-endfunction(get_Path_To_Plugin_Dir)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |get_Available_Plugins_For_Contribution_Space| replace:: ``get_Available_Plugins_For_Contribution_Space``
-#  .. _get_Available_Plugins_For_Contribution_Space:
-#
-#  get_Available_Plugins_For_Contribution_Space
-#  --------------------------------------------
-#
-#   .. command:: get_Available_Plugins_For_Contribution_Space(RES_LIST contribution_space)
-#
-#      get all available plugins in a given contribution space
-#
-#      :contribution_space: name of the contribution space
-#
-#      :RES_LIST: output variable containing the list of plugins provided by contribution_space.
-#
-function(get_Available_Plugins_For_Contribution_Space RES_LIST contribution_space)
-  set(${RES_LIST} PARENT_SCOPE)
-  set(PATH_TO_PLUGINS ${WORKSPACE_DIR}/contributions/${contribution_space}/plugins)
-  if(EXISTS ${PATH_TO_PLUGINS} AND IS_DIRECTORY ${PATH_TO_PLUGINS})
-    file(GLOB AVAILABLE_PLUGINS RELATIVE ${PATH_TO_PLUGINS} ${PATH_TO_PLUGINS}/*) #getting plugins container folders names
-    set(${RES_LIST} ${AVAILABLE_PLUGINS} PARENT_SCOPE)
-  endif()
-endfunction(get_Available_Plugins_For_Contribution_Space)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |get_All_Available_Plugins| replace:: ``get_All_Available_Plugins``
-#  .. _get_All_Available_Plugins:
-#
-#  get_All_Available_Plugins
-#  -------------------------
-#
-#   .. command:: get_All_Available_Plugins(PLUGINS_LIST)
-#
-#      get all available plugins from all contribution spaces in use.
-#
-#      :PLUGINS_LIST: output variable containing the list of usable plugins.
-#
-function(get_All_Available_Plugins PLUGINS_LIST)
-  set(FINAL_LIST)
-  foreach(contrib IN LISTS CONTRIBUTION_SPACES)#CONTRIBUTION_SPACES is supposed to be ordered from highest to lowest priority contribution spaces
-    get_Available_Plugins_For_Contribution_Space(RES_LIST ${contrib})
-    list(APPEND FINAL_LIST ${RES_LIST})
-  endforeach()
-  if(FINAL_LIST)
-    list(REMOVE_DUPLICATES FINAL_LIST)
-  endif()
-  set(${PLUGINS_LIST} ${FINAL_LIST} PARENT_SCOPE)
-endfunction(get_All_Available_Plugins)
-
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |resolve_Path_To_Plugin_Dir| replace:: ``resolve_Path_To_Plugin_Dir``
-#  .. _resolve_Path_To_Plugin_Dir:
-#
-#  resolve_Path_To_Plugin_Dir
-#  --------------------------
-#
-#   .. command:: resolve_Path_To_Plugin_Dir(RESULT_PATH plugin)
-#
-#      get the path to a plugin folder, update contribution spaces if not found first time.
-#
-#      :plugin: name of the plugin.
-#
-#      :RESULT_PATH: output variable containing path to the plugin directory if found, empty otherwise.
-#
-function(resolve_Path_To_Plugin_Dir RESULT_PATH plugin)
-  set(${RESULT_PATH} PARENT_SCOPE)
-  get_Path_To_Plugin_Dir(PATH_TO_DIR ${plugin})
-  if(NOT PATH_TO_DIR)
-    update_Contribution_Spaces(UPDATED)
-    if(UPDATED)
-      get_Path_To_Plugin_Dir(PATH_TO_DIR ${plugin})
-    endif()
-  endif()
-  set(${RESULT_PATH} ${PATH_TO_DIR} PARENT_SCOPE)
-endfunction(resolve_Path_To_Plugin_Dir)
-
-##########################################################################################
 ############################ license files resolution ####################################
 ##########################################################################################
 
@@ -1074,6 +955,8 @@ macro(reset_Contribution_Spaces)
   write_Contribution_Spaces_Description_File()
   # configure workspace (set CMAKE_MODULE_PATH adequately)
   configure_Contribution_Spaces()
+  # and finally write the file that contains all required information for packages, in pid folder (since contribution spaces are global to the whole workspace)
+  write_Contribution_Spaces(${CMAKE_BINARY_DIR}/Workspace_Contribution_Spaces.cmake)
 endmacro(reset_Contribution_Spaces)
 
 #.rst:

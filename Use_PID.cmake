@@ -127,8 +127,7 @@ include(PID_External_Use_Internal_Functions NO_POLICY_SCOPE)
 execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR} -B ${WORKSPACE_DIR}/pid
 								WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)#force reconfiguration (in case workspace was deployed as a submodule and never configured)
 
-include(${WORKSPACE_DIR}/pid/Workspace_Platforms_Description.cmake) #loading the workspace description configuration
-
+load_Platform_Info()
 #need to reset the variables used to describe dependencies
 reset_Local_Components_Info(${WORKSPACE_DIR} ${mode})
 #enforce constraints before finding packages

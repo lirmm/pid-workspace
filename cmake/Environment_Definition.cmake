@@ -205,7 +205,7 @@ endmacro(add_PID_Environment_Author)
 #     :DISTRIBUTION <distrib name>: the name of the distribution of the target platform.
 #     :DISTRIB_VERSION <version>: the version of the distribution of the target platform.
 #     :CONFIGURATION ...: list of target platform configuration that the host must match
-#     :CHECK ...: the path to the script file defining how to check if current host already defines aequate build variables.
+#     :CHECK ...: the path to the script file defining how to check if current host already defines adequate build variables.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -325,7 +325,7 @@ macro(declare_PID_Environment_Constraints)
   cmake_parse_arguments(DECLARE_PID_ENV_CONSTRAINTS "" "" "${multiValueArgs}" ${ARGN})
 
   if(NOT DECLARE_PID_ENV_CONSTRAINTS_OPTIONAL AND NOT DECLARE_PID_ENV_CONSTRAINTS_REQUIRED)
-    message("[PID] WARNING: when calling declare_PID_Environment_Constraints you defined no optional or required contraints. Aborting.")
+    message("[PID] WARNING: when calling PID_Environment_Constraints you defined no optional or required contraints. Aborting.")
     return()
   endif()
 
@@ -409,7 +409,7 @@ macro(declare_PID_Environment_Solution)
 
   if(DECLARE_PID_ENV_SOLUTION_DISTRIB_VERSION)
     if(NOT DECLARE_PID_ENV_SOLUTION_DISTRIBUTION)
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling PID_Environment_Install you define distribution version (using DISTRIB_VERSION) but no DISTRIBUTION. Please specify the DISTRIBUTION also.")
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling PID_Environment_Solution you define distribution version (using DISTRIB_VERSION) but no DISTRIBUTION. Please specify the DISTRIBUTION also.")
       return()
     endif()
   endif()

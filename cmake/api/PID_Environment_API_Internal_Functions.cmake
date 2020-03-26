@@ -329,6 +329,7 @@ macro(build_Environment_Project)
     COMMAND ${CMAKE_COMMAND}
     -DWORKSPACE_DIR=${WORKSPACE_DIR}
     -DTARGET_ENVIRONMENT=${PROJECT_NAME}
+		-DTARGET_INSTANCE=\${instance}
 		-DTARGET_SYSROOT=\${sysroot}
 		-DTARGET_STAGING=\${staging}
 		-DTARGET_PLATFORM=\${platform}
@@ -432,7 +433,7 @@ endmacro(build_Environment_Project)
 #     :MANAGE_RESULT: the output variable that is TRUE if dependency check is OK, FALSE otherwise.
 #
 function(manage_Environment_Dependency MANAGE_RESULT environment)
-# 1) parse the environment depenedncy to get its name and args separated
+# 1) parse the environment dependency to get its name and args separated
 parse_System_Check_Constraints(ENV_NAME ENV_ARGS ${environment}) #get environment name from environment expression (extract arguments and base name)
 
 # 2) load the environment if required
@@ -523,6 +524,65 @@ elseif(REF_EXIST) #we can try to clone it if we know where to clone from
 endif()
 endfunction(load_Environment)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Environment_Inputs_File| replace:: ``generate_Environment_Inputs_File``
+#  .. _generate_Environment_Inputs_File:
+#
+#  generate_Environment_Inputs_File
+#  --------------------------------
+#
+#   .. command:: generate_Environment_Inputs_File(environment)
+#
+#     Configure the target environment in orderto get the filedescribing its inputs.
+#
+#      :environment: the name of the target environment.
+#
+#      :RESULT: the output variable that is TRUE if inputs file has been generated.
+#
+function(generate_Environment_Inputs_File RESULT environment)
+
+  set(environment_build_folder ${WORKSPACE_DIR}/environments/${environment}/build)
+  # 1.1 configure environment
+  hard_Clean_Build_Folder(${environment_build_folder}) #starting from a clean situation
+
+  load_Profile_Info()
+  if(CMAKE_EXTRA_GENERATOR)
+    set(generator_used "${CMAKE_EXTRA_GENERATOR} - ${CMAKE_GENERATOR}")
+  else()
+    set(generator_used "${CMAKE_GENERATOR}")
+  endif()
+
+  #for native build system that support instance/toolset/platform specification we need to transmit those option (using a toolchain file, sinec this is the most generic and general way to do)
+  if(CMAKE_GENERATOR_INSTANCE OR CMAKE_GENERATOR_TOOLSET OR CMAKE_GENERATOR_PLATFORM)#need to use an instance to set the specific native build tool used
+    file(WRITE ${environment_build_folder}/Generator_Instance.cmake "")
+    if(CMAKE_GENERATOR_INSTANCE)
+      file(APPEND ${environment_build_folder}/Generator_Instance.cmake "set(CMAKE_GENERATOR_INSTANCE ${CMAKE_GENERATOR_INSTANCE})\n")
+    endif()
+    if(CMAKE_GENERATOR_TOOLSET)
+      file(APPEND ${environment_build_folder}/Generator_Instance.cmake "set(CMAKE_GENERATOR_TOOLSET ${CMAKE_GENERATOR_TOOLSET})\n")
+    endif()
+    if(CMAKE_GENERATOR_PLATFORM)
+      file(APPEND ${environment_build_folder}/Generator_Instance.cmake "set(CURRENT_GENERATOR_PLATFORM ${CMAKE_GENERATOR_PLATFORM})\n")
+    endif()
+    set(toolchain -DCMAKE_TOOLCHAIN_FILE=${environment_build_folder}/Generator_Instance.cmake)
+  else()
+    set(toolchain)
+  endif()
+  reset_Profile_Info()#need to reset profile info to its initial value (avoid troubles when changing profile)
+  execute_process(COMMAND ${CMAKE_COMMAND}
+                  -G "${generator_used}"
+                  ${toolchain}
+                  -D IN_CI_PROCESS=${IN_CI_PROCESS} ..
+                  WORKING_DIRECTORY ${environment_build_folder})#simply ensure that input are generated
+  if(NOT EXISTS ${environment_build_folder}/PID_Inputs.cmake)
+    set(${RESULT} FALSE PARENT_SCOPE)
+    return()
+  endif()
+  set(${RESULT} TRUE PARENT_SCOPE)
+endfunction(generate_Environment_Inputs_File)
 
 #.rst:
 #
@@ -539,6 +599,8 @@ endfunction(load_Environment)
 #     Configure the target environment with management of environment variables coming from user.
 #
 #      :environment: the name of the target environment.
+#
+#      :instance: the instance name to use.
 #
 #      :sysroot: the path to sysroot.
 #
@@ -558,18 +620,18 @@ endfunction(load_Environment)
 #
 #      :EVAL_OK: the output variable that is TRUE if the environment has been evaluated and exitted without errors.
 #
-function(evaluate_Environment_From_Script EVAL_OK environment sysroot staging type arch os abi distribution distrib_version)
+function(evaluate_Environment_From_Script EVAL_OK environment instance sysroot staging type arch os abi distribution distrib_version)
 set(${EVAL_OK} FALSE PARENT_SCOPE)
+
 # 1. Get CMake definition for variables that are managed by the environment and set by user
 set(environment_build_folder ${WORKSPACE_DIR}/environments/${environment}/build)
 # 1.1 configure environment
-hard_Clean_Build_Folder(${environment_build_folder}) #starting froma clean situation
-execute_process(COMMAND ${CMAKE_COMMAND} -D IN_CI_PROCESS=${IN_CI_PROCESS} ..
-                WORKING_DIRECTORY ${environment_build_folder})#simply ensure that input are generated
+generate_Environment_Inputs_File(FILE_EXISTS ${environment})
 # 1.2 import variable description file
-if(NOT EXISTS ${environment_build_folder}/PID_Inputs.cmake)
+if(NOT FILE_EXISTS)
   return()
 endif()
+
 include(${environment_build_folder}/PID_Inputs.cmake)
 # 1.3 for each variable, look if a corresponfing environment variable exists and if yes create the CMake definition to pass to environment
 set(list_of_defs)
@@ -577,34 +639,17 @@ foreach(var IN LISTS ${environment}_INPUTS)
   if(DEFINED ENV{${var}})# an environment variable is defined for that constraint
     string(REPLACE " " "" VAL_LIST "$ENV{${var}}")#remove the spaces in the string if any
     string(REPLACE ";" "," VAL_LIST "${VAL_LIST}")#generate an argument list (with "," delim) from a cmake list (with ";" as delimiter)
-    list(APPEND list_of_defs -DVAR_${var}=${VAL_LIST})
+    list(APPEND list_of_defs -DVAR_${var}=\"${VAL_LIST}\")
   else()
     list(APPEND list_of_defs -U VAR_${var})
   endif()
 endforeach()
 # 2. reconfigure the environment
 
- #preamble: for generators, first determine what is the preferred one
-if(CURRENT_GENERATOR)
-  list(APPEND list_of_defs -DPREFERRED_GENERATOR=\"${CURRENT_GENERATOR}\")
-endif()
-if(CURRENT_MAKE_PROGRAM)
-  list(APPEND list_of_defs -DPREFERRED_MAKE_PROGRAM=\"${CURRENT_MAKE_PROGRAM}\")
-endif()
-if(CURRENT_GENERATOR_EXTRA)
-  list(APPEND list_of_defs -DPREFERRED_GENERATOR_EXTRA=\"${CURRENT_GENERATOR_EXTRA}\")
-endif()
-if(CURRENT_GENERATOR_TOOLSET)
-  list(APPEND list_of_defs -DPREFERRED_GENERATOR_TOOLSET=\"${CURRENT_GENERATOR_TOOLSET}\")
-endif()
-if(CURRENT_GENERATOR_PLATFORM)
-  list(APPEND list_of_defs -DPREFERRED_GENERATOR_PLATFORM=\"${CURRENT_GENERATOR_PLATFORM}\")
-endif()
-if(CURRENT_GENERATOR_INSTANCE)
-  list(APPEND list_of_defs -DPREFERRED_GENERATOR_INSTANCE=\"${CURRENT_GENERATOR_INSTANCE}\")
-endif()
-
 # 2.1 add specific variables like for sysroot, staging and generator in the list of definitions
+if(instance)
+  list(APPEND list_of_defs -DFORCED_INSTANCE=${instance})
+endif()
 if(sysroot)
   list(APPEND list_of_defs -DFORCED_SYSROOT=${sysroot})
 endif()
@@ -630,9 +675,13 @@ if(distrib_version)
   list(APPEND list_of_defs -DFORCED_DISTRIB_VERSION=${distrib_version})
 endif()
 
-# 2.2 reconfigure the environment with new definitions (user and specific variables) and evalutae it againts host
-execute_process(COMMAND ${CMAKE_COMMAND} -DEVALUATION_RUN=TRUE ${list_of_defs} ..
-                WORKING_DIRECTORY ${environment_build_folder})
+# 2.2 reconfigure the environment with new definitions (user and specific variables) and evaluate it againts host
+execute_process(COMMAND ${CMAKE_COMMAND}
+                -DEVALUATION_RUN=TRUE
+                ${list_of_defs}
+                ..
+                WORKING_DIRECTORY ${environment_build_folder}
+                RESULT_VARIABLE res)
 
 # 1.2 import variable description file
 if(res OR NOT EXISTS ${environment_build_folder}/PID_Environment_Description.cmake)
@@ -642,7 +691,6 @@ endif()
 set(${EVAL_OK} TRUE PARENT_SCOPE)
 # at the end: 2 files, toolchain file (optional, only generated if needed) and environment description in environment build folder
 endfunction(evaluate_Environment_From_Script)
-
 
 #.rst:
 #
@@ -836,7 +884,7 @@ function(prepare_Environment_Arguments LIST_OF_DEFS environment arguments)
     string(REPLACE " " "" VAL_LIST "${value}")#remove the spaces in the string if any
     string(REPLACE ";" "," VAL_LIST "${VAL_LIST}")#generate an argument list (with "," delim) from a cmake list (with ";" as delimiter)
     #generate the variable
-    list(APPEND result_list -DVAR_${name}=${VAL_LIST})
+    list(APPEND result_list -DVAR_${name}=\"${VAL_LIST}\")
   endwhile()
   set(${LIST_OF_DEFS} ${result_list} PARENT_SCOPE)
 endfunction(prepare_Environment_Arguments)
@@ -1060,24 +1108,11 @@ endfunction(generate_Environment_License_File)
 #   Set generator related variables to the default value of the upper level.
 #
 function(evaluate_Generator)
-  if(PREFERRED_GENERATOR)
-    set(${PROJECT_NAME}_GENERATOR ${PREFERRED_GENERATOR} CACHE INTERNAL "")# cannot be overwritten
-  endif()
-  if(PREFERRED_MAKE_PROGRAM)
-    set(${PROJECT_NAME}_MAKE_PROGRAM ${PREFERRED_MAKE_PROGRAM} CACHE INTERNAL "")# cannot be overwritten
-  endif()
-
-  if(PREFERRED_GENERATOR_EXTRA)
-    set(${PROJECT_NAME}_GENERATOR_EXTRA ${PREFERRED_GENERATOR_EXTRA} CACHE INTERNAL "")# cannot be overwritten
-  endif()
   if(PREFERRED_GENERATOR_TOOLSET)
     set(${PROJECT_NAME}_GENERATOR_TOOLSET ${PREFERRED_GENERATOR_TOOLSET} CACHE INTERNAL "")# cannot be overwritten
   endif()
   if(PREFERRED_GENERATOR_PLATFORM)
     set(${PROJECT_NAME}_GENERATOR_PLATFORM ${PREFERRED_GENERATOR_PLATFORM} CACHE INTERNAL "")# cannot be overwritten
-  endif()
-  if(PREFERRED_GENERATOR_INSTANCE)
-    set(${PROJECT_NAME}_GENERATOR_INSTANCE ${PREFERRED_GENERATOR_INSTANCE} CACHE INTERNAL "")# cannot be overwritten
   endif()
 endfunction(evaluate_Generator)
 
@@ -1102,6 +1137,9 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
   set(result TRUE)
 
   #manage parameters passed to the environment by the configure script
+  if(FORCED_INSTANCE)
+    set(${PROJECT_NAME}_TARGET_INSTANCE ${FORCED_INSTANCE} CACHE INTERNAL "")# cannot be overwritten
+  endif()
   if(FORCED_SYSROOT)
     set(${PROJECT_NAME}_TARGET_SYSROOT ${FORCED_SYSROOT} CACHE INTERNAL "")# cannot be overwritten
   endif()
@@ -1362,7 +1400,6 @@ endfunction(evaluate_Environment_Solution)
 #
 function(check_Environment_Configuration_Constraint CHECK_RESULT)
   foreach(config IN LISTS ${PROJECT_NAME}_CONFIGURATION_CONSTRAINT)
-
     check_System_Configuration(RESULT NAME CONSTRAINTS "${config}" Release)
     if(NOT RESULT)
       set(${CHECK_RESULT} FALSE PARENT_SCOPE)
@@ -1657,13 +1694,64 @@ set(input_file ${WORKSPACE_DIR}/cmake/patterns/environments/PID_Environment_Desc
 
 set(ENVIRONMENT_DESCRIPTION ${${PROJECT_NAME}_DESCRIPTION})
 set(ENVIRONMENT_CROSSCOMPILATION ${${PROJECT_NAME}_CROSSCOMPILATION})
-set(ENVIRONMENT_INSTANCE ${PROJECT_NAME})
+set(ENVIRONMENT_INSTANCE ${${PROJECT_NAME}_INSTANCE})
 set(ENVIRONMENT_CI ${IN_CI_PROCESS})
 set(ENVIRONMENT_DISTRIBUTION ${${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT})
 set(ENVIRONMENT_DISTRIB_VERSION ${${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT})
 
 configure_file(${input_file} ${description_file} @ONLY)
 endfunction(generate_Environment_Description_File)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |write_Language_Toolset| replace:: ``write_Language_Toolset``
+#  .. _write_Language_Toolset:
+#
+#  write_Language_Toolset
+#  ----------------------
+#
+#   .. command:: write_Language_Toolset(environment lang toolset)
+#
+#   Write description of a language toolset into the project solution file.
+#
+#     :file: the path to target file to write in.
+#
+#     :lang: the label of target language
+#
+#     :toolset: the name of language toolset
+#
+function(write_Language_Toolset file lang toolset)
+  if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER)#for compiled languages
+    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER} CACHE INTERNAL \"\")\n")
+  endif()
+  if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_ID)
+    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_ID ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_ID} CACHE INTERNAL \"\")\n")
+  endif()
+  if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS)
+    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS} CACHE INTERNAL \"\")\n")
+  endif()
+  if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS)
+    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS} CACHE INTERNAL \"\")\n")
+  endif()
+  if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_LIBRARY)
+    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_LIBRARY ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_LIBRARY} CACHE INTERNAL \"\")\n")
+  endif()
+  if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER)
+    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER} CACHE INTERNAL \"\")\n")
+  endif()
+  if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_AR)
+    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_AR ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_AR} CACHE INTERNAL \"\")\n")
+  endif()
+  if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_RANLIB)
+    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_RANLIB ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_RANLIB} CACHE INTERNAL \"\")\n")
+  endif()
+  if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_HOST_COMPILER)#for languages that require C/C++ compiler to generate code
+    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_HOST_COMPILER ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_HOST_COMPILER} CACHE INTERNAL \"\")\n")
+  endif()
+endfunction(write_Language_Toolset)
 
 #.rst:
 #
@@ -1682,49 +1770,200 @@ endfunction(generate_Environment_Description_File)
 function(generate_Environment_Solution_File)
 set(file ${CMAKE_BINARY_DIR}/PID_Environment_Solution_Info.cmake)
 file(WRITE ${file} "")#reset the description
+
 file(APPEND ${file} "set(${PROJECT_NAME}_CROSSCOMPILATION ${${PROJECT_NAME}_CROSSCOMPILATION} CACHE INTERNAL \"\")\n")
+if(${PROJECT_NAME}_CROSSCOMPILATION)
+  file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_SYSTEM_NAME ${${PROJECT_NAME}_TARGET_SYSTEM_NAME} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR ${${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_SYSROOT ${${PROJECT_NAME}_TARGET_SYSROOT} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_STAGING ${${PROJECT_NAME}_TARGET_STAGING} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_LIBRARY_DIRS ${${PROJECT_NAME}_LIBRARY_DIRS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_INCLUDE_DIRS ${${PROJECT_NAME}_INCLUDE_DIRS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_PROGRAM_DIRS ${${PROJECT_NAME}_PROGRAM_DIRS} CACHE INTERNAL \"\")\n")
+endif()
 
-file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_SYSTEM_NAME ${${PROJECT_NAME}_TARGET_SYSTEM_NAME} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR ${${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_SYSROOT ${${PROJECT_NAME}_TARGET_SYSROOT} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_STAGING ${${PROJECT_NAME}_TARGET_STAGING} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_LIBRARY_DIRS ${${PROJECT_NAME}_LIBRARY_DIRS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_INCLUDE_DIRS ${${PROJECT_NAME}_INCLUDE_DIRS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_PROGRAM_DIRS ${${PROJECT_NAME}_PROGRAM_DIRS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION ${${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION} CACHE INTERNAL \"\")\n")
+if(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION)
+  file(APPEND ${file} "set(${PROJECT_NAME}_LINKER ${${PROJECT_NAME}_LINKER} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_AR ${${PROJECT_NAME}_AR} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_RANLIB ${${PROJECT_NAME}_RANLIB} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_NM ${${PROJECT_NAME}_NM} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_OBJDUMP ${${PROJECT_NAME}_OBJDUMP} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_OBJCOPY ${${PROJECT_NAME}_OBJCOPY} CACHE INTERNAL \"\")\n")
 
-foreach(lang IN ITEMS C CXX ASM Python Fortran CUDA)
-  if(NOT lang STREQUAL Python)
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_COMPILER ${${PROJECT_NAME}_${lang}_COMPILER} CACHE INTERNAL \"\")\n")
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_COMPILER_ID ${${PROJECT_NAME}_${lang}_COMPILER_ID} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_EXE_LINKER_FLAGS ${${PROJECT_NAME}_EXE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_MODULE_LINKER_FLAGS ${${PROJECT_NAME}_MODULE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_SHARED_LINKER_FLAGS ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_STATIC_LINKER_FLAGS ${${PROJECT_NAME}_STATIC_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
+endif()
 
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_COMPILER_FLAGS ${${PROJECT_NAME}_${lang}_COMPILER_FLAGS} CACHE INTERNAL \"\")\n")
-    if(lang STREQUAL CUDA)
-      file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_HOST_COMPILER ${${PROJECT_NAME}_${lang}_HOST_COMPILER} CACHE INTERNAL \"\")\n")
-    else()
-      file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_AR ${${PROJECT_NAME}_${lang}_AR} CACHE INTERNAL \"\")\n")
-      file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_RANLIB ${${PROJECT_NAME}_${lang}_RANLIB} CACHE INTERNAL \"\")\n")
-    endif()
-  else()
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_INTERPRETER ${${PROJECT_NAME}_${lang}_INTERPRETER} CACHE INTERNAL \"\")\n")
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_INCLUDE_DIRS ${${PROJECT_NAME}_${lang}_INCLUDE_DIRS} CACHE INTERNAL \"\")\n")
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_LIBRARY ${${PROJECT_NAME}_${lang}_LIBRARY}  CACHE INTERNAL \"\")\n")
-  endif()
+file(APPEND ${file} "set(${PROJECT_NAME}_LANGUAGES ${${PROJECT_NAME}_LANGUAGES} CACHE INTERNAL \"\")\n")
+foreach(lang IN LISTS ${PROJECT_NAME}_LANGUAGES)#default are C CXX ASM Python Fortran CUDA
+  file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_DEFAULT_TOOLSET ${${PROJECT_NAME}_${lang}_DEFAULT_TOOLSET} CACHE INTERNAL \"\")\n")
+  write_Language_Toolset(${file} ${lang} ${${PROJECT_NAME}_${lang}_DEFAULT_TOOLSET})
+  file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_ADDITIONAL_TOOLSETS ${${PROJECT_NAME}_${lang}_ADDITIONAL_TOOLSETS} CACHE INTERNAL \"\")\n")
+  foreach(toolset IN LISTS ${PROJECT_NAME}_${lang}_ADDITIONAL_TOOLSETS)
+    write_Language_Toolset(${file} ${lang} ${toolset})
+  endforeach()
 endforeach()
-file(APPEND ${file} "set(${PROJECT_NAME}_LINKER ${${PROJECT_NAME}_LINKER} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_AR ${${PROJECT_NAME}_AR} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_RANLIB ${${PROJECT_NAME}_RANLIB} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_NM ${${PROJECT_NAME}_NM} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_OBJDUMP ${${PROJECT_NAME}_OBJDUMP} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_OBJCOPY ${${PROJECT_NAME}_OBJCOPY} CACHE INTERNAL \"\")\n")
 
-file(APPEND ${file} "set(${PROJECT_NAME}_EXE_LINKER_FLAGS ${${PROJECT_NAME}_EXE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_MODULE_LINKER_FLAGS ${${PROJECT_NAME}_MODULE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_SHARED_LINKER_FLAGS ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_STATIC_LINKER_FLAGS ${${PROJECT_NAME}_STATIC_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
-
-file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR ${${PROJECT_NAME}_GENERATOR} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR_EXTRA ${${PROJECT_NAME}_GENERATOR_EXTRA} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR_TOOLSET ${${PROJECT_NAME}_GENERATOR_TOOLSET} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR_PLATFORM ${${PROJECT_NAME}_GENERATOR_PLATFORM} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR_INSTANCE ${${PROJECT_NAME}_GENERATOR_INSTANCE} CACHE INTERNAL \"\")\n")
+# Note : those two options should be considered when using Visual studio or Xcode with specific non default configurations
+if(${PROJECT_NAME}_GENERATOR_PLATFORM)
+  file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR_PLATFORM ${${PROJECT_NAME}_GENERATOR_PLATFORM} CACHE INTERNAL \"\")\n")
+endif()
+if(${PROJECT_NAME}_GENERATOR_TOOLSET)
+  file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR_TOOLSET ${${PROJECT_NAME}_GENERATOR_TOOLSET} CACHE INTERNAL \"\")\n")
+endif()
 endfunction(generate_Environment_Solution_File)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Language_Toolset| replace:: ``print_Language_Toolset``
+#  .. _print_Language_Toolset:
+#
+#  print_Language_Toolset
+#  ----------------------
+#
+#   .. command:: print_Language_Toolset(environment lang toolset)
+#
+#   Print the solution evaluated by an environment for a given toolset of a given language.
+#
+#     :environment: the name of target environment.
+#
+#     :lang: the label of target language
+#
+#     :toolset: the name of langauge toolset
+#
+function(print_Language_Toolset environment lang toolset)
+  #print the settings of the default language toolset
+  if(${environment}_${lang}_TOOLSET_${toolset}_COMPILER)#for compiled languages
+    if(${environment}_${lang}_TOOLSET_${toolset}_COMPILER_ID)
+      set(lang_str "${lang_str}    * compiler : ${${environment}_${lang}_TOOLSET_${toolset}_COMPILER} (id=${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_ID})\n")
+    else()
+      set(lang_str "${lang_str}    * compiler : ${${environment}_${lang}_TOOLSET_${toolset}_COMPILER}\n")
+    endif()
+  endif()
+  if(${environment}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS)
+    set(lang_str "${lang_str}    * compilation flags : ${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS}\n")
+  endif()
+  if(${environment}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS)
+    set(lang_str "${lang_str}    * standard library include dirs : ${${environment}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS}\n")
+  endif()
+  if(${environment}_${lang}_TOOLSET_${toolset}_LIBRARY)
+    set(lang_str "${lang_str}    * standard library : ${${environment}_${lang}_TOOLSET_${toolset}_LIBRARY}\n")
+  endif()
+  if(${environment}_${lang}_TOOLSET_${toolset}_INTERPRETER)
+    set(lang_str "${lang_str}    * interpreter : ${${environment}_${lang}_TOOLSET_${toolset}_INTERPRETER}\n")
+  endif()
+  if(${environment}_${lang}_TOOLSET_${toolset}_AR)
+    set(lang_str "${lang_str}    * archiver : ${${environment}_${lang}_TOOLSET_${toolset}_AR}\n")
+  endif()
+  if(${environment}_${lang}_TOOLSET_${toolset}_RANLIB)
+    set(lang_str "${lang_str}    * static libraries creator : ${${environment}_${lang}_TOOLSET_${toolset}_RANLIB}\n")
+  endif()
+  if(${environment}_${lang}_TOOLSET_${toolset}_HOST_COMPILER)#for languages that require C/C++ compiler to generate code
+    set(lang_str "${lang_str}    * host compiler : ${${environment}_${lang}_TOOLSET_${toolset}_HOST_COMPILER}\n")
+  endif()
+  message("${lang_str}")
+endfunction(print_Language_Toolset)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Evaluated_Environment| replace:: ``print_Evaluated_Environment``
+#  .. _print_Evaluated_Environment:
+#
+#  print_Evaluated_Environment
+#  ---------------------------
+#
+#   .. command:: print_Evaluated_Environment(environment)
+#
+#   Print the solution evaluated by an environment.
+#
+#     :environment: the name of target environment.
+#
+function(print_Evaluated_Environment environment)
+  message("[PID] description of environment ${environment} solution")
+  set(crosscomp_str)
+  if(${environment}_CROSSCOMPILATION)#when crosscompiling there are a few specific variables that may be set
+    set(crosscomp_str "- requires crosscompilation\n")
+    if(${environment}_TARGET_SYSTEM_NAME)
+      set(crosscomp_str "${crosscomp_str}  + target OS: ${${environment}_TARGET_SYSTEM_NAME}")
+    endif()
+    if(${environment}_TARGET_SYSTEM_PROCESSOR)
+      set(crosscomp_str "${crosscomp_str}  + target processor: ${${environment}_TARGET_SYSTEM_PROCESSOR}")
+    endif()
+    if(${environment}_TARGET_SYSROOT)
+      set(crosscomp_str "${crosscomp_str}  + sysroot: ${${environment}_TARGET_SYSROOT}")
+    endif()
+    if(${environment}_TARGET_STAGING)
+      set(crosscomp_str "${crosscomp_str}  + staging: ${${environment}_TARGET_STAGING}")
+    endif()
+    if(${environment}_LIBRARY_DIRS)
+      set(crosscomp_str "${crosscomp_str}  + system libraries directories: ${${environment}_LIBRARY_DIRS}")
+    endif()
+    if(${environment}_INCLUDE_DIRS)
+      set(crosscomp_str "${crosscomp_str}  + system include directories: ${${environment}_INCLUDE_DIRS}")
+    endif()
+    if(${environment}_PROGRAM_DIRS)
+      set(crosscomp_str "${crosscomp_str}  + system program directories: ${${environment}_PROGRAM_DIRS}")
+    endif()
+  endif()
+  if(crosscomp_str)
+    message("${crosscomp_str}")
+  endif()
+
+  #more on system wide configruation (not necessarily require crosscompilation)
+  if(${environment}_SYSTEM_WIDE_CONFIGURATION)
+    if(${environment}_LINKER)
+      message("- linker: ${${environment}_LINKER}")
+    endif()
+    if(${environment}_AR)
+      message("- static libraries archiver: ${${environment}_AR}")
+    endif()
+    if(${environment}_RANLIB)
+      message("- static libraries creator: ${${environment}_RANLIB}")
+    endif()
+    if(${environment}_NM)
+      message("- object symbols extractor: ${${environment}_NM}")
+    endif()
+    if(${environment}_OBJDUMP)
+      message("- object symbols explorer: ${${environment}_OBJDUMP}")
+    endif()
+    if(${environment}_OBJCOPY)
+      message("- object translator: ${${environment}_OBJCOPY}")
+    endif()
+    if(${environment}_EXE_LINKER_FLAGS)
+      message("- linker flags for executables: ${${environment}_EXE_LINKER_FLAGS}")
+    endif()
+    if(${environment}_MODULE_LINKER_FLAGS)
+      message("- linker flags for modules: ${${environment}_MODULE_LINKER_FLAGS}")
+    endif()
+    if(${environment}_SHARED_LINKER_FLAGS)
+      message("- linker flags for shared libraries: ${${environment}_SHARED_LINKER_FLAGS}")
+    endif()
+    if(${environment}_STATIC_LINKER_FLAGS)
+      message("- linker flags for static libraries: ${${environment}_STATIC_LINKER_FLAGS}")
+    endif()
+  endif()
+
+  #now getting all informations about supported languages
+  if(${environment}_LANGUAGES)
+    message("- configured languages:")
+    foreach(lang IN LISTS ${environment}_LANGUAGES)
+      set(lang_str "  + ${lang}:\n")
+      set(defaut_toolset ${${environment}_${lang}_DEFAULT_TOOLSET})
+      print_Language_Toolset(${environment} ${lang} ${${environment}_${lang}_DEFAULT_TOOLSET})
+      if(${environment}_${lang}_ADDITIONAL_TOOLSETS)
+        message("  ++ additionnal toolsets:")
+        foreach(toolset IN LISTS ${environment}_${lang}_ADDITIONAL_TOOLSETS)
+          print_Language_Toolset(${environment} ${lang} ${toolset})
+        endforeach()
+      endif()
+    endforeach()
+  endif()
+
+endfunction(print_Evaluated_Environment)
