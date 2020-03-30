@@ -60,6 +60,29 @@ if(NOT TARGET_PLATFORM AND DEFINED ENV{platform})
 	set(TARGET_PLATFORM $ENV{platform} CACHE INTERNAL "" FORCE)
 endif()
 
+if(NOT TARGET_PROC_TYPE AND DEFINED ENV{proc_type})
+	set(TARGET_PROC_TYPE $ENV{proc_type} CACHE INTERNAL "" FORCE)
+endif()
+
+if(NOT TARGET_PROC_ARCH AND DEFINED ENV{proc_arch})
+	set(TARGET_PROC_ARCH $ENV{proc_arch} CACHE INTERNAL "" FORCE)
+endif()
+
+if(NOT TARGET_OS AND DEFINED ENV{os})
+	set(TARGET_OS $ENV{os} CACHE INTERNAL "" FORCE)
+endif()
+
+if(NOT TARGET_ABI AND DEFINED ENV{abi})
+	if("$ENV{abi}" STREQUAL "abi98" OR "$ENV{abi}" STREQUAL "98")
+		set(TARGET_ABI CXX CACHE INTERNAL "" FORCE)
+	elseif("$ENV{abi}" STREQUAL "abi11" OR "$ENV{abi}" STREQUAL "11")
+		set(TARGET_ABI CXX11 CACHE INTERNAL "" FORCE)
+	else()
+		message("[PID] ERROR when using the command ${TARGET_COMMAND}, unknown ABI specified: $ENV{abi}. Use the argument \"abi\" with value 98 or 11.")
+		return()
+	endif()
+endif()
+
 if(NOT TARGET_DISTRIBUTION AND DEFINED ENV{distribution})
 	set(TARGET_DISTRIBUTION $ENV{distribution} CACHE INTERNAL "" FORCE)
 	#more on platform
@@ -71,13 +94,13 @@ endif()
 read_Profiles_Description_File(READ_SUCCESS) #reading information about profiles description
 
 # check inputs depending on the value of the "cmd" argument
-set(cmd_list "ls|mk|del|load|rst|add|rm")
+set(cmd_list "ls|mk|del|load|reset|add|rm")
 if(NOT TARGET_COMMAND MATCHES "^${cmd_list}$")
 	message(FATAL_ERROR "[PID] bad command \"${TARGET_COMMAND}\" used for profiles management. Allowed commands are: ${cmd_list}")
 	return()
 endif()
 
-if(NOT TARGET_COMMAND MATCHES "ls|rst")#except when listing profiles or resetting to defaultprofile, a profile name must be given
+if(NOT TARGET_COMMAND MATCHES "ls|reset")#except when listing profiles or resetting to defaultprofile, a profile name must be given
 	if(NOT TARGET_PROFILE)
 		if(TARGET_COMMAND MATCHES "add|rm")#add and rm commands apply by default to current profile
 			set(TARGET_PROFILE ${CURRENT_PROFILE} CACHE INTERNAL "")
@@ -104,26 +127,7 @@ if(NOT TARGET_COMMAND MATCHES "ls|rst")#except when listing profiles or resettin
 				set(TARGET_OS ${RES_OS} CACHE INTERNAL "" FORCE)
 			endif()
 			set(TARGET_ABI ${RES_ABI} CACHE INTERNAL "" FORCE)
-		else()
-			if(NOT TARGET_PROC_TYPE AND DEFINED ENV{proc_type})
-				set(TARGET_PROC_TYPE $ENV{proc_type} CACHE INTERNAL "" FORCE)
-			endif()
-			if(NOT TARGET_PROC_ARCH AND DEFINED ENV{proc_arch})
-				set(TARGET_PROC_ARCH $ENV{proc_arch} CACHE INTERNAL "" FORCE)
-			endif()
-			if(NOT TARGET_OS AND DEFINED ENV{os})
-				set(TARGET_OS $ENV{os} CACHE INTERNAL "" FORCE)
-			endif()
-			if(NOT TARGET_ABI AND DEFINED ENV{abi})
-				if("$ENV{abi}" STREQUAL "abi98" OR "$ENV{abi}" STREQUAL "98")
-					set(TARGET_ABI CXX CACHE INTERNAL "" FORCE)
-				elseif("$ENV{abi}" STREQUAL "abi11" OR "$ENV{abi}" STREQUAL "11")
-					set(TARGET_ABI CXX11 CACHE INTERNAL "" FORCE)
-				else()
-					message("[PID] ERROR when using the command ${TARGET_COMMAND}, unknown ABI specified: $ENV{abi}. Use the argument \"abi\" with value 98 or 11.")
-					return()
-				endif()
-			endif()
+
 		endif()
 	endif()
 endif()
@@ -195,7 +199,7 @@ elseif(TARGET_COMMAND STREQUAL "del")
 	if(CHANGED)
 		set(need_reconfigure TRUE)#reconfigrue if necessary
 	endif()
-elseif(TARGET_COMMAND STREQUAL "rst")
+elseif(TARGET_COMMAND STREQUAL "reset")
 	set(CURRENT_PROFILE "default" CACHE INTERNAL "")
 	set(need_reconfigure TRUE)#reconfigrue even if not necessarily mandatory
 

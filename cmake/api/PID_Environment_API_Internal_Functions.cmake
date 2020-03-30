@@ -58,53 +58,41 @@ function(reset_Environment_Description)
   #### reset global descriptive information ####
   #reset constraints on platform
   set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_DEFINED CACHE INTERNAL "")
-  set(${PROJECT_NAME}_ARCH_CONSTRAINT CACHE INTERNAL "")
-  set(${PROJECT_NAME}_TYPE_CONSTRAINT CACHE INTERNAL "")
-  set(${PROJECT_NAME}_OS_CONSTRAINT CACHE INTERNAL "")
-  set(${PROJECT_NAME}_ABI_CONSTRAINT CACHE INTERNAL "")
-  set(${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT CACHE INTERNAL "")
-  set(${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT CACHE INTERNAL "")
-  set(${PROJECT_NAME}_CONFIGURATION_CONSTRAINT CACHE INTERNAL "")
-  set(${PROJECT_NAME}_CHECK CACHE INTERNAL "")
-
-  #reset build environment description
+  set_Build_Environment_Platform("" "" "" "" "" "")
+  set(${PROJECT_NAME}_TARGET_INSTANCE CACHE INTERNAL "")
+  set(${PROJECT_NAME}_TARGET_SYSROOT CACHE INTERNAL "")
+  set(${PROJECT_NAME}_TARGET_STAGING CACHE INTERNAL "")
 
   # reset constraint that can be used to parameterize the environment
   set(${PROJECT_NAME}_ENVIRONMENT_CONSTRAINTS_DEFINED CACHE INTERNAL "")
   set(${PROJECT_NAME}_OPTIONAL_CONSTRAINTS CACHE INTERNAL "")
   set(${PROJECT_NAME}_REQUIRED_CONSTRAINTS CACHE INTERNAL "")
+  set(${PROJECT_NAME}_CHECK  CACHE INTERNAL "")
+
+  set(${PROJECT_NAME}_DEPENDENCIES CACHE INTERNAL "")
 
   # reset environment solutions
   if(${PROJECT_NAME}_SOLUTIONS GREATER 0)
     math(EXPR max "${${PROJECT_NAME}_SOLUTIONS}-1")
     foreach(sol RANGE ${max})#clean the memory
-      #reset all conditions for that solution
-      set(${PROJECT_NAME}_SOLUTION_${sol}_ARCH CACHE INTERNAL "")
-      set(${PROJECT_NAME}_SOLUTION_${sol}_TYPE CACHE INTERNAL "")
-      set(${PROJECT_NAME}_SOLUTION_${sol}_OS CACHE INTERNAL "")
-      set(${PROJECT_NAME}_SOLUTION_${sol}_ABI CACHE INTERNAL "")
-      set(${PROJECT_NAME}_SOLUTION_${sol}_DISTRIBUTION CACHE INTERNAL "")
-      set(${PROJECT_NAME}_SOLUTION_${sol}_DISTRIB_VERSION CACHE INTERNAL "")
-      #reset known reactions if conditions are met
-      set(${PROJECT_NAME}_SOLUTION_${sol}_CONFIGURE CACHE INTERNAL "")
-      set(${PROJECT_NAME}_SOLUTION_${sol}_DEPENDENCIES CACHE INTERNAL "")
+      #reset all info for that solution
+      set_Environment_Solution(${sol} "" "" "" "" "" "" "")
     endforeach()
   endif()
-  set(${PROJECT_NAME}_SOLUTIONS "0" CACHE INTERNAL "")
+  set(${PROJECT_NAME}_SOLUTIONS 0 CACHE INTERNAL "")
 
   #### reset computed information for build ####
   #reset compiler settings issue from finding procedure
-  foreach(lang IN ITEMS C CXX ASM Fortran CUDA)
-    set(${PROJECT_NAME}_${lang}_COMPILER CACHE INTERNAL "")#full path to compiler in use
-    set(${PROJECT_NAME}_${lang}_COMPILER_ID CACHE INTERNAL "")#full path to compiler in use
-    set(${PROJECT_NAME}_${lang}_COMPILER_FLAGS CACHE INTERNAL "")#compiler flags
-    if(lang STREQUAL "CUDA")
-      set(${PROJECT_NAME}_${lang}_HOST_COMPILER CACHE INTERNAL "")
-    else()
-      set(${PROJECT_NAME}_${lang}_AR CACHE INTERNAL "")# compiler AR and RANLIB tools
-      set(${PROJECT_NAME}_${lang}_RANLIB CACHE INTERNAL "")# compiler AR and RANLIB tools
+  foreach(lang IN LISTS ${PROJECT_NAME}_LANGUAGES)#C CXX ASM Fortran CUDA
+    if(${PROJECT_NAME}_${lang}_TOOLSETS GREATER 0)#some toolset already defined
+      math(EXPR max_toolset "${${PROJECT_NAME}_${lang}_TOOLSETS}-1")
+      foreach(toolset RANGE ${max_toolset})
+        set_Language_Toolset(${lang} ${toolset} "" "" "" "" "" "" "" "" "")
+      endforeach()
     endif()
+    set(${PROJECT_NAME}_${lang}_TOOLSETS 0 CACHE INTERNAL "")
   endforeach()
+
   set(${PROJECT_NAME}_LINKER CACHE INTERNAL "")#full path to linker tool
   set(${PROJECT_NAME}_AR CACHE INTERNAL "")
   set(${PROJECT_NAME}_RANLIB CACHE INTERNAL "")
@@ -116,18 +104,9 @@ function(reset_Environment_Description)
   set(${PROJECT_NAME}_SHARED_LINKER_FLAGS CACHE INTERNAL "")
   set(${PROJECT_NAME}_STATIC_LINKER_FLAGS CACHE INTERNAL "")
 
-  #Python being used as a scripting language it defines an interpreter not a compiler
-  set(${PROJECT_NAME}_Python_INTERPRETER CACHE INTERNAL "")#full path to python executable
-  set(${PROJECT_NAME}_Python_INCLUDE_DIRS CACHE INTERNAL "")# include for python executable
-  set(${PROJECT_NAME}_Python_LIBRARY CACHE INTERNAL "")#path to python library
-
   # variable to manage generator in use
-  set(${PROJECT_NAME}_GENERATOR CACHE INTERNAL "")
-  set(${PROJECT_NAME}_MAKE_PROGRAM CACHE INTERNAL "")
-  set(${PROJECT_NAME}_GENERATOR_EXTRA CACHE INTERNAL "")
   set(${PROJECT_NAME}_GENERATOR_TOOLSET CACHE INTERNAL "")
   set(${PROJECT_NAME}_GENERATOR_PLATFORM CACHE INTERNAL "")
-  set(${PROJECT_NAME}_GENERATOR_INSTANCE CACHE INTERNAL "")
 endfunction(reset_Environment_Description)
 
 
@@ -205,7 +184,7 @@ endmacro(declare_Environment_Global_Cache_Options)
 #  define_Build_Environment_Platform
 #  ---------------------------------
 #
-#   .. command:: define_Build_Environment_Platform(type_constraint arch_constraint os_constraint abi_constraint distribution distrib_version config check_script)
+#   .. command:: define_Build_Environment_Platform(type_constraint arch_constraint os_constraint abi_constraint distribution distrib_version)
 #
 #   Define platform targetted by the curren environment. It consists in setting adequate internal cache variables.
 #
@@ -221,12 +200,43 @@ endmacro(declare_Environment_Global_Cache_Options)
 #
 #      :distrib_version: constraint on operating system distribution in use (e.g. for ubuntu 16.04).
 #
-#      :config: all additional platform configuration that host must match to be also the target.
-#
-#      :check_script: path to the check script used to test specific build variables on host in order to know if host really matches.
-#
-function(define_Build_Environment_Platform type_constraint arch_constraint os_constraint abi_constraint distribution distrib_version config check_script)
+function(define_Build_Environment_Platform type_constraint arch_constraint os_constraint abi_constraint distribution distrib_version)
   set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_DEFINED TRUE CACHE INTERNAL "")
+  set_Build_Environment_Platform( "${type_constraint}"
+                                  "${arch_constraint}"
+                                  "${os_constraint}"
+                                  "${abi_constraint}"
+                                  "${distribution}"
+                                  "${distrib_version}")
+endfunction(define_Build_Environment_Platform)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Build_Environment_Platform| replace:: ``set_Build_Environment_Platform``
+#  .. _set_Build_Environment_Platform:
+#
+#  set_Build_Environment_Platform
+#  ---------------------------------
+#
+#   .. command:: set_Build_Environment_Platform(type_constraint arch_constraint os_constraint abi_constraint distribution distrib_version)
+#
+#   Auxiliary function to set platform constraints.
+#
+#      :type_constraint: constraint on processor architecture type constraint (x86 or arm for instance)
+#
+#      :arch_constraint: constraint on processor architecture (16, 32, 64)
+#
+#      :os_constraint: constraint on operating system (linux, macos, windows).
+#
+#      :abi_constraint: constraint on abi in use (98 or 11).
+#
+#      :distribution: constraint on operating system distribution in use (e.g. ubuntu, debian).
+#
+#      :distrib_version: constraint on operating system distribution in use (e.g. for ubuntu 16.04).
+#
+function(set_Build_Environment_Platform type_constraint arch_constraint os_constraint abi_constraint distribution distrib_version)
   set(${PROJECT_NAME}_TYPE_CONSTRAINT ${type_constraint} CACHE INTERNAL "")
   set(${PROJECT_NAME}_ARCH_CONSTRAINT ${arch_constraint} CACHE INTERNAL "")
   set(${PROJECT_NAME}_OS_CONSTRAINT ${os_constraint} CACHE INTERNAL "")
@@ -234,12 +244,12 @@ function(define_Build_Environment_Platform type_constraint arch_constraint os_co
     set(${PROJECT_NAME}_ABI_CONSTRAINT CXX CACHE INTERNAL "")
   elseif(abi_constraint STREQUAL "abi11" OR abi_constraint STREQUAL "11" OR abi_constraint STREQUAL "CXX11")
     set(${PROJECT_NAME}_ABI_CONSTRAINT CXX11 CACHE INTERNAL "")
+  else()
+    set(${PROJECT_NAME}_ABI_CONSTRAINT CACHE INTERNAL "")
   endif()
   set(${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT ${distribution} CACHE INTERNAL "")
   set(${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT ${distrib_version} CACHE INTERNAL "")
-  set(${PROJECT_NAME}_CONFIGURATION_CONSTRAINT ${config} CACHE INTERNAL "")
-  set(${PROJECT_NAME}_CHECK ${check_script} CACHE INTERNAL "")
-endfunction(define_Build_Environment_Platform)
+endfunction(set_Build_Environment_Platform)
 
 #.rst:
 #
@@ -251,7 +261,7 @@ endfunction(define_Build_Environment_Platform)
 #  define_Environment_Constraints
 #  -------------------------------
 #
-#   .. command:: define_Environment_Constraints(optional_vars required_vars)
+#   .. command:: define_Environment_Constraints(optional_vars required_vars check_script)
 #
 #   Define all constraint that can be used with the current environment, in order to configure it.
 #
@@ -259,23 +269,87 @@ endfunction(define_Build_Environment_Platform)
 #
 #      :required_vars: the list of required variables that specify constraints. Required means that user must provide a value for these variables.
 #
-function(define_Environment_Constraints optional_vars required_vars)
+#      :check_script: the path (relative to src folder) of the check script used to determine if current CMake configuration matches constraints.
+#
+function(define_Environment_Constraints optional_vars required_vars check_script)
   set(${PROJECT_NAME}_ENVIRONMENT_CONSTRAINTS_DEFINED TRUE CACHE INTERNAL "")
   set(${PROJECT_NAME}_OPTIONAL_CONSTRAINTS ${optional_vars} CACHE INTERNAL "")
   set(${PROJECT_NAME}_REQUIRED_CONSTRAINTS ${required_vars} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_CHECK ${check_script} CACHE INTERNAL "")
 endfunction(define_Environment_Constraints)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |define_Environment_Solution_Procedure| replace:: ``define_Environment_Solution_Procedure``
-#  .. _define_Environment_Solution_Procedure:
+#  .. |set_Environment_Solution| replace:: ``set_Environment_Solution``
+#  .. _set_Environment_Solution:
 #
-#  define_Environment_Solution_Procedure
-#  -------------------------------------
+#  set_Environment_Solution
+#  ------------------------
 #
-#   .. command:: define_Environment_Solution_Procedure(type_constraint arch_constraint os_constraint abi_constraint distribution version check_script configure_script)
+#   .. command:: set_Environment_Solution(index type_constraint arch_constraint os_constraint abi_constraint distribution version check_script configure_script)
+#
+#    Auxisialry function to set the value of a solution.
+#
+#      :index: index of the solution to set
+#
+#      :type_constraint: filters processor architecture type (arm, x86)
+#
+#      :arch_constraint: filters processor architecture (32, 64)
+#
+#      :os_constraint: filters operating system
+#
+#      :abi_constraint: filters default c++ abi
+#
+#      :distribution: filters the distribution of the host.
+#
+#      :version: filters the version of the distribution.
+#
+#      :configure_script: path relative to src folder of the script file used to configure host in order to make it conforms to environment settings
+#
+function(set_Environment_Solution index type_constraint arch_constraint os_constraint abi_constraint distribution version configure_script)
+  set(${PROJECT_NAME}_SOLUTION_${index}_TYPE ${type_constraint} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_SOLUTION_${index}_ARCH ${arch_constraint} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_SOLUTION_${index}_OS ${os_constraint} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_SOLUTION_${index}_ABI ${abi_constraint} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_SOLUTION_${index}_DISTRIBUTION ${distribution} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_SOLUTION_${index}_DISTRIB_VERSION ${version} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_SOLUTION_${index}_CONFIGURE ${configure_script} CACHE INTERNAL "")
+endfunction(set_Environment_Solution)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Environment_Dependency| replace:: ``add_Environment_Dependency``
+#  .. _add_Environment_Dependency:
+#
+#  add_Environment_Dependency
+#  --------------------------
+#
+#   .. command:: add_Environment_Dependency(dependency)
+#
+#    Auxiliary function to add a dependency to the environment.
+#
+#      :environment_expr: environment constraint expression
+#
+function(add_Environment_Dependency environment_expr)
+  append_Unique_In_Cache(${PROJECT_NAME}_DEPENDENCIES ${environment_expr})
+endfunction(add_Environment_Dependency)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Environment_Solution_Procedure| replace:: ``add_Environment_Solution_Procedure``
+#  .. _add_Environment_Solution_Procedure:
+#
+#  add_Environment_Solution_Procedure
+#  ----------------------------------
+#
+#   .. command:: add_Environment_Solution_Procedure(type_constraint arch_constraint os_constraint abi_constraint distribution version check_script configure_script)
 #
 #    Define a new solution for configuring the environment.
 #
@@ -293,20 +367,19 @@ endfunction(define_Environment_Constraints)
 #
 #      :configure_script: path relative to src folder of the script file used to configure host in order to make it conforms to environment settings
 #
-#      :dependencies: list of dependencies to other environments
-#
-function(define_Environment_Solution_Procedure type_constraint arch_constraint os_constraint abi_constraint distribution version configure_script dependencies)
-  set(${PROJECT_NAME}_SOLUTION_${${PROJECT_NAME}_SOLUTIONS}_TYPE ${type_constraint} CACHE INTERNAL "")
-  set(${PROJECT_NAME}_SOLUTION_${${PROJECT_NAME}_SOLUTIONS}_ARCH ${arch_constraint} CACHE INTERNAL "")
-  set(${PROJECT_NAME}_SOLUTION_${${PROJECT_NAME}_SOLUTIONS}_OS ${os_constraint} CACHE INTERNAL "")
-  set(${PROJECT_NAME}_SOLUTION_${${PROJECT_NAME}_SOLUTIONS}_ABI ${abi_constraint} CACHE INTERNAL "")
-  set(${PROJECT_NAME}_SOLUTION_${${PROJECT_NAME}_SOLUTIONS}_DISTRIBUTION ${distribution} CACHE INTERNAL "")
-  set(${PROJECT_NAME}_SOLUTION_${${PROJECT_NAME}_SOLUTIONS}_DISTRIB_VERSION ${version} CACHE INTERNAL "")
-  set(${PROJECT_NAME}_SOLUTION_${${PROJECT_NAME}_SOLUTIONS}_CONFIGURE ${configure_script} CACHE INTERNAL "")
-  set(${PROJECT_NAME}_SOLUTION_${${PROJECT_NAME}_SOLUTIONS}_DEPENDENCIES ${dependencies} CACHE INTERNAL "")
+function(add_Environment_Solution_Procedure type_constraint arch_constraint os_constraint abi_constraint distribution version configure_script)
+  set_Environment_Solution(${${PROJECT_NAME}_SOLUTIONS}
+                          "${type_constraint}"
+                          "${arch_constraint}"
+                          "${os_constraint}"
+                          "${abi_constraint}"
+                          "${distribution}"
+                          "${version}"
+                          "${configure_script}")
   math(EXPR temp "${${PROJECT_NAME}_SOLUTIONS}+1")
   set(${PROJECT_NAME}_SOLUTIONS ${temp} CACHE INTERNAL "")
-endfunction(define_Environment_Solution_Procedure)
+endfunction(add_Environment_Solution_Procedure)
+
 
 #.rst:
 #
@@ -387,22 +460,27 @@ macro(build_Environment_Project)
   evaluate_Generator()
   evaluate_Environment_Platform(HOST_MATCHES_TARGET)
   if(NOT HOST_MATCHES_TARGET)#if host does not match all constraints -> we need to configure the toochain using available solutions
-    #now evaluate current environment regarding
-    set(possible_solution FALSE)
-    if(${PROJECT_NAME}_SOLUTIONS GREATER 0)
-      math(EXPR max "${${PROJECT_NAME}_SOLUTIONS}-1")
-      foreach(index RANGE ${max})
-        is_Environment_Solution_Eligible(SOL_POSSIBLE ${index})
-        if(SOL_POSSIBLE)
-          evaluate_Environment_Solution(EVAL_RESULT ${index})
-          if(EVAL_RESULT)# solution check is OK, the solution can be used
-            generate_Environment_Toolchain_File(${index})
-            set(possible_solution TRUE)
-            break()
-          endif()
+    message("[PID] INFO: current host configuration does not satisfy constraints on platform")
+  endif()
+  evaluate_Environment_Dependencies(EVAL_DEPS)
+  if(NOT EVAL_DEPS)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot configure host with environment ${PROJECT_NAME} because there is no valid solution for its dependencies.")
+    return()
+  endif()
+  #now evaluate current environment regarding
+  set(possible_solution FALSE)
+  if(${PROJECT_NAME}_SOLUTIONS GREATER 0)
+    math(EXPR max "${${PROJECT_NAME}_SOLUTIONS}-1")
+    foreach(index RANGE ${max})
+      is_Environment_Solution_Eligible(SOL_POSSIBLE ${index})
+      if(SOL_POSSIBLE)
+        evaluate_Environment_Solution(EVAL_RESULT ${index})
+        if(EVAL_RESULT)# solution check is OK, the solution can be used
+          set(possible_solution TRUE)
+          break()
         endif()
-      endforeach()
-    endif()
+      endif()
+    endforeach()
     if(NOT possible_solution)
       message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot configure host with environment ${PROJECT_NAME}. No valid solution found.")
       return()
@@ -410,8 +488,10 @@ macro(build_Environment_Project)
   endif()
 
   #generate workspace configuration files only if really usefull
-  generate_Environment_Description_File()
-  generate_Environment_Solution_File()
+  deduce_Platform_Variables()
+  generate_Environment_Solution_File()#generate the global solution file
+  generate_Environment_Toolchain_File()#from global solution generate the toolchain file
+  generate_Environment_Description_File()#finally generate the description file used at workspace level
 endmacro(build_Environment_Project)
 
 #.rst:
@@ -584,6 +664,114 @@ function(generate_Environment_Inputs_File RESULT environment)
   set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(generate_Environment_Inputs_File)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Platform_Constraints_Definitions| replace:: ``get_Platform_Constraints_Definitions``
+#  .. _get_Platform_Constraints_Definitions:
+#
+#  get_Platform_Constraints_Definitions
+#  ------------------------------------
+#
+#   .. command:: get_Platform_Constraints_Definitions(RESULT_DEFS environment)
+#
+#     Get the list of CMake definitions used to set platform related constraints.
+#
+#     :environment: the name of the environment.
+#
+#     :instance: giving name of the instance.
+#
+#     :sysroot: giving path to the sysroot.
+#
+#     :staging: giving path to the staging area.
+#
+#     :proc_type: constraint on type of processor.
+#
+#     :proc_arch: constraint on architecture of processor.
+#
+#     :os: constraint on operating system.
+#
+#     :abi: constraint on C++ ABI.
+#
+#     :distrib: constraint on operating system's distribution.
+#
+#     :distrib_version: constraint on version of operating system's distribution.
+#
+#     :RESULT_DEFS: the output variable containing the list of CMake definitions to pass to configuration process.
+#
+function(get_Platform_Constraints_Definitions environment instance sysroot staging proc_type proc_arch os abi distrib distrib_version)
+  set(result_list)
+  if(instance)
+    list(APPEND list_of_defs -DFORCE_${environment}_TARGET_INSTANCE=${instance})
+  endif()
+  if(sysroot)
+    list(APPEND list_of_defs -DFORCE_${environment}_TARGET_SYSROOT=${sysroot})
+  endif()
+  if(staging)
+    list(APPEND list_of_defs -DFORCE_${environment}_TARGET_STAGING=${staging})
+  endif()
+  if(proc_type)
+    list(APPEND result_list -DFORCE_${environment}_TYPE_CONSTRAINT=${proc_type})
+  endif()
+  if(proc_arch)
+    list(APPEND result_list -DFORCE_${environment}_ARCH_CONSTRAINT=${proc_arch})
+  endif()
+  if(os)
+    list(APPEND result_list -DFORCE_${environment}_OS_CONSTRAINT=${os})
+  endif()
+  if(abi)
+    list(APPEND result_list -DFORCE_${environment}_ABI_CONSTRAINT=${abi})
+  endif()
+  if(distrib)
+    list(APPEND result_list -DFORCE_${environment}_DISTRIBUTION_CONSTRAINT=${distrib})
+  endif()
+  if(distrib_version)
+    list(APPEND result_list -DFORCE_${environment}_DISTRIB_VERSION_CONSTRAINT=${distrib_version})
+  endif()
+  #configuration and chgeck scripts are purely local information
+  set(${RESULT_DEFS} ${result_list} PARENT_SCOPE)
+endfunction(get_Platform_Constraints_Definitions)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |prepare_Environment_Arguments| replace:: ``prepare_Environment_Arguments``
+#  .. _prepare_Config_Arguments:
+#
+#  prepare_Environment_Arguments
+#  -------------------------------
+#
+#   .. command:: prepare_Environment_Arguments(LIST_OF_DEFS environment arguments)
+#
+#     Set the variables corresponding to environment arguments in the parent scope.
+#
+#     :environment: the name of the environment to be checked.
+#
+#     :arguments: the parent scope variable containing the list of arguments generated from parse_System_Check_Constraints.
+#
+#     :LIST_OF_DEFS: the output variable containing the list of CMake definitions to pass to configuration process.
+#
+function(prepare_Environment_Arguments LIST_OF_DEFS environment arguments)
+  if(NOT arguments OR NOT ${arguments})
+    return()
+  endif()
+  set(argument_couples ${${arguments}})
+  set(result_list)
+  while(argument_couples)
+    list(GET argument_couples 0 name)
+    list(GET argument_couples 1 value)
+    list(REMOVE_AT argument_couples 0 1)#update the list of arguments in parent scope
+    string(REPLACE " " "" VAL_LIST "${value}")#remove the spaces in the string if any
+    string(REPLACE ";" "," VAL_LIST "${VAL_LIST}")#generate an argument list (with "," delim) from a cmake list (with ";" as delimiter)
+    #generate the variable
+    list(APPEND result_list "-DVAR_${name}=${VAL_LIST}")
+  endwhile()
+  set(${LIST_OF_DEFS} ${result_list} PARENT_SCOPE)
+endfunction(prepare_Environment_Arguments)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -633,13 +821,14 @@ if(NOT FILE_EXISTS)
 endif()
 
 include(${environment_build_folder}/PID_Inputs.cmake)
+
 # 1.3 for each variable, look if a corresponfing environment variable exists and if yes create the CMake definition to pass to environment
 set(list_of_defs)
 foreach(var IN LISTS ${environment}_INPUTS)
   if(DEFINED ENV{${var}})# an environment variable is defined for that constraint
     string(REPLACE " " "" VAL_LIST "$ENV{${var}}")#remove the spaces in the string if any
     string(REPLACE ";" "," VAL_LIST "${VAL_LIST}")#generate an argument list (with "," delim) from a cmake list (with ";" as delimiter)
-    list(APPEND list_of_defs -DVAR_${var}=\"${VAL_LIST}\")
+    list(APPEND list_of_defs "-DVAR_${var}=${VAL_LIST}")
   else()
     list(APPEND list_of_defs -U VAR_${var})
   endif()
@@ -647,37 +836,13 @@ endforeach()
 # 2. reconfigure the environment
 
 # 2.1 add specific variables like for sysroot, staging and generator in the list of definitions
-if(instance)
-  list(APPEND list_of_defs -DFORCED_INSTANCE=${instance})
-endif()
-if(sysroot)
-  list(APPEND list_of_defs -DFORCED_SYSROOT=${sysroot})
-endif()
-if(staging)
-  list(APPEND list_of_defs -DFORCED_STAGING=${staging})
-endif()
-if(type)
-  list(APPEND list_of_defs -DFORCED_PROC_TYPE=${type})
-endif()
-if(arch)
-  list(APPEND list_of_defs -DFORCED_PROC_ARCH=${arch})
-endif()
-if(os)
-  list(APPEND list_of_defs -DFORCED_OS=${os})
-endif()
-if(abi)
-  list(APPEND list_of_defs -DFORCED_ABI=${abi})
-endif()
-if(distribution)
-  list(APPEND list_of_defs -DFORCED_DISTRIB=${distribution})
-endif()
-if(distrib_version)
-  list(APPEND list_of_defs -DFORCED_DISTRIB_VERSION=${distrib_version})
-endif()
+get_Platform_Constraints_Definitions(PLATFORM_DEFS ${environment} "${instance}" "${sysroot}" "${staging}"
+                                     "${type}" "${arch}" "${os}" "${abi}" "${distribution}" "${distrib_version}")
 
 # 2.2 reconfigure the environment with new definitions (user and specific variables) and evaluate it againts host
 execute_process(COMMAND ${CMAKE_COMMAND}
                 -DEVALUATION_RUN=TRUE
+                ${PLATFORM_DEFS}
                 ${list_of_defs}
                 ..
                 WORKING_DIRECTORY ${environment_build_folder}
@@ -704,7 +869,7 @@ endfunction(evaluate_Environment_From_Script)
 #
 #   .. command:: evaluate_Environment(EVAL_OK environment)
 #
-#     configure the environment with platform variables adn arguments coming from current environment (or user).
+#     configure the environment with platform variables and arguments coming from current environment (or user).
 #
 #      :environment: the name of the target environment.
 #
@@ -722,8 +887,16 @@ file(REMOVE ${env_build_folder}/CMakeCache.txt ${env_build_folder}/PID_Toolchain
 
 #build the list of variables that will be passed to configuration process
 prepare_Environment_Arguments(LIST_OF_DEFS_ARGS ${environment} list_of_args)
-prepare_Platform_Constraints_Definitions(${environment} LIST_OF_DEFS_PLATFORM)
-execute_process(COMMAND ${CMAKE_COMMAND} -DEVALUATION_RUN=TRUE ${LIST_OF_DEFS_ARGS} ${LIST_OF_DEFS_PLATFORM} ..
+get_Platform_Constraints_Definitions(PLATFORM_DEFS ${environment}
+        "${${PROJECT_NAME}_TARGET_INSTANCE}" "${${PROJECT_NAME}_TARGET_SYSROOT}" "${${PROJECT_NAME}_TARGET_STAGING}"
+        "${${PROJECT_NAME}_TYPE_CONSTRAINT}" "${${PROJECT_NAME}_ARCH_CONSTRAINT}"
+        "${${PROJECT_NAME}_OS_CONSTRAINT}" "${${PROJECT_NAME}_ABI_CONSTRAINT}"
+        "${${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT}" "${${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT}")
+
+execute_process(COMMAND ${CMAKE_COMMAND}
+                        -DEVALUATION_RUN=TRUE
+                        ${LIST_OF_DEFS_ARGS}
+                        ${PLATFORM_DEFS} ..
                 WORKING_DIRECTORY ${env_build_folder})#configure, then build
 
 # 2) => it should produce a resulting solution info file => including this file locally to get all definitions then apply them to local variables (overwritting).
@@ -735,77 +908,98 @@ if(NOT EXISTS ${env_build_folder}/PID_Environment_Solution_Info.cmake)
   return()
 endif()
 include(${env_build_folder}/PID_Environment_Solution_Info.cmake)
-set_Build_Variables_From_Environment(${environment})
+import_Solution_From_Dependency(${environment})
 set(${EVAL_OK} TRUE PARENT_SCOPE)
 endfunction(evaluate_Environment)
 
 
-function(set_Build_Variables_From_Environment environment)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |import_Solution_From_Dependency| replace:: ``import_Solution_From_Dependency``
+#  .. _import_Solution_From_Dependency:
+#
+#  import_Solution_From_Dependency
+#  -------------------------------
+#
+#   .. command:: import_Solution_From_Dependency(environment)
+#
+#     Impport locally the solution provided by a dependency.
+#
+#      :environment: the name of the dependency.
+#
+function(import_Solution_From_Dependency environment)
   if(${environment}_CROSSCOMPILATION)
     set(${PROJECT_NAME}_CROSSCOMPILATION ${${environment}_CROSSCOMPILATION} CACHE INTERNAL "")
+    if(NOT ${PROJECT_NAME}_TARGET_SYSROOT AND ${environment}_TARGET_SYSROOT)#only if value not set at upper level !
+      set(${PROJECT_NAME}_TARGET_SYSROOT ${${environment}_TARGET_SYSROOT} CACHE INTERNAL "")
+    endif()
+    if(NOT ${PROJECT_NAME}_TARGET_STAGING AND ${environment}_TARGET_STAGING)#only if value not set at upper level !
+      set(${PROJECT_NAME}_TARGET_STAGING ${${environment}_TARGET_STAGING} CACHE INTERNAL "")
+    endif()
   endif()
-  if(${environment}_TARGET_SYSTEM_NAME)
-    set(${PROJECT_NAME}_TARGET_SYSTEM_NAME ${${environment}_TARGET_SYSTEM_NAME} CACHE INTERNAL "")
-  endif()
-  if(${environment}_TARGET_SYSTEM_PROCESSOR)
-    set(${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR ${${environment}_TARGET_SYSTEM_PROCESSOR} CACHE INTERNAL "")
-  endif()
-  if(NOT ${PROJECT_NAME}_TARGET_SYSROOT AND ${environment}_TARGET_SYSROOT)#only if value not forced by user !
-    set(${PROJECT_NAME}_TARGET_SYSROOT ${${environment}_TARGET_SYSROOT} CACHE INTERNAL "")
-  endif()
-  if(NOT ${PROJECT_NAME}_TARGET_STAGING AND ${environment}_TARGET_STAGING)#only if value not forced by user !
-    set(${PROJECT_NAME}_TARGET_STAGING ${${environment}_TARGET_STAGING} CACHE INTERNAL "")
+  if(NOT ${PROJECT_NAME}_TARGET_INSTANCE AND ${environment}_TARGET_INSTANCE)#only if value not set at upper level !
+    set(${PROJECT_NAME}_TARGET_INSTANCE ${${environment}_TARGET_INSTANCE} CACHE INTERNAL "")
   endif()
 
-  foreach(lang IN ITEMS C CXX ASM Fortran CUDA Python)
-    if(NOT lang STREQUAL Python)
-      if(${environment}_${lang}_COMPILER)
-        set(${PROJECT_NAME}_${lang}_COMPILER ${${environment}_${lang}_COMPILER} CACHE INTERNAL "")
-        set(${PROJECT_NAME}_${lang}_COMPILER_ID ${${environment}_${lang}_COMPILER_ID} CACHE INTERNAL "")
-      endif()
-      if(${environment}_${lang}_COMPILER_FLAGS)
-        append_Unique_In_Cache(${PROJECT_NAME}_${lang}_COMPILER_FLAGS "${${environment}_${lang}_COMPILER_FLAGS}" CACHE INTERNAL "")
-      endif()
-      if(lang STREQUAL CUDA)
-        if(${environment}_${lang}_HOST_COMPILER)
-          set(${PROJECT_NAME}_${lang}_HOST_COMPILER ${${environment}_${lang}_HOST_COMPILER} CACHE INTERNAL "")
-        endif()
-      else()
-        if(${environment}_${lang}_AR)
-          set(${PROJECT_NAME}_${lang}_AR ${${environment}_${lang}_AR} CACHE INTERNAL "")
-        endif()
-        if(${environment}_${lang}_RANLIB)
-          set(${PROJECT_NAME}_${lang}_RANLIB ${${environment}_${lang}_RANLIB} CACHE INTERNAL "")
-        endif()
-      endif()
-    else()
-      if(${environment}_${lang}_INTERPRETER)
-        set(${PROJECT_NAME}_${lang}_INTERPRETER ${${environment}_${lang}_INTERPRETER} CACHE INTERNAL "")
-      endif()
-      if(${environment}_${lang}_INCLUDE_DIRS)
-        append_Unique_In_Cache(${PROJECT_NAME}_${lang}_INCLUDE_DIRS "${${environment}_${lang}_INCLUDE_DIRS}" CACHE INTERNAL "")
-      endif()
-      if(${environment}_${lang}_LIBRARY)
-        set(${PROJECT_NAME}_${lang}_LIBRARY ${${environment}_${lang}_LIBRARY} CACHE INTERNAL "")
-      endif()
-    endif()
+  foreach(lang IN LISTS ${environment}_LANGUAGES)
+    math(EXPR max_toolsets "${${environment}_${lang}_TOOLSETS}-1")
+    foreach(toolset RANGE ${max_toolsets})
+      add_Language_Toolset(${lang} FALSE
+                          "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER}"
+                          "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_ID}"
+                          "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_AR}"
+                          "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB}"
+                          "\"${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS}\""
+                          "${${environment}_${lang}_TOOLSET_${toolset}_INTERPRETER}"
+                          "${${environment}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS}"
+                          "${${environment}_${lang}_TOOLSET_${toolset}_LIBRARY}"
+                          "${${environment}_${lang}_TOOLSET_${toolset}_HOST_COMPILER}"
+      )
+    endforeach()
   endforeach()
+
   if(${environment}_LINKER)
+    if(${PROJECT_NAME}_LINKER)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : the system linker in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_LINKER}")
+      return()
+    endif()
     set(${PROJECT_NAME}_LINKER ${${environment}_LINKER} CACHE INTERNAL "")
   endif()
   if(${environment}_AR)
+    if(${PROJECT_NAME}_AR)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : the system archiver in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_AR}")
+      return()
+    endif()
     set(${PROJECT_NAME}_AR ${${environment}_AR} CACHE INTERNAL "")
   endif()
   if(${environment}_NM)
+    if(${PROJECT_NAME}_NM)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : the system naming tool in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_NM}")
+      return()
+    endif()
     set(${PROJECT_NAME}_NM ${${environment}_NM} CACHE INTERNAL "")
   endif()
   if(${environment}_RANLIB)
+    if(${PROJECT_NAME}_RANLIB)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : the system static libraries creator tool in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_RANLIB}")
+      return()
+    endif()
     set(${PROJECT_NAME}_RANLIB ${${environment}_RANLIB} CACHE INTERNAL "")
   endif()
   if(${environment}_OBJDUMP)
+    if(${PROJECT_NAME}_OBJDUMP)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : the system objdump tool in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_OBJDUMP}")
+      return()
+    endif()
     set(${PROJECT_NAME}_OBJDUMP ${${environment}_OBJDUMP} CACHE INTERNAL "")
   endif()
   if(${environment}_OBJCOPY)
+    if(${PROJECT_NAME}_OBJCOPY)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : the system objcopy tool in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_OBJCOPY}")
+      return()
+    endif()
     set(${PROJECT_NAME}_OBJCOPY ${${environment}_OBJCOPY} CACHE INTERNAL "")
   endif()
 
@@ -830,107 +1024,22 @@ function(set_Build_Variables_From_Environment environment)
   if(${environment}_STATIC_LINKER_FLAGS)
     append_Unique_In_Cache(${PROJECT_NAME}_STATIC_LINKER_FLAGS "${${environment}_STATIC_LINKER_FLAGS}")
   endif()
-  if(${environment}_GENERATOR)#may overwrite user choice
-    set(${PROJECT_NAME}_GENERATOR ${${environment}_GENERATOR} CACHE INTERNAL "")
-  endif()
-  if(${environment}_MAKE_PROGRAM)#may overwrite user choice
-    set(${PROJECT_NAME}_MAKE_PROGRAM ${${environment}_MAKE_PROGRAM} CACHE INTERNAL "")
-  endif()
-  if(${environment}_GENERATOR_EXTRA)#may overwrite user choice
-    set(${PROJECT_NAME}_GENERATOR_EXTRA ${${environment}_GENERATOR_EXTRA} CACHE INTERNAL "")
-  endif()
+
   if(${environment}_GENERATOR_TOOLSET)#may overwrite user choice
+    if(${PROJECT_NAME}_GENERATOR_TOOLSET)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : the geneator toolset in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_GENERATOR_TOOLSET}")
+      return()
+    endif()
     set(${PROJECT_NAME}_GENERATOR_TOOLSET ${${environment}_GENERATOR_TOOLSET} CACHE INTERNAL "")
   endif()
   if(${environment}_GENERATOR_PLATFORM)#may overwrite user choice
+    if(${PROJECT_NAME}_GENERATOR_PLATFORM)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : the geneator platform in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_GENERATOR_PLATFORM}")
+      return()
+    endif()
     set(${PROJECT_NAME}_GENERATOR_PLATFORM ${${environment}_GENERATOR_PLATFORM} CACHE INTERNAL "")
   endif()
-  if(${environment}_GENERATOR_INSTANCE)#may overwrite user choice
-    set(${PROJECT_NAME}_GENERATOR_INSTANCE ${${environment}_GENERATOR_INSTANCE} CACHE INTERNAL "")
-  endif()
-
-endfunction(set_Build_Variables_From_Environment)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |prepare_Environment_Arguments| replace:: ``prepare_Environment_Arguments``
-#  .. _prepare_Config_Arguments:
-#
-#  prepare_Environment_Arguments
-#  -------------------------------
-#
-#   .. command:: prepare_Environment_Arguments(environment arguments)
-#
-#     Set the variables corresponding to environment arguments in the parent scope.
-#
-#     :environment: the name of the environment to be checked.
-#
-#     :arguments: the parent scope variable containing the list of arguments generated from parse_System_Check_Constraints.
-#
-#     :LIST_OF_DEFS: the output variable containing the list of CMake definitions to pass to configuration process.
-#
-function(prepare_Environment_Arguments LIST_OF_DEFS environment arguments)
-  if(NOT arguments OR NOT ${arguments})
-    return()
-  endif()
-  set(argument_couples ${${arguments}})
-  set(result_list)
-  while(argument_couples)
-    list(GET argument_couples 0 name)
-    list(GET argument_couples 1 value)
-    list(REMOVE_AT argument_couples 0 1)#update the list of arguments in parent scope
-    string(REPLACE " " "" VAL_LIST "${value}")#remove the spaces in the string if any
-    string(REPLACE ";" "," VAL_LIST "${VAL_LIST}")#generate an argument list (with "," delim) from a cmake list (with ";" as delimiter)
-    #generate the variable
-    list(APPEND result_list -DVAR_${name}=\"${VAL_LIST}\")
-  endwhile()
-  set(${LIST_OF_DEFS} ${result_list} PARENT_SCOPE)
-endfunction(prepare_Environment_Arguments)
-
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |prepare_Platform_Constraints_Definitions| replace:: ``prepare_Platform_Constraints_Definitions``
-#  .. _prepare_Platform_Constraints_Definitions:
-#
-#  prepare_Platform_Constraints_Definitions
-#  -----------------------------------------
-#
-#   .. command:: prepare_Platform_Constraints_Definitions(LIST_OF_DEFS)
-#
-#     Create list of CMake definitions for environment platform constraints defined.
-#
-#     :environment_name: the name of the environment.
-#
-#     :LIST_OF_DEFS: the output variable containing the list of CMake definitions to pass to configuration process.
-#
-function(prepare_Platform_Constraints_Definitions environment_name LIST_OF_DEFS)
-  set(result_list)
-  if(${PROJECT_NAME}_TYPE_CONSTRAINT)
-    list(APPEND result_list "-DFORCE_${environment_name}_TYPE_CONSTRAINT=${${PROJECT_NAME}_TYPE_CONSTRAINT}")
-  endif()
-  if(${PROJECT_NAME}_ARCH_CONSTRAINT)
-    list(APPEND result_list "-DFORCE_${environment_name}_ARCH_CONSTRAINT=${${PROJECT_NAME}_ARCH_CONSTRAINT}")
-  endif()
-  if(${PROJECT_NAME}_OS_CONSTRAINT)
-    list(APPEND result_list "-DFORCE_${environment_name}_OS_CONSTRAINT=${${PROJECT_NAME}_OS_CONSTRAINT}")
-  endif()
-  if(${PROJECT_NAME}_ABI_CONSTRAINT)
-    list(APPEND result_list "-DFORCE_${environment_name}_ABI_CONSTRAINT=${${PROJECT_NAME}_ABI_CONSTRAINT}")
-  endif()
-  if(${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT)
-    list(APPEND result_list "-DFORCE_${environment_name}_DISTRIBUTION_CONSTRAINT=${${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT}")
-  endif()
-  if(${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT)
-    list(APPEND result_list "-DFORCE_${environment_name}_DISTRIB_VERSION_CONSTRAINT=${${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT}")
-  endif()
-  #configuration and chgeck scripts are purely local information
-  set(${LIST_OF_DEFS} ${result_list} PARENT_SCOPE)
-endfunction(prepare_Platform_Constraints_Definitions)
+endfunction(import_Solution_From_Dependency)
 
 #.rst:
 #
@@ -994,6 +1103,7 @@ function(generate_Environment_Reference_File pathtonewfile)
   file(APPEND ${pathtonewfile} "set(${PROJECT_NAME}_PUBLIC_ADDRESS ${${PROJECT_NAME}_PUBLIC_ADDRESS} CACHE INTERNAL \"\")\n")
   file(APPEND ${pathtonewfile} "set(${PROJECT_NAME}_LICENSE ${${PROJECT_NAME}_LICENSE} CACHE INTERNAL \"\")\n")
   file(APPEND ${pathtonewfile} "set(${PROJECT_NAME}_DESCRIPTION ${${PROJECT_NAME}_DESCRIPTION} CACHE INTERNAL \"\")\n")
+  file(APPEND ${pathtonewfile} "set(${PROJECT_NAME}_CONTRIBUTION_SPACE ${${PROJECT_NAME}_CONTRIBUTION_SPACE} CACHE INTERNAL \"\")\n")
 endfunction(generate_Environment_Reference_File)
 
 
@@ -1136,35 +1246,6 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
   set(${PROJECT_NAME}_CROSSCOMPILATION FALSE CACHE INTERNAL "")
   set(result TRUE)
 
-  #manage parameters passed to the environment by the configure script
-  if(FORCED_INSTANCE)
-    set(${PROJECT_NAME}_TARGET_INSTANCE ${FORCED_INSTANCE} CACHE INTERNAL "")# cannot be overwritten
-  endif()
-  if(FORCED_SYSROOT)
-    set(${PROJECT_NAME}_TARGET_SYSROOT ${FORCED_SYSROOT} CACHE INTERNAL "")# cannot be overwritten
-  endif()
-  if(FORCED_STAGING)
-    set(${PROJECT_NAME}_TARGET_STAGING ${FORCED_STAGING} CACHE INTERNAL "")# cannot be overwritten
-  endif()
-  if(FORCED_PROC_TYPE)
-    set(${PROJECT_NAME}_TYPE_CONSTRAINT ${FORCED_PROC_TYPE} CACHE INTERNAL "")# cannot be overwritten
-  endif()
-  if(FORCED_PROC_ARCH)
-    set(${PROJECT_NAME}_ARCH_CONSTRAINT ${FORCED_PROC_ARCH} CACHE INTERNAL "")# cannot be overwritten
-  endif()
-  if(FORCED_OS)
-    set(${PROJECT_NAME}_OS_CONSTRAINT ${FORCED_OS} CACHE INTERNAL "")# cannot be overwritten
-  endif()
-  if(FORCED_ABI)
-    set(${PROJECT_NAME}_ABI_CONSTRAINT ${FORCED_ABI} CACHE INTERNAL "")# cannot be overwritten
-  endif()
-  if(FORCED_DISTRIB)
-    set(${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT ${FORCED_DISTRIB} CACHE INTERNAL "")# cannot be overwritten
-  endif()
-  if(FORCED_DISTRIB_VERSION)
-    set(${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT ${FORCED_DISTRIB_VERSION} CACHE INTERNAL "")# cannot be overwritten
-  endif()
-
   #determine if host is target and if we need to crosscompile
   if(${PROJECT_NAME}_TYPE_CONSTRAINT
   AND NOT CURRENT_PLATFORM_TYPE STREQUAL ${PROJECT_NAME}_TYPE_CONSTRAINT)
@@ -1180,7 +1261,7 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
   if(${PROJECT_NAME}_OS_CONSTRAINT #operating system type constraint is specified
     AND NOT CURRENT_PLATFORM_OS STREQUAL ${PROJECT_NAME}_OS_CONSTRAINT)
     set(${PROJECT_NAME}_CROSSCOMPILATION TRUE CACHE INTERNAL "" FORCE)#if OS differs then this is corsscompilation
-      set(result FALSE)
+    set(result FALSE)
   endif()
 
   if(${PROJECT_NAME}_ABI_CONSTRAINT)#processor architecture type constraint is specified
@@ -1203,77 +1284,8 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
     set(result FALSE)
   endif()
 
-  if(${PROJECT_NAME}_CONFIGURATION_CONSTRAINT)
-    check_Environment_Configuration_Constraint(CHECK_RESULT)
-    if(NOT CHECK_RESULT)
-      set(result FALSE)
-    endif()
-  endif()
-
-
-  # 2 solutions: either current host is matching with constraints (use CHECK script) OR current host needs to be configured
-  # additionnal check for target platform
-  if(${PROJECT_NAME}_CHECK)
-    if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_CHECK})#addintionnal check is required to manage input constraints
-      message(FATAL_ERROR "[PID] CRITICAL ERROR: the file ${${PROJECT_NAME}_CHECK} cannot be fund in src folder of ${PROJECT_NAME}")
-      return()
-    endif()
-    #now check if host satisfies all properties of the target platform
-    set(ENVIRONMENT_CHECK_RESULT TRUE CACHE INTERNAL "")
-    include(${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_CHECK})
-    if(NOT ENVIRONMENT_CHECK_RESULT)#host does matches all requirements, so trying to configure these requirements
-      set(result FALSE)
-    endif()
-  else()#no check file means that a solution need to be applied any time
-    #used to manage environment that define "user station profiles" or "real target platform" based on dependencies
-    #at least a solution must be available in that case
-    set(result FALSE)
-  endif()
-
   #provides the result to say if host is target
   set(${CURRENT_HOST_MATCHES_TARGET} ${result} PARENT_SCOPE)
-
-  if(${PROJECT_NAME}_CROSSCOMPILATION)#if host is not target and cross=> We may need to define cross compilation relared information
-    if(${PROJECT_NAME}_TYPE_CONSTRAINT)
-      set(use_proc_type ${${PROJECT_NAME}_TYPE_CONSTRAINT})
-    else()#type is same as current
-      set(use_proc_type ${CURRENT_PLATFORM_TYPE})
-    endif()
-    if(${PROJECT_NAME}_ARCH_CONSTRAINT)
-      set(use_proc_arch ${${PROJECT_NAME}_ARCH_CONSTRAINT})
-    else()#type is same as current
-      set(use_proc_arch ${CURRENT_PLATFORM_ARCH})
-    endif()
-    if(${PROJECT_NAME}_OS_CONSTRAINT)#operating system type constraint is specified
-      set(use_os ${${PROJECT_NAME}_OS_CONSTRAINT})
-    else()
-      set(use_os ${CURRENT_PLATFORM_ARCH})
-    endif()
-    #configure crosscompilation variables
-    if(use_proc_type STREQUAL "x86")
-      if(use_proc_arch EQUAL 32)
-        set(proc_name x86)
-      elseif(use_proc_arch EQUAL 64)
-        set(proc_name x86_64)
-      endif()
-    elseif(use_proc_type STREQUAL "arm")
-      set(proc_name arm)
-    #TODO add more processors
-    endif()
-    set(${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR ${proc_name} CACHE INTERNAL "")
-    #configuring OS
-    if(use_os STREQUAL "linux")
-      set(os_name Linux)
-    elseif(use_os STREQUAL "macos")
-      set(os_name Darwin)
-    elseif(use_os STREQUAL "windows")
-      set(os_name Windows)
-    #TODO add more OS here
-    else()#unknown target OS -> considered as Generic (no OS)
-      set(os_name Generic)
-    endif()
-    set(${PROJECT_NAME}_TARGET_SYSTEM_NAME ${os_name} CACHE INTERNAL "")
-  endif()
 
 endfunction(evaluate_Environment_Platform)
 
@@ -1310,7 +1322,6 @@ function(is_Environment_Solution_Eligible RESULT index)
       endif()
     endif()
   endif()
-
   if(${PROJECT_NAME}_SOLUTION_${index}_ARCH)# a constraint on processor architecture
     if(NOT ${PROJECT_NAME}_SOLUTION_${index}_ARCH STREQUAL CURRENT_PLATFORM_ARCH)#not the current one
       return()
@@ -1336,6 +1347,35 @@ function(is_Environment_Solution_Eligible RESULT index)
 
 endfunction(is_Environment_Solution_Eligible)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |evaluate_Environment_Dependencies| replace:: ``evaluate_Environment_Dependencies``
+#  .. _evaluate_Environment_Dependencies:
+#
+#  evaluate_Environment_Dependencies
+#  ---------------------------------
+#
+#   .. command:: evaluate_Environment_Dependencies(EVAL_RESULT)
+#
+#   Evaluate dependencies of the current project.
+#
+#     :EVAL_RESULT: the output variable that is TRUE if all dependencies are satisfied.
+#
+function(evaluate_Environment_Dependencies EVAL_RESULT)
+  set(${EVAL_RESULT} FALSE PARENT_SCOPE)
+  foreach(dep IN LISTS ${PROJECT_NAME}_DEPENDENCIES)
+    manage_Environment_Dependency(RESULT_DEP ${dep})
+    if(NOT RESULT_DEP)
+      message("[PID] WARNING: environment ${dep} used as a dependency of ${PROJECT_NAME} cannot find a valid solution.")
+      return()
+    endif()
+  endforeach()
+  set(${EVAL_RESULT} TRUE PARENT_SCOPE)
+endfunction(evaluate_Environment_Dependencies)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -1358,13 +1398,7 @@ function(evaluate_Environment_Solution EVAL_SOL_RESULT index)
   set(${EVAL_SOL_RESULT} FALSE PARENT_SCOPE)
 
   # from here we know that the platform (host VS target constraints defined) matches so the solution can be evaluated
-  foreach(dep IN LISTS ${PROJECT_NAME}_SOLUTION_${index}_DEPENDENCIES)
-    manage_Environment_Dependency(RESULT_DEP ${dep})
-    if(NOT RESULT_DEP)
-      message("[PID] WARNING: environment ${dep} used as a dependency of ${PROJECT_NAME} cannot find a valid solution.")
-      return()
-    endif()
-  endforeach()
+
   # from here, means that everything is OK and specific configuration, if any, can apply
   if(${PROJECT_NAME}_SOLUTION_${index}_CONFIGURE)# a configuration script is provided => there is some more configuration to do
     if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_SOLUTION_${index}_CONFIGURE})#addintionnal check is required to manage input constraints
@@ -1379,34 +1413,6 @@ function(evaluate_Environment_Solution EVAL_SOL_RESULT index)
   endif()
   set(${EVAL_SOL_RESULT} TRUE PARENT_SCOPE)
 endfunction(evaluate_Environment_Solution)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |check_Environment_Configuration_Constraint| replace:: ``check_Environment_Configuration_Constraint``
-#  .. _check_Environment_Configuration_Constraint:
-#
-#  check_Environment_Configuration_Constraint
-#  ------------------------------------------
-#
-#   .. command:: check_Environment_Configuration_Constraint(CHECK_RESULT)
-#
-#   Check if the current platform satisfies the target platform configuration.
-#
-#     :index: the index of the solution in the list of solutions.
-#
-#     :CHECK_RESULT: the output variable that is TRUE if current host satisfies configuration constraints.
-#
-function(check_Environment_Configuration_Constraint CHECK_RESULT)
-  foreach(config IN LISTS ${PROJECT_NAME}_CONFIGURATION_CONSTRAINT)
-    check_System_Configuration(RESULT NAME CONSTRAINTS "${config}" Release)
-    if(NOT RESULT)
-      set(${CHECK_RESULT} FALSE PARENT_SCOPE)
-    endif()
-  endforeach()
-  set(${CHECK_RESULT} TRUE PARENT_SCOPE)
-endfunction(check_Environment_Configuration_Constraint)
 
 #.rst:
 #
@@ -1440,7 +1446,18 @@ foreach(req IN LISTS ${PROJECT_NAME}_REQUIRED_CONSTRAINTS)
   string(REPLACE "," ";" VAL_LIST "${VAL_LIST}")#generate an argument list (with "," delim) from a cmake list (with ";" as delimiter)
   set(${PROJECT_NAME}_${req} ${VAL_LIST} PARENT_SCOPE)#create the local variable used in scripts
 endforeach()
-#also evaluate constraints coming from dependent environment
+#also evaluate constraints coming from dependent environment or configuration script
+
+if(FORCE_${PROJECT_NAME}_TARGET_SYSROOT)
+  set(${PROJECT_NAME}_TARGET_SYSROOT ${FORCE_${PROJECT_NAME}_TARGET_SYSROOT} CACHE INTERNAL "")# higher level specified sysroot always takes precedence
+endif()
+if(FORCE_${PROJECT_NAME}_TARGET_STAGING)
+  set(${PROJECT_NAME}_TARGET_STAGING ${FORCE_${PROJECT_NAME}_TARGET_STAGING} CACHE INTERNAL "")#  higher level specified staging always takes precedence
+endif()
+if(FORCE_${PROJECT_NAME}_TARGET_INSTANCE)
+  set(${PROJECT_NAME}_TARGET_INSTANCE ${FORCE_${PROJECT_NAME}_TARGET_INSTANCE} CACHE INTERNAL "")#  higher level specified staging always takes precedence
+endif()
+
 if(FORCE_${PROJECT_NAME}_ARCH_CONSTRAINT) #arch constraint has been forced
   if(${PROJECT_NAME}_ARCH_CONSTRAINT AND (NOT ${PROJECT_NAME}_ARCH_CONSTRAINT STREQUAL FORCE_${PROJECT_NAME}_ARCH_CONSTRAINT))
     message(FATAL_ERROR "[PID] CRITICAL ERROR: environment ${PROJECT_NAME} defines a constraint on processor architecture (${${PROJECT_NAME}_ARCH_CONSTRAINT}) but a dependent environment imposes a different one (${FORCE_${PROJECT_NAME}_ARCH_CONSTRAINT}).")
@@ -1489,12 +1506,82 @@ if(FORCE_${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT)
     endif()
   endif()
 endif()
-if(FORCE_${PROJECT_NAME}_CONFIGURATION_CONSTRAINT)
-  #simply add configuration constraints to those already defined
-  append_Unique_In_Cache(${PROJECT_NAME}_CONFIGURATION_CONSTRAINT "${FORCE_${PROJECT_NAME}_CONFIGURATION_CONSTRAINT}")
-endif()
 endfunction(evaluate_Environment_Constraints)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deduce_Platform_Variables| replace:: ``deduce_Platform_Variables``
+#  .. _deduce_Platform_Variables:
+#
+#  deduce_Platform_Variables
+#  --------------------------
+#
+#   .. command:: deduce_Platform_Variables()
+#
+#   From environment description deduce general variables that will be used in generated toolchain file.
+#
+function(deduce_Platform_Variables)
+  #reset the variables first
+  set(${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR CACHE INTERNAL "")
+  set(${PROJECT_NAME}_TARGET_SYSTEM_NAME CACHE INTERNAL "")
+  set(${PROJECT_NAME}_TARGET_PLATFORM CACHE INTERNAL "")
+
+  if(${PROJECT_NAME}_TYPE_CONSTRAINT)
+    set(use_proc_type ${${PROJECT_NAME}_TYPE_CONSTRAINT})
+  else()#type is same as current
+    set(use_proc_type ${CURRENT_PLATFORM_TYPE})
+  endif()
+  if(${PROJECT_NAME}_ARCH_CONSTRAINT)
+    set(use_proc_arch ${${PROJECT_NAME}_ARCH_CONSTRAINT})
+  else()#type is same as current
+    set(use_proc_arch ${CURRENT_PLATFORM_ARCH})
+  endif()
+  if(${PROJECT_NAME}_OS_CONSTRAINT)#operating system type constraint is specified
+    set(use_os ${${PROJECT_NAME}_OS_CONSTRAINT})
+  else()
+    set(use_os ${CURRENT_PLATFORM_OS})
+  endif()
+  if(${PROJECT_NAME}_ABI_CONSTRAINT)#operating system type constraint is specified
+    set(use_abi ${${PROJECT_NAME}_OS_CONSTRAINT})
+  else()
+    set(use_abi ${CURRENT_PLATFORM_ABI})
+  endif()
+  if(use_os)
+    set(${PROJECT_NAME}_TARGET_PLATFORM ${use_proc_type}_${use_proc_arch}_${use_os}_${use_abi} CACHE INTERNAL "")
+  else()#do not use OS (Generic target)
+    set(${PROJECT_NAME}_TARGET_PLATFORM ${use_proc_type}_${use_proc_arch}_${use_abi} CACHE INTERNAL "")
+  endif()
+
+  if(${PROJECT_NAME}_CROSSCOMPILATION)#if host is not target and cross=> We may need to define cross compilation relared information
+    #configure crosscompilation variables
+    if(use_proc_type STREQUAL "x86")
+      if(use_proc_arch EQUAL 32)
+        set(proc_name x86)
+      elseif(use_proc_arch EQUAL 64)
+        set(proc_name x86_64)
+      endif()
+    elseif(use_proc_type STREQUAL "arm")
+      set(proc_name arm)
+    #TODO add more processors
+    endif()
+    set(${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR ${proc_name} CACHE INTERNAL "")
+    #configuring OS
+    if(use_os STREQUAL "linux")
+      set(os_name Linux)
+    elseif(use_os STREQUAL "macos")
+      set(os_name Darwin)
+    elseif(use_os STREQUAL "windows")
+      set(os_name Windows)
+    #TODO add more OS here
+    else()#unknown target OS -> considered as Generic (no OS)
+      set(os_name Generic)
+    endif()
+    set(${PROJECT_NAME}_TARGET_SYSTEM_NAME ${os_name} CACHE INTERNAL "")
+  endif()
+endfunction(deduce_Platform_Variables)
 
 #.rst:
 #
@@ -1508,30 +1595,25 @@ endfunction(evaluate_Environment_Constraints)
 #
 #   .. command:: generate_Environment_Toolchain_File(index)
 #
-#   Create the toochain file for the given solution used to configure the workspace.
+#   Create the toochain file for the current environment projec. It is used to configure the workspace.
 #
-#     :index: the index of the solution in the list of solutions.
-#
-function(generate_Environment_Toolchain_File index)
+function(generate_Environment_Toolchain_File)
   set(description_file ${CMAKE_BINARY_DIR}/PID_Toolchain.cmake)
   file(WRITE ${description_file} "")
 
-  # setting the generator
-  if(${PROJECT_NAME}_GENERATOR)
-    file(APPEND ${description_file} "set(CMAKE_GENERATOR ${${PROJECT_NAME}_GENERATOR} CACHE INTERNAL \"\" FORCE)\n")
-    file(APPEND ${description_file} "set(CMAKE_MAKE_PROGRAM ${${PROJECT_NAME}_MAKE_PROGRAM} CACHE INTERNAL \"\" FORCE)\n")
-    if(${PROJECT_NAME}_GENERATOR_EXTRA)
-      file(APPEND ${description_file} "set(CMAKE_EXTRA_GENERATOR ${${PROJECT_NAME}_GENERATOR_EXTRA} CACHE INTERNAL \"\" FORCE)\n")
-    endif()
-    if(${PROJECT_NAME}_GENERATOR_TOOLSET)
-      file(APPEND ${description_file} "set(CMAKE_GENERATOR_TOOLSET ${${PROJECT_NAME}_GENERATOR_TOOLSET} CACHE INTERNAL \"\" FORCE)\n")
-    endif()
-    if(${PROJECT_NAME}_GENERATOR_PLATFORM)
-      file(APPEND ${description_file} "set(CMAKE_GENERATOR_PLATFORM ${${PROJECT_NAME}_GENERATOR_PLATFORM} CACHE INTERNAL \"\" FORCE)\n")
-    endif()
-    if(${PROJECT_NAME}_GENERATOR_INSTANCE)
-      file(APPEND ${description_file} "set(CMAKE_GENERATOR_INSTANCE ${${PROJECT_NAME}_GENERATOR_INSTANCE} CACHE INTERNAL \"\" FORCE)\n")
-    endif()
+  # setting the generator prroperties
+  if(CMAKE_GENERATOR_INSTANCE)#use default instance if there is one defined
+    file(APPEND ${description_file} "set(CMAKE_GENERATOR_INSTANCE ${CMAKE_GENERATOR_INSTANCE} CACHE INTERNAL \"\" FORCE)\n")
+  endif()
+  if(${PROJECT_NAME}_GENERATOR_TOOLSET)#use targetted generator toolset if any
+    file(APPEND ${description_file} "set(CMAKE_GENERATOR_TOOLSET ${${PROJECT_NAME}_GENERATOR_TOOLSET} CACHE INTERNAL \"\" FORCE)\n")
+  elseif(CMAKE_GENERATOR_TOOLSET)# otherwise use default toolset if there is one defined
+    file(APPEND ${description_file} "set(CMAKE_GENERATOR_TOOLSET ${CMAKE_GENERATOR_TOOLSET} CACHE INTERNAL \"\" FORCE)\n")
+  endif()
+  if(${PROJECT_NAME}_GENERATOR_PLATFORM)
+    file(APPEND ${description_file} "set(CMAKE_GENERATOR_PLATFORM ${${PROJECT_NAME}_GENERATOR_PLATFORM} CACHE INTERNAL \"\" FORCE)\n")
+  elseif(CMAKE_GENERATOR_PLATFORM)#use default platform if there is one defined
+    file(APPEND ${description_file} "set(CMAKE_GENERATOR_PLATFORM ${CMAKE_GENERATOR_PLATFORM} CACHE INTERNAL \"\" FORCE)\n")
   endif()
 
   if(${PROJECT_NAME}_CROSSCOMPILATION)
@@ -1548,6 +1630,20 @@ function(generate_Environment_Toolchain_File index)
       if(${PROJECT_NAME}_TARGET_STAGING)
         file(APPEND ${description_file} "set(CMAKE_STAGING_PREFIX ${${PROJECT_NAME}_TARGET_STAGING} CACHE INTERNAL \"\" FORCE)\n")
       endif()
+
+      if(${PROJECT_NAME}_LIBRARY_DIRS)
+        fill_String_From_List(${PROJECT_NAME}_LIBRARY_DIRS DIRS)
+        file(APPEND ${description_file} "set(CMAKE_SYSTEM_LIBRARY_PATH ${DIRS} CACHE INTERNAL \"\" FORCE)\n")
+      endif()
+      if(${PROJECT_NAME}_INCLUDE_DIRS)
+        fill_String_From_List(${PROJECT_NAME}_INCLUDE_DIRS DIRS)
+        file(APPEND ${description_file} "set(CMAKE_SYSTEM_INCLUDE_PATH ${DIRS} CACHE INTERNAL \"\" FORCE)\n")
+      endif()
+      if(${PROJECT_NAME}_PROGRAM_DIRS)
+        fill_String_From_List(${PROJECT_NAME}_PROGRAM_DIRS DIRS)
+        file(APPEND ${description_file} "set(CMAKE_SYSTEM_PROGRAM_PATH ${DIRS} CACHE INTERNAL \"\" FORCE)\n")
+      endif()
+
     endif()
   endif()
 
@@ -1555,66 +1651,67 @@ function(generate_Environment_Toolchain_File index)
   if(${PROJECT_NAME}_CROSSCOMPILATION AND CMAKE_VERSION VERSION_LESS 3.6)#when crosscompiling I need to force the C/C++ compilers if CMake < 3.6
     file(APPEND ${description_file} "include(CMakeForceCompiler)\n")
   endif()
-  foreach(lang IN ITEMS C CXX ASM Fortran Python CUDA)
-    #simply registering the compiler, id, version and flags
-    if(NOT lang STREQUAL "Python")
-      if(${PROJECT_NAME}_${lang}_COMPILER)#compiler has been set
-        if(${PROJECT_NAME}_CROSSCOMPILATION  #during crosscomppilation
-          AND lang MATCHES "C|CXX|Fortran"   #force commands are only available for those languages
-          AND CMAKE_VERSION VERSION_LESS 3.6)#in CMake < 3.6
-          #when crosscompiling force no check of compilers
-          file(APPEND ${description_file} "CMAKE_FORCE_${lang}_COMPILER(${${PROJECT_NAME}_${lang}_COMPILER} \"${${PROJECT_NAME}_${lang}_COMPILER_ID}\")\n")
-          if(lang STREQUAL C)#if no check then the CMAKE_SIZE_OF_VOID_P must be set !!
-            if(${PROJECT_NAME}_ARCH_CONSTRAINT)#if any constraint has been defined
-              math(EXPR register_size "${${PROJECT_NAME}_ARCH_CONSTRAINT}/8")
-            else()
-              math(EXPR register_size "${CURRENT_PLATFORM_ARCH}/8")
-            endif()
-            #need to add this variable if I force the compiler => allow PID to finnaly deduce architecture from build configuration
-            file(APPEND ${description_file} "set(CMAKE_SIZEOF_VOID_P ${register_size} CACHE INETRNAL \"\" FORCE)\n")
-          endif()
-        endif()
-        #add the default command for setting compiler anytime
-        file(APPEND ${description_file} "set(CMAKE_${lang}_COMPILER ${${PROJECT_NAME}_${lang}_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
-      endif()
 
-      if(${PROJECT_NAME}_${lang}_COMPILER_FLAGS)
-        fill_String_From_List(${PROJECT_NAME}_${lang}_COMPILER_FLAGS LANG_FLAGS)
+  #manage languages directly managed at workspace level (CMake managed languages)
+  foreach(lang IN ITEMS C CXX ASM Fortran Python CUDA)
+    if(NOT ${PROJECT_NAME}_${lang}_TOOLSETS OR ${PROJECT_NAME}_${lang}_TOOLSETS LESS 1)
+      continue()#simply do not manage the language
+    endif()
+    set(prefix ${PROJECT_NAME}_${lang}_TOOLSET_0)
+    if(lang STREQUAL "Python")
+      file(APPEND ${description_file} "set(PYTHON_EXECUTABLE ${${prefix}_INTERPRETER} CACHE INTERNAL \"\" FORCE)\n")
+      if(${prefix}_INCLUDE_DIRS)
+        fill_String_From_List(${prefix}_INCLUDE_DIRS LANG_FLAGS)
+        file(APPEND ${description_file} "set(PYTHON_INCLUDE_DIRS \"${LANG_FLAGS}\" CACHE INTERNAL \"\" FORCE)\n")
+      endif()
+      if(${prefix}_LIBRARY)
+        file(APPEND ${description_file} "set(PYTHON_LIBRARY ${${prefix}_LIBRARY} CACHE INTERNAL \"\" FORCE)\n")
+      endif()
+    elseif(${prefix}_COMPILER) #other languages are compiled by default so to be managed a compiler must be defined
+      if(${PROJECT_NAME}_CROSSCOMPILATION  #during crosscomppilation
+        AND lang MATCHES "C|CXX|Fortran"   #force commands are only available for those languages
+        AND CMAKE_VERSION VERSION_LESS 3.6)#in CMake < 3.6
+        #when crosscompiling force no check of compilers
+        file(APPEND ${description_file} "CMAKE_FORCE_${lang}_COMPILER(${${prefix}_COMPILER} \"${${prefix}_COMPILER_ID}\")\n")
+        if(lang STREQUAL C)#if no check then the CMAKE_SIZE_OF_VOID_P must be set !!
+          if(${PROJECT_NAME}_ARCH_CONSTRAINT)#if any constraint has been defined
+            math(EXPR register_size "${${PROJECT_NAME}_ARCH_CONSTRAINT}/8")
+          else()
+            math(EXPR register_size "${CURRENT_PLATFORM_ARCH}/8")
+          endif()
+          #need to add this variable if I force the compiler => allow PID to finnaly deduce architecture from build configuration
+          file(APPEND ${description_file} "set(CMAKE_SIZEOF_VOID_P ${register_size} CACHE INETRNAL \"\" FORCE)\n")
+        endif()
+      endif()
+      #add the default command for setting compiler anytime
+      file(APPEND ${description_file} "set(CMAKE_${lang}_COMPILER ${${prefix}_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
+
+      if(${prefix}_COMPILER_FLAGS)
+        fill_String_From_List(${prefix}_COMPILER_FLAGS LANG_FLAGS)
         file(APPEND ${description_file} "set(CMAKE_${lang}_FLAGS  \"${LANG_FLAGS}\" CACHE INTERNAL \"\" FORCE)\n")
       endif()
-      if(lang STREQUAL CUDA)
-        if(${PROJECT_NAME}_${lang}_COMPILER)
-          file(APPEND ${description_file} "set(CUDA_NVCC_EXECUTABLE ${${PROJECT_NAME}_${lang}_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
-        endif()
-        if(${PROJECT_NAME}_${lang}_COMPILER_FLAGS)
-          fill_String_From_List(${PROJECT_NAME}_${lang}_COMPILER_FLAGS LANG_FLAGS)
+
+      if(lang MATCHES "CUDA")#for CUDA also set the old variables for compiler info
+        file(APPEND ${description_file} "set(CUDA_NVCC_EXECUTABLE ${${prefix}_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
+        if(${prefix}_COMPILER_FLAGS)
+          fill_String_From_List(${prefix}_COMPILER_FLAGS LANG_FLAGS)
           file(APPEND ${description_file} "set(CUDA_NVCC_FLAGS \"${LANG_FLAGS}\" CACHE INTERNAL \"\" FORCE)\n")
         endif()
-        if(${PROJECT_NAME}_${lang}_HOST_COMPILER)
-          file(APPEND ${description_file} "set(CUDA_HOST_COMPILER ${${PROJECT_NAME}_${lang}_HOST_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
-          file(APPEND ${description_file} "set(CMAKE_CUDA_HOST_COMPILER ${${PROJECT_NAME}_${lang}_HOST_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
+        if(${prefix}_HOST_COMPILER)
+          file(APPEND ${description_file} "set(CUDA_HOST_COMPILER ${${prefix}_HOST_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
+          file(APPEND ${description_file} "set(CMAKE_CUDA_HOST_COMPILER ${${prefix}_HOST_COMPILER} CACHE INTERNAL \"\" FORCE)\n")#also set the CMake supported language variable
         endif()
       else()
-        if(${PROJECT_NAME}_${lang}_AR)
-          file(APPEND ${description_file} "set(CMAKE_${lang}_AR ${${PROJECT_NAME}_${lang}_AR} CACHE INTERNAL \"\" FORCE)\n")
+        if(${prefix}_COMPILER_AR)
+          file(APPEND ${description_file} "set(CMAKE_${lang}_COMPILER_AR ${${prefix}_COMPILER_AR} CACHE INTERNAL \"\" FORCE)\n")
         endif()
-        if(${PROJECT_NAME}_${lang}_RANLIB)
-          file(APPEND ${description_file} "set(CMAKE_${lang}_RANLIB ${${PROJECT_NAME}_${lang}_RANLIB} CACHE INTERNAL \"\" FORCE)\n")
-        endif()
-      endif()
-    else()#for python
-      if(${PROJECT_NAME}_${lang}_INTERPRETER)
-        file(APPEND ${description_file} "set(PYTHON_EXECUTABLE ${${PROJECT_NAME}_${lang}_INTERPRETER} CACHE INTERNAL \"\" FORCE)\n")
-        if(${PROJECT_NAME}_${lang}_INCLUDE_DIRS)
-          fill_String_From_List(${PROJECT_NAME}_${lang}_INCLUDE_DIRS LANG_FLAGS)
-        file(APPEND ${description_file} "set(PYTHON_INCLUDE_DIRS \"${LANG_FLAGS}\" CACHE INTERNAL \"\" FORCE)\n")
-        endif()
-        if(${PROJECT_NAME}_${lang}_LIBRARY)
-          file(APPEND ${description_file} "set(PYTHON_LIBRARY ${${PROJECT_NAME}_${lang}_LIBRARY} CACHE INTERNAL \"\" FORCE)\n")
+        if(${prefix}_COMPILER_RANLIB)
+          file(APPEND ${description_file} "set(CMAKE_${lang}_COMPILER_RANLIB ${${prefix}_COMPILER_RANLIB} CACHE INTERNAL \"\" FORCE)\n")
         endif()
       endif()
     endif()
   endforeach()
+
   if(${PROJECT_NAME}_LINKER)
     file(APPEND ${description_file} "set(CMAKE_LINKER ${${PROJECT_NAME}_LINKER} CACHE INTERNAL \"\" FORCE)\n")
   endif()
@@ -1651,26 +1748,12 @@ function(generate_Environment_Toolchain_File index)
     file(APPEND ${description_file} "set(CMAKE_OBJCOPY ${${PROJECT_NAME}_OBJCOPY} CACHE INTERNAL \"\" FORCE)\n")
   endif()
 
-  if(${PROJECT_NAME}_LIBRARY_DIRS)
-    fill_String_From_List(${PROJECT_NAME}_LIBRARY_DIRS DIRS)
-    file(APPEND ${description_file} "set(CMAKE_SYSTEM_LIBRARY_PATH ${DIRS} CACHE INTERNAL \"\" FORCE)\n")
-  endif()
-  if(${PROJECT_NAME}_INCLUDE_DIRS)
-    fill_String_From_List(${PROJECT_NAME}_INCLUDE_DIRS DIRS)
-    file(APPEND ${description_file} "set(CMAKE_SYSTEM_INCLUDE_PATH ${DIRS} CACHE INTERNAL \"\" FORCE)\n")
-  endif()
-  if(${PROJECT_NAME}_PROGRAM_DIRS)
-    fill_String_From_List(${PROJECT_NAME}_PROGRAM_DIRS DIRS)
-    file(APPEND ${description_file} "set(CMAKE_SYSTEM_PROGRAM_PATH ${DIRS} CACHE INTERNAL \"\" FORCE)\n")
-  endif()
-
   if(${PROJECT_NAME}_CROSSCOMPILATION)
     if(NOT CMAKE_VERSION VERSION_LESS 3.6)#CMAKE_TRY_COMPILE_TARGET_TYPE available since version 3.6 of CMake
       # avoid problem with try_compile when cross compiling
       file(APPEND ${description_file} "set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY CACHE INTERNAL \"\" FORCE)\n")
     endif()
   endif()
-
 
 endfunction(generate_Environment_Toolchain_File)
 
@@ -1703,6 +1786,134 @@ configure_file(${input_file} ${description_file} @ONLY)
 endfunction(generate_Environment_Description_File)
 
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Language_Toolset| replace:: ``set_Language_Toolset``
+#  .. _set_Language_Toolset:
+#
+#  set_Language_Toolset
+#  --------------------
+#
+#   .. command:: set_Language_Toolset(lang toolset compiler comp_id comp_ar comp_ranlib comp_flags interp includes library)
+#
+#   Set the description of a language toolset in cache
+#
+#     :lang: the label of target language
+#
+#     :toolset: the index of language toolset
+#
+#     :compiler: the path to language compiler program.
+#
+#     :comp_id: the identifier of compiler
+#
+#     :comp_ar: the archiver tool for compiler
+#
+#     :comp_ranlib: the archiver manager for compiler
+#
+#     :comp_flags: the default flags to use with the comiler
+#
+#     :interp: the interpreter for the language
+#
+#     :includes: the include folder where to find standard library definitions
+#
+#     :library: the path to language standard library
+#
+#     :host_cc: the C or C++ compiler required by the higher level compiler
+#
+function(set_Language_Toolset lang toolset compiler comp_id comp_ar comp_ranlib comp_flags interp includes library host_cc)
+  set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER ${compiler} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_ID ${comp_id} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_AR ${comp_ar} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB ${comp_ranlib} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS "${comp_flags}" CACHE INTERNAL "")
+  set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER ${interp} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS ${includes} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_LIBRARY ${library} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_HOST_COMPILER ${host_cc} CACHE INTERNAL "")
+endfunction(set_Language_Toolset)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Language_Toolset| replace:: ``add_Language_Toolset``
+#  .. _add_Language_Toolset:
+#
+#  add_Language_Toolset
+#  --------------------
+#
+#   .. command:: add_Language_Toolset(lang default compiler comp_id comp_ar comp_ranlib comp_flags interp includes library host_cc)
+#
+#   Add definition of a new toolset for language. This toolset becomes default toolset.
+#
+#     :lang: the label of target language
+#
+#     :default: if TRUE the new toolset is supposed to be default and so toolsets will be reordered, otherwise solution is appended to existing ones
+#
+#     :compiler: the path to language compiler program.
+#
+#     :comp_id: the identifier of compiler
+#
+#     :comp_ar: the archiver tool for compiler
+#
+#     :comp_ranlib: the archiver manager for compiler
+#
+#     :comp_flags: the default flags to use with the comiler
+#
+#     :interp: the interpreter for the language
+#
+#     :includes: the include folder where to find standard library definitions
+#
+#     :library: the path to language standard library
+#
+#     :host_cc: the C or C++ compiler required by the higher level compiler
+#
+function(add_Language_Toolset lang default compiler comp_id comp_ar comp_ranlib comp_flags interp includes library host_cc)
+  append_Unique_In_Cache(${PROJECT_NAME}_LANGUAGES ${lang})
+  if(NOT ${PROJECT_NAME}_${lang}_TOOLSETS)
+    set(${PROJECT_NAME}_${lang}_TOOLSETS 0 CACHE INTERNAL "")
+  endif()
+  if(default)#need to reorder the existing list
+    set(count ${${PROJECT_NAME}_${lang}_TOOLSETS})
+    while(count GREATER 0)#need to reorder existing toolsets that may come from dependencies (simply giving each of them next index)
+      math(EXPR prev "${count}-1")
+      set_Language_Toolset(${lang} "${count}"
+                          "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_COMPILER}"
+                          "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_COMPILER_ID}"
+                          "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_COMPILER_AR}"
+                          "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_RANLIB}"
+                          "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_COMPILER_FLAGS}"
+                          "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_INTERPRETER}"
+                          "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_INCLUDE_DIRS}"
+                          "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_LIBRARY}"
+                          "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_HOST_COMPILER}"
+      )
+      set(count ${prev})
+    endwhile()
+    set(new_index "0")#put it at beginning
+  else()
+    set(new_index "${${PROJECT_NAME}_${lang}_TOOLSETS}")#if no reorder put it at the end
+  endif()
+  #add the new default toolset at index 0
+  set_Language_Toolset(${lang} "${new_index}"
+                      "${compiler}"
+                      "${comp_id}"
+                      "${comp_ar}"
+                      "${comp_ranlib}"
+                      "${comp_flags}"
+                      "${interp}"
+                      "${includes}"
+                      "${library}"
+                      "${host_cc}"
+  )
+  math(EXPR plus_one "${${PROJECT_NAME}_${lang}_TOOLSETS}+1")
+  set(${PROJECT_NAME}_${lang}_TOOLSETS ${plus_one} CACHE INTERNAL "")#finally increasing the number of toolsets
+endfunction(add_Language_Toolset)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -1721,7 +1932,7 @@ endfunction(generate_Environment_Description_File)
 #
 #     :lang: the label of target language
 #
-#     :toolset: the name of language toolset
+#     :toolset: the index of language toolset
 #
 function(write_Language_Toolset file lang toolset)
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER)#for compiled languages
@@ -1742,11 +1953,11 @@ function(write_Language_Toolset file lang toolset)
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER)
     file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER} CACHE INTERNAL \"\")\n")
   endif()
-  if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_AR)
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_AR ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_AR} CACHE INTERNAL \"\")\n")
+  if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_AR)
+    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_AR ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_AR} CACHE INTERNAL \"\")\n")
   endif()
-  if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_RANLIB)
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_RANLIB ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_RANLIB} CACHE INTERNAL \"\")\n")
+  if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB)
+    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB} CACHE INTERNAL \"\")\n")
   endif()
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_HOST_COMPILER)#for languages that require C/C++ compiler to generate code
     file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_HOST_COMPILER ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_HOST_COMPILER} CACHE INTERNAL \"\")\n")
@@ -1770,11 +1981,10 @@ endfunction(write_Language_Toolset)
 function(generate_Environment_Solution_File)
 set(file ${CMAKE_BINARY_DIR}/PID_Environment_Solution_Info.cmake)
 file(WRITE ${file} "")#reset the description
-
+file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_INSTANCE ${${PROJECT_NAME}_TARGET_INSTANCE} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_PLATFORM ${${PROJECT_NAME}_TARGET_PLATFORM} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_CROSSCOMPILATION ${${PROJECT_NAME}_CROSSCOMPILATION} CACHE INTERNAL \"\")\n")
 if(${PROJECT_NAME}_CROSSCOMPILATION)
-  file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_SYSTEM_NAME ${${PROJECT_NAME}_TARGET_SYSTEM_NAME} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR ${${PROJECT_NAME}_TARGET_SYSTEM_PROCESSOR} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_SYSROOT ${${PROJECT_NAME}_TARGET_SYSROOT} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_STAGING ${${PROJECT_NAME}_TARGET_STAGING} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_LIBRARY_DIRS ${${PROJECT_NAME}_LIBRARY_DIRS} CACHE INTERNAL \"\")\n")
@@ -1790,7 +2000,6 @@ if(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION)
   file(APPEND ${file} "set(${PROJECT_NAME}_NM ${${PROJECT_NAME}_NM} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_OBJDUMP ${${PROJECT_NAME}_OBJDUMP} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_OBJCOPY ${${PROJECT_NAME}_OBJCOPY} CACHE INTERNAL \"\")\n")
-
   file(APPEND ${file} "set(${PROJECT_NAME}_EXE_LINKER_FLAGS ${${PROJECT_NAME}_EXE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_MODULE_LINKER_FLAGS ${${PROJECT_NAME}_MODULE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_SHARED_LINKER_FLAGS ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
@@ -1799,10 +2008,9 @@ endif()
 
 file(APPEND ${file} "set(${PROJECT_NAME}_LANGUAGES ${${PROJECT_NAME}_LANGUAGES} CACHE INTERNAL \"\")\n")
 foreach(lang IN LISTS ${PROJECT_NAME}_LANGUAGES)#default are C CXX ASM Python Fortran CUDA
-  file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_DEFAULT_TOOLSET ${${PROJECT_NAME}_${lang}_DEFAULT_TOOLSET} CACHE INTERNAL \"\")\n")
-  write_Language_Toolset(${file} ${lang} ${${PROJECT_NAME}_${lang}_DEFAULT_TOOLSET})
-  file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_ADDITIONAL_TOOLSETS ${${PROJECT_NAME}_${lang}_ADDITIONAL_TOOLSETS} CACHE INTERNAL \"\")\n")
-  foreach(toolset IN LISTS ${PROJECT_NAME}_${lang}_ADDITIONAL_TOOLSETS)
+  file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSETS ${${PROJECT_NAME}_${lang}_TOOLSETS} CACHE INTERNAL \"\")\n")#write the number of toolsets provided
+  math(EXPR max_toolset "${${PROJECT_NAME}_${lang}_TOOLSETS}-1")
+  foreach(toolset RANGE ${max_toolset})
     write_Language_Toolset(${file} ${lang} ${toolset})
   endforeach()
 endforeach()
@@ -1834,9 +2042,12 @@ endfunction(generate_Environment_Solution_File)
 #
 #     :lang: the label of target language
 #
-#     :toolset: the name of langauge toolset
+#     :toolset: the index of language toolset
 #
 function(print_Language_Toolset environment lang toolset)
+  if(NOT ${environment}_${lang}_TOOLSETS)
+    return()
+  endif()
   #print the settings of the default language toolset
   if(${environment}_${lang}_TOOLSET_${toolset}_COMPILER)#for compiled languages
     if(${environment}_${lang}_TOOLSET_${toolset}_COMPILER_ID)
@@ -1846,7 +2057,7 @@ function(print_Language_Toolset environment lang toolset)
     endif()
   endif()
   if(${environment}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS)
-    set(lang_str "${lang_str}    * compilation flags : ${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS}\n")
+    set(lang_str "${lang_str}    * compilation flags : \"${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS}\"\n")
   endif()
   if(${environment}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS)
     set(lang_str "${lang_str}    * standard library include dirs : ${${environment}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS}\n")
@@ -1857,11 +2068,11 @@ function(print_Language_Toolset environment lang toolset)
   if(${environment}_${lang}_TOOLSET_${toolset}_INTERPRETER)
     set(lang_str "${lang_str}    * interpreter : ${${environment}_${lang}_TOOLSET_${toolset}_INTERPRETER}\n")
   endif()
-  if(${environment}_${lang}_TOOLSET_${toolset}_AR)
-    set(lang_str "${lang_str}    * archiver : ${${environment}_${lang}_TOOLSET_${toolset}_AR}\n")
+  if(${environment}_${lang}_TOOLSET_${toolset}_COMPILER_AR)
+    set(lang_str "${lang_str}    * archiver : ${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_AR}\n")
   endif()
-  if(${environment}_${lang}_TOOLSET_${toolset}_RANLIB)
-    set(lang_str "${lang_str}    * static libraries creator : ${${environment}_${lang}_TOOLSET_${toolset}_RANLIB}\n")
+  if(${environment}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB)
+    set(lang_str "${lang_str}    * static libraries creator : ${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB}\n")
   endif()
   if(${environment}_${lang}_TOOLSET_${toolset}_HOST_COMPILER)#for languages that require C/C++ compiler to generate code
     set(lang_str "${lang_str}    * host compiler : ${${environment}_${lang}_TOOLSET_${toolset}_HOST_COMPILER}\n")
@@ -1955,11 +2166,11 @@ function(print_Evaluated_Environment environment)
     message("- configured languages:")
     foreach(lang IN LISTS ${environment}_LANGUAGES)
       set(lang_str "  + ${lang}:\n")
-      set(defaut_toolset ${${environment}_${lang}_DEFAULT_TOOLSET})
-      print_Language_Toolset(${environment} ${lang} ${${environment}_${lang}_DEFAULT_TOOLSET})
-      if(${environment}_${lang}_ADDITIONAL_TOOLSETS)
-        message("  ++ additionnal toolsets:")
-        foreach(toolset IN LISTS ${environment}_${lang}_ADDITIONAL_TOOLSETS)
+      print_Language_Toolset(${environment} ${lang} 0)
+      if(${environment}_${lang}_TOOLSETS GREATER 1)
+        message("    ++ additionnal toolsets:")
+        math(EXPR max_toolset "${${environment}_${lang}_TOOLSETS}-1")
+        foreach(toolset RANGE 1 ${max_toolset})
           print_Language_Toolset(${environment} ${lang} ${toolset})
         endforeach()
       endif()

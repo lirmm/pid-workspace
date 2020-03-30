@@ -234,17 +234,29 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo " profiles: manage the profiles in use in the workspace. Used to configure build environments for the whole workspace."
 	COMMAND ${CMAKE_COMMAND} -E echo "             Additional arguments can be used to customize the configuration process."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [mandatory] ---"
-	COMMAND ${CMAKE_COMMAND} -E echo "             - environment=*name of the environment*: set the given environment as the build environment to use "
-	COMMAND ${CMAKE_COMMAND} -E echo "               for the whole workspace. If value is host then the build environment is reset to default OS settings."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - cmd=*name of the command*: apply the given command to profiles. Possible values:"
+	COMMAND ${CMAKE_COMMAND} -E echo "               - ls: list currenlty defined profiles."
+	COMMAND ${CMAKE_COMMAND} -E echo "               - reset: reset currently used profile to default one."
+	COMMAND ${CMAKE_COMMAND} -E echo "               - mk: create a new profile and make it current profile."
+	COMMAND ${CMAKE_COMMAND} -E echo "               - del: remove an available profile. It it was current one, then current becomes default profile."
+	COMMAND ${CMAKE_COMMAND} -E echo "               - load: make the target profile the current one."
+	COMMAND ${CMAKE_COMMAND} -E echo "               - add: add an additionnal environment to a target available profile."
+	COMMAND ${CMAKE_COMMAND} -E echo "               - rm: remove an additionnal environment from a target available profile."
+	COMMAND ${CMAKE_COMMAND} -E echo "             --- Argument for mk, del, load [mandatory] and add, rm [optional]---"
+	COMMAND ${CMAKE_COMMAND} -E echo "             - profile=*name*: name of the target profile. If not specified for add and rm commands, the target profile is default."
+	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments for mk, add, rm [mandatory] ---"
+	COMMAND ${CMAKE_COMMAND} -E echo "             - env=*name*: name of the target environment."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Optional arguments ---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - sysroot=*path*: set the sysroot path when environment is used to cross compile."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - staging=*path*: set the staging path when environment is used to cross compile."
-	COMMAND ${CMAKE_COMMAND} -E echo "             - platform=*platform string*: set the target platform corresponding to the environment. This "
-	COMMAND ${CMAKE_COMMAND} -E echo "               is usefull when the environment in use does not completely describe its target platform."
-	COMMAND ${CMAKE_COMMAND} -E echo "             - distribution=*string*: set the target distribution corresponding to the environment. This "
-	COMMAND ${CMAKE_COMMAND} -E echo "               is usefull when the environment in use does not define its target distribution."
-	COMMAND ${CMAKE_COMMAND} -E echo "             - distrib_version=*string*: set the target distribution version corresponding to the environment."
-	COMMAND ${CMAKE_COMMAND} -E echo "               This is usefull when the environment in use does not define its target distribution version."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - instance=*string*: set the instance name for target platform."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - platform=*platform string*: set a constraint on the target platform - equivalent to specifying proc_type, proc_arch, os and abi."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - proc_type=*os string*: set a constraint on the target processor type - e.g. x86, arm."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - proc_arch=*os string*: set a constraint on the target processor architecture - e.g. 32, 64."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - os=*os string*: set a constraint on the target operating system - e.g. linux, macosx."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - abi=*ABI string*: set a constraint on the target C++ ABI used - 98 or 11."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - distribution=*string*: set a constraint on the target distribution - e.g. ubuntu."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - distrib_version=*string*: set a constraint on the target distribution version - e.g. 18.04."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
 	COMMAND ${CMAKE_COMMAND} -E echo " contributions: manage contribution spaces in use in the workspace."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [mandatory] ---"
@@ -458,8 +470,8 @@ add_custom_target(profiles
 					-DTARGET_SYSROOT=\${sysroot}
 					-DTARGET_STAGING=\${staging}
 					-DTARGET_PLATFORM=\${platform}
-					-DTARGET_PROC_TYPE=\${type}
-					-DTARGET_PROC_ARCH=\${arch}
+					-DTARGET_PROC_TYPE=\${proc_type}
+					-DTARGET_PROC_ARCH=\${proc_arch}
 					-DTARGET_OS=\${os}
 					-DTARGET_ABI=\${abi}
 					-DTARGET_DISTRIBUTION=\${distribution}
