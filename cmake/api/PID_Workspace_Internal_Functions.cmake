@@ -3960,8 +3960,10 @@ endif()
 # detecting which platform is in use according to environment description
 detect_Current_Platform()
 
+# generate the platform description file used for user reporting
+write_Platform_Reporting_File(${CMAKE_BINARY_DIR}/Platform_Description.txt)
+
 # generate the current platform configuration file (that will be used to build packages)
-set(CONFIG_FILE ${CMAKE_BINARY_DIR}/Workspace_Platforms_Info.cmake)
-write_Current_Configuration(${CONFIG_FILE})
+write_Current_Configuration(${CMAKE_BINARY_DIR}/Workspace_Platforms_Info.cmake)
 
 endfunction(manage_Platforms)

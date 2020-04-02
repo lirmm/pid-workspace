@@ -250,7 +250,7 @@ function(add_Managed_Profile profile)
 
   if(ADD_MANAGED_PROFILE_ENVIRONMENT)
     if(PROFILE_${profile}_DEFAULT_ENVIRONMENT)#default environment already defined
-      append_Unique_In_Cache(PROFILE_${profile}_MORE_ENVIRONMENT ${ADD_MANAGED_PROFILE_ENVIRONMENT})#adding one more additionnal environment
+      append_Unique_In_Cache(PROFILE_${profile}_MORE_ENVIRONMENTS ${ADD_MANAGED_PROFILE_ENVIRONMENT})#adding one more additionnal environment
     else()
       set(PROFILE_${profile}_DEFAULT_ENVIRONMENT ${ADD_MANAGED_PROFILE_ENVIRONMENT} CACHE INTERNAL "")
     endif()
@@ -407,16 +407,10 @@ macro(reset_Profiles)
     endif()
   endif()
 
-  if(CURRENT_PROFILE STREQUAL "default")
-    message("[PID] INFO: using default profile, based on host native development environment.")
-  else()
-    message("[PID] INFO: using ${CURRENT_PROFILE} profile, based on ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT} as main development environment.")
-  endif()
-  if(PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
-    message("      - additional environments in use are : ${PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS}")
-  endif()
   set(dir ${WORKSPACE_DIR}/pid/${CURRENT_PROFILE})
+
   if(NOT EXISTS ${dir}/Workspace_Platforms_Info.cmake #check if the complete platform description exists for current profile (may have not been generated yet or may has been removed by hand)
+     OR NOT EXISTS ${dir}/Workspace_Solution_File.cmake
      OR FORCE_CURRENT_PROFILE_EVALUATION) # explicit query to a reevaluation of the profile
     if(FORCE_CURRENT_PROFILE_EVALUATION)
       unset(FORCE_CURRENT_PROFILE_EVALUATION CACHE)
@@ -427,12 +421,15 @@ macro(reset_Profiles)
     else()
       hard_Clean_Build_Folder(${dir})
     endif()
+
+    set(full_solution_str "")
     # evaluate the main environment of the profile, then all additionnal environments
     if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")#need to reevaluate the main environment if profile is not haost default
       evaluate_Environment_From_Workspace(SUCCESS ${CURRENT_PROFILE} ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT} TRUE)#evaluate as main env
       if(SUCCESS)
-        file(	COPY ${WORKSPACE_DIR}/environments/${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}/build/PID_Environment_Description.cmake
-              DESTINATION ${dir})
+        file(	READ ${WORKSPACE_DIR}/environments/${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}/build/PID_Environment_Solution_Info.cmake
+              full_solution_str)
+
         if(EXISTS ${WORKSPACE_DIR}/environments/${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}/build/PID_Toolchain.cmake)
           file(	COPY ${WORKSPACE_DIR}/environments/${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}/build/PID_Toolchain.cmake
                 DESTINATION ${dir})
@@ -445,13 +442,39 @@ macro(reset_Profiles)
     foreach(env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
       evaluate_Environment_From_Workspace(SUCCESS ${CURRENT_PROFILE} ${env} FALSE)#evaluate as additionnal
       if(SUCCESS)
-        file(	COPY ${WORKSPACE_DIR}/environments/${env}/build/PID_Environment_Solution_Info.cmake
-              DESTINATION ${dir})
+        file(	READ ${WORKSPACE_DIR}/environments/${env}/build/PID_Environment_Solution_Info.cmake
+              temp_str)
+        set(full_solution_str "${full_solution_str}\n${temp_str}")
       else()
         #remove the environment
         remove_Additional_Environment(SUCCESS ${CURRENT_PROFILE} ${env})
       endif()
     endforeach()
+
+    # write the allow access for full solution description
+    file(WRITE ${dir}/Workspace_Solution_File.cmake "${full_solution_str}")
+  endif()
+
+
+  # apply result of profile evaluation to the subfolder (reconfigure current project into subfolders)
+  # then perform manage platform/plugins to detect all languages features and plugins (automatically done by rerun in subfolder)
+  # need to set the definitions used in evalutaion of profile specific configuration
+  set(args -DWORKSPACE_DIR=${WORKSPACE_DIR} -DIN_CI_PROCESS=${IN_CI_PROCESS} -DPACKAGE_BINARY_INSTALL_DIR=${PACKAGE_BINARY_INSTALL_DIR})
+  include(${dir}/Workspace_Solution_File.cmake)#use the solution file to set global variables
+  if(${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_CROSSCOMPILATION)
+    list(APPEND args -DPID_CROSSCOMPILATION=TRUE)
+  endif()
+  if(${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_INSTANCE)
+    list(APPEND args -DPID_USE_INSTANCE_NAME=${${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_INSTANCE})
+  endif()
+  if(${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_TARGET_PLATFORM)
+    list(APPEND args -DPID_USE_TARGET_PLATFORM=${${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_TARGET_PLATFORM})
+  endif()
+  if(${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_TARGET_DISTRIBUTION)
+    list(APPEND args -DPID_USE_DISTRIBUTION=${${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_TARGET_DISTRIBUTION})
+  endif()
+  if(${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_TARGET_DISTRIBUTION_VERSION)
+    list(APPEND args -DPID_USE_DISTRIB_VERSION=${${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_TARGET_DISTRIBUTION_VERSION})
   endif()
 
   # write the configuration file to memorize choices for next configuration (and for user editing)
@@ -459,9 +482,6 @@ macro(reset_Profiles)
   # write the configuration file to memorize at global scope (in pid folder) the global information on current environment
   write_Workspace_Profiles_Info_File()
 
-  # apply result of environment evaluation to the subfolder (reconfigure current project into subfolders)
-  # then perform manage platform/plugins to detect all languages features and plugins (automatically done by rerun in subfolder)
-  set(args -DWORKSPACE_DIR=${WORKSPACE_DIR} -DIN_CI_PROCESS=${IN_CI_PROCESS} -DPACKAGE_BINARY_INSTALL_DIR=${PACKAGE_BINARY_INSTALL_DIR})
   # configuring the CMake generator in use
   if(CMAKE_EXTRA_GENERATOR)
     set(generator_name "${CMAKE_EXTRA_GENERATOR} - ${CMAKE_GENERATOR}")
@@ -473,9 +493,6 @@ macro(reset_Profiles)
   if(EXISTS ${dir}/PID_Toolchain.cmake)
     list(APPEND args -DCMAKE_TOOLCHAIN_FILE=${dir}/PID_Toolchain.cmake)
   endif()
-  if(EXISTS ${dir}/PID_Environment_Description.cmake)
-    set(args -C${dir}/PID_Environment_Description.cmake ${args})#put the cache file first
-  endif()
 
   # reconfigure the pid workspace:
   # - preloading cache for all PID specific variables (-C option of cmake)
@@ -484,7 +501,7 @@ macro(reset_Profiles)
                   ${args}
                   ../..
                   WORKING_DIRECTORY ${dir}
-                  OUTPUT_QUIET
+                  OUTPUT_QUIET ERROR_QUIET
   )
 
   # get platform description from profile specific configuration
@@ -564,37 +581,62 @@ endfunction(evaluate_Environment_From_Workspace)
 #      Prepare plugins files to be usable by packages depending on current profile in use
 #
 function(manage_Plugins)
-  set(list_before)
-  set(list_after)
-  if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
-    extract_Plugins_From_Environment(BEFORE_PLUGINS AFTER_PLUGINS ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
-    list(APPEND list_before ${BEFORE_PLUGINS})
-    list(APPEND list_after ${AFTER_PLUGINS})
+  set(list_before_deps)
+  set(list_before_comps)
+  set(list_after_comps)
+  if(NOT EXISTS ${CMAKE_BINARY_DIR}/Workspace_Solution_File.cmake)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR: file ${CMAKE_BINARY_DIR}/Workspace_Solution_File.cmake cannot be found ! Aborting.")
   endif()
-  foreach(env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
-    extract_Plugins_From_Environment(BEFORE_PLUGINS AFTER_PLUGINS ${env})
-    list(APPEND list_before ${BEFORE_PLUGINS})
-    list(APPEND list_after ${AFTER_PLUGINS})
+  if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")#host environment defines no plugin
+    extract_Plugins_From_Environment(BEFORE_DEPS BEFORE_COMPS AFTER_COMPS ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
+    list(APPEND list_before_deps ${BEFORE_DEPS})
+    list(APPEND list_before_comps ${BEFORE_COMPS})
+    list(APPEND list_after_comps ${AFTER_COMPS})
+  endif()
+  foreach(env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)#additionnal environments may define plugins
+    extract_Plugins_From_Environment(BEFORE_DEPS BEFORE_COMPS AFTER_COMPS ${env})
+    list(APPEND list_before_deps ${BEFORE_DEPS})
+    list(APPEND list_before_comps ${BEFORE_COMPS})
+    list(APPEND list_after_comps ${AFTER_COMPS})
   endforeach()
   if(EXISTS ${CMAKE_BINARY_DIR}/plugins)
     file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/plugins)
   endif()
-  if(list_before OR list_after)
-    list(REVERSE list_before)
-    list(REVERSE list_after)
+  if(list_before_deps OR list_before_comps OR list_after_comps)
     set(count 0)
     #generate the set of files used into packages to activate plugins
-    foreach(plugin IN LISTS list_before)
+    set(path_to_plug_before_deps ${CMAKE_BINARY_DIR}/plugins/before_deps)
+    if(NOT EXISTS ${path_to_plug_before_deps})
+      file(MAKE_DIRECTORY ${path_to_plug_before_deps})
+    endif()
+    set(path_to_plug_before_comps ${CMAKE_BINARY_DIR}/plugins/before_comps)
+    if(NOT EXISTS ${path_to_plug_before_comps})
+      file(MAKE_DIRECTORY ${path_to_plug_before_comps})
+    endif()
+    set(path_to_plug_after_comps ${CMAKE_BINARY_DIR}/plugins/after_comps)
+    if(NOT EXISTS ${path_to_plug_after_comps})
+      file(MAKE_DIRECTORY ${path_to_plug_after_comps})
+    endif()
+
+    set(count 0)
+    foreach(plugin IN LISTS list_before_deps)
       get_filename_component(PLUGIN_NAME ${plugin} NAME)
-  		file(COPY ${plugin} DESTINATION ${CMAKE_BINARY_DIR}/plugins/before)
-      file(RENAME ${CMAKE_BINARY_DIR}/plugins/before/${PLUGIN_NAME} ${count}.cmake)
+  		file(COPY ${plugin} DESTINATION ${path_to_plug_before_deps})
+      file(RENAME ${path_to_plug_before_deps}/${PLUGIN_NAME} ${path_to_plug_before_deps}/${count}.cmake)
       math(EXPR count "${count}+1")
   	endforeach()
     set(count 0)
-    foreach(plugin IN LISTS list_after)
+    foreach(plugin IN LISTS list_before_comps)
       get_filename_component(PLUGIN_NAME ${plugin} NAME)
-  		file(COPY ${plugin} DESTINATION ${CMAKE_BINARY_DIR}/plugins/after)
-      file(RENAME ${CMAKE_BINARY_DIR}/plugins/after/${PLUGIN_NAME} ${count}.cmake)
+  		file(COPY ${plugin} DESTINATION ${path_to_plug_before_comps})
+      file(RENAME ${path_to_plug_before_comps}/${PLUGIN_NAME} ${path_to_plug_before_comps}/${count}.cmake)
+      math(EXPR count "${count}+1")
+  	endforeach()
+    set(count 0)
+    foreach(plugin IN LISTS list_after_comps)
+      get_filename_component(PLUGIN_NAME ${plugin} NAME)
+  		file(COPY ${plugin} DESTINATION ${path_to_plug_after_comps})
+      file(RENAME ${path_to_plug_after_comps}/${PLUGIN_NAME} ${path_to_plug_after_comps}/${count}.cmake)
       math(EXPR count "${count}+1")
   	endforeach()
   endif()
@@ -611,17 +653,48 @@ endfunction(manage_Plugins)
 #  extract_Plugins_From_Environment
 #  --------------------------------
 #
-#   .. command:: extract_Plugins_From_Environment()
+#   .. command:: extract_Plugins_From_Environment(BEFORE_DEPS BEFORE_COMPS AFTER_COMPS environment)
 #
 #      Get the list of path to files used to implement plugins behavior
 #
 #     :environment: the name of the environment defining the plugin
+#     :BEFORE_DEPS: the output variable containing the list of path to the CMake script files defining plugin behavior to be activated before description of dependencies of a package
+#     :BEFORE_COMPS: the output variable containing the list of path to the CMake script files defining plugin behavior to be activated before description of components of a package
+#     :AFTER_COMPS: the output variable containing the list of path to the CMake script files defining plugin behavior to be activated after description of components of a package
 #
-#     :BEFORE_PLUGINS: the output variable containing the list of path to the CMake script files defining plugin behavior to be activated before configuration of package
-#
-#     :AFTER_PLUGINS: the output variable containing the list of path to the CMake script files defining plugin behavior to be activated after configuration of package
-#
-function(extract_Plugins_From_Environment BEFORE_PLUGINS AFTER_PLUGINS environment)
-
-#TODO
+function(extract_Plugins_From_Environment BEFORE_DEPS BEFORE_COMPS AFTER_COMPS environment)
+   set(path_to_env ${WORKSPACE_DIR}/environments/${environment})
+   set(res_bef_deps)
+   set(res_bef_comps)
+   set(res_aft_comps)
+   if(NOT EXISTS ${path_to_env})#check that te environment exist because we need to copy scripts from its content
+     load_Environment(LOADED ${environment})
+     if(NOT LOADED)
+       message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot find or deploy environment ${environment}. This is probably due to a badly referenced environment or it is contained in a contribution space not currenlty used.")
+       return()
+     endif()
+   endif()
+   foreach(tool IN LISTS ${environment}_EXTRA_TOOLS)
+     if(${environment}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES)
+       list(APPEND res_bef_deps ${${environment}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES})
+     endif()
+     if(${environment}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS)
+       list(APPEND res_bef_comps ${${environment}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS})
+     endif()
+     if(${environment}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS)
+       list(APPEND res_aft_comps ${${environment}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS})
+     endif()
+   endforeach()
+   if(res_bef_deps)
+     list(REMOVE_DUPLICATES res_bef_deps)
+   endif()
+   if(res_bef_comps)
+     list(REMOVE_DUPLICATES res_bef_comps)
+   endif()
+   if(res_aft_comps)
+     list(REMOVE_DUPLICATES res_aft_comps)
+   endif()
+   set(${BEFORE_DEPS} ${res_bef_deps} PARENT_SCOPE)
+   set(${BEFORE_COMPS} ${res_bef_comps} PARENT_SCOPE)
+   set(${AFTER_COMPS} ${res_aft_comps} PARENT_SCOPE)
 endfunction(extract_Plugins_From_Environment)

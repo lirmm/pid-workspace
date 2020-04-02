@@ -192,6 +192,38 @@ endfunction(is_A_System_Reference_Path)
 #
 # .. ifmode:: internal
 #
+#  .. |is_A_System_Include_Path| replace:: ``is_A_System_Include_Path``
+#  .. _is_A_System_Include_Path:
+#
+#  is_A_System_Include_Path
+#  ------------------------
+#
+#   .. command:: is_A_System_Include_Path(path IS_SYSTEM)
+#
+#     Tells wether a path is a system include folder.
+#
+#     :path: the path to check
+#
+#     :IS_SYSTEM: the output variable that is TRUE if path is a system include path, FALSE otherwise
+#
+function(is_A_System_Include_Path path IS_SYSTEM)
+  set(all_default_path ${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES} ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+  if(all_default_path)
+    list(REMOVE_DUPLICATES all_default_path)
+    foreach(a_path IN LISTS all_default_path)
+      if(a_path STREQUAL path)#OK path is in default path => remove it
+        set(${IS_SYSTEM} TRUE PARENT_SCOPE)
+        return()
+      endif()
+    endforeach()
+  endif()
+  set(${IS_SYSTEM} FALSE PARENT_SCOPE)
+endfunction(is_A_System_Include_Path)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |extract_Info_From_Platform| replace:: ``extract_Info_From_Platform``
 #  .. _extract_Info_From_Platform:
 #

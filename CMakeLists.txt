@@ -33,6 +33,7 @@ if(DIR_NAME STREQUAL "pid")
 	### set global workspace variables ###
 	set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR} CACHE INTERNAL "")
 	option(IN_CI_PROCESS "Determine wether the build takes place in a CI environment (ON) or not (default to OFF)." OFF)
+	option(ADDITIONNAL_DEBUG_INFO "Get debug infi from configuration" OFF)
 	mark_as_advanced(IN_CI_PROCESS)
 	set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
 
@@ -73,6 +74,7 @@ if(DIR_NAME STREQUAL "pid")
 elseif(DIR_NAME MATCHES "pid/(.+)")#subfolder of pid: profile specific folder
 	load_Current_Contribution_Spaces()#simply load the contribution space from higher level
 	read_Profiles_Description_File(FILE_EXISTS)#from here we are sure the file exists
+	include(${CMAKE_BINARY_DIR}/Workspace_Solution_File.cmake)#get the complete description
 	manage_Platforms() # define all properties of the current platform in use (based on current build environment)
   manage_Plugins() # extract plugins in use from each environment according to the current profile in use
 	return()
@@ -292,10 +294,10 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo ""
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
-
 ## getting info on the workspace, packages, frameworks or licenses
 add_custom_target(info
 	COMMAND ${CMAKE_COMMAND} -DTARGET_PACKAGE="\${package}"
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-DTARGET_FRAMEWORK=\${framework}
 					-DTARGET_ENVIRONMENT=\${environment}
 					-DTARGET_LICENSE=\${license}
@@ -316,6 +318,7 @@ add_custom_target(deploy
 					-DUSE_BRANCH=\${branch}
 					-DRUN_TESTS=\${test}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Deploy_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -324,6 +327,7 @@ add_custom_target(deploy
 add_custom_target(build
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES="\${package}"
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Build_PID_Packages.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -332,6 +336,7 @@ add_custom_target(build
 add_custom_target(rebuild
 	COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGES="\${package}"
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Rebuild_PID_Packages.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -341,6 +346,7 @@ add_custom_target(resolve
 	COMMAND ${CMAKE_COMMAND} 	-DRESOLVED_PACKAGE=\${package}
 					-DTARGET_VERSION=\${version}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Resolve_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -357,6 +363,7 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DOPTIONNAL_GIT_URL=\${url}
 					-DOPTIONNAL_SITE=\${site}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Create_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -371,6 +378,7 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_FRAMEWORK=\${framework}
 					-DORIGIN_GIT_URL=\${origin}
 					-DFORCED_RECONNECTION=\${force}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-DCMAKE_SIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P}
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Connect_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -382,6 +390,7 @@ add_custom_target(uninstall
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DTARGET_VERSION=\${version}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Clear_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -391,6 +400,7 @@ add_custom_target(hard_clean
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DRECONFIGURE=\${configure}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -401,6 +411,7 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DTARGET_FRAMEWORK=\${framework}
 					-DTARGET_ENVIRONMENT=\${environment}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Remove_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -411,6 +422,7 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DTARGET_FRAMEWORK=\${framework}
 					-DTARGET_ENVIRONMENT=\${environment}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Register_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -422,6 +434,7 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 					-DFROM_BRANCH=\${branch}
 					-DAUTOMATIC_RELEASE=\${recursive}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Release_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -434,6 +447,7 @@ COMMAND ${CMAKE_COMMAND}
 					-DTARGET_FRAMEWORK=\${framework}
 					-DFORCE_SOURCE=\${force_source}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Update_PID_Deployment_Unit.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -443,6 +457,7 @@ add_custom_target(upgrade
 COMMAND ${CMAKE_COMMAND} 	-DTARGET_OFFICIAL=\${official}
 					-DUPDATE_ALL_PACKAGES=\${update}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Upgrade_PID_Workspace.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -456,6 +471,7 @@ COMMAND ${CMAKE_COMMAND} 	-DINSTALLED_PACKAGE=\${package}
 					-DINSTALL_FOLDER=\${folder}
 					-DINSTALL_MODE=\${mode}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Install_PID_Package.cmake
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
@@ -478,6 +494,7 @@ add_custom_target(profiles
 					-DTARGET_DISTRIBUTION_VERSION=\${distrib_version}
 					-DIN_CI_PROCESS=${IN_CI_PROCESS}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} #using default or current native build system
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Manage_PID_Profiles.cmake
 	    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -494,6 +511,7 @@ add_custom_target(contributions
 					-DCONTENT_TO_OPERATE=\${content}
 					-DIN_CI_PROCESS=${IN_CI_PROCESS}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
+					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 					-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} #using default or current native build system
 					-P ${CMAKE_SOURCE_DIR}/cmake/commands/Manage_PID_Contribution_Spaces.cmake
 	   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}

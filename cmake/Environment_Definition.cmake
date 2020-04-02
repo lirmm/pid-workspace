@@ -93,7 +93,7 @@ endmacro(PID_Environment)
 
 macro(declare_PID_Environment)
 set(oneValueArgs LICENSE ADDRESS MAIL EMAIL PUBLIC_ADDRESS CONTRIBUTION_SPACE)
-set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION)
+set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION INFO)
 cmake_parse_arguments(DECLARE_PID_ENV "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
 if(NOT DECLARE_PID_ENV_LICENSE)
@@ -122,7 +122,7 @@ elseif(DECLARE_PID_ENV_EMAIL)
   set(email ${DECLARE_PID_ENV_EMAIL})
 endif()
 
-declare_Environment("${DECLARE_PID_ENV_AUTHOR}" "${DECLARE_PID_ENV_INSTITUTION}" "${email}" "${DECLARE_PID_ENV_YEAR}" "${DECLARE_PID_ENV_LICENSE}" "${DECLARE_PID_ENV_ADDRESS}" "${DECLARE_PID_ENV_PUBLIC_ADDRESS}" "${DECLARE_PID_ENV_DESCRIPTION}" "${DECLARE_PID_ENV_CONTRIBUTION_SPACE}")
+declare_Environment("${DECLARE_PID_ENV_AUTHOR}" "${DECLARE_PID_ENV_INSTITUTION}" "${email}" "${DECLARE_PID_ENV_YEAR}" "${DECLARE_PID_ENV_LICENSE}" "${DECLARE_PID_ENV_ADDRESS}" "${DECLARE_PID_ENV_PUBLIC_ADDRESS}" "${DECLARE_PID_ENV_DESCRIPTION}" "${DECLARE_PID_ENV_CONTRIBUTION_SPACE}" "${DECLARE_PID_ENV_INFO}")
 unset(email)
 endmacro(declare_PID_Environment)
 
@@ -198,13 +198,13 @@ endmacro(add_PID_Environment_Author)
 #     .. rubric:: Optional parameters
 #
 #     :PLATFORM <platform>: defines a complete specification of the target platform (e.g. x86_64_linux_abi11).
+#     :INSTANCE <name>: defines a platform instance name.
 #     :TYPE <proc>: the type of architecture for processor of the platform (e.g. x86).
 #     :ARCH <bits>: the size of processor architecture registry, 16, 32 or 64.
 #     :OS <kernel>: the OS kernel of the platform (e.g. linux).
 #     :ABI <abi>: the default c++ ABI used by the platform, 98 or 11.
 #     :DISTRIBUTION <distrib name>: the name of the distribution of the target platform.
 #     :DISTRIB_VERSION <version>: the version of the distribution of the target platform.
-#     :CONFIGURATION ...: list of target platform configuration that the host must match
 #     :CHECK ...: the path to the script file defining how to check if current host already defines adequate build variables.
 #
 #     .. admonition:: Constraints
@@ -231,9 +231,8 @@ if(${PROJECT_NAME}_PLATFORM_CONSTRAINT_DEFINED)
   message(FATAL_ERROR "[PID] CRITICAL ERROR: PID_Environment_Platform can be called only once per environment.")
   return()
 endif()
-set(oneValueArgs CHECK PLATFORM ARCH TYPE OS ABI DISTRIBUTION DISTRIB_VERSION)
-set(multiValueArgs CONFIGURATION)
-cmake_parse_arguments(DECLARE_PID_ENV_PLATFORM "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+set(oneValueArgs CHECK PLATFORM INSTANCE ARCH TYPE OS ABI DISTRIBUTION DISTRIB_VERSION)
+cmake_parse_arguments(DECLARE_PID_ENV_PLATFORM "" "${oneValueArgs}" "" ${ARGN} )
 
 if(DECLARE_PID_ENV_PLATFORM_DISTRIB_VERSION)
   if(NOT DECLARE_PID_ENV_PLATFORM_DISTRIBUTION)
@@ -266,7 +265,7 @@ else()#getting more specific contraint on platform
   endif()
 endif()
 
-define_Build_Environment_Platform("${type_constraint}" "${arch_constraint}" "${os_constraint}" "${abi_constraint}" "${DECLARE_PID_ENV_PLATFORM_DISTRIBUTION}" "${DECLARE_PID_ENV_PLATFORM_DISTRIB_VERSION}")
+define_Build_Environment_Platform("${DECLARE_PID_ENV_INSTANCE}" "${type_constraint}" "${arch_constraint}" "${os_constraint}" "${abi_constraint}" "${DECLARE_PID_ENV_PLATFORM_DISTRIBUTION}" "${DECLARE_PID_ENV_PLATFORM_DISTRIB_VERSION}")
 unset(arch_constraint)
 unset(type_constraint)
 unset(os_constraint)
@@ -752,6 +751,7 @@ endfunction(get_Configured_Environment_Tool)
 #
 #     :LANGUAGE lang: the language that is being configured (C, CXX, ASM, Fortran, CUDA).
 #     :SYSTEM: tells that system wide (as opposed to language wide) variables are configured.
+#     :EXTRA tool_name: tells that an extra tool is defined.
 #
 #     .. rubric:: Optional parameters
 #
@@ -783,19 +783,34 @@ endfunction(get_Configured_Environment_Tool)
 #
 #        configure_Environment_Tool(SYSTEM LINKER ${CMAKE_LINKER} FLAGS -m32 )
 #
+#        configure_Environment_Tool(EXTRA pkg-config EXE ${PKG_CONFIG_EXECUTABLE}
+#                         VERSION ${PKG_CONFIG_VERSION_STRING} PLUGIN AFTER use_pkg-config.cmake)
+#
 function(configure_Environment_Tool)
   set(options SYSTEM EXE MODULE STATIC SHARED CURRENT)
 
-  set(monoValueArgs SYSROOT STAGING LANGUAGE COMPILER HOST_COMPILER TOOLCHAIN_ID INTERPRETER NM OBJDUMP OBJCOPY LIBRARY AR RANLIB LINKER GEN_TOOLSET GEN_PLATFORM )
-  set(multiValueArgs FLAGS PROGRAM_DIRS LIBRARY_DIRS INCLUDE_DIRS)
+  set(monoValueArgs EXTRA PROGRAM SYSROOT STAGING LANGUAGE COMPILER HOST_COMPILER TOOLCHAIN_ID INTERPRETER NM OBJDUMP OBJCOPY LIBRARY AR RANLIB LINKER GEN_TOOLSET GEN_PLATFORM )
+  set(multiValueArgs PLUGIN FLAGS PROGRAM_DIRS LIBRARY_DIRS INCLUDE_DIRS)
   cmake_parse_arguments(CONF_ENV_TOOL "${options}" "${monoValueArgs}" "${multiValueArgs}" ${ARGN})
 
-  if(NOT CONF_ENV_TOOL_LANGUAGE AND NOT CONF_ENV_TOOL_SYSTEM)
-    message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling configure_Environment_Tool, you must use LANGUAGE or SYSTEM arguments.")
+  if(NOT CONF_ENV_TOOL_LANGUAGE AND NOT CONF_ENV_TOOL_SYSTEM AND NOT CONF_ENV_TOOL_EXTRA)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling configure_Environment_Tool, you must use LANGUAGE, SYSTEM or EXTRA arguments.")
     return()
-  elseif(CONF_ENV_TOOL_LANGUAGE AND CONF_ENV_TOOL_SYSTEM)
-    message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling configure_Environment_Tool, you must use LANGUAGE or SYSTEM arguments but not both.")
-    return()
+  else()
+    set(nb_found 0)
+    if(CONF_ENV_TOOL_SYSTEM)
+      math(EXPR nb_found "${nb_found}+1")
+    endif()
+    if(CONF_ENV_TOOL_LANGUAGE)
+      math(EXPR nb_found "${nb_found}+1")
+    endif()
+    if(CONF_ENV_TOOL_EXTRA)
+      math(EXPR nb_found "${nb_found}+1")
+    endif()
+    if(nb_found GREATER 1)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling configure_Environment_Tool, arguments LANGUAGE, SYSTEM and EXTRA cannot be used at the same time.")
+      return()
+    endif()
   endif()
   if(CONF_ENV_TOOL_LANGUAGE)
     if(CONF_ENV_TOOL_CURRENT)#using current detected compiler settings
@@ -818,7 +833,6 @@ function(configure_Environment_Tool)
                            "${CONF_ENV_TOOL_INCLUDE_DIRS}"
                            "${CONF_ENV_TOOL_LIBRARY}"
                           "${CONF_ENV_TOOL_HOST_COMPILER}")
-
     endif()
 
   elseif(CONF_ENV_TOOL_SYSTEM)
@@ -907,6 +921,15 @@ function(configure_Environment_Tool)
         append_Unique_In_Cache(${PROJECT_NAME}_STATIC_LINKER_FLAGS "${CONF_ENV_TOOL_FLAGS}")
       endif()
     endif()
+  elseif(CONF_ENV_TOOL_EXTRA)#extra tool defined
+    if(CONF_ENV_TOOL_PLUGIN)
+      set(monoValueArgs BEFORE_DEPS BEFORE_COMPS AFTER_COMPS)
+      cmake_parse_arguments(CONF_PLUGIN "" "${monoValueArgs}" "" ${CONF_ENV_TOOL_PLUGIN})
+      set(plugin_before_deps ${CONF_PLUGIN_BEFORE_DEPS})
+      set(plugin_before_comps ${CONF_PLUGIN_BEFORE_COMPS})
+      set(plugin_after_comps ${CONF_PLUGIN_AFTER_COMPS})
+    endif()
+    add_Extra_Tool(${CONF_ENV_TOOL_EXTRA} TRUE "${CONF_ENV_TOOL_PROGRAM}" "${plugin_before_deps}" "${plugin_before_comps}" "${plugin_after_comps}")
   endif()
 endfunction(configure_Environment_Tool)
 

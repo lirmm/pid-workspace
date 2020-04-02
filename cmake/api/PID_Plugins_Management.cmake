@@ -43,12 +43,12 @@ include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
 #    Manage actions of activated/deactivated plugins in currently built package.
 #
 macro(manage_Plugins_In_Package folder)
-  set(target_path ${WORKSPACE_DIR}/pid/plugins/${folder})
+  set(target_path ${WORKSPACE_DIR}/pid/${CURRENT_PROFILE}/plugins/${folder})
   if(EXISTS ${target_path})#check if the folder exists, otherwise simply do nothing
-    file(GLOB ALL_SCRIPTS ${target_path})
+    file(GLOB ALL_SCRIPTS "${target_path}/*")
     if(ALL_SCRIPTS)#check if the folder contains scripts, otherwise simply do nothing
-      foreach(plugin IN LISTS ALL_SCRIPTS)
-        include(${plugin})#simply include the corresponding cmake script
+      foreach(plugin_script IN LISTS ALL_SCRIPTS)
+        include(${plugin_script})#simply include the corresponding cmake script
     	endforeach()
     endif()
   endif()
@@ -70,7 +70,7 @@ endmacro(manage_Plugins_In_Package)
 #    This callback is called AFTER components of the package have been described.
 #
 macro(manage_Plugins_In_Package_After_Components_Description)
-  manage_Plugins_In_Package(after)
+  manage_Plugins_In_Package(after_comps)
 endmacro(manage_Plugins_In_Package_After_Components_Description)
 
 #.rst:
@@ -89,8 +89,27 @@ endmacro(manage_Plugins_In_Package_After_Components_Description)
 #    This callback is called BEFORE description of components of the package.
 #
 macro(manage_Plugins_In_Package_Before_Components_Description)
- manage_Plugins_In_Package(before)
+ manage_Plugins_In_Package(before_comps)
 endmacro(manage_Plugins_In_Package_Before_Components_Description)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Plugins_In_Package_Before_Dependencies_Description| replace:: ``manage_Plugins_In_Package_Before_Dependencies_Description``
+#  .. _manage_Plugins_In_Package_Before_Dependencies_Description:
+#
+#  manage_Plugins_In_Package_Before_Dependencies_Description
+#  ---------------------------------------------------------
+#
+#   .. command:: manage_Plugins_In_Package_Before_Dependencies_Description()
+#
+#    Callback function used in currently built package to manage specific configuration actions provided by active environments.
+#    This callback is called BEFORE description of dependencies of the package.
+#
+macro(manage_Plugins_In_Package_Before_Dependencies_Description)
+ manage_Plugins_In_Package(before_deps)
+endmacro(manage_Plugins_In_Package_Before_Dependencies_Description)
 
 #.rst:
 #

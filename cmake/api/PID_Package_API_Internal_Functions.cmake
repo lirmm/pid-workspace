@@ -868,8 +868,10 @@ else()
 	set(CLOSED_SOURCE_DEPENDENCIES CACHE INTERNAL "")
 endif()
 
-# recursive call into subdirectories to build, install, test the package
+#plugin callback call point
 manage_Plugins_In_Package_Before_Components_Description()
+
+# recursive call into subdirectories to build, install, test the package
 add_subdirectory(src)
 add_subdirectory(apps)
 

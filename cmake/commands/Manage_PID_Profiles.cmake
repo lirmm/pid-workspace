@@ -92,23 +92,22 @@ if(NOT TARGET_DISTRIBUTION AND DEFINED ENV{distribution})
 endif()
 
 read_Profiles_Description_File(READ_SUCCESS) #reading information about profiles description
-
 # check inputs depending on the value of the "cmd" argument
 set(cmd_list "ls|mk|del|load|reset|add|rm")
 if(NOT TARGET_COMMAND MATCHES "^${cmd_list}$")
 	message(FATAL_ERROR "[PID] bad command \"${TARGET_COMMAND}\" used for profiles management. Allowed commands are: ${cmd_list}")
 	return()
 endif()
-
 if(NOT TARGET_COMMAND MATCHES "ls|reset")#except when listing profiles or resetting to defaultprofile, a profile name must be given
 	if(NOT TARGET_PROFILE)
-		if(TARGET_COMMAND MATCHES "add|rm")#add and rm commands apply by default to current profile
-			set(TARGET_PROFILE ${CURRENT_PROFILE} CACHE INTERNAL "")
+		if(TARGET_COMMAND MATCHES "add|rm|load")#add and rm commands apply by default to current profile
+			set(TARGET_PROFILE ${CURRENT_PROFILE} CACHE INTERNAL "" FORCE)
 		else()
 			message("[PID] ERROR when using the command ${TARGET_COMMAND}: you must given the name of target profile using \"profile\" argument")
 			return()
 		endif()
 	endif()
+
 	if(TARGET_COMMAND MATCHES "mk|add|rm")
 		if(NOT TARGET_ENVIRONMENT)
 			message("[PID] ERROR when using the command ${TARGET_COMMAND}: you must give the name of environment using \"env\" argument")
@@ -258,8 +257,8 @@ elseif(TARGET_COMMAND STREQUAL "add")
 	endif()
 
 	add_Managed_Profile(${TARGET_PROFILE} ENVIRONMENT ${TARGET_ENVIRONMENT})
-	if(CURRENT_PROFILE STREQUAL TARGET_PROFILE)
-		set(need_reconfigure TRUE)#reconfigure only if necessary
+	if(CURRENT_PROFILE STREQUAL TARGET_PROFILE)#if current profile has been modified then reconfigure
+		set(need_reconfigure TRUE)
 	endif()
 elseif(TARGET_COMMAND STREQUAL "rm")
 	list(FIND PROFILES ${TARGET_PROFILE} INDEX)
@@ -283,6 +282,7 @@ write_Profiles_Description_File()
 
 if(need_reconfigure)
 	execute_process(COMMAND ${CMAKE_COMMAND}
+									-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 									-DFORCE_CURRENT_PROFILE_EVALUATION=TRUE
 									${WORKSPACE_DIR}
 									WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)

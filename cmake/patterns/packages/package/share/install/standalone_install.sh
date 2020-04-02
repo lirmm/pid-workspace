@@ -71,8 +71,8 @@ else
   fi
 fi
 
-# launch workspace configuration using the pkg-config plugin to generate adequate
-cd pid && cmake -DPLUGIN_pkg_config=ON ..
+# launch workspace configuration using the pkg-config plugin to generate adequate pc files
+cd pid && cmake .. && make profiles cmd=add env=pkg-config
 
 #################################################################
 #############  --  building the project  --  ####################

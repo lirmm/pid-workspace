@@ -31,6 +31,92 @@ include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
 include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
 include(PID_Profiles_Functions NO_POLICY_SCOPE)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |write_Platform_Reporting_File| replace:: ``write_Platform_Reporting_File``
+#  .. _write_Platform_Reporting_File:
+#
+#  write_Platform_Reporting_File
+#  -----------------------------
+#
+#   .. command:: write_Platform_Reporting_File(file)
+#
+#     Write platform info user reporting file.
+#
+#     :file: path to target file
+#
+function(write_Platform_Reporting_File file)
+  #print global info
+  set(WORKSPACE_CONFIGURATION_DESCRIPTION)
+  if(CURRENT_PROFILE STREQUAL "default")
+    set(WORKSPACE_CONFIGURATION_DESCRIPTION "[PID] INFO: using default profile, based on host native development en
+    vironment.\n")
+  else()
+    set(WORKSPACE_CONFIGURATION_DESCRIPTION "[PID] INFO: using ${CURRENT_PROFILE} profile, based on ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT} as main development environment.\n")
+    if(${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_ACTION_INFO)
+      string(CONFIGURE "${${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_ACTION_INFO}" configured_actions)
+      set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION} - ${configured_actions}\n")
+    endif()
+  endif()
+  if(PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
+    set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION}[PID] INFO: additional environments in use:\n")
+    foreach(add_env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
+      set(mess_str "  -  ${add_env}")
+      if(${add_env}_ACTION_INFO)
+        string(CONFIGURE "${${add_env}_ACTION_INFO}" configured_actions)
+        set(mess_str "${mess_str}: ${configured_actions}")
+      endif()
+      set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION}${mess_str}\n")
+    endforeach()
+  endif()
+
+  set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION}\n[PID] INFO : Target platform in use is ${CURRENT_PLATFORM}:\n")
+  if(CURRENT_SPECIFIC_INSTRUCTION_SET)
+    string(REPLACE ";" ", " OPTIMIZATIONS "${CURRENT_SPECIFIC_INSTRUCTION_SET}")
+    set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION} + processor family = ${CURRENT_PLATFORM_TYPE} (optimizations: ${OPTIMIZATIONS})\n")
+  else()
+    set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION} + processor family = ${CURRENT_PLATFORM_TYPE}\n")
+  endif()
+  set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION} + binary architecture= ${CURRENT_PLATFORM_ARCH}\n")
+  if(CURRENT_PLATFORM_OS)
+    set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION} + operating system=${CURRENT_PLATFORM_OS}")
+    if(CURRENT_DISTRIBUTION)
+      set(distrib_str "")
+      if(NOT CURRENT_DISTRIBUTION_VERSION)
+        if(CURRENT_PACKAGING_SYSTEM)
+          set(distrib_str "(${CURRENT_DISTRIBUTION}, ${CURRENT_PACKAGING_SYSTEM_EXE} packaging)")
+        else()
+          set(distrib_str "(${CURRENT_DISTRIBUTION})")
+        endif()
+      else()#there is a version number bound to the distribution
+        if(CURRENT_PACKAGING_SYSTEM)
+          set(distrib_str "(${CURRENT_DISTRIBUTION} ${CURRENT_DISTRIBUTION_VERSION}, ${CURRENT_PACKAGING_SYSTEM_EXE} packaging)")
+        else()
+          set(distrib_str "(${CURRENT_DISTRIBUTION} ${CURRENT_DISTRIBUTION_VERSION})")
+        endif()
+      endif()
+      set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION} ${distrib_str}\n")
+    else()
+      set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION}\n")
+    endif()
+  endif()
+  set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION} + compiler ABI= ${CURRENT_PLATFORM_ABI}\n")
+
+  if(Python_Language_AVAILABLE)
+    set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION}[PID] INFO : Python may be used, target python version in use is ${CURRENT_PYTHON}. To use python modules installed in workspace please set the PYTHONPATH to =${WORKSPACE_DIR}/install/python${CURRENT_PYTHON}\n")
+  endif()
+  if(CUDA_Language_AVAILABLE)
+    set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION}[PID] INFO : CUDA language (version ${CUDA_VERSION}) may be used.\n")
+  endif()
+  if(Fortran_Language_AVAILABLE)
+    set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION}[PID] INFO : Fortran language may be used.\n")
+  endif()
+  file(WRITE ${CMAKE_BINARY_DIR}/Platform_Description.txt "${WORKSPACE_CONFIGURATION_DESCRIPTION}")
+endfunction(write_Platform_Reporting_File)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -68,57 +154,18 @@ macro(detect_Current_Platform)
 	include(CheckFortran)
 	include(CheckCUDA)
 
-  if(CURRENT_SPECIFIC_INSTRUCTION_SET)
-    string(REPLACE ";" ", " OPTIMIZATIONS "${CURRENT_SPECIFIC_INSTRUCTION_SET}")
-    set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family = ${CURRENT_PLATFORM_TYPE} (optimizations: ${OPTIMIZATIONS})\n")
+  #simply rewriting previously defined variable to normalize their names between workspace and packages (same accessor function can then be used from any place)
+  set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL "" FORCE)
+  set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL "" FORCE)
+
+  if(CURRENT_PLATFORM_OS)#the OS is optional (for microcontrolers there is no OS)
+    set(CURRENT_PLATFORM ${CURRENT_PLATFORM_TYPE}_${CURRENT_PLATFORM_ARCH}_${CURRENT_PLATFORM_OS}_${CURRENT_PLATFORM_ABI} CACHE INTERNAL "" FORCE)
   else()
-    set(WORKSPACE_CONFIGURATION_DESCRIPTION " + processor family = ${CURRENT_PLATFORM_TYPE}\n")
+    set(CURRENT_PLATFORM ${CURRENT_PLATFORM_TYPE}_${CURRENT_PLATFORM_ARCH}_${CURRENT_PLATFORM_ABI} CACHE INTERNAL "" FORCE)
   endif()
-  set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION} + binary architecture= ${CURRENT_PLATFORM_ARCH}\n")
-  if(CURRENT_PLATFORM_OS)
-    set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION} + operating system=${CURRENT_PLATFORM_OS}")
-    if(CURRENT_DISTRIBUTION)
-      set(distrib_str "")
-  		if(NOT CURRENT_DISTRIBUTION_VERSION)
-        if(CURRENT_PACKAGING_SYSTEM)
-          set(distrib_str "(${CURRENT_DISTRIBUTION}, ${CURRENT_PACKAGING_SYSTEM_EXE} packaging)")
-        else()
-          set(distrib_str "(${CURRENT_DISTRIBUTION})")
-        endif()
-  		else()#there is a version number bound to the distribution
-        if(CURRENT_PACKAGING_SYSTEM)
-          set(distrib_str "(${CURRENT_DISTRIBUTION} ${CURRENT_DISTRIBUTION_VERSION}, ${CURRENT_PACKAGING_SYSTEM_EXE} packaging)")
-        else()
-          set(distrib_str "(${CURRENT_DISTRIBUTION} ${CURRENT_DISTRIBUTION_VERSION})")
-        endif()
-      endif()
-      set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION} ${distrib_str}\n")
-  	endif()
-  endif()
-  set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION} + compiler ABI= ${CURRENT_PLATFORM_ABI}")
-	#simply rewriting previously defined variable to normalize their names between workspace and packages (same accessor function can then be used from any place)
-	set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL "" FORCE)
-	set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL "" FORCE)
 
-	if(CURRENT_PLATFORM_OS)#the OS is optional (for microcontrolers there is no OS)
-		set(CURRENT_PLATFORM ${CURRENT_PLATFORM_TYPE}_${CURRENT_PLATFORM_ARCH}_${CURRENT_PLATFORM_OS}_${CURRENT_PLATFORM_ABI} CACHE INTERNAL "" FORCE)
-	else()
-		set(CURRENT_PLATFORM ${CURRENT_PLATFORM_TYPE}_${CURRENT_PLATFORM_ARCH}_${CURRENT_PLATFORM_ABI} CACHE INTERNAL "" FORCE)
-	endif()
+  set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install/${CURRENT_PLATFORM} CACHE INTERNAL "" FORCE)
 
-	set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install/${CURRENT_PLATFORM} CACHE INTERNAL "" FORCE)
-  set(WORKSPACE_CONFIGURATION_DESCRIPTION "[PID] INFO : Target platform in use is ${CURRENT_PLATFORM}:\n${WORKSPACE_CONFIGURATION_DESCRIPTION}\n")
-
-  if(Python_Language_AVAILABLE)
-    set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION}[PID] INFO : Python may be used, target python version in use is ${CURRENT_PYTHON}. To use python modules installed in workspace please set the PYTHONPATH to =${WORKSPACE_DIR}/install/python${CURRENT_PYTHON}\n")
-	endif()
-	if(CUDA_Language_AVAILABLE)
-    set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION}[PID] INFO : CUDA language (version ${CUDA_VERSION}) may be used.\n")
-	endif()
-	if(Fortran_Language_AVAILABLE)
-    set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION}[PID] INFO : Fortran language may be used.")
-	endif()
-  file(WRITE ${CMAKE_BINARY_DIR}/Platform_Description.txt "${WORKSPACE_CONFIGURATION_DESCRIPTION}")
 endmacro(detect_Current_Platform)
 
 
