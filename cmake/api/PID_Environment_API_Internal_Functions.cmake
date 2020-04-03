@@ -1129,12 +1129,11 @@ function(generate_Environment_Reference_File pathtonewfile)
   file(APPEND ${pathtonewfile} "set(${PROJECT_NAME}_MAIN_INSTITUTION ${${PROJECT_NAME}_MAIN_INSTITUTION} CACHE INTERNAL \"\")\n")
   file(APPEND ${pathtonewfile} "set(${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS \"${${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS}\" CACHE INTERNAL \"\")\n")
   file(APPEND ${pathtonewfile} "set(${PROJECT_NAME}_YEARS ${${PROJECT_NAME}_YEARS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${pathtonewfile} "set(${PROJECT_NAME}_CONTACT_MAIL ${${PROJECT_NAME}_MAIL} CACHE INTERNAL \"\")\n")
+  file(APPEND ${pathtonewfile} "set(${PROJECT_NAME}_CONTACT_MAIL ${${PROJECT_NAME}_CONTACT_MAIL} CACHE INTERNAL \"\")\n")
   file(APPEND ${pathtonewfile} "set(${PROJECT_NAME}_ADDRESS ${${PROJECT_NAME}_ADDRESS} CACHE INTERNAL \"\")\n")
   file(APPEND ${pathtonewfile} "set(${PROJECT_NAME}_PUBLIC_ADDRESS ${${PROJECT_NAME}_PUBLIC_ADDRESS} CACHE INTERNAL \"\")\n")
   file(APPEND ${pathtonewfile} "set(${PROJECT_NAME}_LICENSE ${${PROJECT_NAME}_LICENSE} CACHE INTERNAL \"\")\n")
   file(APPEND ${pathtonewfile} "set(${PROJECT_NAME}_DESCRIPTION ${${PROJECT_NAME}_DESCRIPTION} CACHE INTERNAL \"\")\n")
-  file(APPEND ${pathtonewfile} "set(${PROJECT_NAME}_CONTRIBUTION_SPACE ${${PROJECT_NAME}_CONTRIBUTION_SPACE} CACHE INTERNAL \"\")\n")
 endfunction(generate_Environment_Reference_File)
 
 
