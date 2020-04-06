@@ -22,7 +22,6 @@
 ########################################################################
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Set_Policies NO_POLICY_SCOPE)
-
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Version_Management_Functions NO_POLICY_SCOPE)
@@ -39,6 +38,7 @@ include(PID_Plugins_Management NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
+include(Plugin_Definition NO_POLICY_SCOPE)#provide API for plugin scripts
 
 ##################################################################################
 #################### package management public functions and macros ##############
