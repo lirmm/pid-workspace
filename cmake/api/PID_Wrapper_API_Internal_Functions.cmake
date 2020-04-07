@@ -893,7 +893,7 @@ endfunction(add_Known_Version)
 function(declare_Wrapped_Configuration platform configurations options)
 if(platform)# if a platform constraint applies
 	foreach(config IN LISTS configurations)
-		parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")#need to parse the configuration strings to extract arguments (if any)
+		parse_Constraints_Check_Expression(CONFIG_NAME CONFIG_ARGS "${config}")#need to parse the configuration strings to extract arguments (if any)
 		if(NOT CONFIG_NAME)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
@@ -947,7 +947,7 @@ if(platform)# if a platform constraint applies
 
 else()#no platform constraint applies => this platform configuration is adequate for all platforms
 	foreach(config IN LISTS configurations)
-		parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
+		parse_Constraints_Check_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
 		if(NOT CONFIG_NAME)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
@@ -971,7 +971,7 @@ else()#no platform constraint applies => this platform configuration is adequate
 
 	#now dealing with options
 	foreach(config IN LISTS options)
-		parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
+		parse_Constraints_Check_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
 		if(NOT CONFIG_NAME)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] ERROR : configuration check ${config} is ill formed. Configuration being optional it is skipped automatically.")
@@ -1564,7 +1564,7 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 	foreach(config IN LISTS ${package}_KNOWN_VERSION_${version}_CONFIGURATIONS)
 		if(${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config} STREQUAL "all"
 			OR ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config} STREQUAL "${platform}")#this configuration is required for any platform
-			generate_Configuration_Constraints(RESULTING_EXPRESSION ${config} "${${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS}")
+			generate_Constraints_Check_Expression(RESULTING_EXPRESSION ${config} "${${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS}")
 			list(APPEND list_of_configs_checks ${RESULTING_EXPRESSION})
 			list(APPEND list_of_configs_names ${config})
 			generate_Configuration_Constraints_For_Dependency(list_of_configs_checks list_of_configs_names ${config})

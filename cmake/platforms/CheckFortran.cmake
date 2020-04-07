@@ -12,6 +12,7 @@ if(CMAKE_Fortran_COMPILER) #ONLY ENABLE FORTRAN if a Fortran toolchain is availa
   set(Fortran_Language_AVAILABLE TRUE CACHE INTERNAL "")
 else()
   message("[PID] WARNING : Fortran language is not supported because no Fortran compiler has been found.")
+  return()
 endif()
 
 foreach(symbol IN LISTS Fortran_STD_SYMBOLS)

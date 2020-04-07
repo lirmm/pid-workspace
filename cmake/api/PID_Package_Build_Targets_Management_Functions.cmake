@@ -1470,7 +1470,7 @@ foreach(link IN LISTS public_links)
 	endif()
 endforeach()
 
-# managing private link time flags (private links are never put in the interface)#TODO check that
+# managing private link time flags (private links are never put in the interface)
 foreach(link IN LISTS private_links)
 	create_External_Dependency_Target(EXT_TARGET_NAME ${link} "" ${mode})#private links are path to shared libraries used by a shared library
   if(EXT_TARGET_NAME) #this is a library

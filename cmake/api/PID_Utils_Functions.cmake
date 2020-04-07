@@ -29,6 +29,221 @@ set(PID_UTILS_FUNCTIONS_INCLUDED TRUE)
 include(CMakeParseArguments)
 include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
 
+
+##########################################################################################
+################# Management of constraint expressions ###################################
+##########################################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |parse_Constraints_Check_Expression_Argument_Value| replace:: ``parse_Constraints_Check_Expression_Argument_Value``
+#  .. _parse_Constraints_Check_Expression_Argument_Value:
+#
+#  parse_Constraints_Check_Expression_Argument_Value
+#  -------------------------------------------------
+#
+#   .. command:: parse_Constraints_Check_Expression_Argument_Value(RESULT_VALUE value_expression)
+#
+#    Parse the value expression for a check expression argument. Usefull to manage value that are lists in constraints expessions.
+#
+#     :value_expression: the string repsenting the value of a check expression's argument.
+#
+#     :RESULT_VALUE: the output variable that contains the value (in CMake format) of the argument variable.
+#
+function(parse_Constraints_Check_Expression_Argument_Value RESULT_VALUE value_expression)
+  if(value_expression AND NOT value_expression STREQUAL \"\")#special case of an empty list (represented with \"\") must be avoided
+    string(REPLACE " " "" ARG_VAL_LIST ${value_expression})#remove the spaces in the string if any
+    string(REPLACE "," ";" ARG_VAL_LIST ${ARG_VAL_LIST})#generate a cmake list (with ";" as delimiter) from an argument list (with "," delimiter)
+  else()
+    set(ARG_VAL_LIST)
+  endif()
+  set(${RESULT_VALUE} ${ARG_VAL_LIST} PARENT_SCOPE)
+endfunction(parse_Constraints_Check_Expression_Argument_Value)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |parse_Constraints_Check_Expression_Arguments| replace:: ``parse_Constraints_Check_Expression_Arguments``
+#  .. _parse_Constraints_Check_Expression_Arguments:
+#
+#  parse_Constraints_Check_Expression_Arguments
+#  --------------------------------------------
+#
+#   .. command:: parse_Constraints_Check_Expression_Arguments(RESULT_VARIABLE config_args_var)
+#
+#    Parse the configruation arguments when they come from the use file of a binary package
+#
+#     :config_args_var: the list of arguments coming from a native packag euse file. They the pattern variable=value with list value separated by ,.
+#
+#     :RESULT_VARIABLE: the output variable that contains the list of parsed arguments. Elements come two by two in the list, first being the variable name and the second being the value (unchanged from input).
+#
+function(parse_Constraints_Check_Expression_Arguments RESULT_VARIABLE config_args_var)
+set(result)
+foreach(arg IN LISTS ${config_args_var})
+  if(arg MATCHES "^([^=]+)=(.+)$")
+    list(APPEND result ${CMAKE_MATCH_1} ${CMAKE_MATCH_2})#simply append both arguments
+  endif()
+endforeach()
+set(${RESULT_VARIABLE} ${result} PARENT_SCOPE)
+endfunction(parse_Constraints_Check_Expression_Arguments)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |parse_Constraints_Check_Expression| replace:: ``parse_Constraints_Check_Expression``
+#  .. _parse_Constraints_Check_Expression:
+#
+#  parse_Constraints_Check_Expression
+#  ----------------------------------
+#
+#   .. command:: parse_Constraints_Check_Expression(NAME ARGS constraint)
+#
+#     Extract the arguments of a constraint check expression.
+#
+#     :constraint: the string representing the constraint check.
+#
+#     :NAME: the output variable containing the base name of the expression (environment or system configuration)
+#
+#     :ARGS: the output variable containing the list of arguments of the constraint check. Elements in the list go by pair (name or argument, value)
+#
+function(parse_Constraints_Check_Expression NAME ARGS constraint)
+  string(REPLACE " " "" constraint ${constraint})#remove the spaces if any
+  string(REPLACE "\t" "" constraint ${constraint})#remove the tabulations if any
+  if(constraint MATCHES "^([^[]+)\\[([^]]+)\\]$")#it matches !! => there are arguments in the check expression
+    set(THE_NAME ${CMAKE_MATCH_1})
+    set(THE_ARGS ${CMAKE_MATCH_2})
+    set(${ARGS} PARENT_SCOPE)
+    set(${NAME} PARENT_SCOPE)
+    if(NOT THE_ARGS)
+      return()#this is a ill formed description of a system check
+    endif()
+    string(REPLACE ":" ";" ARGS_LIST "${THE_ARGS}")
+    parse_Constraints_Check_Expression_Arguments(result ARGS_LIST)#here parsing
+    set(${ARGS} ${result} PARENT_SCOPE)
+    set(${NAME} ${THE_NAME} PARENT_SCOPE)
+  else()#this is a configuration constraint without arguments
+    set(${ARGS} PARENT_SCOPE)
+    set(${NAME} ${constraint} PARENT_SCOPE)
+  endif()
+endfunction(parse_Constraints_Check_Expression)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Constraints_Check_Parameters| replace:: ``generate_Constraints_Check_Parameters``
+#  .. _generate_Constraints_Check_Parameters:
+#
+#  generate_Constraints_Check_Parameters
+#  -------------------------------------
+#
+#   .. command:: generate_Constraints_Check_Parameters(RESULTING_EXPRESSION config_name config_args)
+#
+#     Generate a list whose each element is an expression of the form name=value.
+#
+#     :config_name: the name of the system configuration.
+#
+#     :config_args: list of arguments to use as constraints when checking the system configuration.
+#
+#     :LIST_OF_PAREMETERS: the output variable containing the list of expressions used to value the parameters of the expression.
+#
+function(generate_Constraints_Check_Parameters LIST_OF_PAREMETERS config_name config_args)
+  set(returned)
+  if(config_args)
+    set(first_time TRUE)
+    #now generating expression for each argument
+    while(config_args)
+      list(GET config_args 0 name)
+      list(GET config_args 1 value)
+      list(APPEND returned "${name}=${value}")
+      list(REMOVE_AT config_args 0 1)
+    endwhile()
+  endif()
+  set(${LIST_OF_PAREMETERS} ${returned} PARENT_SCOPE)
+endfunction(generate_Constraints_Check_Parameters)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Value_For_Constraints_Check_Expression_Parameter| replace:: ``generate_Value_For_Constraints_Check_Expression_Parameter``
+#  .. _generate_Value_For_Constraints_Check_Expression_Parameter:
+#
+#  generate_Value_For_Constraints_Check_Expression_Parameter
+#  ---------------------------------------------------------
+#
+#   .. command:: generate_Value_For_Constraints_Check_Expression_Parameter(RES_VAL variable)
+#
+#     Generate a string that represent the value of an argument in a constraint check expression.
+#
+#     :variable: the parent scope variable that contains the value.
+#
+#     :RES_VAL: the output variable containing the representation of the variable's value in a constraint check expression.
+#
+function(generate_Value_For_Constraints_Check_Expression_Parameter RES_VAL variable)
+  set(VAL_LIST "${${variable}}")#interpret the value of the adequate parent scope variable
+  if(NOT VAL_LIST)#list is empty
+    set(${RES_VAL} "\"\"" PARENT_SCOPE)#specific case: dealing with an empty value
+  else()
+    string(REPLACE " " "" VAL_LIST "${VAL_LIST}")#remove the spaces in the string if any
+    string(REPLACE ";" "," VAL_LIST "${VAL_LIST}")#generate a constraint expression value list (with "," as delimiter) from an argument list (with ";" delimiter)
+    set(${RES_VAL} "${VAL_LIST}" PARENT_SCOPE)#use guillemet to set exactly one element
+  endif()
+endfunction(generate_Value_For_Constraints_Check_Expression_Parameter)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Constraints_Check_Expression| replace:: ``generate_Constraints_Check_Expression``
+#  .. _generate_Constraints_Check_Expression:
+#
+#  generate_Constraints_Check_Expression
+#  -------------------------------------
+#
+#   .. command:: generate_Constraints_Check_Expression(RESULTING_EXPRESSION config_name config_args)
+#
+#     Generate an expression (string) that describes a check given by configuration or environment name and arguments. Inverse operation of parse_Constraints_Check_Expression.
+#
+#     :config_name: the name of the system configuration.
+#
+#     :config_args: list of arguments to use as constraints when checking the system configuration. Value for the variables have already been generated by using generate_Value_For_Constraints_Check_Expression_Parameter
+#
+#     :RESULTING_EXPRESSION: the output variable containing the configuration check equivalent expression.
+#
+function(generate_Constraints_Check_Expression RESULTING_EXPRESSION config_name config_args)
+  if(config_args)
+    set(final_expression "${config_name}[")
+    generate_Constraints_Check_Parameters(PARAMS ${config_name} "${config_args}")
+    set(first_time TRUE)
+    #now generating expression for each argument
+    foreach(arg IN LISTS PARAMS)
+      if(NOT first_time)
+        set(final_expression "${final_expression}:${arg}")
+      else()
+        set(final_expression "${final_expression}${arg}")
+        set(first_time FALSE)
+      endif()
+    endforeach()
+    set(final_expression "${final_expression}]")
+
+  else()#there is no argument
+    set(final_expression "${config_name}")
+  endif()
+  set(${RESULTING_EXPRESSION} "${final_expression}" PARENT_SCOPE)
+endfunction(generate_Constraints_Check_Expression)
+
+
+#############################################################
+###################### system utilities #####################
+#############################################################
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -1695,27 +1910,37 @@ endfunction(filter_All_Sources)
 #     :RESULT: the output variable that contains all source files path relative to the folder.
 #
 function(get_All_Sources_Relative RESULT dir)
-file(	GLOB_RECURSE
-	RES
-	RELATIVE ${dir}
-	"${dir}/*.c"
-	"${dir}/*.C"
-	"${dir}/*.cc"
-	"${dir}/*.cpp"
-	"${dir}/*.cxx"
-	"${dir}/*.c++"
-	"${dir}/*.h"
-	"${dir}/*.hpp"
-	"${dir}/*.hh"
-	"${dir}/*.hxx"
-	"${dir}/*.h++"
-	"${dir}/*.s"
-	"${dir}/*.S"
-	"${dir}/*.asm"
-	"${dir}/*.f"
-	"${dir}/*.py"
-)
-set (${RESULT} ${RES} PARENT_SCOPE)
+  set(additional_filter)
+  if(Fortran_Language_AVAILABLE)
+    list(APPEND additional_filters "${dir}/*.f" "${dir}/*.F" "${dir}/*.for" "${dir}/*.f90" "${dir}/*.f95" "${dir}/*.f03")
+  endif()
+  if(CUDA_Language_AVAILABLE)
+    list(APPEND additional_filters "${dir}/*.cu" "${dir}/*.cuh")
+  endif()
+  if(Python_Language_AVAILABLE)
+    list(APPEND additional_filters "${dir}/*.py")
+  endif()
+
+  file(	GLOB_RECURSE
+  	RES
+  	RELATIVE ${dir}
+  	"${dir}/*.c"
+  	"${dir}/*.C"
+  	"${dir}/*.cc"
+  	"${dir}/*.cpp"
+  	"${dir}/*.cxx"
+  	"${dir}/*.c++"
+  	"${dir}/*.h"
+  	"${dir}/*.hpp"
+  	"${dir}/*.hh"
+  	"${dir}/*.hxx"
+  	"${dir}/*.h++"
+  	"${dir}/*.s"
+  	"${dir}/*.S"
+  	"${dir}/*.asm"
+    ${additional_filters}
+  )
+  set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Relative)
 
 #.rst:
@@ -1737,26 +1962,37 @@ endfunction(get_All_Sources_Relative)
 #     :RESULT: the output variable that contains all source files path.
 #
 function(get_All_Sources_Absolute RESULT dir)
-file(	GLOB_RECURSE
-	RES
-	${dir}
-	"${dir}/*.c"
-	"${dir}/*.C"
-	"${dir}/*.cc"
-	"${dir}/*.cpp"
-	"${dir}/*.c++"
-	"${dir}/*.cxx"
-	"${dir}/*.h"
-	"${dir}/*.hpp"
-	"${dir}/*.h++"
-	"${dir}/*.hh"
-	"${dir}/*.hxx"
-	"${dir}/*.s"
-	"${dir}/*.S"
-	"${dir}/*.asm"
-	"${dir}/*.f"
-)
-set (${RESULT} ${RES} PARENT_SCOPE)
+  set(additional_filter)
+  if(Fortran_Language_AVAILABLE)
+    list(APPEND additional_filters "${dir}/*.f" "${dir}/*.F" "${dir}/*.for" "${dir}/*.f90" "${dir}/*.f95" "${dir}/*.f03")
+  endif()
+  if(CUDA_Language_AVAILABLE)
+    list(APPEND additional_filters "${dir}/*.cu" "${dir}/*.cuh")
+  endif()
+  if(Python_Language_AVAILABLE)
+    list(APPEND additional_filters "${dir}/*.py")
+  endif()
+
+  file(	GLOB_RECURSE
+  	RES
+  	${dir}
+  	"${dir}/*.c"
+  	"${dir}/*.C"
+  	"${dir}/*.cc"
+  	"${dir}/*.cpp"
+  	"${dir}/*.c++"
+  	"${dir}/*.cxx"
+  	"${dir}/*.h"
+  	"${dir}/*.hpp"
+  	"${dir}/*.h++"
+  	"${dir}/*.hh"
+  	"${dir}/*.hxx"
+  	"${dir}/*.s"
+  	"${dir}/*.S"
+  	"${dir}/*.asm"
+    ${additional_filters}
+  )
+  set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Sources_Absolute)
 
 #.rst:
@@ -1960,6 +2196,11 @@ foreach(filter IN LISTS filters)
   list(APPEND LIST_OF_FILTERS "${dir}/${filter}")
 endforeach()
 
+set(additional_filter)
+if(CUDA_Language_AVAILABLE)
+  list(APPEND additional_filters "${dir}/*.cuh")#specific header extension when using CUDA
+endif()
+
 file(	GLOB_RECURSE
 	RES
 	RELATIVE ${dir}
@@ -1968,6 +2209,7 @@ file(	GLOB_RECURSE
 	"${dir}/*.hh"
 	"${dir}/*.hxx"
 	"${dir}/*.h++"
+  ${additional_filters}
   ${LIST_OF_FILTERS}
 )
 set (${RESULT} ${RES} PARENT_SCOPE)
@@ -1999,16 +2241,22 @@ function(get_All_Headers_Absolute RESULT dir filters)
     list(APPEND LIST_OF_FILTERS "${dir}/${filter}")
   endforeach()
 
-file(	GLOB_RECURSE
-	RES
-	${dir}
-	"${dir}/*.h"
-	"${dir}/*.hpp"
-	"${dir}/*.hh"
-	"${dir}/*.hxx"
-  ${LIST_OF_FILTERS}
-)
-set (${RESULT} ${RES} PARENT_SCOPE)
+  set(additional_filter)
+  if(CUDA_Language_AVAILABLE)
+    list(APPEND additional_filters "${dir}/*.cuh")#specific header extension when using CUDA
+  endif()
+
+  file(	GLOB_RECURSE
+  	RES
+  	${dir}
+  	"${dir}/*.h"
+  	"${dir}/*.hpp"
+  	"${dir}/*.hh"
+  	"${dir}/*.hxx"
+    ${additional_filters}
+    ${LIST_OF_FILTERS}
+  )
+  set (${RESULT} ${RES} PARENT_SCOPE)
 endfunction(get_All_Headers_Absolute)
 
 #.rst:
@@ -4537,30 +4785,37 @@ function(define_Parallel_Jobs_Flag PARALLEL_JOBS_FLAG)
   endif()
 endfunction(define_Parallel_Jobs_Flag)
 
-# TODO add/generate documentation
-function(target_Options_Passed_Via_Environment res)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |target_Options_Passed_Via_Environment| replace:: ``target_Options_Passed_Via_Environment``
+#  .. _target_Options_Passed_Via_Environment:
+#
+#  target_Options_Passed_Via_Environment
+#  -------------------------------------
+#
+#   .. command:: target_Options_Passed_Via_Environment(RESULT)
+#
+#    Tells whether the current CMake generator requires target option to be passed as environment variables
+#
+#     :RESULT: the output variable that is TRUE if generator requires the use of environment variables
+#
+function(target_Options_Passed_Via_Environment RESULT)
     if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
-        set(${res} FALSE PARENT_SCOPE)
+      set(${RESULT} FALSE PARENT_SCOPE)
     else()
-        set(${res} TRUE PARENT_SCOPE)
+      set(${RESULT} TRUE PARENT_SCOPE)
     endif()
-endfunction()
+endfunction(target_Options_Passed_Via_Environment)
 
-function(get_GNU_Make_Program MAKE_EXE project_name)
-    find_program(MAKE_PATH make)
-    if(MAKE_PATH)
-        set(${MAKE_EXE} ${MAKE_PATH} PARENT_SCOPE)
-    else()
-        set(${MAKE_EXE} PARENT_SCOPE)
-        message(FATAL_ERROR "[PID] CRITICAL ERROR : GNU make is required to build ${project_name} but cannot be found. Please install it and try again.")
-    endif()
-endfunction()
-
+#TODO manage clang format as a plugin ? need to be found on host not in target platform so it is a plugin
 function(get_Clang_Format_Program CLANG_FORMAT_EXE)
-    find_program(CLANG_FORMAT_PATH clang-format)
-    if(CLANG_FORMAT_PATH)
-        set(${CLANG_FORMAT_EXE} ${CLANG_FORMAT_PATH} PARENT_SCOPE)
-    endif()
+  find_program(CLANG_FORMAT_PATH clang-format)
+  if(CLANG_FORMAT_PATH)
+      set(${CLANG_FORMAT_EXE} ${CLANG_FORMAT_PATH} PARENT_SCOPE)
+  endif()
 endfunction()
 
 #.rst:

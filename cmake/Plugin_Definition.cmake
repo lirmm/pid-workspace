@@ -29,6 +29,28 @@ set(PLUGIN_DEFINITION_INCLUDED TRUE)
 #
 # .. ifmode:: plugin
 #
+#  .. |is_Language_Available| replace:: ``is_Language_Available``
+#  .. _is_Language_Available:
+#
+#  is_Language_Available
+#  ^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: is_Language_Available(AVAILABLE language)
+#
+#    Check whether a language is sppourted by current build environment.
+#
+#      :language: the langauge to check support for
+#
+#      :AVAILABLE: The output variable that is TRUE if language is supported.
+#
+function(is_Language_Available AVAILABLE language)
+  set(${AVAILABLE} ${${language}_Language_AVAILABLE} PARENT_SCOPE)
+endfunction(is_Language_Available)
+
+#.rst:
+#
+# .. ifmode:: plugin
+#
 #  .. |get_Package_Component_Links| replace:: ``get_Package_Component_Links``
 #  .. _get_Package_Component_Links:
 #
@@ -50,6 +72,11 @@ set(PLUGIN_DEFINITION_INCLUDED TRUE)
 #      :PUBLIC_LINKS: The output variable that contains absolute path to public links (not in package install folder).
 #
 #      :PRIVATE_LINKS: The output variable that contains absolute path to private links (not in package install folder).
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
 #
 function(get_Package_Component_Links PACKAGE_LIB_FOLDER_IN_INSTALL RELATIVE_LINKS PUBLIC_LINKS PRIVATE_LINKS package component)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
@@ -158,6 +185,11 @@ endfunction(get_Package_Component_Links)
 #
 #      :OPTS: The output variable that contains compiler options
 #
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
+#
 function(get_Package_Component_Compilation_Info DEFS OPTS package component)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
   set(${DEFS} ${${package}_${component}_DEFS${VAR_SUFFIX}} PARENT_SCOPE)
@@ -187,6 +219,11 @@ endfunction(get_Package_Component_Compilation_Info)
 #      :INCLUDE_DIRS_ABS: The output variable that contains absolute include path (not in package install folder)
 #
 #      :INCLUDE_DIRS_REL: The output variable that contains the include path relative to package install folder.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
 #
 function(get_Package_Component_Includes PACKAGE_INCLUDE_FOLDER_IN_INSTALL INCLUDE_DIRS_ABS INCLUDE_DIRS_REL package component)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
@@ -230,6 +267,31 @@ endfunction(get_Package_Component_Includes)
 #
 # .. ifmode:: plugin
 #
+#  .. |is_First_Package_Configuration| replace:: ``is_First_Package_Configuration``
+#  .. _is_First_Package_Configuration:
+#
+#  is_First_Package_Configuration
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: is_First_Package_Configuration(FIRST_CONFIG)
+#
+#    Tells whether the current package has already been configure in another build mode or not.
+#
+#      :FIRST_CONFIG: The output variable that is TRUE if package has not been configured in any mode already.
+#
+function(is_First_Package_Configuration FIRST_CONFIG)
+  if(CMAKE_BUILD_TYPE STREQUAL Debug
+    OR BUILD_RELEASE_ONLY)#only build in Release mode
+    set(${FIRST_CONFIG} TRUE PARENT_SCOPE)
+    return()
+  endif()
+  set(${FIRST_CONFIG} FALSE PARENT_SCOPE)
+endfunction(is_First_Package_Configuration)
+
+#.rst:
+#
+# .. ifmode:: plugin
+#
 #  .. |is_Native_Package| replace:: ``is_Native_Package``
 #  .. _is_Native_Package:
 #
@@ -243,6 +305,11 @@ endfunction(get_Package_Component_Includes)
 #      :package: target package
 #
 #      :IS_NATIVE: The output variable that is TRUE if package is native, FALSE otherwise
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function cannot be called in BEFORE_DEPS scripts.
 #
 function(is_Native_Package IS_NATIVE package)
   get_Package_Type(${package} PACK_TYPE)
@@ -270,6 +337,11 @@ endfunction(is_Native_Package)
 #      :package: target package
 #
 #      :IS_EXTERNAL: The output variable that is TRUE if package is external, FALSE otherwise
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function cannot be called in BEFORE_DEPS scripts.
 #
 function(is_External_Package IS_EXTERNAL package)
   get_Package_Type(${package} PACK_TYPE)
@@ -320,6 +392,11 @@ endfunction(get_Package_Project_Page)
 #
 #      :VERSION: The output variable containing the version number of the package
 #
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function cannot be called in BEFORE_DEPS scripts.
+#
 function(get_Package_Version VERSION package)
   if(package STREQUAL PROJECT_NAME)
     set(${VERSION} ${${package}_VERSION} PARENT_SCOPE)
@@ -347,6 +424,11 @@ endfunction(get_Package_Version)
 #      :component: target component
 #
 #      :DESCR: The output variable containing the description of the component
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
 #
 function(get_Description DESCR package component)
   if(${package}_${component}_DESCRIPTION)
@@ -450,7 +532,7 @@ endfunction(get_Package_Tests_Dirs)
 #  dereference_Residual_Files
 #  ^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-#   .. command:: dereference_Residual_Files(plugin)
+#   .. command:: dereference_Residual_Files(list_of_git_patterns)
 #
 #    Dereference the residual files of the pugins (if any) in the git repository so that they will not be part of a commit.
 #
@@ -478,6 +560,288 @@ if(rules_added)
 	execute_process(COMMAND git add ${PATH_TO_IGNORE} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}) #immediately add it to git reference system to avoid big troubles
 endif()
 endfunction(dereference_Residual_Files)
+
+#.rst:
+#
+# .. ifmode:: plugin
+#
+#  .. |generate_Code_In_Place| replace:: ``generate_Code_In_Place``
+#  .. _generate_Code_In_Place:
+#
+#  generate_Code_In_Place
+#  ^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: generate_Code_In_Place(list_of_source_files generated_extension command)
+#
+#    use a generator to generated compilable files in same directory as where source files are placed.
+#
+#      :list_of_source_files: The list of generated files
+#
+#      :generated_extension: the extension for generated file
+#
+#      :command: The command to call
+#
+#      :message: The commennt to print when calling the generation command
+#
+function(generate_Code_In_Place list_of_source_files generated_extension command message)
+  #directly dereference the generated files
+  convert_Files_Extensions(ALL_GENERATED_FILES list_of_source_files "${generated_extension}")
+  dereference_Residual_Files("${ALL_GENERATED_FILES}")
+  #generate code into same folders
+  set(index 0)
+  foreach(a_file IN LISTS list_of_source_files)
+    list(GET ALL_GENERATED_FILES ${index} gen_gile)
+    get_filename_component(FOLDER ${a_file} DIRECTORY)
+    #generate at coniguration time to allow C files to be automatically manage dby PID
+    execute_process(COMMAND ${command} ${a_file}
+                    WORKING_DIRECTORY ${FOLDER})
+    # #also add a custom command to regenerate at each build
+    add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/${gen_gile}
+                 DEPENDS ${a_file}
+                 COMMAND ${command} ${a_file}
+                 WORKING_DIRECTORY ${FOLDER}
+                 COMMENT "${message}: ${gen_gile}")#generate C code into same folders
+    math(EXPR index "${index}+1")
+  endforeach()
+endfunction(generate_Code_In_Place)
+
+#.rst:
+#
+# .. ifmode:: plugin
+#
+#  .. |remove_Residual_Files| replace:: ``remove_Residual_Files``
+#  .. _remove_Residual_Files:
+#
+#  remove_Residual_Files
+#  ^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: remove_Residual_Files(list_of_files)
+#
+#    Remove the residual files of the pugins (if any). Files path are relative to project source directory.
+#
+#      :list_of_files: The list of path to files to remove
+#
+function(remove_Residual_Files list_of_files)
+  foreach(a_file IN LISTS list_of_files)
+    if(EXISTS ${CMAKE_SOURCE_DIR}/${a_file})
+      file(REMOVE ${CMAKE_SOURCE_DIR}/${a_file})
+    endif()
+  endforeach()
+endfunction(remove_Residual_Files)
+
+#.rst:
+#
+# .. ifmode:: plugin
+#
+#  .. |convert_Files_Extensions| replace:: ``convert_Files_Extensions``
+#  .. _convert_Files_Extensions:
+#
+#  convert_Files_Extensions
+#  ^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: convert_Files_Extensions(RES_FILES_PATH input_list generated_extension)
+#
+#    Convert a set of file with one extension to the same set of file with another extension.
+#
+#      :input_list: The list of file to convert
+#
+#      :generated_extension: The expression specifying what is the new extension for files.
+#
+#      :RES_FILES_PATH: The output variable containing the list of path to resulting files relative to current package root folder.
+#
+function(convert_Files_Extensions RES_FILES_PATH input_list generated_extension)
+  set(temp_list)
+  foreach(a_file IN LISTS ${input_list})
+    if(a_file MATCHES "^${CMAKE_SOURCE_DIR}/(.+)$")#give a relative path
+      list(APPEND temp_list ${CMAKE_MATCH_1})
+    elseif(NOT IS_ABSOLUTE ${a_file})#directly using the relative path
+      list(APPEND temp_list ${a_file})
+    endif()
+  endforeach()
+  set(result)
+  foreach(a_file IN LISTS temp_list)
+    get_filename_component(RES_DIR ${a_file} DIRECTORY)
+    get_filename_component(RES_NAME ${a_file} NAME)
+    if(RES_NAME MATCHES "^(.+)\\.[^.]+$")
+      list(APPEND result "${RES_DIR}/${CMAKE_MATCH_1}${generated_extension}")
+    endif()
+  endforeach()
+  set(${RES_FILES_PATH} ${result} PARENT_SCOPE)
+endfunction(convert_Files_Extensions)
+
+#.rst:
+#
+# .. ifmode:: plugin
+#
+#  .. |get_Current_Component_Files| replace:: ``get_Current_Component_Files``
+#  .. _get_Current_Component_Files:
+#
+#  get_Current_Component_Files
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: get_Current_Component_Files(ALL_FILES extension_filters)
+#
+#    Get all source files of a component whose extension matches the possible extensions.
+#
+#      :extension_filters: The list of possible extensions
+#
+#      :ALL_PUB_HEADERS: The output variable containing the list of path to files.
+#      :ALL_SOURCES: The output variable containing the list of path to files.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in DURING_COMPS scripts.
+#
+function(get_Current_Component_Files ALL_PUB_HEADERS ALL_SOURCES extension_filters)
+  set(all_incs)
+  set(all_srcs)
+  foreach(filter IN LISTS extension_filters)
+    if(${PROJECT_NAME}_${CURRENT_COMP_DEFINED}_TEMP_INCLUDE_DIR)
+      file(GLOB_RECURSE in_include_dir
+            ${${PROJECT_NAME}_${CURRENT_COMP_DEFINED}_TEMP_INCLUDE_DIR}
+            "${${PROJECT_NAME}_${CURRENT_COMP_DEFINED}_TEMP_INCLUDE_DIR}/*${filter}")
+      list(APPEND all_incs ${in_include_dir})
+    endif()
+    if(${PROJECT_NAME}_${CURRENT_COMP_DEFINED}_TEMP_SOURCE_DIR)
+      file(GLOB_RECURSE in_src_dir
+            ${${PROJECT_NAME}_${CURRENT_COMP_DEFINED}_TEMP_SOURCE_DIR}
+            "${${PROJECT_NAME}_${CURRENT_COMP_DEFINED}_TEMP_SOURCE_DIR}/*${filter}")
+      list(APPEND all_srcs ${in_src_dir})
+    endif()
+    if(${PROJECT_NAME}_${CURRENT_COMP_DEFINED}_TEMP_MORE_HEADERS)
+      foreach(aux IN LISTS ${PROJECT_NAME}_${CURRENT_COMP_DEFINED}_TEMP_MORE_HEADERS)
+        get_filename_component(RES_EXT ${aux} EXT)
+        if(RES_EXT STREQUAL filter)
+          list(APPEND all_incs ${aux})
+        endif()
+      endforeach()
+    endif()
+    if(${PROJECT_NAME}_${CURRENT_COMP_DEFINED}_TEMP_MORE_SOURCES)
+      foreach(aux IN LISTS ${PROJECT_NAME}_${CURRENT_COMP_DEFINED}_TEMP_MORE_SOURCES)
+        if(IS_DIRECTORY ${aux})
+          file(GLOB_RECURSE all_aux
+                ${aux}
+                "${aux}/*${filter}")
+          list(APPEND all_srcs ${all_aux})
+        else()#check if the file has adequate extension
+          get_filename_component(RES_EXT ${aux} EXT)
+          if(RES_EXT STREQUAL filter)
+            list(APPEND all_srcs ${aux})
+          endif()
+        endif()
+      endforeach()
+    endif()
+  endforeach()
+  set(${ALL_PUB_HEADERS} ${all_incs} PARENT_SCOPE)
+  set(${ALL_SOURCES} ${all_srcs} PARENT_SCOPE)
+endfunction(get_Current_Component_Files)
+
+#.rst:
+#
+# .. ifmode:: plugin
+#
+#  .. |configure_Current_Component| replace:: ``configure_Current_Component``
+#  .. _configure_Current_Component:
+#
+#  configure_Current_Component
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: configure_Current_Component(...)
+#
+#    Set properties of current component.
+#
+#      :environment: The name of environment defining the plugin.
+#
+#      :INTERNAL: if used then the following configruation is internal to the current component
+#      :EXPORTED: if used then the following configruation is exported by the current component
+#      :RUNTIME_RESOURCES ... : The list of runtime path to set as runtime resources
+#      :INCLUDE_DIRS ... : The list of include path to set
+#      :LINKS ... : The list of links to set
+#      :LIBRARY_DIRS ... : The list of library dirs to set
+#      :OPTIONS ... : The list of compiler options to set
+#      :DEFINITIONS ... : The list of preprocessor definitions to set
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in DURING_COMPS scripts.
+#
+function(configure_Current_Component environment)
+  set(options INTERNAL EXPORTED)
+  set(multiValueArgs RUNTIME_RESOURCES INCLUDE_DIRS STATIC_LINKS SHARED_LINKS LIBRARY_DIRS DEFINITIONS OPTIONS)
+  cmake_parse_arguments(CONF_CURR_COMP "${options}" "" "${multiValueArgs}" ${ARGN})
+  if(NOT ${CURRENT_COMP_DEFINED}_ENVIRONMENTS)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENTS ${environment} PARENT_SCOPE)
+  else()
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENTS ${${CURRENT_COMP_DEFINED}_ENVIRONMENTS} ${environment} PARENT_SCOPE)
+  endif()
+
+  if(CONF_CURR_COMP_INTERNAL)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL TRUE PARENT_SCOPE)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_INCLUDE_DIRS ${CONF_CURR_COMP_INCLUDE_DIRS} PARENT_SCOPE)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_STATIC_LINKS ${CONF_CURR_COMP_STATIC_LINKS} PARENT_SCOPE)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_SHARED_LINKS ${CONF_CURR_COMP_SHARED_LINKS} PARENT_SCOPE)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_LIBRARY_DIRS ${CONF_CURR_COMP_LIBRARY_DIRS} PARENT_SCOPE)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_DEFINITIONS ${CONF_CURR_COMP_DEFINITIONS} PARENT_SCOPE)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_OPTIONS ${CONF_CURR_COMP_OPTIONS} PARENT_SCOPE)
+  elseif(CONF_CURR_COMP_EXPORTED)#TODO how to manage that ?
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED TRUE PARENT_SCOPE)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_RUNTIME_RESOURCES ${CONF_CURR_COMP_RUNTIME_RESOURCES} PARENT_SCOPE)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_INCLUDE_DIRS ${CONF_CURR_COMP_INCLUDE_DIRS} PARENT_SCOPE)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_STATIC_LINKS ${CONF_CURR_COMP_STATIC_LINKS} PARENT_SCOPE)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_SHARED_LINKS ${CONF_CURR_COMP_SHARED_LINKS} PARENT_SCOPE)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_LIBRARY_DIRS ${CONF_CURR_COMP_LIBRARY_DIRS} PARENT_SCOPE)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_DEFINITIONS ${CONF_CURR_COMP_DEFINITIONS} PARENT_SCOPE)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_OPTIONS ${CONF_CURR_COMP_OPTIONS} PARENT_SCOPE)
+  else()
+    message("[PID] WARNING: when calling configure_Current_Component in plugin script defined in ${environment},  ")
+  endif()
+endfunction(configure_Current_Component)
+
+#.rst:
+#
+# .. ifmode:: plugin
+#
+#  .. |get_Environment_Configuration| replace:: ``get_Environment_Configuration``
+#  .. _get_Environment_Configuration:
+#
+#  get_Environment_Configuration
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: get_Environment_Configuration(environment ...)
+#
+#    Get configuration information coming from the environment.
+#
+#      :environment: The name of environment defining the plugin.
+#
+#      :PROGRAM ... : The output variable containing the path to the program defined by the environment
+#      :PROGRAM_DIRS ... : The output variable containing the list of runtime path defined by the environment
+#      :INCLUDE_DIRS ... : The output variable containing the list of include path  defined by the environment
+#      :LIBRARY ... : The output variable containing the path to the library defined by the environment
+#      :LIBRARY_DIRS ... : The output variable containing the list of library directories defined by the environment
+#
+function(get_Environment_Configuration environment)
+  set(oneValueArgs PROGRAM PROGRAM_DIRS INCLUDE_DIRS LIBRARY LIBRARY_DIRS)
+  cmake_parse_arguments(GET_ENV_CONF "" "${oneValueArgs}" "" ${ARGN})
+  find_Environment_Tool_For_Current_Profile(TOOL_PREFIX ${environment})
+  if(GET_ENV_CONF_PROGRAM)
+    set(${GET_ENV_CONF_PROGRAM} ${${TOOL_PREFIX}_PROGRAM} PARENT_SCOPE)
+  endif()
+  if(GET_ENV_CONF_PROGRAM_DIRS)
+    set(${GET_ENV_CONF_PROGRAM_DIRS} ${${TOOL_PREFIX}_PROGRAM_DIRS} PARENT_SCOPE)
+  endif()
+  if(GET_ENV_CONF_INCLUDE_DIRS)
+    set(${GET_ENV_CONF_INCLUDE_DIRS} ${${TOOL_PREFIX}_INCLUDE_DIRS} PARENT_SCOPE)
+  endif()
+  if(GET_ENV_CONF_LIBRARY)
+    set(${GET_ENV_CONF_LIBRARY} ${${TOOL_PREFIX}_LIBRARY} PARENT_SCOPE)
+  endif()
+  if(GET_ENV_CONF_LIBRARY_DIRS)
+    set(${GET_ENV_CONF_LIBRARY_DIRS} ${${TOOL_PREFIX}_LIBRARY_DIRS} PARENT_SCOPE)
+  endif()
+endfunction(get_Environment_Configuration)
+
 
 #.rst:
 #
@@ -517,6 +881,11 @@ endfunction(get_Path_To_Environment)
 #
 #      :LIST_OF_COMPS: The output variable containing teh list of components defined into the package
 #
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
+#
 function(list_Defined_Components LIST_OF_COMPS)
   set(${LIST_OF_COMPS} ${${PROJECT_NAME}_COMPONENTS} PARENT_SCOPE)
 endfunction(list_Defined_Components)
@@ -540,6 +909,11 @@ endfunction(list_Defined_Components)
 #      :component: target component
 #
 #      :DIRECT_EXT_DEPS: The output variable that contains the list of package names that component depends on.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
 #
 function(list_Component_Direct_External_Package_Dependencies DIRECT_EXT_DEPS package component)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE}) #getting mode info that will be used for generating adequate name
@@ -568,9 +942,19 @@ endfunction(list_Component_Direct_External_Package_Dependencies)
 #
 #      :DIRECT_EXT_DEPS: The output variable that contains the list of component names that component depends on.
 #
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
+#
 function(list_Component_Direct_External_Component_Dependencies DIRECT_EXT_DEPS package component ext_package)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE}) #getting mode info that will be used for generating adequate name
-  set(${DIRECT_EXT_DEPS} ${${package}_${component}_EXTERNAL_DEPENDENCY_${ext_package}_COMPONENTS${VAR_SUFFIX}} PARENT_SCOPE)
+  set(result)
+  foreach(dep IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${ext_package}_COMPONENTS${VAR_SUFFIX})
+    rename_If_Alias(EXT_DEP ${ext_package} TRUE ${dep} ${CMAKE_BUILD_TYPE})#by definition a resolved component is a native one
+    list(APPEND result ${EXT_DEP})
+  endforeach()
+  set(${DIRECT_EXT_DEPS} ${result} PARENT_SCOPE)
 endfunction(list_Component_Direct_External_Component_Dependencies)
 
 #.rst:
@@ -593,9 +977,19 @@ endfunction(list_Component_Direct_External_Component_Dependencies)
 #
 #      :DIRECT_INT_DEPS: The output variable that contains the list of component names that component depends on.
 #
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
+#
 function(list_Component_Direct_Internal_Dependencies DIRECT_INT_DEPS package component)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE}) #getting mode info that will be used for generating adequate name
-  set(${DIRECT_INT_DEPS} ${${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX}} PARENT_SCOPE)
+  set(result)
+  foreach(dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
+    rename_If_Alias(INT_DEP ${package} FALSE ${dep} ${CMAKE_BUILD_TYPE})#resokve alias if any
+    list(APPEND result ${INT_DEP})
+  endforeach()
+  set(${DIRECT_INT_DEPS} ${result} PARENT_SCOPE)
 endfunction(list_Component_Direct_Internal_Dependencies)
 
 #.rst:
@@ -617,6 +1011,11 @@ endfunction(list_Component_Direct_Internal_Dependencies)
 #      :component: target component
 #
 #      :DIRECT_NAT_DEPS: The output variable that contains the list of native package names that component depends on.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
 #
 function(list_Component_Direct_Native_Package_Dependencies DIRECT_NAT_DEPS package component)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE}) #getting mode info that will be used for generating adequate name
@@ -645,95 +1044,84 @@ endfunction(list_Component_Direct_Native_Package_Dependencies)
 #
 #      :DIRECT_NAT_DEPS: The output variable that contains the list of native package names that component depends on.
 #
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
+#
 function(list_Component_Direct_Native_Component_Dependencies DIRECT_NAT_DEPS package component nat_package)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE}) #getting mode info that will be used for generating adequate name
-  set(${DIRECT_NAT_DEPS} ${${package}_${component}_DEPENDENCY_${nat_package}_COMPONENTS${VAR_SUFFIX}} PARENT_SCOPE)
+  set(result)
+  foreach(dep IN LISTS ${package}_${component}_DEPENDENCY_${nat_package}_COMPONENTS${VAR_SUFFIX})
+    rename_If_Alias(NAT_DEP ${nat_package} FALSE ${dep} ${CMAKE_BUILD_TYPE})#resokve alias if any
+    list(APPEND result ${NAT_DEP})
+  endforeach()
+  set(${DIRECT_NAT_DEPS} ${result} PARENT_SCOPE)
 endfunction(list_Component_Direct_Native_Component_Dependencies)
 
 #.rst:
 #
 # .. ifmode:: plugin
 #
-#  .. |is_Package_Component_Exported| replace:: ``is_Package_Component_Exported``
-#  .. _is_Package_Component_Exported:
+#  .. |is_Component_Exported| replace:: ``is_Component_Exported``
+#  .. _is_Component_Exported:
 #
-#  is_Package_Component_Exported
-#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#  is_Component_Exported
+#  ^^^^^^^^^^^^^^^^^^^^^
 #
-#   .. command:: is_Package_Component_Exported(EXPORTED package component dep_package dep_component)
+#   .. command:: is_Component_Exported(EXPORTED package component dep_package dep_component)
 #
-#    Tells wether a native component export another native component
+#    Tells wether a component export another component
 #
 #      :package: target package
 #
 #      :component: target component
 #
-#      :dep_package: target native package that IS the dependency
+#      :dep_package: target package that IS the dependency
 #
-#      :dep_component: target native component that IS the dependency
+#      :dep_component: target component that IS the dependency
 #
-#      :EXPORTED: The output variable that is TRUE if component export dep_component, FALSE otherwise.
+#      :EXPORTED: The output variable that is TRUE if component exports dep_component, FALSE otherwise.
 #
-function(is_Package_Component_Exported EXPORTED package component dep_package dep_component)
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
+#
+function(is_Component_Exported EXPORTED package component dep_package dep_component)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-  set(${EXPORTED} ${${package}_${component}_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX}} PARENT_SCOPE)
-endfunction(is_Package_Component_Exported)
+  get_Package_Type(${package} PACK_TYPE)
+  if(PACK_TYPE STREQUAL "EXTERNAL")
+    set(pack_ext TRUE)
+  else()
+    set(pack_ext FALSE)
+  endif()
+  if(dep_package STREQUAL package)
+    set(dep_pack_ext ${pack_ext})
+  else()
+    get_Package_Type(${dep_package} DEP_PACK_TYPE)
+    if(DEP_PACK_TYPE STREQUAL "EXTERNAL")
+      set(dep_pack_ext TRUE)
+    else()
+      set(dep_pack_ext FALSE)
+    endif()
+  endif()
+  rename_If_Alias(comp_name_to_use ${package} ${pack_ext} ${component} ${CMAKE_BUILD_TYPE})
+  rename_If_Alias(dep_name_to_use ${dep_package} ${dep_pack_ext} ${dep_component} ${CMAKE_BUILD_TYPE})
+  if(DEP_PACK_TYPE STREQUAL "EXTERNAL")#depending on the dependency type we call either one or the other function to test export with aliases
+    export_External_Component_Resolving_Alias(IS_EXPORTING
+              ${package} ${comp_name_to_use} ${component}
+              ${dep_package} ${dep_name_to_use} ${dep_component}
+              ${CMAKE_BUILD_TYPE})
+  else()
+    export_Component_Resolving_Alias(IS_EXPORTING
+              ${package} ${comp_name_to_use} ${component}
+              ${dep_package} ${dep_name_to_use} ${dep_component}
+              ${CMAKE_BUILD_TYPE})
+  endif()
+  set(${EXPORTED} ${IS_EXPORTING} PARENT_SCOPE)
+endfunction(is_Component_Exported)
 
-#.rst:
-#
-# .. ifmode:: plugin
-#
-#  .. |is_Internal_Component_Exported| replace:: ``is_Internal_Component_Exported``
-#  .. _is_Internal_Component_Exported:
-#
-#  is_Internal_Component_Exported
-#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#
-#   .. command:: is_Internal_Component_Exported(EXPORTED package component dep_component)
-#
-#    Tells wether a component export another component of same package.
-#
-#      :package: target package
-#
-#      :component: target component
-#
-#      :dep_component: target native component that IS the dependency
-#
-#      :EXPORTED: The output variable that is TRUE if component export dep_component, FALSE otherwise.
-#
-function(is_Internal_Component_Exported EXPORTED package component dep_component)
-  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-  set(${EXPORTED} ${${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX}} PARENT_SCOPE)
-endfunction(is_Internal_Component_Exported)
-
-#.rst:
-#
-# .. ifmode:: plugin
-#
-#  .. |is_External_Component_Exported| replace:: ``is_External_Component_Exported``
-#  .. _is_External_Component_Exported:
-#
-#  is_External_Component_Exported
-#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#
-#   .. command:: is_External_Component_Exported(EXPORTED package component dep_component)
-#
-#    Tells wether a (native or external) component exports another external component.
-#
-#      :package: target package
-#
-#      :component: target component
-#
-#      :dep_component: target external component that IS the dependency
-#
-#      :dep_package: target external package that IS the dependency
-#
-#      :EXPORTED: The output variable that is TRUE if component export dep_component, FALSE otherwise.
-#
-function(is_External_Component_Exported EXPORTED package component dep_package dep_component)
-  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-  set(${EXPORTED} ${${package}_${component}_EXTERNAL_EXPORT_${dep_package}_${dep_component}${VAR_SUFFIX}} PARENT_SCOPE)
-endfunction(is_External_Component_Exported)
 
 #.rst:
 #
@@ -750,6 +1138,11 @@ endfunction(is_External_Component_Exported)
 #    Get the list of libraries defined within the current package
 #
 #      :LIST_OF_COMPS: The output variable containing the list of applications defined into the package
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
 #
 function(list_Defined_Applications LIST_OF_COMPS)
   set(${LIST_OF_COMPS} ${${PROJECT_NAME}_COMPONENTS_APPS} PARENT_SCOPE)
@@ -770,6 +1163,11 @@ endfunction(list_Defined_Applications)
 #    Get the list of libraries defined within the current package
 #
 #      :LIST_OF_COMPS: The output variable containing the list of libraries defined into the package
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
 #
 function(list_Defined_Libraries LIST_OF_COMPS)
   set(${LIST_OF_COMPS} ${${PROJECT_NAME}_COMPONENTS_LIBS} PARENT_SCOPE)
@@ -794,6 +1192,11 @@ endfunction(list_Defined_Libraries)
 #
 #      :REST_TYPE: The type of this component
 #
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function can be called in DURING_COMPS or AFTER_COMPS scripts.
+#
 function(get_Component_Type REST_TYPE component)
   set(${REST_TYPE} ${${PROJECT_NAME}_${component}_TYPE} PARENT_SCOPE)
 endfunction(get_Component_Type)
@@ -815,6 +1218,11 @@ endfunction(get_Component_Type)
 #      :component: The target component
 #
 #      :RES_TARGET: The name of target for this component
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
 #
 function(get_Component_Target RES_TARGET component)
   get_Package_Component_Target(RES ${PROJECT_NAME} ${component})
@@ -838,6 +1246,11 @@ endfunction(get_Component_Target)
 #      :component: The target source component
 #
 #      :RES_DEPS: The output variable containing the list of components that component depends on
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
 #
 function(get_Component_Dependencies_Targets RES_DEPS component)
   get_Package_Component_Dependencies_Targets(RES_DEPS_TARGETS ${PROJECT_NAME} ${component})
@@ -864,6 +1277,11 @@ endfunction(get_Component_Dependencies_Targets)
 #
 #      :RES_TARGET: The name of target for this component
 #
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
+#
 function(get_Package_Component_Target RES_TARGET package component)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
   set(${RES_TARGET} ${package}_${component}${TARGET_SUFFIX} PARENT_SCOPE)
@@ -889,25 +1307,39 @@ endfunction(get_Package_Component_Target)
 #
 #      :RES_DEPS: The output variable containing the list of targets that component targets depends on
 #
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
+#
 function(get_Package_Component_Dependencies_Targets RES_DEPS package component)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
   set(result)
   foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
     foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-      get_Package_Component_Target(RES_TARGET ${dep_package} ${dep_component})#getting component own target
-      get_Package_Component_Dependencies_Targets(RES_EXT_DEPS ${dep_package} ${dep_component})#recursive call to get its dependencies
+      rename_If_Alias(comp_name_to_use ${dep_package} TRUE ${dep_component} ${CMAKE_BUILD_TYPE})
+      get_Package_Component_Target(RES_TARGET ${dep_package} ${comp_name_to_use})#getting component own target
+      get_Package_Component_Dependencies_Targets(RES_EXT_DEPS ${dep_package} ${comp_name_to_use})#recursive call to get its dependencies
       list(APPEND result ${RES_TARGET} ${RES_EXT_DEPS})
     endforeach()
   endforeach()
+  get_Package_Type(${package} PACK_TYPE)
+  if(PACK_TYPE STREQUAL "EXTERNAL")
+    set(ext_pack TRUE)
+  else()
+    set(ext_pack FALSE)
+  endif()
   foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-    get_Package_Component_Target(RES_TARGET ${package} ${dep_component}) #getting component own target
-    get_Package_Component_Dependencies_Targets(RES_INT_DEPS ${package} ${dep_component}) #recursive call to get its dependencies
+    rename_If_Alias(comp_name_to_use ${package} ${ext_pack} ${dep_component} ${CMAKE_BUILD_TYPE})
+    get_Package_Component_Target(RES_TARGET ${package} ${comp_name_to_use}) #getting component own target
+    get_Package_Component_Dependencies_Targets(RES_INT_DEPS ${package} ${comp_name_to_use}) #recursive call to get its dependencies
     list(APPEND result ${RES_TARGET} ${RES_INT_DEPS})
   endforeach()
   foreach(dep_package IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
     foreach(dep_component IN LISTS ${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-      get_Package_Component_Target(RES_TARGET ${dep_package} ${dep_component}) #getting component own target
-      get_Package_Component_Dependencies_Targets(RES_PACK_DEPS ${dep_package} ${dep_component})#recursive call to get its dependencies
+      rename_If_Alias(comp_name_to_use ${dep_package} FALSE ${dep_component} ${CMAKE_BUILD_TYPE})
+      get_Package_Component_Target(RES_TARGET ${dep_package} ${comp_name_to_use}) #getting component own target
+      get_Package_Component_Dependencies_Targets(RES_PACK_DEPS ${dep_package} ${comp_name_to_use})#recursive call to get its dependencies
       list(APPEND result ${RES_TARGET} ${RES_PACK_DEPS})
     endforeach()
   endforeach()
@@ -939,6 +1371,11 @@ endfunction(get_Package_Component_Dependencies_Targets)
 #      :RES_C_OPT: The output variable thatcontains the C compiler option to use to get equivalent C language standard version.
 #      :RES_CXX_OPT: The output variable thatcontains the C++ compiler option to use to get equivalent C++ language standard version.
 #
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
+#
 function(get_Component_Language_Standard MANAGED_AS_STANDARD RES_C_STD RES_CXX_STD RES_C_OPT RES_CXX_OPT component)
   get_Package_Component_Language_Standard(MANAGED C_STD CXX_STD C_OPT CXX_OPT ${PROJECT_NAME} ${component})
   set(${MANAGED_AS_STANDARD} ${MANAGED} PARENT_SCOPE)
@@ -953,13 +1390,13 @@ endfunction(get_Component_Language_Standard)
 #
 # .. ifmode:: plugin
 #
-#  .. |get_Component_Language_Standard| replace:: ``get_Component_Language_Standard``
-#  .. _get_Component_Language_Standard:
+#  .. |get_Package_Component_Language_Standard| replace:: ``get_Package_Component_Language_Standard``
+#  .. _get_Package_Component_Language_Standard:
 #
-#  get_Component_Language_Standard
-#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#  get_Package_Component_Language_Standard
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-#   .. command:: get_Component_Language_Standard(MANAGED_AS_STANDARD RES_C_STD RES_CXX_STD RES_C_OPT RES_CXX_OPT package component)
+#   .. command:: get_Package_Component_Language_Standard(MANAGED_AS_STANDARD RES_C_STD RES_CXX_STD RES_C_OPT RES_CXX_OPT package component)
 #
 #    Get information about language standards used by a component of a given package.
 #
@@ -972,6 +1409,11 @@ endfunction(get_Component_Language_Standard)
 #      :RES_CXX_STD: The output variable that contains the C++ language standard version used by the component.
 #      :RES_C_OPT: The output variable that contains the C compiler option to use to get equivalent C language standard version.
 #      :RES_CXX_OPT: The output variable that contains the C++ compiler option to use to get equivalent C++ language standard version.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
 #
 function(get_Package_Component_Language_Standard MANAGED_AS_STANDARD RES_C_STD RES_CXX_STD RES_C_OPT RES_CXX_OPT package component)
 
@@ -1021,6 +1463,11 @@ endfunction(get_Package_Component_Language_Standard)
 #
 #      :RET_HEADER_PATH: The output variable containing the path to component exported headers directory
 #
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in AFTER_COMPS scripts.
+#
 function(get_Dir_Path_For_Component RET_SOURCE_PATH RET_HEADER_PATH component)
 set(${RET_SOURCE_PATH} PARENT_SCOPE)
 set(${RET_HEADER_PATH} PARENT_SCOPE)
@@ -1067,8 +1514,9 @@ endfunction(get_Dir_Path_For_Component)
 #
 function(create_In_Source_Symlink source_dir file_to_symlink_from_build_tree)
   get_filename_component(FILENAME ${file_to_symlink_from_build_tree} NAME)
+  file(RELATIVE_PATH THEPATH ${CMAKE_SOURCE_DIR} ${source_dir})
   create_Symlink(
               ${file_to_symlink_from_build_tree}
               ${source_dir}/${FILENAME})
- dereference_Residual_Files(${FILENAME})
+ dereference_Residual_Files(${THEPATH}/${FILENAME})
 endfunction(create_In_Source_Symlink)

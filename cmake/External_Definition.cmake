@@ -185,7 +185,7 @@ if(CHECK_EXTERNAL_PID_PLATFORM_PACKAGE
 	set(${package}_PLATFORM${VAR_SUFFIX} ${CHECK_EXTERNAL_PID_PLATFORM_PLATFORM} CACHE INTERNAL "")
 
   foreach(config IN LISTS CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION)
-    parse_System_Check_Constraints(CONFIG_NAME CONFIG_ARGS "${config}")
+    parse_Constraints_Check_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
     if(CONFIG_NAME)
       append_Unique_In_Cache(${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX} ${CONFIG_NAME})
       append_Unique_In_Cache(${package}_PLATFORM_CONFIGURATION_${CONFIG_NAME}_ARGS${VAR_SUFFIX} "${CONFIG_ARGS}")

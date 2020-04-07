@@ -3883,6 +3883,8 @@ file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Platforms_Description
 # defining all build configuration variables related to the current platform
 write_Current_Configuration_Build_Related_Variables(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake)
 file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake NO_POLICY_SCOPE)\n")
+# defining all build configuration variables related to the current platform
+file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Solution_File.cmake NO_POLICY_SCOPE)\n")
 endfunction(write_Current_Configuration)
 
 #.rst:

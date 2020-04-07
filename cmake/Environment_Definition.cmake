@@ -292,6 +292,7 @@ endmacro(declare_PID_Environment_Platform)
 #
 #     :REQUIRED ...: the list of constraints whose value must be set before calling it.
 #     :OPTIONAL ...: the list of constraints whose value can be set or not before calling it.
+#     :IN_BINARY ...: the list of constraints whose value is can be set or not before calling it BUT that written into binaries once check is OK.
 #     :CHECK ...: the path to check script used to check if current CMAKE configuration matches constraints.
 #
 #     .. admonition:: Constraints
@@ -322,11 +323,12 @@ macro(declare_PID_Environment_Constraints)
     return()
   endif()
   set(monoValueArgs CHECK)
-  set(multiValueArgs OPTIONAL REQUIRED)
+  set(multiValueArgs OPTIONAL REQUIRED IN_BINARY)
   cmake_parse_arguments(DECLARE_PID_ENV_CONSTRAINTS "" "${monoValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if(NOT DECLARE_PID_ENV_CONSTRAINTS_OPTIONAL
      AND NOT DECLARE_PID_ENV_CONSTRAINTS_REQUIRED
+     AND NOT DECLARE_PID_ENV_CONSTRAINTS_IN_BINARY
      AND NOT DECLARE_PID_ENV_CONSTRAINTS_CHECK)
      message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling PID_Environment_Constraints you defined no optional / required contraints or check script. Aborting.")
      return()
@@ -339,6 +341,7 @@ macro(declare_PID_Environment_Constraints)
   endif()
   define_Environment_Constraints("${DECLARE_PID_ENV_CONSTRAINTS_OPTIONAL}"
                                  "${DECLARE_PID_ENV_CONSTRAINTS_REQUIRED}"
+                                 "${DECLARE_PID_ENV_CONSTRAINTS_IN_BINARY}"
                                  "${DECLARE_PID_ENV_CONSTRAINTS_CHECK}"
                                )
 endmacro(declare_PID_Environment_Constraints)
@@ -755,15 +758,27 @@ endfunction(get_Configured_Environment_Tool)
 #
 #     .. rubric:: Optional parameters
 #
-#     :COMPILER ...: the path to the compiler in use.
-#     :AR ...: the path to the archive tool in use.
-#     :RANLIB ...: .
+#     :COMPILER ...: the path to the compiler in use (for LANGUAGE).
+#     :INTERPRETER ...: the path to the interpreter in use (for LANGUAGE, Python only for now).
+#     :HOST_COMPILER ...: the path to the host C compiler in use (for LANGUAGE, CUDA only for now).
+#     :TOOLSET_ID  ...: identifier of the toolset (for LANGUAGE).
+#     :AR ...: the path to the archive tool in use (for LANGUAGE and SYSTEM).
+#     :RANLIB ...: the path to the static library creation tool (for LANGUAGE and SYSTEM)..
 #     :FLAGS ...: set of compiler flags (if used with LANGUAGE) or linker flags (if used with SYSTEM) to use.
-#     :LINKER ...: the path to the linker in use.
-#     :GEN_TOOLSET ...: the name of the generator toolset to use.
-#     :GEN_PLATFORM ...: the name of the generator platform to use.
-#     :EXE|MODULE|STATIC|SHARED: filters for selecting adequate type of binaries for which to apply link flags.
-#     :CURRENT: use the current environment to set all adequate variables of the target language.
+#     :LINKER ...: the path to the linker in use (for SYSTEM).
+#     :NM ...: the path to the nm tool in use (for SYSTEM).
+#     :OBJDUMP ...: the path to the objdump tool in use (for SYSTEM).
+#     :OBJCOPY ...: the path to the objcopy tool in use (for SYSTEM).
+#     :GEN_TOOLSET ...: the name of the generator toolset to use (for SYSTEM).
+#     :GEN_PLATFORM ...: the name of the generator platform to use (for SYSTEM).
+#     :EXE|MODULE|STATIC|SHARED: filters for selecting adequate type of binaries for which to apply link flags (for SYSTEM).
+#     :CURRENT: use the current environment to set all adequate variables of the target language (for LANGUAGE AND SYSTEM).
+#     :PROGRAM: memorize the path to the main extra tool program (for EXTRA).
+#     :LIBRARY: path to the target library (for EXTRA, LANGUAGE and SYSTEM).
+#     :PROGRAM_DIRS ... : list of path to library dirs (for EXTRA and SYSTEM).
+#     :INCLUDE_DIRS ... : list of path to include dirs (for EXTRA, LANGUAGE and SYSTEM).
+#     :LIBRARY_DIRS ... : list of path to library dirs (for EXTRA and SYSTEM).
+#     :PLUGIN [ BEFORE_DEPS ...] [BEFORE_COMPS ...] [DURING_COMPS ...] [AFTER_COMPS ...] : plugin script to call at specific package configuration times.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -932,13 +947,18 @@ function(configure_Environment_Tool)
     endif()
   elseif(CONF_ENV_TOOL_EXTRA)#extra tool defined
     if(CONF_ENV_TOOL_PLUGIN)
-      set(monoValueArgs BEFORE_DEPS BEFORE_COMPS AFTER_COMPS)
+      set(monoValueArgs BEFORE_DEPS BEFORE_COMPS DURING_COMPS AFTER_COMPS)
       cmake_parse_arguments(CONF_PLUGIN "" "${monoValueArgs}" "" ${CONF_ENV_TOOL_PLUGIN})
       set(plugin_before_deps ${CONF_PLUGIN_BEFORE_DEPS})
       set(plugin_before_comps ${CONF_PLUGIN_BEFORE_COMPS})
+      set(plugin_during_comps ${CONF_PLUGIN_DURING_COMPS})
       set(plugin_after_comps ${CONF_PLUGIN_AFTER_COMPS})
     endif()
-    add_Extra_Tool(${CONF_ENV_TOOL_EXTRA} TRUE "${CONF_ENV_TOOL_PROGRAM}" "${plugin_before_deps}" "${plugin_before_comps}" "${plugin_after_comps}")
+    #Note: no expression provided since it will be computable when envronment is fully configured
+    add_Extra_Tool(${CONF_ENV_TOOL_EXTRA} "" TRUE
+                  "${CONF_ENV_TOOL_PROGRAM}" "${CONF_ENV_TOOL_PROGRAM_DIRS}"
+                  "${CONF_ENV_TOOL_INCLUDE_DIRS}" "${CONF_ENV_TOOL_LIBRARY}" "${CONF_ENV_TOOL_LIBRARY_DIRS}"
+                "${plugin_before_deps}" "${plugin_before_comps}" "${plugin_during_comps}" "${plugin_after_comps}")
   endif()
 endfunction(configure_Environment_Tool)
 
@@ -1329,7 +1349,7 @@ endmacro(evaluate_Host_Platform)
 #
 #     .. rubric:: Required parameters
 #
-#     :RESULT: the output variable that is TRUE if program matches version constraint
+#     :RESULT: the output variable that contains the version of program if it matches version constraint, or TRUE if program has no version. Otherwise returns FALSE.
 #     :version_var: the input variable containing version constraint
 #     :is_exact: TRUE if version must exactly match
 #     :program_str: the expression executed to get program version
@@ -1345,9 +1365,9 @@ endmacro(evaluate_Host_Platform)
 #        endif()
 #
 function(check_Program_Version RESULT version_var is_exact program_str version_extraction_regex)
+  set(${RESULT} FALSE PARENT_SCOPE)
+  get_Program_Version(VERSION_RES "${program_str}" "${version_extraction_regex}")
   if(${version_var})#a version constraint has been specified
-		set(${RESULT} FALSE PARENT_SCOPE)
-    get_Program_Version(VERSION_RES "${program_str}" "${version_extraction_regex}")
     if(NOT VERSION_RES)#cannot find version
       return()
     endif()
@@ -1356,7 +1376,12 @@ function(check_Program_Version RESULT version_var is_exact program_str version_e
       return()
     endif()
 	endif()
-  set(${RESULT} TRUE PARENT_SCOPE)
+  #if no constraint specified simply return the version value
+  if(NOT VERSION_RES)#program has no version AND no constraint specified
+    set(${RESULT} TRUE PARENT_SCOPE)
+    return()
+  endif()
+  set(${RESULT} ${VERSION_RES} PARENT_SCOPE)
 endfunction(check_Program_Version)
 
 #.rst:
@@ -1457,6 +1482,55 @@ function(get_Program_Version VERSION program_str version_extraction_regex)
   endif()
 endfunction(get_Program_Version)
 
+
+#.rst:
+#
+# .. ifmode:: script
+#
+#  .. |set_Environment_Constraints| replace:: ``set_Environment_Constraints``
+#  .. _set_Environment_Constraints:
+#
+#  set_Environment_Constraints
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: set_Environment_Constraints(VARIABLES ... VALUES ...)
+#
+#      Set the value of a variable used as a constraint for the environment.
+#
+#     .. rubric:: Required parameters
+#
+#     :VARIABLES ...: the list of variables whose values are set
+#     :VALUES ...: the list of values corresponding to teh variables (same ordering).
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        set_Environment_Constraints(VARIABLES version VALUES 3.25.2)
+#
+function(set_Environment_Constraints)
+  set(multiValueArgs VARIABLES VALUES)
+  cmake_parse_arguments(SET_ENV_CONST "" "" "${multiValueArgs}" ${ARGN})
+
+  if(NOT SET_ENV_CONST_VARIABLES OR NOT SET_ENV_CONST_VALUES)
+    message("[PID] ERROR: when using set_Environment_Constraints target variables must be specified using VARIABLES and their respective values using VALUES arguments.")
+    return()
+  endif()
+
+  list(LENGTH SET_ENV_CONST_VARIABLES SIZE_VARS)
+  list(LENGTH SET_ENV_CONST_VALUES SIZE_VALS)
+  if(NOT SIZE_VARS EQUAL SIZE_VALS)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR: Bad usage of function set_Environment_Constraints, you must give the a value for each variable defined using VARIABLES keyword. ")
+    return()
+  else()
+    foreach(var IN LISTS SET_ENV_CONST_VARIABLES)
+      list(FIND SET_ENV_CONST_VARIABLES ${var} INDEX)
+      list(GET SET_ENV_CONST_VALUES ${INDEX} CORRESPONDING_VAL)
+      set(${PROJECT_NAME}_${var} ${CORRESPONDING_VAL} PARENT_SCOPE)#the value of the variable is not the real value but the name of the variable
+    endforeach()
+  endif()
+endfunction(set_Environment_Constraints)
 
 #.rst:
 #

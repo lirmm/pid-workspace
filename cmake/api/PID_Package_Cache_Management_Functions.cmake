@@ -1492,7 +1492,7 @@ endfunction(reset_Declared)
 function(export_External_Component IS_EXPORTING package component dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-if(package STREQUAL "${dep_package}")# both components belong to smae external package
+if(package STREQUAL "${dep_package}")# both components belong to same external package
   if(NOT DEFINED ${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})
     unset(${IS_EXPORTING} PARENT_SCOPE)#Note: required to manage aliases (if variable not defined means either component or dep_component is not a valid name)
   elseif(${package}_${component}_INTERNAL_EXPORT_${dep_component}${VAR_SUFFIX})

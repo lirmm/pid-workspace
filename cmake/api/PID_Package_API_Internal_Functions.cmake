@@ -1215,9 +1215,9 @@ endmacro(build_Package)
 #
 #     :runtime_resources: list of path to files relative to share/resources folder, supposed to be used at runtime by the library.
 #
-#     :more_headers: list of path to files or globing expressions relative to src/${dirname} folder, targetting additionnal headers to be part of the interface of the library (used to target files with no extension for instance).
+#     :more_headers: list of path to files or globing expressions relative to include/${dirname} folder, targetting additionnal headers to be part of the interface of the library (used to target files with no extension for instance).
 #
-#     :more_sources: list of path to files and folders relative to arc folder, containing auxiliary sources to be used for building the library.
+#     :more_sources: list of path to files and folders relative to src folder, containing auxiliary sources to be used for building the library.
 #
 #     :is_loggable: if TRUE the componnet can be uniquely identified by the logging system.
 #
@@ -1272,6 +1272,28 @@ if(STD_CXX_OPT)
 	endif()
 endif()
 
+#prepare general info
+if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE")
+	if(dirname)
+		set(${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/${dirname})
+		if(more_headers)
+			foreach(a_file IN LISTS more_headers)
+				list(APPEND ${PROJECT_NAME}_${c_name}_TEMP_MORE_HEADERS ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}/${a_file})
+			endforeach()
+		endif()
+	endif()
+endif()
+if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
+	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/${dirname})
+	set(${PROJECT_NAME}_${c_name}_TEMP_MORE_SOURCES)
+	if(more_sources)
+		foreach(a_file IN LISTS more_sources)
+			list(APPEND ${PROJECT_NAME}_${c_name}_TEMP_MORE_SOURCES ${CMAKE_SOURCE_DIR}/src/${a_file})
+		endforeach()
+	endif()
+endif()
+set(CURRENT_COMP_DEFINED ${c_name})
+manage_Plugins_In_Package_During_Components_Description()#call plugin scripts
 
 #manage generation of specific headers used by the logging system
 if(is_loggable)
@@ -1291,7 +1313,6 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") # a module library has 
 	set(${PROJECT_NAME}_${c_name}_HEADERS_ADDITIONAL_FILTERS ${more_headers} CACHE INTERNAL "")
 	if(dirname)# a pure header library may define no folder
 		set(${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN "^$")
-		set(${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/${dirname})
 		#a library defines a folder containing one or more headers and/or subdirectories
 		get_All_Headers_Relative(${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} "${${PROJECT_NAME}_${c_name}_HEADERS_ADDITIONAL_FILTERS}")
 		set(${PROJECT_NAME}_${c_name}_HEADERS ${${PROJECT_NAME}_${c_name}_ALL_HEADERS_RELATIVE} CACHE INTERNAL "")
@@ -1315,13 +1336,11 @@ endif()
 
 ### managing sources and defining targets ###
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has no source code (generates no binary)
-	#collect sources for the library
-	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/${dirname})
+	set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
 
 	## 1) collect info about the sources for registration purpose
 	#register the source dir
 	if(${CMAKE_BUILD_TYPE} MATCHES Release)
-		set(${PROJECT_NAME}_${c_name}_SOURCE_DIR ${dirname} CACHE INTERNAL "")
 		get_All_Sources_Relative(${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR})
 		set(${PROJECT_NAME}_${c_name}_SOURCE_CODE ${${PROJECT_NAME}_${c_name}_ALL_SOURCES_RELATIVE} CACHE INTERNAL "")
 		if(more_sources)
@@ -1387,11 +1406,15 @@ if(aliases)
 	add_Alias_To_Cache(${c_name} "${aliases}")
 	create_Alias_Lib_Target(${PROJECT_NAME} ${c_name} "${aliases}" "${INSTALL_NAME_SUFFIX}")
 endif()
+
 #updating global variables of the CMake process
 append_Unique_In_Cache(${PROJECT_NAME}_COMPONENTS ${c_name})
 append_Unique_In_Cache(${PROJECT_NAME}_COMPONENTS_LIBS ${c_name})
 # global variable to know that the component has been declared (must be reinitialized at each run of cmake)
 mark_As_Declared(${c_name})
+
+#finaly apply plugins actions
+manage_Plugins_Contribution_Into_Current_Component()
 endfunction(declare_Library_Component)
 
 #.rst:
@@ -1473,6 +1496,14 @@ if(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "APP"
 elseif(	${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")
 	set(${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/test/${dirname} CACHE INTERNAL "")
 endif()
+set(${PROJECT_NAME}_${c_name}_TEMP_MORE_SOURCES)
+if(more_sources)
+	foreach(a_file IN LISTS more_sources)
+		list(APPEND ${PROJECT_NAME}_${c_name}_TEMP_MORE_SOURCES ${CMAKE_SOURCE_DIR}/apps/${a_file})
+	endforeach()
+endif()
+set(CURRENT_COMP_DEFINED ${c_name})
+manage_Plugins_In_Package_During_Components_Description()#call plugin scripts
 
 #manage generation of specific headers used by the logging system
 if(is_loggable)
@@ -1543,6 +1574,8 @@ append_Unique_In_Cache(${PROJECT_NAME}_COMPONENTS ${c_name})
 append_Unique_In_Cache(${PROJECT_NAME}_COMPONENTS_APPS ${c_name})
 # global variable to know that the component has been declared  (must be reinitialized at each run of cmake)
 mark_As_Declared(${c_name})
+#finaly apply plugins actions
+manage_Plugins_Contribution_Into_Current_Component()
 
 endfunction(declare_Application_Component)
 
@@ -2213,7 +2246,7 @@ set(DECLARED_COMP)
 is_Declared(${component} DECLARED_COMP)
 if(NOT DECLARED_COMP)
 	finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR when defining depoendency for ${component} in ${PROJECT_NAME} : component ${component} is not defined in current package ${PROJECT_NAME}.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR when defining dependency for ${component} in ${PROJECT_NAME} : component ${component} is not defined in current package ${PROJECT_NAME}.")
 endif()
 will_be_Built(COMP_WILL_BE_BUILT ${DECLARED_COMP})
 if(NOT COMP_WILL_BE_BUILT)
@@ -2328,7 +2361,7 @@ set(DECLARED_COMP)
 is_Declared(${component} DECLARED_COMP)
 if(NOT DECLARED_COMP)
 	finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR when defining depoendency for ${component} in ${PROJECT_NAME} : component ${component} is not defined in current package ${PROJECT_NAME}.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR when defining dependency for ${component} in ${PROJECT_NAME} : component ${component} is not defined in current package ${PROJECT_NAME}.")
 endif()
 
 will_be_Built(COMP_WILL_BE_BUILT ${DECLARED_COMP})
@@ -2410,7 +2443,7 @@ set(DECLARED_COMP)
 is_Declared(${component} DECLARED_COMP)
 if(NOT DECLARED_COMP)
 	finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR when defining depoendency for ${component} in ${PROJECT_NAME} : component ${component} is not defined in current package ${PROJECT_NAME}.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR when defining dependency for ${component} in ${PROJECT_NAME} : component ${component} is not defined in current package ${PROJECT_NAME}.")
 endif()
 will_be_Built(COMP_WILL_BE_BUILT ${DECLARED_COMP})
 if(NOT COMP_WILL_BE_BUILT)
