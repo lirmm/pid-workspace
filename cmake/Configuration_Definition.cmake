@@ -41,13 +41,13 @@ load_Current_Platform()
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: system
 #
 #  .. |found_PID_Configuration| replace:: ``found_PID_Configuration``
 #  .. _found_PID_Configuration:
 #
 #  found_PID_Configuration
-#  --------------------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: found_PID_Configuration(config value)
 #
@@ -81,13 +81,13 @@ endmacro(found_PID_Configuration)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: system
 #
 #  .. |installable_PID_Configuration| replace:: ``installable_PID_Configuration``
 #  .. _installable_PID_Configuration:
 #
 #  installable_PID_Configuration
-#  --------------------------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: installable_PID_Configuration(config value)
 #
@@ -122,13 +122,13 @@ endmacro(installable_PID_Configuration)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: system
 #
 #  .. |execute_OS_Configuration_Command| replace:: ``execute_OS_Configuration_Command``
 #  .. _execute_OS_Configuration_Command:
 #
 #  execute_OS_Configuration_Command
-#  --------------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: execute_OS_Configuration_Command(...)
 #
@@ -161,13 +161,13 @@ endmacro(execute_OS_Configuration_Command)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: system
 #
 #  .. |resolve_PID_System_Libraries_From_Path| replace:: ``resolve_PID_System_Libraries_From_Path``
 #  .. _resolve_PID_System_Libraries_From_Path:
 #
 #  resolve_PID_System_Libraries_From_Path
-#  --------------------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: resolve_PID_System_Libraries_From_Path(list_of_path ALL_LIBRARIES_REAL_PATH ALL_LIBRARIES_SONAME)
 #
@@ -214,13 +214,13 @@ endfunction(resolve_PID_System_Libraries_From_Path)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: system
 #
 #  .. |find_PID_Library_In_Linker_Order| replace:: ``find_PID_Library_In_Linker_Order``
 #  .. _find_PID_Library_In_Linker_Order:
 #
 #  find_PID_Library_In_Linker_Order
-#  --------------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: find_PID_Library_In_Linker_Order(possible_library_names search_folders_type LIBRARY_PATH LIB_SONAME)
 #
@@ -324,13 +324,13 @@ endfunction(find_PID_Library_In_Linker_Order)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: system
 #
 #  .. |convert_PID_Libraries_Into_System_Links| replace:: ``convert_PID_Libraries_Into_System_Links``
 #  .. _convert_PID_Libraries_Into_System_Links:
 #
 #  convert_PID_Libraries_Into_System_Links
-#  ---------------------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: convert_PID_Libraries_Into_System_Links(list_of_libraries_var OUT_VAR)
 #
@@ -372,13 +372,13 @@ endfunction(convert_PID_Libraries_Into_System_Links)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: system
 #
 #  .. |convert_PID_Libraries_Into_Library_Directories| replace:: ``convert_PID_Libraries_Into_Library_Directories``
 #  .. _convert_PID_Libraries_Into_Library_Directories:
 #
 #  convert_PID_Libraries_Into_Library_Directories
-#  ----------------------------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: convert_PID_Libraries_Into_Library_Directories(list_of_libraries_var OUT_VAR)
 #
@@ -426,13 +426,13 @@ endfunction(convert_PID_Libraries_Into_Library_Directories)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: system
 #
 #  .. |extract_Soname_From_PID_Libraries| replace:: ``extract_Soname_From_PID_Libraries``
 #  .. _extract_Soname_From_PID_Libraries:
 #
 #  extract_Soname_From_PID_Libraries
-#  ---------------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: extract_Soname_From_PID_Libraries(list_of_libraries_var OUT_VAR)
 #
@@ -480,13 +480,13 @@ endfunction(extract_Soname_From_PID_Libraries)
 
 #.rst:
 #
-# .. ifmode:: user
+# .. ifmode:: system
 #
 #  .. |extract_Symbols_From_PID_Libraries| replace:: ``extract_Symbols_From_PID_Libraries``
 #  .. _extract_Symbols_From_PID_Libraries:
 #
 #  extract_Symbols_From_PID_Libraries
-#  ----------------------------------
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: extract_Symbols_From_PID_Libraries(list_of_libraries_var list_of_symbols OUT_LIST_OF_SYMBOL_VERSION_PAIRS)
 #

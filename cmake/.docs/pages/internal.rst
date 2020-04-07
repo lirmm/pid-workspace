@@ -52,12 +52,6 @@ General Utilities
 
 .. cmake-module:: ../../api/PID_Utils_Functions.cmake
 
-
-Git Utilities
-=============
-
-.. setmode:: internal
-
 .. cmake-module:: ../../api/PID_Git_Functions.cmake
 
 
@@ -67,6 +61,8 @@ Platform Utilities
 .. setmode:: internal
 
 .. cmake-module:: ../../api/PID_Platform_Management_Functions.cmake
+
+.. cmake-module:: ../../api/PID_Plugins_Management.cmake
 
 Finding Utilities
 =================
@@ -106,14 +102,6 @@ Continuous integration Utilities
 .. setmode:: internal
 
 .. cmake-module:: ../../api/PID_Continuous_Integration_Functions.cmake
-
-
-Plugins Utilities
-=================
-
-.. setmode:: internal
-
-.. cmake-module:: ../../api/PID_Plugins_Management.cmake
 
 
 Process Progress Utilities
