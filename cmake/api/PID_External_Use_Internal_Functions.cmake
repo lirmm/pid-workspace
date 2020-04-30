@@ -128,7 +128,7 @@ endfunction(reset_Local_Components_Info)
 function(enforce_System_Dependencies NOT_ENFORCED list_of_os_deps)
 foreach(os_variant IN LISTS list_of_os_deps)
 	#check if this configuration is matching an external package defined in PID
-  check_System_Configuration(CHECK_CONFIG_OK CONFIG_NAME CONFIG_CONSTRAINTS "${os_variant}" ${WORKSPACE_MODE})
+  check_Platform_Configuration(CHECK_CONFIG_OK CONFIG_NAME CONFIG_CONSTRAINTS "${os_variant}" ${WORKSPACE_MODE})
   if(NOT CHECK_CONFIG_OK)
     set(${NOT_ENFORCED} ${os_variant} PARENT_SCOPE)
     return()

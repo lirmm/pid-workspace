@@ -21,6 +21,7 @@
 ############ inclusion of required macros and functions ################
 ########################################################################
 include(External_Definition NO_POLICY_SCOPE) #to be able to interpret description of dependencies (external packages)
+include(Environment_Definition NO_POLICY_SCOPE) #to be able to interpret description of build environment requirements
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Version_Management_Functions NO_POLICY_SCOPE)
@@ -54,7 +55,13 @@ function(reset_Wrapper_Description_Cached_Variables)
 
 #reset versions description
 foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
-	#reset configurations
+	#reset langauge configurations
+	foreach(lang IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS)
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_TOOLSET CACHE INTERNAL "")
+	endforeach()
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS CACHE INTERNAL "")
+	#reset platform configurations
 	foreach(config IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS)
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATION_${config} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS CACHE INTERNAL "")
@@ -540,6 +547,13 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME \"${${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME}\" CACHE INTERNAL \"\")\n")
 
 	#manage platform configuration description
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS} CACHE INTERNAL \"\")\n")
+	foreach(lang IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS)
+		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS} CACHE INTERNAL \"\")\n")
+		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_TOOLSET ${${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_TOOLSET} CACHE INTERNAL \"\")\n")
+	endforeach()
+
+	#manage platform configuration description
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS} CACHE INTERNAL \"\")\n")
 	foreach(config IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS)
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATION_${config} ${${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATION_${config}} CACHE INTERNAL \"\")\n")
@@ -874,13 +888,98 @@ endfunction(add_Known_Version)
 #
 # .. ifmode:: internal
 #
-#  .. |declare_Wrapped_Configuration| replace:: ``declare_Wrapped_Configuration``
-#  .. _declare_Wrapped_Configuration:
+#  .. |declare_Wrapped_Language_Configuration| replace:: ``declare_Wrapped_Language_Configuration``
+#  .. _declare_Wrapped_Language_Configuration:
 #
-#  declare_Wrapped_Configuration
+#  declare_Wrapped_Language_Configuration
+#  --------------------------------------
+#
+#   .. command:: declare_Wrapped_Language_Configuration(languages lang_toolsets tools optional)
+#
+#    Declare a platform constraint for currenlty described version of the external package. Internal counterpart of declare_PID_Wrapper_Platform_Configuration.
+#
+#      :languages: list of language configuration check expressions
+#
+#      :lang_toolsets: list of language toolsets expressed as environment check expressions
+#
+#      :tools: list of additional tools configuration check expressions.
+#
+#      :optional: if TRUE requirements are optional (will not generate errors if checks fail)
+#
+function(declare_Wrapped_Language_Configuration languages lang_toolsets tools optional)
+	if(lang_toolsets)
+		set(index 0)
+	endif()
+	foreach(lang IN LISTS languages)
+		parse_Configuration_Expression(LANG_NAME LANG_ARGS "${lang}")#need to parse the configuration strings to extract arguments (if any)
+		if(NOT LANG_NAME)
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : langauge configuration check ${lang} is ill formed.")
+			return()
+		endif()
+		append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_LANGUAGE_CONFIGURATIONS "${LANG_NAME}")# update the list of required configurations
+		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_LANGUAGE_CONFIGURATION_${LANG_NAME}_ARGS "${LANG_ARGS}" CACHE INTERNAL "")
+
+		#check that the configuration applies to the current build environment
+		check_Language_Configuration(RESULT_OK LANG_NAME CONSTRAINTS "${lang}" Release)
+		if(NOT RESULT_OK)
+			if(NOT optional)
+				finish_Progress(${GLOBAL_PROGRESS_VAR})
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satisfy language configuration ${lang}!")
+				return()
+			endif()
+		else()
+			#for toolset, only check that they are well specified for now (real check will be in build process)
+			if(lang_toolsets)
+				list(GET lang_toolsets ${index} corresponding_toolset)
+				if(NOT corresponding_toolset STREQUAL "-")#Note: "-" is the specific character used to denote no toolset constraint
+					parse_Configuration_Expression(TOOLSET_NAME TOOLSET_ARGS "${corresponding_toolset}")#need to parse the configuration strings to extract arguments (if any)
+					if(NOT TOOLSET_NAME)
+						finish_Progress(${GLOBAL_PROGRESS_VAR})
+						message(FATAL_ERROR "[PID] CRITICAL ERROR : language toolset check ${corresponding_toolset} is ill formed.")
+						return()
+					endif()
+					append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_LANGUAGE_CONFIGURATION_${LANG_NAME}_TOOLSET "${corresponding_toolset}")# update the list of required configurations
+				endif()
+			endif()
+		endif()
+		if(lang_toolsets)
+			math(EXPR index "${index}+1")
+		endif()
+	endforeach()
+
+	if(tools)
+		set(config_constraints)
+		foreach(tool IN LISTS tools) ## all environment constraints must be satisfied
+			check_Extra_Tool_Configuration(RESULT_OK CONFIG_CONSTRAINTS "${tool}" Release)
+			if(NOT RESULT_OK)
+				if(NOT optional)
+					finish_Progress(${GLOBAL_PROGRESS_VAR})
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satisfy environment configuration ${tool}!")
+					return()
+				endif()
+			endif()
+			list(APPEND config_constraints ${CONFIG_CONSTRAINTS})#memorize platform configurations required by the environment
+		endforeach()
+
+		#checking all platform configurations required by the environment
+		if(config_constraints)
+			declare_Wrapped_Platform_Configuration("" "${config_constraints}" "")
+		endif()
+	endif()
+endfunction(declare_Wrapped_Language_Configuration)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_Wrapped_Platform_Configuration| replace:: ``declare_Wrapped_Platform_Configuration``
+#  .. _declare_Wrapped_Platform_Configuration:
+#
+#  declare_Wrapped_Platform_Configuration
 #  -----------------------------
 #
-#   .. command:: declare_Wrapped_Configuration(platform configurations)
+#   .. command:: declare_Wrapped_Platform_Configuration(platform configurations options)
 #
 #    Declare a platform constraint for currenlty described version of the external package. Internal counterpart of declare_PID_Wrapper_Platform_Configuration.
 #
@@ -890,10 +989,10 @@ endfunction(add_Known_Version)
 #
 #      :options: the list of configurations that may be validated or not by current platform.
 #
-function(declare_Wrapped_Configuration platform configurations options)
+function(declare_Wrapped_Platform_Configuration platform configurations options)
 if(platform)# if a platform constraint applies
 	foreach(config IN LISTS configurations)
-		parse_Constraints_Check_Expression(CONFIG_NAME CONFIG_ARGS "${config}")#need to parse the configuration strings to extract arguments (if any)
+		parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")#need to parse the configuration strings to extract arguments (if any)
 		if(NOT CONFIG_NAME)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
@@ -908,7 +1007,7 @@ if(platform)# if a platform constraint applies
 		if(platform STREQUAL CURRENT_PLATFORM)
 			#check that the configuration applies to the current platform if the current platform is the target of this constraint
 			set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
-			check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
+			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
 			if(NOT RESULT_OK)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satify configuration ${config}!")
@@ -921,7 +1020,7 @@ if(platform)# if a platform constraint applies
 	#now dealing with options
 	foreach(config IN LISTS options)
 		if(platform STREQUAL CURRENT_PLATFORM)
-			check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
+			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
 			if(RESULT_OK)
 				set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
 			else()
@@ -947,7 +1046,7 @@ if(platform)# if a platform constraint applies
 
 else()#no platform constraint applies => this platform configuration is adequate for all platforms
 	foreach(config IN LISTS configurations)
-		parse_Constraints_Check_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
+		parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
 		if(NOT CONFIG_NAME)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
@@ -959,7 +1058,7 @@ else()#no platform constraint applies => this platform configuration is adequate
 
 		#now check the configuration immediately because it should work with any platform
 		set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
-		check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
+		check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
 		if(NOT RESULT_OK)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satify configuration ${config} with current platform!")
@@ -971,13 +1070,13 @@ else()#no platform constraint applies => this platform configuration is adequate
 
 	#now dealing with options
 	foreach(config IN LISTS options)
-		parse_Constraints_Check_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
+		parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
 		if(NOT CONFIG_NAME)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] ERROR : configuration check ${config} is ill formed. Configuration being optional it is skipped automatically.")
 			return()
 		endif()
-		check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
+		check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
 		if(RESULT_OK)
 			set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
 		else()
@@ -1000,7 +1099,7 @@ else()#no platform constraint applies => this platform configuration is adequate
 		endif()
 	endforeach()
 endif()
-endfunction(declare_Wrapped_Configuration)
+endfunction(declare_Wrapped_Platform_Configuration)
 
 #.rst:
 #
@@ -1510,39 +1609,6 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 	file(APPEND ${file_for_version} "set(${package}_BUILT_OS_VARIANT ${os_variant} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file_for_version} "set(${package}_BUILT_FOR_INSTANCE ${CURRENT_PLATFORM_INSTANCE} CACHE INTERNAL \"\")\n")
 
-	if(${package}_BUILT_WITH_Python)#if Fortran used to build the package
-  	file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_PYTHON_VERSION ${CURRENT_PYTHON} CACHE INTERNAL \"\")\n")
-	endif()
-
-	 #writing info about compiler used to build the binary
-  file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_COMPILER_IS_GNUCXX \"${CMAKE_COMPILER_IS_GNUCXX}\" CACHE INTERNAL \"\" FORCE)\n")
-  file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_COMPILER_ID \"${CMAKE_CXX_COMPILER_ID}\" CACHE INTERNAL \"\" FORCE)\n")
-  file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_COMPILER_VERSION \"${CMAKE_CXX_COMPILER_VERSION}\" CACHE INTERNAL \"\" FORCE)\n")
-  file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_C_COMPILER_ID \"${CMAKE_C_COMPILER_ID}\" CACHE INTERNAL \"\" FORCE)\n")
-  file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_C_COMPILER_VERSION \"${CMAKE_C_COMPILER_VERSION}\" CACHE INTERNAL \"\" FORCE)\n")
-
-	# add constraints related to C++ ABI in use
-	file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_ABI ${CURRENT_CXX_ABI} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI ${CMAKE_INTERNAL_PLATFORM_ABI} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_STD_LIBRARIES ${CXX_STANDARD_LIBRARIES} CACHE INTERNAL \"\")\n")
-	foreach(lib IN LISTS CXX_STANDARD_LIBRARIES)
-		file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION ${CXX_STD_LIB_${lib}_ABI_SOVERSION} CACHE INTERNAL \"\")\n")
-	endforeach()
-	file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_STD_SYMBOLS ${CXX_STD_SYMBOLS} CACHE INTERNAL \"\")\n")
-	foreach(symbol IN LISTS CXX_STD_SYMBOLS)
-		file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION ${CXX_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\")\n")
-	endforeach()
-	if(${package}_BUILT_WITH_Fortran)#if Fortran used to build the package
-		file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_Fortran_STD_LIBRARIES ${Fortran_STANDARD_LIBRARIES} CACHE INTERNAL \"\")\n")
-		foreach(lib IN LISTS Fortran_STANDARD_LIBRARIES)
-			file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_Fortran_STD_LIB_${lib}_ABI_SOVERSION ${Fortran_STD_LIB_${lib}_ABI_SOVERSION} CACHE INTERNAL \"\")\n")
-		endforeach()
-		file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_Fortran_STD_SYMBOLS ${Fortran_STD_SYMBOLS} CACHE INTERNAL \"\")\n")
-		foreach(symbol IN LISTS Fortran_STD_SYMBOLS)
-			file(APPEND ${file_for_version} "set(${package}_BUILT_WITH_Fortran_STD_SYMBOL_${symbol}_VERSION ${Fortran_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\")\n")
-		endforeach()
-	endif()
-
 	file(APPEND ${file_for_version} "############# ${package} (version ${version}) specific scripts for deployment #############\n")
 	set(post_install_file_name)
 	if(${package}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT)
@@ -1558,21 +1624,35 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 	file(APPEND ${file_for_version} "############# description of ${package} content (version ${version}) #############\n")
 	file(APPEND ${file_for_version} "declare_PID_External_Package(PACKAGE ${package})\n")
 
+	#add checks for required language configurations
+	set(list_of_lang_checks)
+	set(list_of_lang_configs_names)
+	foreach(lang IN LISTS ${package}_KNOWN_VERSION_${version}_LANGUAGES)
+		generate_Configuration_Expression(RESULTING_EXPRESSION ${lang} "${${package}_KNOWN_VERSION_${version}_LANGUAGE_${lang}_ARGS}")
+		list(APPEND list_of_lang_checks ${RESULTING_EXPRESSION})
+		list(APPEND list_of_lang_configs_names ${lang})
+	endforeach()
+	if(list_of_lang_checks)
+		file(APPEND ${file_for_version} "#description of external package ${package} version ${version} required language configurations\n")
+		fill_String_From_List(list_of_lang_checks RES_CONFIG)
+		file(APPEND ${file_for_version} "check_PID_External_Package_Language(PACKAGE ${package} CONFIGURATION ${RES_CONFIG})\n")
+	endif()
+
 	#add checks for required platform configurations
-	set(list_of_configs_checks)
-	set(list_of_configs_names)
+	set(list_of_platform_checks)
+	set(list_of_platform_configs_names)
 	foreach(config IN LISTS ${package}_KNOWN_VERSION_${version}_CONFIGURATIONS)
 		if(${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config} STREQUAL "all"
 			OR ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config} STREQUAL "${platform}")#this configuration is required for any platform
-			generate_Constraints_Check_Expression(RESULTING_EXPRESSION ${config} "${${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS}")
-			list(APPEND list_of_configs_checks ${RESULTING_EXPRESSION})
-			list(APPEND list_of_configs_names ${config})
-			generate_Configuration_Constraints_For_Dependency(list_of_configs_checks list_of_configs_names ${config})
+			generate_Configuration_Expression(RESULTING_EXPRESSION ${config} "${${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS}")
+			list(APPEND list_of_platform_checks ${RESULTING_EXPRESSION})
+			list(APPEND list_of_platform_configs_names ${config})
+			generate_Platform_Configuration_Expression_For_Dependency(list_of_platform_checks list_of_platform_configs_names ${config})
 		endif()
 	endforeach()
-	if(list_of_configs_checks)
+	if(list_of_platform_checks)
 		file(APPEND ${file_for_version} "#description of external package ${package} version ${version} required platform configurations\n")
-		fill_String_From_List(list_of_configs_checks RES_CONFIG)
+		fill_String_From_List(list_of_platform_checks RES_CONFIG)
 		file(APPEND ${file_for_version} "check_PID_External_Package_Platform(PACKAGE ${package} PLATFORM ${platform} CONFIGURATION ${RES_CONFIG})\n")
 	endif()
 
@@ -2578,13 +2658,75 @@ endfunction(configure_Wrapper_Build_Variables)
 #
 # .. ifmode:: internal
 #
-#  .. |resolve_Wrapper_Configuration| replace:: ``resolve_Wrapper_Configuration``
-#  .. _resolve_Wrapper_Configuration:
+#  .. |resolve_Wrapper_Language_Configuration| replace:: ``resolve_Wrapper_Language_Configuration``
+#  .. _resolve_Wrapper_Language_Configuration:
 #
-#  resolve_Wrapper_Configuration
-#  -----------------------------
+#  resolve_Wrapper_Language_Configuration
+#  --------------------------------------
 #
-#   .. command:: resolve_Wrapper_Configuration(RESULT_OK package version)
+#   .. command:: resolve_Wrapper_Language_Configuration(RESULT_OK package version)
+#
+#    Resolve build environment configuration constraints for a given external package version. The constraints will be checked to ensure the external package wrapper description is consistent.
+#
+#      :package: the name of target external package.
+#
+#      :version: the given version.
+#
+#      :CONFIGURED: the output variable that is TRUE if all configuration constraint are satisfied for current build environment.
+#
+function(resolve_Wrapper_Language_Configuration CONFIGURED package version)
+	set(IS_CONFIGURED TRUE)
+	set(PACKAGE_SPECIFIC_BUILD_INFO_FILE ${CMAKE_BINARY_DIR}/Package_Build_Info.cmake)
+	file(WRITE "${PACKAGE_SPECIFIC_BUILD_INFO_FILE}" "")#reset the package specific build info (may obverwrite general info)
+	foreach(lang IN LISTS ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS)
+		check_Platform_Configuration_With_Arguments(RESULT_WITH_ARGS BINARY_CONSTRAINTS ${lang} ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS Release)
+		if(NOT RESULT_WITH_ARGS)
+			set(IS_CONFIGURED FALSE)
+			set(${lang}_Language_AVAILABLE FALSE CACHE INTERNAL "")
+		else()
+			set(${lang}_Language_AVAILABLE TRUE CACHE INTERNAL "")
+			set(${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS ${BINARY_CONSTRAINTS} CACHE INTERNAL "")#reset argument to keep only those required in binary
+			if(${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_TOOLSET)
+				check_Language_Toolset(RESULT_OK ${lang} "${${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_TOOLSET}" Release)
+				if(NOT RESULT_OK)
+					finish_Progress(${GLOBAL_PROGRESS_VAR})
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : ${package} version ${version} cannot satisfy toolset configuration ${${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_TOOLSET} for language ${lang} !")
+					return()
+				endif()
+			endif()
+		endif()
+	endforeach()
+	file(READ ${PACKAGE_SPECIFIC_BUILD_INFO_FILE} SPECIFIC_BUILD LIMIT 5)#reading only 5 first bytes
+	string(LENGTH "${SPECIFIC_BUILD}" SIZE)
+	if(SIZE EQUAL 5)#ok there is some modified content
+		include(${PACKAGE_SPECIFIC_BUILD_INFO_FILE})#will overwrite some build related variables
+	endif()
+	#do not check, simply add C and C++ languages if not already explicitly required by usern as they are default
+	list(FIND ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS C INDEX)
+	if(INDEX EQUAL -1)
+		append_Unique_In_Cache(${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS C)
+		set(${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_C_ARGS CACHE INTERNAL "")
+	endif()
+	list(FIND ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS CXX INDEX)
+	if(INDEX EQUAL -1)
+		append_Unique_In_Cache(${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS CXX)
+		set(${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_CXX_ARGS CACHE INTERNAL "")
+	endif()
+	set(${CONFIGURED} ${IS_CONFIGURED} PARENT_SCOPE)
+endfunction(resolve_Wrapper_Language_Configuration)
+
+#
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Wrapper_Platform_Configuration| replace:: ``resolve_Wrapper_Platform_Configuration``
+#  .. _resolve_Wrapper_Platform_Configuration:
+#
+#  resolve_Wrapper_Platform_Configuration
+#  --------------------------------------
+#
+#   .. command:: resolve_Wrapper_Platform_Configuration(RESULT_OK package version)
 #
 #    Resolve platform configuration constraints for a given external package version. The constraints will be checked to ensure the external package wrapper description is consistent.
 #
@@ -2594,10 +2736,10 @@ endfunction(configure_Wrapper_Build_Variables)
 #
 #      :CONFIGURED: the output variable that is TRUE if all configuration constraint are satisfied for current platform.
 #
-function(resolve_Wrapper_Configuration CONFIGURED package version)
+function(resolve_Wrapper_Platform_Configuration CONFIGURED package version)
 	set(IS_CONFIGURED TRUE)
 	foreach(config IN LISTS ${package}_KNOWN_VERSION_${version}_CONFIGURATIONS)
-		check_System_Configuration_With_Arguments(RESULT_WITH_ARGS BINARY_CONSTRAINTS ${config} ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS Release)
+		check_Platform_Configuration_With_Arguments(RESULT_WITH_ARGS BINARY_CONSTRAINTS ${config} ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS Release)
 		if(NOT RESULT_WITH_ARGS)
 			set(IS_CONFIGURED FALSE)
 			set(${config}_AVAILABLE FALSE CACHE INTERNAL "")
@@ -2607,7 +2749,7 @@ function(resolve_Wrapper_Configuration CONFIGURED package version)
 		endif()
 	endforeach()
 	set(${CONFIGURED} ${IS_CONFIGURED} PARENT_SCOPE)
-endfunction(resolve_Wrapper_Configuration)
+endfunction(resolve_Wrapper_Platform_Configuration)
 
 #
 #.rst:
@@ -2644,7 +2786,7 @@ if(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
 elseif(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM" #the system version has been selected => need to perform specific actions
 			OR os_variant)#the wrapper is generating an os variant so all its dependencies are os variant too
 	#need to check the equivalent OS configuration to get the OS installed version
-	check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${dep_package}" Release)
+	check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${dep_package}" Release)
 	if(NOT RESULT_OK OR NOT ${dep_package}_VERSION)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")

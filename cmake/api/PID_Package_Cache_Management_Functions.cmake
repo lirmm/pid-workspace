@@ -609,6 +609,26 @@ function(set_Version_Cache_Variables major minor patch)
 	set (${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}.${${PROJECT_NAME}_VERSION_PATCH} CACHE INTERNAL "")
 endfunction(set_Version_Cache_Variables)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Required_Extra_Tool| replace:: ``add_Required_Extra_Tool``
+#  .. _add_Required_Extra_Tool:
+#
+#  add_Required_Extra_Tool
+#  -----------------------
+#
+#   .. command:: add_Required_Extra_Tool(tool)
+#
+#   Add into cache the information of required extra tool.
+#
+#     :tool: the name of required extra tool
+#
+function(add_Required_Extra_Tool tool)
+  set(${tool}_REQUIRED TRUE CACHE INTERNAL "")
+  append_Unique_In_Cache(${PROJECT_NAME}_EXTRA_TOOLS_USED ${tool})
+endfunction(add_Required_Extra_Tool)
 
 #.rst:
 #
@@ -1024,8 +1044,6 @@ set(${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX} "${c_standard}" CA
 set(${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX} "${cxx_standard}" CACHE INTERNAL "")#minimum C++ standard of the component interface
 endfunction(init_Component_Cached_Variables_For_Export)
 
-
-
 #.rst:
 #
 # .. ifmode:: internal
@@ -1121,25 +1139,12 @@ function(reset_Build_Info_Cached_Variables_From_Use package)#common for external
   set(${package}_BUILT_FOR_DISTRIBUTION CACHE INTERNAL "")
   set(${package}_BUILT_FOR_DISTRIBUTION_VERSION CACHE INTERNAL "")
   set(${package}_BUILT_OS_VARIANT CACHE INTERNAL "")#only for external but no side effects on natives
-  set(${package}_BUILT_WITH_CXX_COMPILER CACHE INTERNAL "")
-  set(${package}_BUILT_WITH_C_COMPILER CACHE INTERNAL "")
-  set(${package}_BUILT_WITH_CXX_COMPILER CACHE INTERNAL "")
-  set(${package}_BUILT_WITH_C_COMPILER CACHE INTERNAL "")
-  set(${package}_BUILT_WITH_COMPILER_IS_GNUCXX CACHE INTERNAL "")
-  set(${package}_BUILT_WITH_CXX_COMPILER_ID CACHE INTERNAL "")
-  set(${package}_BUILT_WITH_CXX_COMPILER_VERSION CACHE INTERNAL "")
-  set(${package}_BUILT_WITH_C_COMPILER_ID CACHE INTERNAL "")
-  set(${package}_BUILT_WITH_C_COMPILER_VERSION CACHE INTERNAL "")
-  set(${package}_BUILT_WITH_CXX_ABI CACHE INTERNAL "")
-  set(${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI CACHE INTERNAL "")
-  foreach(lib IN LISTS ${package}_BUILT_WITH_CXX_STD_LIBRARIES)
-    set(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION CACHE INTERNAL "")
+
+	set(${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX} CACHE INTERNAL "")
+  foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX})
+    set(${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX} CACHE INTERNAL "")
   endforeach()
-  set(${package}_BUILT_WITH_CXX_STD_LIBRARIES CACHE INTERNAL "")
-  foreach(symbol IN LISTS ${package}_BUILT_WITH_CXX_STD_SYMBOLS)
-    set(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION CACHE INTERNAL "")
-  endforeach()
-  set(${package}_BUILT_WITH_CXX_STD_SYMBOLS CACHE INTERNAL "")
+
 endfunction(reset_Build_Info_Cached_Variables_From_Use)
 
 #.rst:
@@ -1166,6 +1171,7 @@ function(reset_Native_Package_Dependency_Cached_Variables_From_Use package mode)
   #cleaning everything
 
   set(${package}_PLATFORM${VAR_SUFFIX} CACHE INTERNAL "")
+
   foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})
     set(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX} CACHE INTERNAL "")
   endforeach()
@@ -1288,6 +1294,10 @@ endfunction(reset_External_Package_Dependency_Cached_Variables_From_Use)
 #   Resetting all internal cached variables defined by a package. Used to start reconfiguration from a clean situation.
 #
 function(reset_Package_Description_Cached_Variables)
+  foreach(extra_tool IN LISTS ${PROJECT_NAME}_EXTRA_TOOLS_USED)
+    set(${extra_tool}_REQUIRED CACHE INTERNAL "")
+  endforeach()
+  set(${PROJECT_NAME}_EXTRA_TOOLS_USED CACHE INTERNAL "")
 	# package dependencies declaration must be reinitialized otherwise some problem (uncoherent dependancy versions) would appear
 	foreach(dep_package IN LISTS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
     set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
@@ -2225,38 +2235,14 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
   file(APPEND ${file} "set(${package}_BUILT_FOR_DISTRIBUTION_VERSION ${CURRENT_DISTRIBUTION_VERSION} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${package}_BUILT_FOR_INSTANCE ${CURRENT_PLATFORM_INSTANCE} CACHE INTERNAL \"\")\n")
 
+  file(APPEND ${file} "#### declaration of language requirements in ${CMAKE_BUILD_TYPE} mode ####\n")
 
-	if(${package}_BUILT_WITH_Python)#if Fortran used to build the package
-  	file(APPEND ${file} "set(${package}_BUILT_WITH_PYTHON_VERSION ${CURRENT_PYTHON} CACHE INTERNAL \"\")\n")
-	endif()
-
-  file(APPEND ${file} "set(${package}_BUILT_WITH_COMPILER_IS_GNUCXX \"${CMAKE_COMPILER_IS_GNUCXX}\" CACHE INTERNAL \"\" FORCE)\n")
-  file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_COMPILER_ID \"${CMAKE_CXX_COMPILER_ID}\" CACHE INTERNAL \"\" FORCE)\n")
-  file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_COMPILER_VERSION \"${CMAKE_CXX_COMPILER_VERSION}\" CACHE INTERNAL \"\" FORCE)\n")
-  file(APPEND ${file} "set(${package}_BUILT_WITH_C_COMPILER_ID \"${CMAKE_C_COMPILER_ID}\" CACHE INTERNAL \"\" FORCE)\n")
-  file(APPEND ${file} "set(${package}_BUILT_WITH_C_COMPILER_VERSION \"${CMAKE_C_COMPILER_VERSION}\" CACHE INTERNAL \"\" FORCE)\n")
-
-	file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_ABI ${CURRENT_CXX_ABI} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI ${CMAKE_INTERNAL_PLATFORM_ABI} CACHE INTERNAL \"\")\n")
-  list(REMOVE_DUPLICATES CXX_STANDARD_LIBRARIES)
-  file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_LIBRARIES ${CXX_STANDARD_LIBRARIES} CACHE INTERNAL \"\")\n")
-  foreach(lib IN LISTS CXX_STANDARD_LIBRARIES)
-    file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION ${CXX_STD_LIB_${lib}_ABI_SOVERSION} CACHE INTERNAL \"\")\n")
+  foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${MODE_SUFFIX})
+    if(${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${MODE_SUFFIX})
+      file(APPEND ${file} "set(${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${MODE_SUFFIX} ${${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+    endif()
   endforeach()
-  file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_SYMBOLS ${CXX_STD_SYMBOLS} CACHE INTERNAL \"\")\n")
-  foreach(symbol IN LISTS CXX_STD_SYMBOLS)
-    file(APPEND ${file} "set(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION ${CXX_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\")\n")
-  endforeach()
-  if(${package}_BUILT_WITH_Fortran)
-    file(APPEND ${file} "set(${package}_BUILT_WITH_Fortran_STD_LIBRARIES ${Fortran_STANDARD_LIBRARIES} CACHE INTERNAL \"\")\n")
-    foreach(lib IN LISTS Fortran_STANDARD_LIBRARIES)
-      file(APPEND ${file} "set(${package}_BUILT_WITH_Fortran_STD_LIB_${lib}_ABI_SOVERSION ${Fortran_STD_LIB_${lib}_ABI_SOVERSION} CACHE INTERNAL \"\")\n")
-    endforeach()
-    file(APPEND ${file} "set(${package}_BUILT_WITH_Fortran_STD_SYMBOLS ${Fortran_STD_SYMBOLS} CACHE INTERNAL \"\")\n")
-    foreach(symbol IN LISTS Fortran_STD_SYMBOLS)
-      file(APPEND ${file} "set(${package}_BUILT_WITH_Fortran_STD_SYMBOL_${symbol}_VERSION ${Fortran_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\")\n")
-    endforeach()
-  endif()
+  file(APPEND ${file} "set(${package}_LANGUAGE_CONFIGURATIONS${MODE_SUFFIX} ${${package}_LANGUAGE_CONFIGURATIONS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 
 	file(APPEND ${file} "######### declaration of package components ########\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
@@ -2295,14 +2281,13 @@ file(APPEND ${file} "#### declaration of platform dependencies in ${CMAKE_BUILD_
 file(APPEND ${file} "set(${package}_PLATFORM${MODE_SUFFIX} ${curr_platform_name} CACHE INTERNAL \"\")\n") # not really usefull since a use file is bound to a given platform, but may be usefull for debug
 
 set(memorized_configs)
+
 foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX})
-  if(NOT ${package}_PLATFORM_CONFIGURATION_${config}_BUILD_ONLY${MODE_SUFFIX})# a config appears in use file only if it is not specified as "build only" configuration
-    list(APPEND memorized_configs ${config})
-    if(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX})
-      file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-    endif()
-    write_In_Binary_Configuration_Dependency_In_Use_File(${file} ${package} "${MODE_SUFFIX}" ${config} memorized_configs)
+  list(APPEND memorized_configs ${config})
+  if(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX})
+    file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
   endif()
+  write_In_Binary_Configuration_Dependency_In_Use_File(${file} ${package} "${MODE_SUFFIX}" ${config} memorized_configs)
 endforeach()
 file(APPEND ${file} "set(${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX} ${memorized_configs} CACHE INTERNAL \"\")\n")
 

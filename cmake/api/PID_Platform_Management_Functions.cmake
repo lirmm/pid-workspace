@@ -150,6 +150,7 @@ macro(detect_Current_Platform)
   else()
     set(CURRENT_PLATFORM_ABI abi98 CACHE INTERNAL "" FORCE)
   endif()
+  include(CheckLanguage)
 	include(CheckPython)
 	include(CheckFortran)
 	include(CheckCUDA)
@@ -436,7 +437,7 @@ function(find_Library_In_Implicit_System_Dir LIBRARY_PATH LIB_SONAME LIB_SOVERSI
   foreach(dir IN LISTS IMPLICIT_DIRS)#searching for library name in same order as specified by the path to ensure same resolution as the linker
   	find_Possible_Library_Path(REAL_PATH LINK_PATH LIBSONAME ${dir} ${library_name})
   	if(REAL_PATH)#there is a standard library or symlink with that name
-      get_Soname_Info_From_Library_Path(LIB_PATH SONAME SOVERSION ${library_name} ${LIBSONAME} ${REAL_PATH})
+      get_Soname_Info_From_Library_Path(LIB_PATH SONAME SOVERSION ${library_name} ${REAL_PATH})
       if(LIB_PATH)
         set(${LIBRARY_PATH} ${LIB_PATH} PARENT_SCOPE)
         set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
@@ -460,13 +461,11 @@ endfunction(find_Library_In_Implicit_System_Dir)
 #  get_Soname_Info_From_Library_Path
 #  ---------------------------------
 #
-#   .. command:: get_Soname_Info_From_Library_Path(LIBRARY_PATH LIB_SONAME LIB_SOVERSION library_name library_soname full_path)
+#   .. command:: get_Soname_Info_From_Library_Path(LIBRARY_PATH LIB_SONAME LIB_SOVERSION library_name full_path)
 #
 #    Get link info of a library that is supposed to be located in implicit system folders.
 #
 #     :library_name: the name of the library (without any prefix or suffix specific to system).
-#
-#     :library_soname: the full name of the library (with prefix and soname suffix).
 #
 #     :full_path: the full path to the library file (may be a real soobject or link or a linker script).
 #
@@ -476,7 +475,7 @@ endfunction(find_Library_In_Implicit_System_Dir)
 #
 #     :LIB_SOVERSION: the output variable that contains only the SOVERSION of the library if LIB_SONAME has been found, empty otherwise.
 #
-function(get_Soname_Info_From_Library_Path LIBRARY_PATH LIB_SONAME LIB_SOVERSION library_name library_soname full_path)
+function(get_Soname_Info_From_Library_Path LIBRARY_PATH LIB_SONAME LIB_SOVERSION library_name full_path)
   get_Binary_Description(DESCRIPTION ${full_path})
   if(DESCRIPTION)#preceding commands says OK: means the binary is recognized as an adequate shared object
     #getting the SONAME
@@ -607,9 +606,6 @@ macro(manage_Current_Platform build_folder type)
 			set(TEMP_CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID})
 			set(TEMP_CMAKE_CXX_COMPILER_VERSION ${CMAKE_CXX_COMPILER_VERSION})
       set(TEMP_CXX_STANDARD_LIBRARIES ${CXX_STANDARD_LIBRARIES})
-      foreach(lib IN LISTS TEMP_CXX_STANDARD_LIBRARIES)
-        set(TEMP_CXX_STD_LIB_${lib}_ABI_SOVERSION ${CXX_STD_LIB_${lib}_ABI_SOVERSION})
-      endforeach()
       set(TEMP_CXX_STD_SYMBOLS ${CXX_STD_SYMBOLS})
       foreach(symbol IN LISTS TEMP_CXX_STD_SYMBOLS)
         set(TEMP_CXX_STD_SYMBOL_${symbol}_VERSION ${CXX_STD_SYMBOL_${symbol}_VERSION})
@@ -757,7 +753,6 @@ function(reset_Package_Platforms_Variables)
     endforeach()
     unset(${config}_IN_BINARY_CONSTRAINTS CACHE)
     unset(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${USE_MODE_SUFFIX} CACHE)#reset arguments if any
-    unset(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_BUILD_ONLY${USE_MODE_SUFFIX} CACHE)#reset arguments if any
   endforeach()
 	unset(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} CACHE)
 endfunction(reset_Package_Platforms_Variables)
@@ -1001,61 +996,46 @@ endfunction(get_Soname_Symbols_Values)
 #
 function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
   set(${COMPATIBLE} FALSE PARENT_SCOPE)
-
-  #1) testing ompiler ABI compatibility
-  if((${package}_BUILT_WITH_CXX_ABI AND NOT ${package}_BUILT_WITH_CXX_ABI STREQUAL CURRENT_CXX_ABI)
-    OR (${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI AND NOT ${package}_BUILT_WITH_CMAKE_INTERNAL_PLATFORM_ABI STREQUAL CMAKE_INTERNAL_PLATFORM_ABI))
-    if(ADDITIONNAL_DEBUG_INFO)
-      message("[PID] WARNING: incompatible CXX ABIs current is : ${CURRENT_CXX_ABI} while ${package} has been built with ABI ${${package}_BUILT_WITH_CXX_ABI}")
-    endif()
-    #remark: by default we are not restructive if teh binary file does not contain sur information
-    return()
-  endif()
-
-  #2) test for standard libraries SO versions
-  foreach(lib IN LISTS ${package}_BUILT_WITH_CXX_STD_LIBRARIES)
-    if(${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION)
-      if(NOT CXX_STD_LIB_${lib}_ABI_SOVERSION)
-        if(ADDITIONNAL_DEBUG_INFO)
-          message("[PID] WARNING: no soversion in current std library ${lib}")
-        endif()
-        #so such standard librairy defined in current platform
-        return()
-      elseif(NOT ${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION STREQUAL CXX_STD_LIB_${lib}_ABI_SOVERSION)
-        #soversion number must be defined for the given lib in order to be compared (if no sonumber => no restriction)
-        if(ADDITIONNAL_DEBUG_INFO)
-          message("[PID] WARNING: soversion of current std library ${lib} (${CXX_STD_LIB_${lib}_ABI_SOVERSION}) does not match the one used to build package ${package} (${${package}_BUILT_WITH_CXX_STD_LIB_${lib}_ABI_SOVERSION})")
-        endif()
-        return()
-      endif()
-    endif()
-  endforeach()
-
-  #3) test standard libraries symbols versions
-  foreach(symbol IN LISTS ${package}_BUILT_WITH_CXX_STD_SYMBOLS)#for each symbol used by the binary
-    if(NOT CXX_STD_SYMBOL_${symbol}_VERSION)
-      #corresponding symbol do not exist in current environment => it is an uncompatible binary
-      if(ADDITIONNAL_DEBUG_INFO)
-        message("[PID] WARNING: std library symbol ${symbol} (${CXX_STD_SYMBOL_${symbol}_VERSION}) does not exist in current standard libraries")
-      endif()
-      return()
-    elseif(${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION VERSION_GREATER CXX_STD_SYMBOL_${symbol}_VERSION)
-      #the binary has been built and linked against a newer version of standard libraries => NOT compatible
-      if(ADDITIONNAL_DEBUG_INFO)
-        message("[PID] WARNING: std library symbol ${symbol} current version (${CXX_STD_SYMBOL_${symbol}_VERSION}) is strictly lower than the one used in ${pakage} (${${package}_BUILT_WITH_CXX_STD_SYMBOL_${symbol}_VERSION})")
-      endif()
-      return()
-    endif()
-  endforeach()
-
-  #4) testing sonames and symbols of libraries coming from configurations used by package
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-  set(no_arg)
+
+  # testing for languages standard libraries SO versions and symbols
+  foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
+    parse_Configuration_Expression_Arguments(PACKAGE_SPECS ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX})
+    #get SONAME and SYMBOLS coming from language configuration
+    #WARNING Note: use same arguments as binary (soname and symbol are not used to directly check validaity of the configuration) !!
+    check_Language_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${lang} PACKAGE_SPECS ${mode})
+    get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS PLATFORM_SPECS)
+
+    #get SONAME and SYMBOLS coming from package configuration
+    get_Soname_Symbols_Values(PACKAGE_SONAME PACKAGE_SYMBOLS PACKAGE_SPECS)
+
+    #from here we have the value to compare with
+    if(PACKAGE_SONAME)#package defines constraints on SONAMES
+      test_Soname_Compatibility(SONAME_COMPATIBLE PACKAGE_SONAME PLATFORM_SONAME)
+      if(NOT SONAME_COMPATIBLE)
+        if(ADDITIONNAL_DEBUG_INFO)
+          message("[PID] WARNING: standard libraries for language ${lang} have an incompatible soname (${PLATFORM_SONAME}) with those used to build package ${package} (${PACKAGE_SONAME})")
+        endif()
+        return()
+      endif()
+    endif()
+    if(PACKAGE_SYMBOLS)#package defines constraints on SYMBOLS
+      test_Symbols_Compatibility(SYMBOLS_COMPATIBLE PACKAGE_SYMBOLS PLATFORM_SYMBOLS)
+      if(NOT SYMBOLS_COMPATIBLE)
+        if(ADDITIONNAL_DEBUG_INFO)
+          message("[PID] WARNING: standard libraries symbols for language ${lang} have incompatible versions (${PLATFORM_SYMBOLS}) with those used to build package ${package} (${PACKAGE_SYMBOLS})")
+        endif()
+        return()
+      endif()
+    endif()
+  endforeach()
+
+  # testing sonames and symbols of libraries coming from platform configurations used by package
   foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
-    parse_Constraints_Check_Expression_Arguments(PACKAGE_SPECS ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+    parse_Configuration_Expression_Arguments(PACKAGE_SPECS ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
     #get SONAME and SYMBOLS coming from platform configuration
     #WARNING Note: use same arguments as binary !!
-    check_System_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${config} PACKAGE_SPECS ${mode})
+    check_Platform_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${config} PACKAGE_SPECS ${mode})
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS PLATFORM_SPECS)
 
     #get SONAME and SYMBOLS coming from package configuration
@@ -1088,13 +1068,13 @@ endfunction(is_Compatible_With_Current_ABI)
 #
 # .. ifmode:: internal
 #
-#  .. |generate_Configuration_Constraints_For_Dependency| replace:: ``generate_Configuration_Constraints_For_Dependency``
-#  .. _generate_Configuration_Constraints_For_Dependency:
+#  .. |generate_Platform_Configuration_Expression_For_Dependency| replace:: ``generate_Platform_Configuration_Expression_For_Dependency``
+#  .. _generate_Platform_Configuration_Expression_For_Dependency:
 #
-#  generate_Configuration_Constraints_For_Dependency
-#  -------------------------------------------------
+#  generate_Platform_Configuration_Expression_For_Dependency
+#  ---------------------------------------------------------
 #
-#   .. command:: generate_Configuration_Constraints_For_Dependency(RESULTING_EXPRESSION config)
+#   .. command:: generate_Platform_Configuration_Expression_For_Dependency(RESULTING_EXPRESSION config)
 #
 #     Generate an expression (string) that describes the configuration checks neeed to manage dependencies of a given configuration.
 #
@@ -1104,7 +1084,7 @@ endfunction(is_Compatible_With_Current_ABI)
 #
 #     :RESULTING_CONFIG: the input/output variable containing the list of configuration names already managed.
 #
-function(generate_Configuration_Constraints_For_Dependency RESULTING_EXPRESSION RESULTING_CONFIG_LIST config)
+function(generate_Platform_Configuration_Expression_For_Dependency RESULTING_EXPRESSION RESULTING_CONFIG_LIST config)
   if(${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY)
       set(temp_list_of_config_written ${${RESULTING_CONFIG_LIST}})
     set(temp_list_of_expressions_written ${${RESULTING_EXPRESSION}})
@@ -1128,25 +1108,25 @@ function(generate_Configuration_Constraints_For_Dependency RESULTING_EXPRESSION 
           list(APPEND temp_list_of_expressions_written ${dep_conf})
         endif()
         #recursion to manage dependencies of dependencies (and so on)
-        generate_Configuration_Constraints_For_Dependency(temp_list_of_expressions_written temp_list_of_config_written ${dep_conf})
+        generate_Platform_Configuration_Expression_For_Dependency(temp_list_of_expressions_written temp_list_of_config_written ${dep_conf})
       endif()
     endforeach()
     set(${RESULTING_EXPRESSION} ${temp_list_of_expressions_written} PARENT_SCOPE)
     set(${RESULTING_CONFIG_LIST} ${temp_list_of_config_written} PARENT_SCOPE)
   endif()
-endfunction(generate_Configuration_Constraints_For_Dependency)
+endfunction(generate_Platform_Configuration_Expression_For_Dependency)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |check_System_Configuration| replace:: ``check_System_Configuration``
-#  .. _check_System_Configuration:
+#  .. |check_Platform_Configuration| replace:: ``check_Platform_Configuration``
+#  .. _check_Platform_Configuration:
 #
-#  check_System_Configuration
-#  --------------------------
+#  check_Platform_Configuration
+#  ----------------------------
 #
-#   .. command:: check_System_Configuration(RESULT NAME CONSTRAINTS config mode)
+#   .. command:: check_Platform_Configuration(RESULT NAME CONSTRAINTS config mode)
 #
 #    Check whether the given configuration constraint (= configruation name + arguments) conforms to target platform. This function is used in source scripts.
 #
@@ -1160,8 +1140,8 @@ endfunction(generate_Configuration_Constraints_For_Dependency)
 #
 #     :CONSTRAINTS: the output variable that contains the constraints that applmy to the configuration once used. It includes arguments (constraints imposed by user) and generated contraints (constraints automatically defined by the configuration itself once used).
 #
-function(check_System_Configuration RESULT NAME CONSTRAINTS config mode)
-  parse_Constraints_Check_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
+function(check_Platform_Configuration RESULT NAME CONSTRAINTS config mode)
+  parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
   if(NOT CONFIG_NAME)
     set(${NAME} PARENT_SCOPE)
     set(${CONSTRAINTS} PARENT_SCOPE)
@@ -1169,94 +1149,25 @@ function(check_System_Configuration RESULT NAME CONSTRAINTS config mode)
     message("[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
     return()
   endif()
-  check_System_Configuration_With_Arguments(RESULT_WITH_ARGS BINARY_CONSTRAINTS ${CONFIG_NAME} CONFIG_ARGS ${mode})
+  check_Platform_Configuration_With_Arguments(RESULT_WITH_ARGS BINARY_CONSTRAINTS ${CONFIG_NAME} CONFIG_ARGS ${mode})
   set(${NAME} ${CONFIG_NAME} PARENT_SCOPE)
   set(${RESULT} ${RESULT_WITH_ARGS} PARENT_SCOPE)
   # last step consist in generating adequate expressions for constraints
-  generate_Constraints_Check_Parameters(LIST_OF_CONSTRAINTS ${CONFIG_NAME} "${BINARY_CONSTRAINTS}")
+  generate_Configuration_Expression_Parameters(LIST_OF_CONSTRAINTS ${CONFIG_NAME} "${BINARY_CONSTRAINTS}")
   set(${CONSTRAINTS} ${LIST_OF_CONSTRAINTS} PARENT_SCOPE)
-endfunction(check_System_Configuration)
+endfunction(check_Platform_Configuration)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |check_Configuration_Arguments_Included_In_Constraints| replace:: ``check_Configuration_Arguments_Included_In_Constraints``
-#  .. check_Configuration_Arguments_Included_In_Constraints:
+#  .. |check_Platform_Configuration_With_Arguments| replace:: ``check_Platform_Configuration_With_Arguments``
+#  .. _check_Platform_Configuration_With_Arguments:
 #
-#  check_Configuration_Arguments_Included_In_Constraints
-#  -----------------------------------------------------
+#  check_Platform_Configuration_With_Arguments
+#  -------------------------------------------
 #
-#   .. command:: check_Configuration_Arguments_Included_In_Constraints(INCLUDED arguments_var constraints_var)
-#
-#    Check whether a set of arguments of a configuration have already been checked in the current configuration process
-#
-#     :arguments_var: the variable containing the list of arguments to check.
-#
-#     :constraints_var: the variable containing the list of constraints already checked.
-#
-#     :INCLUDED: the output variable that is true if al arguments have already been checked.
-#
-function(check_Configuration_Arguments_Included_In_Constraints INCLUDED arguments_var constraints_var)
-set(${INCLUDED} FALSE PARENT_SCOPE)
-
-set(argument_couples ${${arguments_var}})
-while(argument_couples)
-  list(GET argument_couples 0 arg_name)
-  list(GET argument_couples 1 arg_value)
-  list(REMOVE_AT argument_couples 0 1)#update the list of arguments
-  #from here we get a constraint name and a value
-  set(is_arg_found FALSE)
-  #evaluate values of the argument so that we can compare it
-  parse_Constraints_Check_Expression_Argument_Value(ARG_VAL_LIST "${arg_value}")
-
-  set(constraints_couples ${${constraints_var}})
-  while(constraints_couples)
-    list(GET constraints_couples 0 constraint_name)
-    list(GET constraints_couples 1 constraint_value)
-    list(REMOVE_AT constraints_couples 0 1)#update the list of arguments
-    if(constraint_name STREQUAL arg_name)#argument found in constraints
-      set(is_arg_found TRUE)
-      #OK we need to check the value
-      parse_Constraints_Check_Expression_Argument_Value(CONSTRAINT_VAL_LIST "${constraint_value}")
-
-      #second : do the comparison
-      foreach(arg_list_val IN LISTS ARG_VAL_LIST)
-        set(val_found FALSE)
-        foreach(ct_list_val IN LISTS CONSTRAINT_VAL_LIST)
-          if(ct_list_val STREQUAL arg_list_val)
-            set(val_found TRUE)
-            break()
-          endif()
-        endforeach()
-        if(NOT val_found)
-          #we can immediately return => not included
-          return()
-        endif()
-      endforeach()
-      break()#exit the loop if argument has been found
-    endif()
-  endwhile()
-  if(NOT is_arg_found)
-    #if argument not found in constraint we can conclude that it is not included in constraints
-    return()
-  endif()
-endwhile()
-set(${INCLUDED} TRUE PARENT_SCOPE)
-endfunction(check_Configuration_Arguments_Included_In_Constraints)
-
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |check_System_Configuration_With_Arguments| replace:: ``check_System_Configuration_With_Arguments``
-#  .. _check_System_Configuration_With_Arguments:
-#
-#  check_System_Configuration_With_Arguments
-#  -----------------------------------------
-#
-#   .. command:: check_System_Configuration_With_Arguments(CHECK_OK BINARY_CONTRAINTS config_name config_args mode)
+#   .. command:: check_Platform_Configuration_With_Arguments(CHECK_OK BINARY_CONTRAINTS config_name config_args mode)
 #
 #    Check whether the given configuration constraint (= configruation name + arguments) conforms to target platform.
 #
@@ -1270,7 +1181,7 @@ endfunction(check_Configuration_Arguments_Included_In_Constraints)
 #
 #     :BINARY_CONTRAINTS: the output variable that contains the list of all parameter (constraints coming from argument or generated by the configuration itself) to use whenever the configuration is used.
 #
-function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS config_name config_args mode)
+function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS config_name config_args mode)
   set(${BINARY_CONTRAINTS} PARENT_SCOPE)
   set(${CHECK_OK} FALSE PARENT_SCOPE)
 
@@ -1296,24 +1207,26 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
       return()
     endif()
   endif()
-  reset_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
+  reset_Platform_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
   include(${PATH_TO_CONFIG}/check_${config_name}.cmake)#get the description of the configuration check
   #now preparing args passed to the configruation (generate cmake variables)
-  if(${config_args})#testing if the variable containing arguments is not empty
-    prepare_Configuration_Arguments_Set(${config_name} ${config_args})#setting variables that correspond to the arguments passed to the check script
+  set(possible_args ${${config_name}_OPTIONAL_CONSTRAINTS} ${${config_name}_OPTIONAL_CONSTRAINTS} ${${config_name}_IN_BINARY_CONSTRAINTS})
+  if(possible_args)
+    list(REMOVE_DUPLICATES possible_args)
+    prepare_Configuration_Expression_Arguments(${config_name} ${config_args} possible_args)#setting variables that correspond to the arguments passed to the check script
   endif()
-  prepare_Configuration_Arguments_No_Set(${config_name})
-  check_Configuration_Arguments(ARGS_TO_SET ${config_name})
+
+  check_Platform_Configuration_Arguments(ARGS_TO_SET ${config_name})
   if(ARGS_TO_SET)#there are unset required arguments
     fill_String_From_List(ARGS_TO_SET RES_STRING)
     message("[PID] WARNING : when checking arguments of configuration ${config_name}, there are required arguments that are not set : ${RES_STRING}")
     return()
   endif()
 
-  evaluate_Configuration(${config_name} ${PATH_TO_CONFIG})
+  evaluate_Platform_Configuration(${config_name} ${PATH_TO_CONFIG})
   set(${config_name}_AVAILABLE TRUE CACHE INTERNAL "")
   if(NOT ${config_name}_CONFIG_FOUND)
-  	install_Configuration(${config_name} ${PATH_TO_CONFIG})
+  	install_Platform_Configuration(${config_name} ${PATH_TO_CONFIG})
   	if(NOT ${config_name}_INSTALLED)
       set(${config_name}_AVAILABLE FALSE CACHE INTERNAL "")
     endif()
@@ -1326,7 +1239,7 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
   # checking dependencies
   set(dep_configurations)
   foreach(check IN LISTS ${config_name}_CONFIGURATION_DEPENDENCIES)
-    check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${check} ${mode})#check that dependencies are OK
+    check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${check} ${mode})#check that dependencies are OK
     if(NOT RESULT_OK)
       message("[PID] WARNING : when checking configuration of current platform, configuration ${check}, used by ${config_name} cannot be satisfied.")
       set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} FALSE "")
@@ -1338,7 +1251,7 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
   endforeach()
 
   #extracting variables to make them usable in calling context
-  extract_Configuration_Resulting_Variables(${config_name})
+  extract_Platform_Configuration_Resulting_Variables(${config_name})
 
   #now enforce constraint of using the OS variant of an external package
   # predefine the use of the external package version with its os variant
@@ -1349,11 +1262,12 @@ function(check_System_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS co
   add_Chosen_Package_Version_In_Current_Process(${config_name})#force the use of an os variant
 
   #return the complete set of binary contraints
-  get_Configuration_Resulting_Constraints(ALL_CONSTRAINTS ${config_name})
+  set(bin_constraints ${${config_name}_REQUIRED_CONSTRAINTS} ${${config_name}_IN_BINARY_CONSTRAINTS})
+  get_Configuration_Expression_Resulting_Constraints(ALL_CONSTRAINTS ${config_name} bin_constraints)
   set(${BINARY_CONTRAINTS} ${ALL_CONSTRAINTS} PARENT_SCOPE)#automatic appending constraints generated by the configuration itself for the given binary package generated
   set(${CHECK_OK} TRUE PARENT_SCOPE)
   set_Configuration_Temporary_Optimization_Variables(${config_name} Release TRUE "${ALL_CONSTRAINTS}")
-endfunction(check_System_Configuration_With_Arguments)
+endfunction(check_Platform_Configuration_With_Arguments)
 
 #.rst:
 #
@@ -1384,13 +1298,13 @@ endfunction(into_Configuration_Argument_List)
 #
 # .. ifmode:: internal
 #
-#  .. |is_Allowed_System_Configuration| replace:: ``is_Allowed_System_Configuration``
-#  .. _is_Allowed_System_Configuration:
+#  .. |is_Allowed_Platform_Configuration| replace:: ``is_Allowed_Platform_Configuration``
+#  .. _is_Allowed_Platform_Configuration:
 #
-#  is_Allowed_System_Configuration
+#  is_Allowed_Platform_Configuration
 #  -------------------------------
 #
-#   .. command:: is_Allowed_System_Configuration(ALLOWED config_name config_args)
+#   .. command:: is_Allowed_Platform_Configuration(ALLOWED config_name config_args)
 #
 #    Test if a configuration can be used with current platform.
 #
@@ -1400,7 +1314,7 @@ endfunction(into_Configuration_Argument_List)
 #
 #     :ALLOWED: the output variable that is TRUE if configuration can be used.
 #
-function(is_Allowed_System_Configuration ALLOWED config_name config_args)
+function(is_Allowed_Platform_Configuration ALLOWED config_name config_args)
   set(${ALLOWED} FALSE PARENT_SCOPE)
   install_System_Configuration_Check(PATH_TO_CONFIG ${config_name})
   if(NOT PATH_TO_CONFIG)
@@ -1408,15 +1322,17 @@ function(is_Allowed_System_Configuration ALLOWED config_name config_args)
     return()
   endif()
 
-  reset_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
+  reset_Platform_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
   include(${PATH_TO_CONFIG}/check_${config_name}.cmake)#get the description of the configuration check
 
   #now preparing args passed to the configruation (generate cmake variables)
-  if(${config_args})#testing if the variable containing arguments is not empty
-    prepare_Configuration_Arguments_Set(${config_name} ${config_args})#setting variables that correspond to the arguments passed to the check script
+  set(possible_args ${${config_name}_OPTIONAL_CONSTRAINTS} ${${config_name}_OPTIONAL_CONSTRAINTS} ${${config_name}_IN_BINARY_CONSTRAINTS})
+  if(possible_args)
+    list(REMOVE_DUPLICATES all_constraints)
+    prepare_Configuration_Expression_Arguments(${config_name} ${config_args} possible_args)#setting variables that correspond to the arguments passed to the check script
   endif()
-  prepare_Configuration_Arguments_No_Set(${config_name})
-  check_Configuration_Arguments(ARGS_TO_SET ${config_name})
+
+  check_Platform_Configuration_Arguments(ARGS_TO_SET ${config_name})
   if(ARGS_TO_SET)#there are unset required arguments
     fill_String_From_List(ARGS_TO_SET RES_STRING)
     message("[PID] WARNING : when testing arguments of configuration ${config_name}, there are required arguments that are not set : ${RES_STRING}")
@@ -1425,37 +1341,37 @@ function(is_Allowed_System_Configuration ALLOWED config_name config_args)
 
   # checking dependencies first
   foreach(check IN LISTS ${config_name}_CONFIGURATION_DEPENDENCIES)
-    parse_Constraints_Check_Expression(CONFIG_NAME CONFIG_ARGS "${check}")
+    parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${check}")
     if(NOT CONFIG_NAME)
       return()
     endif()
-    is_Allowed_System_Configuration(DEP_ALLOWED CONFIG_NAME CONFIG_ARGS)
+    is_Allowed_Platform_Configuration(DEP_ALLOWED CONFIG_NAME CONFIG_ARGS)
     if(NOT DEP_ALLOWED)
       return()
     endif()
   endforeach()
 
-  evaluate_Configuration(${config_name} ${PATH_TO_CONFIG}) # find the artifacts used by this configuration
+  evaluate_Platform_Configuration(${config_name} ${PATH_TO_CONFIG}) # find the artifacts used by this configuration
   if(NOT ${config_name}_CONFIG_FOUND)# not found, trying to see if it can be installed
-    is_Configuration_Installable(INSTALLABLE ${config_name} ${PATH_TO_CONFIG})
+    is_Platform_Configuration_Installable(INSTALLABLE ${config_name} ${PATH_TO_CONFIG})
     if(NOT INSTALLABLE)
         return()
     endif()
   endif()
   set(${ALLOWED} TRUE PARENT_SCOPE)
-endfunction(is_Allowed_System_Configuration)
+endfunction(is_Allowed_Platform_Configuration)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |evaluate_Configuration| replace:: ``evaluate_Configuration``
-#  .. _evaluate_Configuration:
+#  .. |evaluate_Platform_Configuration| replace:: ``evaluate_Platform_Configuration``
+#  .. _evaluate_Platform_Configuration:
 #
-#  evaluate_Configuration
-#  ----------------------
+#  evaluate_Platform_Configuration
+#  -------------------------------
 #
-#   .. command:: evaluate_Configuration(config path_to_config)
+#   .. command:: evaluate_Platform_Configuration(config path_to_config)
 #
 #   Call the procedure for finding artefacts related to a configuration. Set the ${config}_FOUND variable, that is TRUE is configuration has been found, FALSE otherwise.
 #
@@ -1463,7 +1379,7 @@ endfunction(is_Allowed_System_Configuration)
 #
 #     :path_to_config: the path to configuration folder.
 #
-macro(evaluate_Configuration config path_to_config)
+macro(evaluate_Platform_Configuration config path_to_config)
   # finding artifacts to fulfill system configuration
   set(${config}_CONFIG_FOUND FALSE)
   set(eval_file ${path_to_config}/${${config}_EVAL_FILE})
@@ -1567,19 +1483,19 @@ macro(evaluate_Configuration config path_to_config)
       endforeach()
     endif()
   endif()
-endmacro(evaluate_Configuration)
+endmacro(evaluate_Platform_Configuration)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |is_Configuration_Installable| replace:: ``is_Configuration_Installable``
-#  .. _is_Configuration_Installable:
+#  .. |is_Platform_Configuration_Installable| replace:: ``is_Platform_Configuration_Installable``
+#  .. _is_Platform_Configuration_Installable:
 #
-#  is_Configuration_Installable
-#  ----------------------------
+#  is_Platform_Configuration_Installable
+#  -------------------------------------
 #
-#   .. command:: is_Configuration_Installable(INSTALLABLE config path_to_config)
+#   .. command:: is_Platform_Configuration_Installable(INSTALLABLE config path_to_config)
 #
 #   Call the procedure telling if a configuration can be installed.
 #
@@ -1589,7 +1505,7 @@ endmacro(evaluate_Configuration)
 #
 #     :INSTALLABLE: the output variable that is TRUE is configuartion can be installed, FALSE otherwise.
 #
-function(is_Configuration_Installable INSTALLABLE config path_to_config)
+function(is_Platform_Configuration_Installable INSTALLABLE config path_to_config)
   if(${config}_INSTALL_PACKAGES)#there is a simple install procedure based on system packages
     set(${INSTALLABLE} TRUE PARENT_SCOPE)
     return()
@@ -1604,19 +1520,19 @@ function(is_Configuration_Installable INSTALLABLE config path_to_config)
     endif()
   endif()
   set(${INSTALLABLE} FALSE PARENT_SCOPE)
-endfunction(is_Configuration_Installable)
+endfunction(is_Platform_Configuration_Installable)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |install_Configuration| replace:: ``install_Configuration``
-#  .. _install_Configuration:
+#  .. |install_Platform_Configuration| replace:: ``install_Platform_Configuration``
+#  .. _install_Platform_Configuration:
 #
-#  install_Configuration
-#  ---------------------
+#  install_Platform_Configuration
+#  ------------------------------
 #
-#   .. command:: install_Configuration(config path_to_config)
+#   .. command:: install_Platform_Configuration(config path_to_config)
 #
 #   Call the install procedure of a given configuration. Set the ${config}_INSTALLED variable to TRUE if the configuration has been installed on OS.
 #
@@ -1624,9 +1540,9 @@ endfunction(is_Configuration_Installable)
 #
 #     :path_to_config: the path to configuration folder.
 #
-macro(install_Configuration config path_to_config)
+macro(install_Platform_Configuration config path_to_config)
   set(${config}_INSTALLED FALSE)
-  is_Configuration_Installable(INSTALLABLE ${config} ${path_to_config})
+  is_Platform_Configuration_Installable(INSTALLABLE ${config} ${path_to_config})
   if(INSTALLABLE)
     message("[PID] INFO : installing configuration ${config}...")
     if(${config}_INSTALL_PACKAGES)
@@ -1637,7 +1553,7 @@ macro(install_Configuration config path_to_config)
       include(${path_to_config}/${${config}_INSTALL_PROCEDURE})
     endif()
     #now evaluate configuration check after install
-    evaluate_Configuration(${config} ${path_to_config})
+    evaluate_Platform_Configuration(${config} ${path_to_config})
     if(${config}_CONFIG_FOUND)
       message("[PID] INFO : configuration ${config} installed !")
       set(${config}_INSTALLED TRUE)
@@ -1647,25 +1563,25 @@ macro(install_Configuration config path_to_config)
   else()
     message("[PID] WARNING : ${config} cannot be installed. Please contact developpers of ${config} wrapper or if you are the developper define an install procedures in ${config} wrapper.")
   endif()
-endmacro(install_Configuration)
+endmacro(install_Platform_Configuration)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |reset_Configuration_Cache_Variables| replace:: ``reset_Configuration_Cache_Variables``
-#  .. _reset_Configuration_Cache_Variables:
+#  .. |reset_Platform_Configuration_Cache_Variables| replace:: ``reset_Platform_Configuration_Cache_Variables``
+#  .. _reset_Platform_Configuration_Cache_Variables:
 #
-#  reset_Configuration_Cache_Variables
-#  -----------------------------------
+#  reset_Platform_Configuration_Cache_Variables
+#  --------------------------------------------
 #
-#   .. command:: reset_Configuration_Cache_Variables(config)
+#   .. command:: reset_Platform_Configuration_Cache_Variables(config)
 #
 #   Reset all cache variables relatied to the given configuration
 #
 #     :config: the name of the configuration to be reset.
 #
-function(reset_Configuration_Cache_Variables config)
+function(reset_Platform_Configuration_Cache_Variables config)
   set(${config}_EVAL_FILE CACHE INTERNAL "")
   set(${config}_INSTALL_PACKAGES CACHE INTERNAL "")
   set(${config}_INSTALL_PROCEDURE CACHE INTERNAL "")
@@ -1683,49 +1599,49 @@ function(reset_Configuration_Cache_Variables config)
   set(${config}_IN_BINARY_CONSTRAINTS CACHE INTERNAL "")
   set(${config}_CONFIGURATION_DEPENDENCIES CACHE INTERNAL "")
   foreach(dep_config IN LISTS ${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY)
-    reset_Configuration_Cache_Variables(${dep_config})
+    reset_Platform_Configuration_Cache_Variables(${dep_config})
   endforeach()
   set(${config}_CONSTRAINTS_IN_BINARY CACHE INTERNAL "")
   set(${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY CACHE INTERNAL "")
-endfunction(reset_Configuration_Cache_Variables)
+endfunction(reset_Platform_Configuration_Cache_Variables)
 
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |extract_Configuration_Resulting_Variables| replace:: ``extract_Configuration_Resulting_Variables``
-#  .. _extract_Configuration_Resulting_Variables:
+#  .. |extract_Platform_Configuration_Resulting_Variables| replace:: ``extract_Platform_Configuration_Resulting_Variables``
+#  .. _extract_Platform_Configuration_Resulting_Variables:
 #
-#  extract_Configuration_Resulting_Variables
-#  -----------------------------------------
+#  extract_Platform_Configuration_Resulting_Variables
+#  --------------------------------------------------
 #
-#   .. command:: extract_Configuration_Resulting_Variables(config)
+#   .. command:: extract_Platform_Configuration_Resulting_Variables(config)
 #
 #     Get the list of constraints that should apply to a given configuration when used in a binary.
 #
 #     :config: the name of the configuration to be checked.
 #
-function(extract_Configuration_Resulting_Variables config)
+function(extract_Platform_Configuration_Resulting_Variables config)
   #updating output variables from teh value of variable s specified by PID_Configuration_Variables
   foreach(var IN LISTS ${config}_RETURNED_VARIABLES)
     #the content of ${config}_${var}_RETURNED_VARIABLE is the name of a variable so need to get its value using ${}
     set(${config}_${var} ${${${config}_${var}_RETURNED_VARIABLE}} CACHE INTERNAL "")
   endforeach()
-endfunction(extract_Configuration_Resulting_Variables)
+endfunction(extract_Platform_Configuration_Resulting_Variables)
 
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |check_Configuration_Arguments| replace:: ``check_Configuration_Arguments``
-#  .. _check_Configuration_Arguments:
+#  .. |check_Platform_Configuration_Arguments| replace:: ``check_Platform_Configuration_Arguments``
+#  .. _check_Platform_Configuration_Arguments:
 #
-#  check_Configuration_Arguments
-#  -----------------------------
+#  check_Platform_Configuration_Arguments
+#  --------------------------------------
 #
-#   .. command:: check_Configuration_Arguments(ARGS_TO_SET config)
+#   .. command:: check_Platform_Configuration_Arguments(ARGS_TO_SET config)
 #
 #     Check if all required arguments for the configuration are set before checking the configuration.
 #
@@ -1733,7 +1649,7 @@ endfunction(extract_Configuration_Resulting_Variables)
 #
 #     :ARGS_TO_SET: the parent scope variable containing the list of required arguments that have not been set by user.
 #
-function(check_Configuration_Arguments ARGS_TO_SET config)
+function(check_Platform_Configuration_Arguments ARGS_TO_SET config)
   set(list_of_args)
   foreach(arg IN LISTS ${config}_REQUIRED_CONSTRAINTS)
     if(NOT ${config}_${arg} AND NOT ${config}_${arg} EQUAL 0 AND NOT ${config}_${arg} STREQUAL "FALSE")
@@ -1741,138 +1657,4 @@ function(check_Configuration_Arguments ARGS_TO_SET config)
     endif()
   endforeach()
   set(${ARGS_TO_SET} ${list_of_args} PARENT_SCOPE)
-endfunction(check_Configuration_Arguments)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |prepare_Configuration_Arguments_Set| replace:: ``prepare_Configuration_Arguments_Set``
-#  .. _prepare_Configuration_Arguments:
-#
-#  prepare_Configuration_Arguments_Set
-#  -------------------------------
-#
-#   .. command:: prepare_Configuration_Arguments_Set(config arguments)
-#
-#     Set the variables corresponding to configuration arguments in the parent scope, as well as the list of these variables.
-#
-#     :config: the name of the configuration to be checked.
-#
-#     :arguments: the parent scope variable containing the list of arguments generated from parse_Constraints_Check_Expression.
-#
-function(prepare_Configuration_Arguments_Set config arguments)
-  if(NOT arguments OR NOT ${arguments})
-    return()
-  endif()
-  set(all_args_set)
-  set(argument_couples ${${arguments}})
-  while(argument_couples)
-    list(GET argument_couples 0 name)
-    list(GET argument_couples 1 value)
-    list(REMOVE_AT argument_couples 0 1)#update the list of arguments in parent scope
-    if(value AND NOT value STREQUAL \"\")#special case of an empty list (represented with \"\") must be avoided
-      string(REPLACE " " "" VAL_LIST ${value})#remove the spaces in the string if any
-      string(REPLACE "," ";" VAL_LIST ${VAL_LIST})#generate a cmake list (with ";" as delimiter) from an argument list (with "," delimiter)
-    else()
-      set(VAL_LIST)
-    endif()
-    list(FIND ${config}_REQUIRED_CONSTRAINTS ${name} INDEX)
-    set(GENERATE_VAR FALSE)
-    if(NOT INDEX EQUAL -1)# it is a required constraint
-      set(GENERATE_VAR TRUE)
-    else()
-      list(FIND ${config}_OPTIONAL_CONSTRAINTS ${name} INDEX)
-      if(NOT INDEX EQUAL -1)
-        set(GENERATE_VAR TRUE)
-      else()
-        list(FIND ${config}_IN_BINARY_CONSTRAINTS ${name} INDEX)
-        if(NOT INDEX EQUAL -1)
-          set(GENERATE_VAR TRUE)
-        endif()
-      endif()
-    endif()
-    list(APPEND all_args_set ${name})
-    if(GENERATE_VAR)
-      #now interpret variables contained in the list
-      set(final_list_of_values)
-      foreach(element IN LISTS VAL_LIST)#for each value in the list
-        if(element AND DEFINED ${element})#element is a variable
-          list(APPEND final_list_of_values ${${element}})
-        else()
-          list(APPEND final_list_of_values ${element})
-        endif()
-      endforeach()
-      set(${config}_${name} ${final_list_of_values} PARENT_SCOPE)
-    endif()
-  endwhile()
-  set(${config}_arguments ${all_args_set} PARENT_SCOPE)
-endfunction(prepare_Configuration_Arguments_Set)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |prepare_Configuration_Arguments_No_Set| replace:: ``prepare_Configuration_Arguments_No_Set``
-#  .. _prepare_Configuration_Arguments_No_Set:
-#
-#  prepare_Configuration_Arguments_No_Set
-#  --------------------------------------
-#
-#   .. command:: prepare_Configuration_Arguments_No_Set(config)
-#
-#     Define in parent scope the list of argument that are not set by current check.
-#
-#     :config: the name of the configuration to be checked.
-#
-function(prepare_Configuration_Arguments_No_Set config)
-  list(APPEND all_constraints ${${config}_REQUIRED_CONSTRAINTS} ${${config}_OPTIONAL_CONSTRAINTS} ${${config}_IN_BINARY_CONSTRAINTS})
-  set(all_args_to_unset)
-  if(all_constraints)
-    list(REMOVE_DUPLICATES all_constraints)
-    foreach(constraint IN LISTS all_constraints)
-      list(FIND ${config}_arguments ${constraint} INDEX)
-      if(INDEX EQUAL -1)#not found in argument set ... need to unset it from cache in the end
-        list(APPEND all_args_to_unset ${constraint})
-      endif()
-    endforeach()
-  endif()
-  set(${config}_no_arguments ${all_args_to_unset} PARENT_SCOPE)
-endfunction(prepare_Configuration_Arguments_No_Set)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |get_Configuration_Resulting_Constraints| replace:: ``get_Configuration_Resulting_Constraints``
-#  .. _get_Configuration_Resulting_Constraints:
-#
-#  get_Configuration_Resulting_Constraints
-#  ---------------------------------------
-#
-#   .. command:: get_Configuration_Resulting_Constraints(BINARY_CONSTRAINTS config)
-#
-#     Get the list of constraints that should apply to a given configuration when used in a binary.
-#
-#     :config: the name of the configuration to be checked.
-#
-#     :BINARY_CONSTRAINTS: the output variable the contains the list of constraints to be used in binaries. A constraint is represented by two following elements in the list with the form : name value.
-#
-function(get_Configuration_Resulting_Constraints BINARY_CONSTRAINTS config)
-
-#updating all constraints to apply in binary package, they correspond to variable that will be outputed
-set(all_constraints)
-foreach(constraint IN LISTS ${config}_REQUIRED_CONSTRAINTS)
-  generate_Value_For_Constraints_Check_Expression_Parameter(RES_VALUE ${config}_${constraint})
-  list(APPEND all_constraints ${constraint} "${RES_VALUE}")#use guillemet to set exactly one element
-endforeach()
-
-foreach(constraint IN LISTS ${config}_IN_BINARY_CONSTRAINTS)
-  generate_Value_For_Constraints_Check_Expression_Parameter(RES_VALUE ${${config}_${constraint}_BINARY_VALUE})#interpret the value of the adequate configuration generated internal variable
-  list(APPEND all_constraints ${constraint} "${RES_VALUE}")#use guillemet to set exactly one element
-endforeach()
-
-#optional constraints are never propagated to binaries description
-set(${BINARY_CONSTRAINTS} ${all_constraints} PARENT_SCOPE)#the value of the variable is not the real value but the name of the variable
-
-endfunction(get_Configuration_Resulting_Constraints)
+endfunction(check_Platform_Configuration_Arguments)

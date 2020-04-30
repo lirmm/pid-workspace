@@ -715,6 +715,82 @@ endmacro(add_PID_Wrapper_Known_Version)
 #
 # .. ifmode:: user
 #
+#  .. |PID_Wrapper_Environment| replace:: ``PID_Wrapper_Environment``
+#  .. _PID_Wrapper_Environment:
+#
+#  PID_Wrapper_Environment
+#  -----------------------
+#
+#   .. command:: PID_Wrapper_Environment(CONFIGURATION ...)
+#
+#   .. command:: declare_PID_Wrapper_Environment(CONFIGURATION ... )
+#
+#      Declare a configuration constraint on the build environment for the current version of the external project being described.
+#
+#     .. rubric:: Required parameters
+#
+#      :OPTIONAL: if used then the requirement on build environment is optional.
+#      :LANGUAGE ...: Set of constraint check expressions defining which languages must/can be used (testing only C and C++ is not necessary).
+#      :TOOLSET ... : Set of constraint check expressions defining which toolset must/can be used for target language. If many languages are specified then there must have as many toolsets defined, in same order.
+#      :TOOL ... : Set of constraint check expressions defining which tools (compiler, interpreter, generators, etc.) must/can be used.
+#
+#     .. rubric:: Optional parameters
+#
+#     :PLATFORM <platform name>: Use to apply the configuration constraints only to the target platform.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the CMakeList.txt file of a version folder after add_PID_Wrapper_Known_Version.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         - Configure the check of a set of platform configurations that will be perfomed when the given wrapper version is built.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        PID_Wrapper_Environment(LANGUAGE CUDA)
+#
+macro(PID_Wrapper_Environment)
+  declare_PID_Wrapper_Environment(${ARGN})
+endmacro(PID_Wrapper_Environment)
+
+macro(declare_PID_Wrapper_Environment)
+set(options OPTIONAL)
+set(multiValueArgs TOOL LANGUAGE TOOLSET)
+cmake_parse_arguments(DECLARE_PID_WRAPPER_ENVIRONMENT "${options}" "" "${multiValueArgs}" ${ARGN} )
+if(NOT DECLARE_PID_WRAPPER_ENVIRONMENT_TOOL AND NOT DECLARE_PID_WRAPPER_ENVIRONMENT_LANGUAGE)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, PID_Wrapper_Environment requires at least to define a tool (using TOOL keyword) or aconstraint on language in use (using LANGUAGE ketword).")
+	return()
+endif()
+if(DECLARE_PID_WRAPPER_ENVIRONMENT_TOOLSET)
+  if(NOT DECLARE_PID_WRAPPER_ENVIRONMENT_LANGUAGE)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR :  bad arguments when calling PID_Wrapper_Environment, you must define the LANGUAGE (using LANGUAGE) when you want to use specific toolset (using TOOLSET argument).")
+  endif()
+  list(LENGTH CHECK_PID_ENV_TOOLSET SIZE_TOOLSETS)
+  list(LENGTH CHECK_PID_ENV_LANGUAGE SIZE_LANGUAGES)
+  if(NOT SIZE_TOOLSETS EQUAL SIZE_LANGUAGES)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling PID_Wrapper_Environment there is not as many toolsets (${SIZE_TOOLSETS}) as languages defined (${SIZE_LANGUAGES}).")
+  endif()
+endif()
+if(DECLARE_PID_WRAPPER_ENVIRONMENT_OPTIONAL)
+  set(optional TRUE)
+else()
+  set(optional FALSE)
+endif()
+declare_Wrapped_Language_Configuration("${DECLARE_PID_WRAPPER_ENVIRONMENT_LANGUAGE}" "${DECLARE_PID_WRAPPER_ENVIRONMENT_TOOLSET}" "${DECLARE_PID_WRAPPER_ENVIRONMENT_TOOL}" "${optional}")
+endmacro(declare_PID_Wrapper_Environment)
+
+#.rst:
+#
+# .. ifmode:: user
+#
 #  .. |PID_Wrapper_Configuration| replace:: ``PID_Wrapper_Configuration``
 #  .. _PID_Wrapper_Configuration:
 #
@@ -765,7 +841,7 @@ if(NOT DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION AND NOT DECLARE_PID_WRAPPER_PL
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Platform requires at least to define a required configuration using CONFIGURATION keyword or an optional configuration using OPTIONAL keyword.")
 	return()
 endif()
-declare_Wrapped_Configuration("${DECLARE_PID_WRAPPER_PLATFORM_PLATFORM}" "${DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION}" "${DECLARE_PID_WRAPPER_PLATFORM_OPTIONAL}")
+declare_Wrapped_Platform_Configuration("${DECLARE_PID_WRAPPER_PLATFORM_PLATFORM}" "${DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION}" "${DECLARE_PID_WRAPPER_PLATFORM_OPTIONAL}")
 endmacro(declare_PID_Wrapper_Platform_Configuration)
 
 #.rst:

@@ -19,6 +19,20 @@
 
 #check simply ised to have a clean and standardized way to get compiler identification in PID
 
+if (CMAKE_ASM_COMPILER_ID MATCHES "GNU" OR CMAKE_COMPILER_IS_GNUCXX)
+  set(CURRENT_ASM_COMPILER gcc)
+elseif(CMAKE_ASM_COMPILER_ID MATCHES "Clang|AppleClang|clang")
+  set(CURRENT_ASM_COMPILER clang)
+elseif(CMAKE_ASM_COMPILER_ID MATCHES "MSVC")
+  set(CURRENT_ASM_COMPILER msvc)
+elseif(CMAKE_ASM_COMPILER_ID MATCHES "icc|icl")
+  set(CURRENT_ASM_COMPILER icc)
+elseif(CMAKE_ASM_COMPILER_ID MATCHES "XL|VisualAge|zOS|xlc")
+  set(CURRENT_ASM_COMPILER xlc)
+else()
+  set(CURRENT_ASM_COMPILER ${CMAKE_ASM_COMPILER_ID})
+endif()
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_COMPILER_IS_GNUCXX)
   set(CURRENT_CXX_COMPILER gcc)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|clang")
@@ -46,3 +60,8 @@ elseif(MAKE_C_COMPILER_ID MATCHES "XL|VisualAge|zOS|xlc")
 else()
   set(CURRENT_C_COMPILER ${CMAKE_C_COMPILER_ID})
 endif()
+
+#all those languages are available by default
+set(ASM_Language_AVAILABLE TRUE CACHE INTERNAL "")
+set(C_Language_AVAILABLE TRUE CACHE INTERNAL "")
+set(CXX_Language_AVAILABLE TRUE CACHE INTERNAL "")

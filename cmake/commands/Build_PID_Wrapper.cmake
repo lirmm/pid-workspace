@@ -118,7 +118,7 @@ if(use_os_variant)#instead of building the project using its variant coming from
 	#only thing to resolve: the external package equivalent configuration,
 	# that is used to check if external package is installed on system
 	#this resolution is based on the standard "version" argument of corresponding configuration
-	check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${TARGET_EXTERNAL_PACKAGE}[version=${version}]" Release)
+	check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${TARGET_EXTERNAL_PACKAGE}[version=${version}]" Release)
 	if(NOT RESULT_OK)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message("[PID] ERROR : Cannot deploy OS variant of ${TARGET_EXTERNAL_PACKAGE} with version ${version} because of platform configuration error !")
@@ -151,14 +151,24 @@ else()#by default build the given package version using external project specifi
 	set(post_install_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT})
 	set(pre_use_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT})
 
-	#checking for system configurations
-	resolve_Wrapper_Configuration(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
+	#checking for language configurations
+	resolve_Wrapper_Language_Configuration(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
+	if(NOT IS_OK)
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message("[PID] ERROR : Cannot satisfy build environment's required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} !")
+		return()
+	else()
+		message("[PID] INFO : all required build environment configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
+	endif()
+
+	#checking for platform configurations
+	resolve_Wrapper_Platform_Configuration(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
 	if(NOT IS_OK)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message("[PID] ERROR : Cannot satisfy target platform's required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} !")
 		return()
 	else()
-		message("[PID] INFO : all required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
+		message("[PID] INFO : all required platform configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
 	endif()
 
 	# checking for dependencies

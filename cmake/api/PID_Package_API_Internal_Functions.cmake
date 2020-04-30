@@ -38,7 +38,9 @@ include(PID_Plugins_Management NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
-include(Plugin_Definition NO_POLICY_SCOPE)#provide API for plugin scripts
+include(External_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
+include(Plugin_Definition NO_POLICY_SCOPE)#to be able to interpret content of plugin scripts
+include(Environment_Definition NO_POLICY_SCOPE) #to be able to interpret description of build environment requirements
 
 ##################################################################################
 #################### package management public functions and macros ##############
@@ -74,6 +76,18 @@ macro(declare_Package author institution mail year license address public_addres
 set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")#to avoid the use of -isystem that may be not so well managed by some compilers
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 manage_Current_Platform("${DIR_NAME}" "NATIVE") #loading the current platform configuration and perform adequate actions if any changes
+set(PACKAGE_SPECIFIC_BUILD_INFO_FILE ${CMAKE_BINARY_DIR}/Package_Build_Info.cmake)
+# TODO check all of that
+if(EXISTS ${PACKAGE_SPECIFIC_BUILD_INFO_FILE}) #loading package specific build info
+	file(READ ${PACKAGE_SPECIFIC_BUILD_INFO_FILE} SPECIFIC_BUILD LIMIT 5)#reading only 5 first bytes
+	string(LENGTH "${SPECIFIC_BUILD}" SIZE)
+	if(SIZE EQUAL 5)#ok there is some modified content
+		include(${PACKAGE_SPECIFIC_BUILD_INFO_FILE})#will overwrite some build related variables
+	endif()
+else()
+	file(WRITE "${PACKAGE_SPECIFIC_BUILD_INFO_FILE}" "")#create the file
+endif()
+
 set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 activate_Adequate_Languages()
 #################################################
@@ -90,7 +104,6 @@ set(${PROJECT_NAME}_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL "")#to keep com
 initialize_Build_System()#initializing PID specific settings for build
 
 manage_Parrallel_Build_Option()
-
 #################################################
 ############ MANAGING build mode ################
 #################################################
@@ -432,7 +445,6 @@ elseif(DIR_NAME STREQUAL "build")
 			endif()
 		endif()
 	elseif(EXISTS ${PACKAGE_FORMAT_FILE})
-		message("????")
 		# code style has been removed, removing the configuration file
 		file(REMOVE ${PACKAGE_FORMAT_FILE})
 		set(format_cmd_message "no format defined.")
@@ -609,13 +621,147 @@ endfunction(set_Current_Version)
 #
 # .. ifmode:: internal
 #
+#  .. |check_Environment_Constraints| replace:: ``check_Environment_Constraints``
+#  .. _check_Environment_Constraints:
+#
+#  check_Environment_Constraints
+#  -----------------------------
+#
+#   .. command:: check_Environment_Constraints(RESULT language_constraints tool_constraints optional)
+#
+#     Check that the environment constraints provided match the current build profile configuration.
+#
+#     :language_constraints: check on available languages.
+#
+#     :lang_toolsets: list of language toolsets expressed as environment check expressions
+#
+#     :tool_constraints: check on available tools.
+#
+#     :optional: if constraints are optional.
+#
+#     :ERROR: the output variable that is empty if constraints are satisfied, contains the error message if any constraint cannot be satisfied.
+#
+function(check_Environment_Constraints ERROR language_constraints lang_toolsets tool_constraints optional)
+
+set(${ERROR} PARENT_SCOPE)
+set(error_messages)
+set(languages_to_memorize)
+
+#first checking language constraints (not bound to a specific environment)
+if(language_constraints)
+	if(lang_toolsets)
+		set(index 0)
+	endif()
+	foreach(lang IN LISTS language_constraints) ## all configuration constraints must be satisfied
+		check_Language_Configuration(RESULT_OK LANG_NAME LANG_CONSTRAINTS "${lang}" ${CMAKE_BUILD_TYPE})
+		if(NOT RESULT_OK)
+			if(error_messages)
+				set(error_messages "${error_messages}, ${lang}")
+			else()
+				set(error_messages "language constraints violated: ${lang}")
+			endif()
+		endif()
+		if(RESULT_OK OR NOT optional)#if the result if FALSE and the constraint was optional then skip it
+			list(APPEND languages_to_memorize ${LANG_NAME})#memorize name of the configuration
+			set(${LANG_NAME}_constraints_to_memorize ${LANG_CONSTRAINTS})#then memorize all constraints that apply to the configuration
+		endif()
+		if(lang_toolsets)
+			if(RESULT_OK)
+				list(GET lang_toolsets ${index} corresponding_toolset)
+				if(NOT corresponding_toolset STREQUAL "-")#Note: "-" is the specific character used to denote no toolset constraint
+					set(${LANG_NAME}_toolset_to_check ${corresponding_toolset})
+				endif()
+			endif()
+			math(EXPR index "${index}+1")
+		endif()
+	endforeach()
+
+	#exit if errors
+	if(error_messages)
+		if(NOT optional)
+			set(${ERROR} ${error_messages} PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+
+	#now check toolsets
+	foreach(lang IN LISTS languages_to_memorize)
+		if(${lang}_toolset_to_check)#there are paremeters for that configuration, they need to be registered
+			check_Language_Toolset(RESULT_OK "${LANG_NAME}" "${corresponding_toolset}" ${CMAKE_BUILD_TYPE})
+			if(NOT RESULT_OK)
+				if(error_messages)
+					set(error_messages "${error_messages}, ${corresponding_toolset} for ${LANG_NAME}")
+				else()
+					set(error_messages "language toolset requirement not satisfied: ${corresponding_toolset} for ${LANG_NAME}")
+				endif()
+			endif()
+		endif()
+	endforeach()
+
+	#exit if errors
+	if(error_messages)
+		if(NOT optional)
+			set(${ERROR} ${error_messages} PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+
+
+	#then memorize language configuration
+	append_Unique_In_Cache(${PROJECT_NAME}_LANGUAGE_CONFIGURATIONS${USE_MODE_SUFFIX} ${languages_to_memorize})
+	foreach(lang IN LISTS languages_to_memorize)
+		if(${lang}_constraints_to_memorize)#there are paremeters for that configuration, they need to be registered
+			list(REMOVE_DUPLICATES ${lang}_constraints_to_memorize)
+			set(${PROJECT_NAME}_LANGUAGE_CONFIGURATION_${lang}_ARGS${USE_MODE_SUFFIX} "${${lang}_constraints_to_memorize}" CACHE INTERNAL "")
+		endif()
+	endforeach()
+endif()
+
+#second checking tool constraints (bound to a specific environment)
+if(tool_constraints)
+	set(config_constraints)
+	foreach(tool IN LISTS tool_constraints) ## all environment constraints must be satisfied
+		check_Extra_Tool_Configuration(RESULT_OK CONFIG_CONSTRAINTS "${tool}" ${CMAKE_BUILD_TYPE})
+		if(NOT RESULT_OK)
+			if(error_messages)
+				set(error_messages "${error_messages}, ${tool}")
+			else()
+				set(error_messages "tool constraints violated: ${tool}")
+			endif()
+		endif()
+		if(RESULT_OK OR NOT optional)#if the result if FALSE and the constraint was optional then skip it
+			
+			list(APPEND config_constraints ${CONFIG_CONSTRAINTS})#memorize platform configurations required by the environment
+		endif()
+	endforeach()
+
+	#exit if errors
+	if(error_messages)
+		if(NOT optional)
+			set(${ERROR} ${error_messages} PARENT_SCOPE)
+			return()
+		endif()
+	endif()
+
+	#checking all platform configurations required by the environment
+	foreach(constraint IN LISTS config_constraints)
+		check_Platform_Constraints(RESULT IS_CURRENT "" "" "" "" "${constraint}" FALSE)
+	endforeach()
+endif()
+
+endfunction(check_Environment_Constraints)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |check_Platform_Constraints| replace:: ``check_Platform_Constraints``
 #  .. _check_Platform_Constraints:
 #
 #  check_Platform_Constraints
 #  --------------------------
 #
-#   .. command:: check_Platform_Constraints(RESULT IS_CURRENT type arch os abi constraints optional build_only)
+#   .. command:: check_Platform_Constraints(RESULT IS_CURRENT type arch os abi constraints optional)
 #
 #     Check that the platform constraints provided match the current platform configuration. Constraints are checked only if the current platform matches platform filters provided.
 #
@@ -631,13 +777,11 @@ endfunction(set_Current_Version)
 #
 #     :optional: if configurations are optional.
 #
-#     :build_only: if configurations are used only at build time.
-#
 #     :RESULT: the output variable that is TRUE if constraints are satisfied or if no constraint appliesdu to filters, FALSE if any constraint cannot be satisfied.
 #
 #     :IS_CURRENT: the output variable that contains the current platform identifier if current platform matches all filters.
 #
-function(check_Platform_Constraints RESULT IS_CURRENT type arch os abi constraints optional build_only)
+function(check_Platform_Constraints RESULT IS_CURRENT type arch os abi constraints optional)
 set(SKIP FALSE)
 #The check of compatibility between the target platform and the constraints is immediate using platform configuration information (platform files) + additionnal global information (distribution for instance) coming from the workspace
 
@@ -675,25 +819,22 @@ else()
 	set(${IS_CURRENT} ${CURRENT_PLATFORM} PARENT_SCOPE)
 endif()
 
+set(configurations_to_memorize)
 if(NOT SKIP AND constraints)
 	foreach(config IN LISTS constraints) ## all configuration constraints must be satisfied
-		check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${config}" ${CMAKE_BUILD_TYPE})
+		check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${config}" ${CMAKE_BUILD_TYPE})
 		if(NOT RESULT_OK)
 			set(${RESULT} FALSE PARENT_SCOPE)#returns false as soon as one config check fails
 		endif()
 		if(RESULT_OK OR NOT optional)#if the result if FALSE and the configuration was optional then skip it
 			list(APPEND configurations_to_memorize ${CONFIG_NAME})#memorize name of the configuration
 			set(${CONFIG_NAME}_constraints_to_memorize ${CONFIG_CONSTRAINTS})#then memorize all constraints that apply to the configuration
-			list(APPEND constraints_to_memorize ${config})
 		endif()
 	endforeach()
 
 	#registering all configurations wether they are satisfied or not, except non satisfied optional ones
 	append_Unique_In_Cache(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} "${configurations_to_memorize}")
 	foreach(config IN LISTS configurations_to_memorize)
-		if(build_only)#memorize that this configuration is build only (will not be written in use files)
-			set(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_BUILD_ONLY${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
-		endif()
 		if(${config}_constraints_to_memorize)#there are paremeters for that configuration, they need to be registered
 			list(REMOVE_DUPLICATES ${config}_constraints_to_memorize)
 			set(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${USE_MODE_SUFFIX} "${${config}_constraints_to_memorize}" CACHE INTERNAL "")
@@ -718,6 +859,19 @@ endfunction(check_Platform_Constraints)
 #     Finalize configuration of the current package build process. Internal counterpart of build_PID_Package.
 #
 macro(build_Package)
+
+#do not check, simply add C and C++ languages if not already explicitly required by usern as they are default
+list(FIND ${PROJECT_NAME}_LANGUAGE_CONFIGURATIONS${USE_MODE_SUFFIX} C INDEX)
+if(INDEX EQUAL -1)
+	append_Unique_In_Cache(${PROJECT_NAME}_LANGUAGE_CONFIGURATIONS${USE_MODE_SUFFIX} C)
+	set(${PROJECT_NAME}_LANGUAGE_CONFIGURATION_C_ARGS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+endif()
+list(FIND ${PROJECT_NAME}_LANGUAGE_CONFIGURATIONS${USE_MODE_SUFFIX} CXX INDEX)
+if(INDEX EQUAL -1)
+	append_Unique_In_Cache(${PROJECT_NAME}_LANGUAGE_CONFIGURATIONS${USE_MODE_SUFFIX} CXX)
+	set(${PROJECT_NAME}_LANGUAGE_CONFIGURATION_CXX_ARGS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+endif()
+
 get_Platform_Variables(BASENAME curr_platform_name PKG_STRING cpack_platform_str)
 
 ### configuring RPATH management in CMake
@@ -1969,7 +2123,7 @@ if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
 	set(unused TRUE)
 elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")#the system version has been selected => need to perform specific actions
 	#need to check the equivalent OS configuration to get the OS installed version
-	check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${dep_package}" ${CMAKE_BUILD_TYPE})
+	check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${dep_package}" ${CMAKE_BUILD_TYPE})
 	if(NOT RESULT_OK OR NOT ${dep_package}_VERSION)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
@@ -2313,6 +2467,84 @@ endif()
 append_Unique_In_Cache(${PROJECT_NAME}_${DECLARED_COMP}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
 append_Unique_In_Cache(${PROJECT_NAME}_${DECLARED_COMP}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} ${dep_name_to_use})
 endfunction(declare_External_Component_Dependency)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |declare_System_Component_Dependency| replace:: ``declare_System_Component_Dependency``
+#  .. _declare_System_Component_Dependency:
+#
+#  declare_System_Component_Dependency
+#  -----------------------------------
+#
+#   .. command:: declare_System_Component_Dependency(component export inc_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links c_standard cxx_standard runtime_resources)
+#
+#     Specify a dependency between a component of the currently defined native package and system components.
+#     details: declare a dependancy that does not create new targets, but directly configures the component with adequate flags coming from system dependencies.
+#     Should be avoided anytime possible, but useful to configure a component with flags and options coming from a platform configuration.
+#
+#     :component: the name of the component that have a dependency.
+#
+#     :export: if TRUE component exports the content of the dependency.
+#
+#     :platform_config: the name of the platform configuration to export.
+#
+#     :comp_defs: preprocessor definitions in the implementation of component that conditionnate the use of system dependencies (may be an empty string). These definitions are not exported by component.
+#
+#     :comp_exp_defs: preprocessor definitions in the interface (public headers) of component that conditionnate the use of system dependencies (may be an empty string). These definitions are exported by component.
+#
+#     :dep_defs: preprocessor definitions used in the headers system dependencies, that are defined by component (may be an empty string). These definitions are exported if dep_component is exported by component.
+#
+function(declare_System_Component_Dependency_Using_Configuration component export platform_config comp_defs comp_exp_defs dep_defs)
+	set(all_shared_links)
+	set(all_static_links)
+	foreach(link IN LISTS ${platform_config}_LINK_OPTIONS)#for each link defined by the configuration
+		get_Link_Type(RES_TYPE ${link})
+		if(RES_TYPE STREQUAL STATIC)#a static archive extension is explicitly given
+			list(APPEND all_static_links ${link})
+		else()#by default links refer to shared object (if no extension given)
+			list(APPEND all_shared_links ${link})
+		endif()
+	endforeach()
+	#same call as an hand-made one but using automatically standard configuration variables
+	set(all_dep_defs ${${platform_config}_DEFINITIONS} ${dep_defs})#preprocessor definition that apply to the interface of the configuration's components come from : 1) the configuration definition itself and 2) can be set directly by the user component
+
+	#only transmit configuration variable if the configuration defines those variables (even if standard they are not all always defined)
+	set(includes)
+	if(DEFINED ${platform_config}_INCLUDE_DIRS)
+		set(includes ${platform_config}_INCLUDE_DIRS)
+	endif()
+	set(lib_dirs)
+	if(DEFINED ${platform_config}_LIBRARY_DIRS)
+		set(lib_dirs ${platform_config}_LIBRARY_DIRS)
+	endif()
+	set(opts)
+	if(DEFINED ${platform_config}_COMPILER_OPTIONS)
+		set(opts ${platform_config}_COMPILER_OPTIONS)
+	endif()
+	set(rpath)
+	if(DEFINED ${platform_config}_RPATH)
+		set(rpath ${platform_config}_RPATH)
+	endif()
+
+	declare_System_Component_Dependency(
+			${component_name}
+			${export}
+			"${includes}"
+			"${lib_dirs}"
+			"${comp_defs}"#only definitions can come from the description of the dependency
+			"${comp_exp_defs}"#only definitions can come from the description of the dependency
+			"${all_dep_defs}"#only definitions can come from the description of the dependency
+			"${opts}"
+			"${all_static_links}"
+			"${all_shared_links}"
+			"${${platform_config}_C_STANDARD}"
+			"${${platform_config}_CXX_STANDARD}"
+			"${rpath}"
+	 )
+endfunction(declare_System_Component_Dependency_Using_Configuration)
 
 #.rst:
 #

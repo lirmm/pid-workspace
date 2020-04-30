@@ -29,7 +29,6 @@ set(PACKAGE_DEFINITION_INCLUDED TRUE)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Package_API_Internal_Functions NO_POLICY_SCOPE)
-include(External_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
 include(CMakeParseArguments)
 
 #.rst:
@@ -659,6 +658,89 @@ endmacro(declare_PID_Component_Documentation)
 #.rst:
 # .. ifmode:: user
 #
+#  .. |check_PID_Environment| replace:: ``check_PID_Environment``
+#  .. _check_PID_Environment:
+#
+#  check_PID_Environment
+#  ---------------------
+#
+#  .. command:: check_PID_Environment(...)
+#
+#   Check if the current build profile conforms to the given environments requirements. If constraints are violated then the configuration of the package fails. Otherwise the project will be configured and built accordingly.
+#
+#   .. rubric:: Optional parameters
+#
+#   :OPTIONAL: if used then the requirement on build environment is optional.
+#   :LANGUAGE ...: Set of constraint check expressions defining which languages must/can be used (testing only C and C++ is not necessary).
+#   :TOOLSET ... : Set of constraint check expressions defining which toolset must/can be used for target language. If many languages are specified then there must have as many toolsets defined, in same order.
+#   :TOOL ... : Set of constraint check expressions defining which tools (compiler, interpreter, generators, etc.) must/can be used.
+#
+#   .. admonition:: Constraints
+#      :class: warning
+#
+#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |PID_Package|_ but before any call to |check_PID_Platform|_ ,any dependency or |build_PID_Package|_.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     Verify that the current profile in use provides an environment the tool or langauge to use
+#
+#   .. rubric:: Example
+#
+#   Checking that the current profile support a f2c generator.
+#
+#   .. code-block:: cmake
+#
+#      check_PID_Environment(TOOL f2c)
+#
+#      check_PID_Environment(LANGUAGE C++[std=17])#check that a compiler with full c++17 support is provided
+#
+#      check_PID_Environment(TOOL clang[version=9.0])#check that a clang compiler with version >= 9.0 is available
+#
+macro(check_PID_Environment)
+  if(NOT PLUGIN_EXEC_BEFORE_DEPS)
+    #plugin call point before any dependency (platform constraint or PID dependency)
+    manage_Plugins_In_Package_Before_Dependencies_Description()
+    set(PLUGIN_EXEC_BEFORE_DEPS TRUE)
+  endif()
+  set(options OPTIONAL)
+  set(multiValueArgs LANGUAGE TOOL TOOLSET)
+  cmake_parse_arguments(CHECK_PID_ENV "${options}" "" "${multiValueArgs}" ${ARGN} )
+
+  if(NOT CHECK_PID_ENV_LANGUAGE AND NOT CHECK_PID_ENV_TOOL)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling check_PID_Environment you must define at least a constraint expression on a programming language (using LANGUAGE) or an extra tool (using TOOL).")
+  endif()
+  if(CHECK_PID_ENV_TOOLSET)
+    if(NOT CHECK_PID_ENV_LANGUAGE)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling check_PID_Environment you must define the LANGUAGE (using LANGUAGE) when you want to use specific toolset (using TOOLSET argument).")
+    endif()
+    list(LENGTH CHECK_PID_ENV_TOOLSET SIZE_TOOLSETS)
+    list(LENGTH CHECK_PID_ENV_LANGUAGE SIZE_LANGUAGES)
+    if(NOT SIZE_TOOLSETS EQUAL SIZE_LANGUAGES)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling check_PID_Environment there is not as many toolsets (${SIZE_TOOLSETS}) as languages defined (${SIZE_LANGUAGES}).")
+    endif()
+  endif()
+  if(CHECK_PID_PLATFORM_OPTIONAL)
+    set(optional TRUE)
+  else()
+    set(optional FALSE)
+  endif()
+  check_Environment_Constraints(ERROR "${CHECK_PID_ENV_LANGUAGE}" "${CHECK_PID_ENV_TOOLSET}" "${CHECK_PID_ENV_TOOL}" ${optional})
+  if(ERROR)
+    if(NOT CHECK_PID_ENV_OPTIONAL)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling check_PID_Environment, ${ERROR}")
+    endif()
+  endif()
+endmacro(check_PID_Environment)
+
+
+#.rst:
+# .. ifmode:: user
+#
 #  .. |check_PID_Platform| replace:: ``check_PID_Platform``
 #  .. _check_PID_Platform:
 #
@@ -671,7 +753,7 @@ endmacro(declare_PID_Component_Documentation)
 #
 #   .. rubric:: Required parameters
 #
-#   :CONFIGURATION <configurations>: Check the given configurations against the current target platform.
+#   :CONFIGURATION|OPTIONAL <configurations>: Check the given configurations against the current target platform. If OPTIONAL is used the fail of the check is not fatal fo rthe project configuration.
 #
 #   .. rubric:: Optional parameters
 #
@@ -717,15 +799,9 @@ if(NOT PLUGIN_EXEC_BEFORE_DEPS)
   manage_Plugins_In_Package_Before_Dependencies_Description()
   set(PLUGIN_EXEC_BEFORE_DEPS TRUE)
 endif()
-set(options BUILD_ONLY)
 set(oneValueArgs NAME OS ARCH ABI TYPE CURRENT)
 set(multiValueArgs CONFIGURATION OPTIONAL)
-cmake_parse_arguments(CHECK_PID_PLATFORM "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-if(CHECK_PID_PLATFORM_BUILD_ONLY)
-  set(SET_BUILD_ONLY TRUE)
-else()
-  set(SET_BUILD_ONLY FALSE)
-endif()
+cmake_parse_arguments(CHECK_PID_PLATFORM "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(CHECK_PID_PLATFORM_NAME)#there is a filter on configuration to apply dependencing on the platform
 	message("[PID] WARNING : NAME is a deprecated argument. Platforms are now defined at workspace level and this macro now check if the current platform satisfies configuration constraints according to the optionnal conditions specified by TYPE, ARCH, OS and ABI. The only constraints that will be checked are those for which the current platform satisfies the conditions.")
 	if(NOT CHECK_PID_PLATFORM_OS)
@@ -736,7 +812,7 @@ if(CHECK_PID_PLATFORM_NAME)#there is a filter on configuration to apply dependen
     finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must define at least an ARCH when using the deprecated NAME keyword")
 	endif()
-	check_Platform_Constraints(RESULT IS_CURRENT "" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}" FALSE ${SET_BUILD_ONLY}) #no type as it was not managed with PID v1
+	check_Platform_Constraints(RESULT IS_CURRENT "" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}" FALSE) #no type as it was not managed with PID v1
 	set(${CHECK_PID_PLATFORM_NAME} ${IS_CURRENT})
 	if(IS_CURRENT AND NOT RESULT)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -749,7 +825,7 @@ else()#no filter on configurations to check
 	endif()
   if(CHECK_PID_PLATFORM_CONFIGURATION)
 	#checking the mandatory configurations
-  	check_Platform_Constraints(RESULT IS_CURRENT "${CHECK_PID_PLATFORM_TYPE}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}" FALSE ${SET_BUILD_ONLY})
+  	check_Platform_Constraints(RESULT IS_CURRENT "${CHECK_PID_PLATFORM_TYPE}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}" FALSE)
   	if(IS_CURRENT AND NOT RESULT)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
   		message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling check_PID_Platform, constraint ${CHECK_PID_PLATFORM_CONFIGURATION} cannot be satisfied !")
@@ -757,7 +833,7 @@ else()#no filter on configurations to check
   endif()
   if(CHECK_PID_PLATFORM_OPTIONAL)
     #finally checking optional configurations
-    check_Platform_Constraints(RESULT IS_CURRENT "${CHECK_PID_PLATFORM_TYPE}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_OPTIONAL}" TRUE ${SET_BUILD_ONLY})
+    check_Platform_Constraints(RESULT IS_CURRENT "${CHECK_PID_PLATFORM_TYPE}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_OPTIONAL}" TRUE)
   endif()
 endif()
 endmacro(check_PID_Platform)
@@ -1941,53 +2017,14 @@ else()#no target package => 2 cases OS dependency OR ERROR
     message(FATAL_ERROR "[PID] CRITICAL ERROR : when declaring dependency for component ${component_name}, the package containing component ${target_component} cannot be deduced !")
   else()#this is a system dependency
     if(DECLARE_PID_COMPONENT_DEPENDENCY_CONFIGURATION)#system dependency described with a direct configuration
-      set(all_shared_links)
-      set(all_static_links)
-      set(config ${DECLARE_PID_COMPONENT_DEPENDENCY_CONFIGURATION})
-      foreach(link IN LISTS ${config}_LINK_OPTIONS)#for each link defined by the configuration
-        get_Link_Type(RES_TYPE ${link})
-        if(RES_TYPE STREQUAL STATIC)#a static archive extension is explicitly given
-          list(APPEND all_static_links ${link})
-        else()#by default links refer to shared object (if no extension given)
-          list(APPEND all_shared_links ${link})
-        endif()
-      endforeach()
-      #same call as an hand-made one but using automatically standard configuration variables
-      set(all_dep_defs ${${config}_DEFINITIONS} ${dep_defs})#preprocessor definition that appy to the interface of the configuration's components come from : 1) the component definition itself (i.e. configuration description) and 2) can be set directly by the user component
-
-      #only transmit configuration variable if the configuration defines those variables (even if standard they are not all always defined)
-      set(includes)
-      if(DEFINED ${config}_INCLUDE_DIRS)
-        set(includes ${config}_INCLUDE_DIRS)
-      endif()
-      set(lib_dirs)
-      if(DEFINED ${config}_LIBRARY_DIRS)
-        set(lib_dirs ${config}_LIBRARY_DIRS)
-      endif()
-      set(opts)
-      if(DEFINED ${config}_COMPILER_OPTIONS)
-        set(opts ${config}_COMPILER_OPTIONS)
-      endif()
-      set(rpath)
-      if(DEFINED ${config}_RPATH)
-        set(rpath ${config}_RPATH)
-      endif()
-
-      declare_System_Component_Dependency(
-    			${component_name}
-    			${export}
-    			"${includes}"
-    		  "${lib_dirs}"
-    			"${comp_defs}"#only definitions can come from the description of the dependency
-    			"${comp_exp_defs}"#only definitions can come from the description of the dependency
-    			"${all_dep_defs}"#only definitions can come from the description of the dependency
-    			"${opts}"
-    			"${all_static_links}"
-    			"${all_shared_links}"
-    			"${${config}_C_STANDARD}"
-    			"${${config}_CXX_STANDARD}"
-    			"${rpath}"
-       )
+      declare_System_Component_Dependency_Using_Configuration(
+        ${component_name}
+        ${export}
+        ${DECLARE_PID_COMPONENT_DEPENDENCY_CONFIGURATION}
+        "${comp_defs}"
+        "${comp_exp_defs}"
+        "${dep_defs}"
+      )
     else()
       declare_System_Component_Dependency(
     			${component_name}

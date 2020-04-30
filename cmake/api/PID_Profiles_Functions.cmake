@@ -466,8 +466,8 @@ macro(reset_Profiles)
   if(${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_CROSSCOMPILATION)
     list(APPEND args -DPID_CROSSCOMPILATION=TRUE)
   endif()
-  if(${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_INSTANCE)
-    list(APPEND args -DPID_USE_INSTANCE_NAME=${${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_INSTANCE})
+  if(${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_TARGET_INSTANCE)
+    list(APPEND args -DPID_USE_INSTANCE_NAME=${${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_TARGET_INSTANCE})
   endif()
   if(${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_TARGET_PLATFORM)
     list(APPEND args -DPID_USE_TARGET_PLATFORM=${${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_TARGET_PLATFORM})
@@ -481,7 +481,7 @@ macro(reset_Profiles)
 
   # write the configuration file to memorize choices for next configuration (and for user editing)
   write_Profiles_Description_File()
-  # write the configuration file to memorize at global scope (in pid folder) the global information on current environment
+  # write the configuration file to memorize at global scope (in pid folder) the global information on current profile
   write_Workspace_Profiles_Info_File()
 
   # configuring the CMake generator in use
@@ -499,11 +499,16 @@ macro(reset_Profiles)
   # reconfigure the pid workspace:
   # - preloading cache for all PID specific variables (-C option of cmake)
   # - using a toolchain file to configure build toolchain (-DCMAKE_TOOLCHAIN_FILE= option).
+  if(ADDITIONNAL_DEBUG_INFO)
+    set(subcommand_option)
+  else()
+    set(subcommand_option OUTPUT_QUIET ERROR_QUIET)
+  endif()
   execute_process(COMMAND ${CMAKE_COMMAND}
                   ${args}
                   ../..
                   WORKING_DIRECTORY ${dir}
-                  OUTPUT_QUIET ERROR_QUIET
+                  ${subcommand_option}
   )
 
   # get platform description from profile specific configuration
@@ -550,7 +555,8 @@ function(evaluate_Environment_From_Workspace RESULT profile environment is_defau
 	# Warning: the generator in use may be forced by the environment, this later has priority over user defined one.
 	# Warning: the sysroot in use may be forced by the user, so the sysroot passed by user has always priority over those defined by environments.
 	# Warning: the staging in use may be forced by the user, so the staging passed by user has always priority over those defined by environments.
-	evaluate_Environment_From_Script(EVAL_OK ${environment}
+
+  evaluate_Environment_From_Script(EVAL_OK ${environment}
           "${PROFILE_${profile}_TARGET_INSTANCE}"
           "${PROFILE_${profile}_TARGET_SYSROOT}"
           "${PROFILE_${profile}_TARGET_STAGING}"
@@ -723,3 +729,650 @@ function(extract_Plugins_From_Environment BEFORE_DEPS BEFORE_COMPS DURING_COMPS 
    set(${DURING_COMPS} ${res_during_comps} PARENT_SCOPE)
    set(${AFTER_COMPS} ${res_aft_comps} PARENT_SCOPE)
 endfunction(extract_Plugins_From_Environment)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Language_Configuration| replace:: ``check_Language_Configuration``
+#  .. _check_Language_Configuration:
+#
+#  check_Language_Configuration
+#  --------------------------
+#
+#   .. command:: check_Language_Configuration(RESULT NAME CONSTRAINTS lang mode)
+#
+#    Check whether the given langauge constraint (= configruation name + arguments) conforms to current build environment.
+#
+#     :lang: the language check expression (may contain arguments).
+#
+#     :mode: the current build mode.
+#
+#     :RESULT: the output variable that is TRUE langauge constraints is satisfied by current platform.
+#
+#     :NAME: the output variable that contains the name of the language without arguments.
+#
+#     :CONSTRAINTS: the output variable that contains the constraints that applmy to the language once used. It includes arguments (constraints imposed by user) and generated contraints (constraints automatically defined by the language itself once used).
+#
+function(check_Language_Configuration RESULT NAME CONSTRAINTS lang mode)
+  parse_Configuration_Expression(LANG_NAME LANG_ARGS "${lang}")
+  if(NOT LANG_NAME)
+    set(${NAME} PARENT_SCOPE)
+    set(${CONSTRAINTS} PARENT_SCOPE)
+    set(${RESULT} FALSE PARENT_SCOPE)
+    message("[PID] CRITICAL ERROR : language check ${lang} is ill formed.")
+    return()
+  endif()
+  check_Language_Configuration_With_Arguments(RESULT_WITH_ARGS BINARY_CONSTRAINTS ${LANG_NAME} LANG_ARGS ${mode})
+  set(${NAME} ${LANG_NAME} PARENT_SCOPE)
+  set(${RESULT} ${RESULT_WITH_ARGS} PARENT_SCOPE)
+  # last step consist in generating adequate expressions for constraints
+  generate_Configuration_Expression_Parameters(LIST_OF_CONSTRAINTS ${LANG_NAME} "${BINARY_CONSTRAINTS}")
+  set(${CONSTRAINTS} ${LIST_OF_CONSTRAINTS} PARENT_SCOPE)
+endfunction(check_Language_Configuration)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Language_Configuration_With_Arguments| replace:: ``check_Language_Configuration_With_Arguments``
+#  .. _check_Language_Configuration_With_Arguments:
+#
+#  check_Language_Configuration_With_Arguments
+#  -------------------------------------------
+#
+#   .. command:: check_Language_Configuration_With_Arguments(CHECK_OK BINARY_CONTRAINTS lang_name lang_args mode)
+#
+#    Check whether the given configuration constraint (= configruation name + arguments) conforms to target platform.
+#
+#     :lang_name: the name of the language (without argument).
+#
+#     :lang_args: the constraints passed as arguments by the user of the language.
+#
+#     :mode: the current build mode.
+#
+#     :CHECK_OK: the output variable that is TRUE language constraints are satisfied by current build environment.
+#
+#     :BINARY_CONTRAINTS: the output variable that contains the list of all parameter (constraints coming from argument or generated by the language itself) to use whenever the language is used.
+#
+function(check_Language_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS lang_name lang_args mode)
+  set(${BINARY_CONTRAINTS} PARENT_SCOPE)
+  set(${CHECK_OK} FALSE PARENT_SCOPE)
+
+  if(NOT ${lang_name}_Language_AVAILABLE)
+    return()#if language is not available in the current build environment, simply stop
+  endif()
+
+  #check if the language configuration has already been checked
+  check_Configuration_Temporary_Optimization_Variables(RES_CHECK RES_CONSTRAINTS ${lang_name} ${mode})
+  if(RES_CHECK)
+    if(${lang_args})#testing if the variable containing arguments is not empty
+      #in this situation we need to check if all args match constraints
+      check_Configuration_Arguments_Included_In_Constraints(INCLUDED ${lang_args} ${RES_CONSTRAINTS})
+      if(INCLUDED)#no need to evaluate again
+        set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
+        set(${BINARY_CONTRAINTS} ${${RES_CONSTRAINTS}} PARENT_SCOPE)
+        return()
+      endif()
+    else()#we may not need to reevaluate as there is no argument (so they will not change)
+      set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
+      set(${BINARY_CONTRAINTS} ${${RES_CONSTRAINTS}} PARENT_SCOPE)
+      return()
+    endif()
+  endif()
+
+  #from here we know we need to check more
+  import_Language_Parameters(${lang_name})
+  set(lang_constraints ${LANG_${lang_name}_OPTIONAL_CONSTRAINTS} ${LANG_${lang_name}_IN_BINARY_CONSTRAINTS})
+  if(lang_constraints)
+    list(REMOVE_DUPLICATES lang_constraints)
+    prepare_Configuration_Expression_Arguments(${lang_name} ${lang_args} lang_constraints)
+  endif()
+
+  evaluate_Language_Configuration(${lang_name})
+  if(NOT ${lang}_EVAL_RESULT)#language configuration cannot be satisfied
+    set_Configuration_Temporary_Optimization_Variables(${lang_name} ${mode} FALSE "")
+    return()
+  endif()
+
+  #return the complete set of binary contraints
+  if(lang_constraints)
+    get_Configuration_Expression_Resulting_Constraints(ALL_CONSTRAINTS ${lang_name} LANG_${lang_name}_IN_BINARY_CONSTRAINTS)
+  endif()
+  set(${BINARY_CONTRAINTS} ${ALL_CONSTRAINTS} PARENT_SCOPE)#automatic appending constraints generated by the configuration itself for the given binary package generated
+  set(${CHECK_OK} TRUE PARENT_SCOPE)
+  set_Configuration_Temporary_Optimization_Variables(${lang_name} ${mode} TRUE "${ALL_CONSTRAINTS}")
+endfunction(check_Language_Configuration_With_Arguments)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |import_Language_Parameters| replace:: ``import_Language_Parameters``
+#  .. _import_Language_Parameters:
+#
+#  import_Language_Parameters
+#  --------------------------
+#
+#   .. command:: import_Language_Parameters(lang)
+#
+#    import in current context the language specific parameters that can be used as constraints in language configuration expression.
+#
+#     :lang: the target language.
+#
+macro(import_Language_Parameters lang)
+  if(EXISTS ${WORKSPACE_DIR}/cmake/platforms/eval/params_${lang}.cmake)
+    include(${WORKSPACE_DIR}/cmake/platforms/eval/params_${lang}.cmake)
+  endif()
+endmacro(import_Language_Parameters)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |evaluate_Language_Configuration| replace:: ``evaluate_Language_Configuration``
+#  .. _evaluate_Language_Configuration:
+#
+#  evaluate_Language_Configuration
+#  -------------------------------
+#
+#   .. command:: evaluate_Language_Configuration(lang)
+#
+#    evaluate a language configuration expression.
+#
+#     :lang: the target language.
+#
+macro(evaluate_Language_Configuration lang)
+  set(${lang}_EVAL_RESULT FALSE)
+  if(EXISTS ${WORKSPACE_DIR}/cmake/platforms/eval/eval_${lang}.cmake)
+    include(${WORKSPACE_DIR}/cmake/platforms/eval/eval_${lang}.cmake)
+  endif()
+endmacro(evaluate_Language_Configuration)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Language_Toolset| replace:: ``check_Language_Toolset``
+#  .. _check_Language_Toolset:
+#
+#  check_Language_Toolset
+#  ----------------------
+#
+#   .. command:: check_Language_Toolset(RESULT lang toolset mode)
+#
+#    Check whether the given langauge toolset is available and if yes, set the environment adequately.
+#
+#     :lang: the language for which a specific toolset is required.
+#
+#     :toolset: the environment configuration expression defining the toolset to use.
+#
+#     :mode: the current build mode.
+#
+#     :RESULT: the output variable that is TRUE if language toolset is configured for current package or wrapper.
+#
+function(check_Language_Toolset RESULT lang toolset mode)
+  parse_Configuration_Expression(TS_NAME TS_ARGS "${toolset}")
+  if(NOT TS_NAME)
+    set(${RESULT} FALSE PARENT_SCOPE)
+    message("[PID] CRITICAL ERROR : language toolset check ${toolset} is ill formed.")
+    return()
+  endif()
+  check_Language_Toolset_Configuration_With_Arguments(RESULT_WITH_ARGS ${lang} ${TS_NAME} TS_ARGS ${mode})
+  set(${RESULT} ${RESULT_WITH_ARGS} PARENT_SCOPE)
+endfunction(check_Language_Toolset)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Language_Toolset_Configuration_With_Arguments| replace:: ``check_Language_Toolset_Configuration_With_Arguments``
+#  .. _check_Language_Toolset_Configuration_With_Arguments:
+#
+#  check_Language_Toolset_Configuration_With_Arguments
+#  ---------------------------------------------------
+#
+#   .. command:: check_Language_Toolset_Configuration_With_Arguments(CHECK_OK lang_name lang_args mode)
+#
+#    Check whether the given build environment provide the target language toolset.
+#
+#     :lang_name: the name of the language.
+#
+#     :toolset_name: the name of the language tooolset (without argument).
+#
+#     :toolset_args: the constraints passed as arguments by the user of the toolset (typically version).
+#
+#     :mode: the current build mode.
+#
+#     :CHECK_OK: the output variable that is TRUE if language toolset constraints are satisfied by current build environment.
+#
+function(check_Language_Toolset_Configuration_With_Arguments CHECK_OK lang_name toolset_name toolset_args mode)
+  set(${CHECK_OK} FALSE PARENT_SCOPE)
+
+  #check if the language configuration has already been checked
+  check_Configuration_Temporary_Optimization_Variables(RES_CHECK RES_CONSTRAINTS ${toolset_name} ${mode})
+  if(RES_CHECK)
+    if(${toolset_args})#testing if the variable containing arguments is not empty
+      #in this situation we need to check if all args match constraints
+      check_Configuration_Arguments_Included_In_Constraints(INCLUDED ${toolset_args} ${RES_CONSTRAINTS})
+      if(INCLUDED)#no need to evaluate again
+        set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
+        return()
+      endif()
+    else()#we may not need to reevaluate as there is no argument (so they will not change)
+      set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
+      return()
+    endif()
+  endif()
+
+  #if code pass here we have to (re)evaluate the toolset configuration
+  if(NOT EXISTS ${WORKSPACE_DIR}/environments/${toolset_name})
+    # Note : if environment does not exists it means:
+    # 1) there is no chance for it to have been used in current profile
+    # 2) we have no chance to find its check script
+    # Consequence: immediately force its deployment if possible
+    deploy_Environment_Repository(IS_DEPLOYED ${toolset_name})
+    if(NOT IS_DEPLOYED)
+      set_Configuration_Temporary_Optimization_Variables(${toolset_name} ${mode} FALSE "${RES_CONSTRAINTS}")#remember that test failed with those constraints
+      return()
+    endif()
+  endif()
+  if(NOT EXISTS ${WORKSPACE_DIR}/environments/${toolset_name}/build/PID_Inputs.cmake)
+    # Note : if environment does not have an inputs description file, it means it has never been generated
+    # 1) there is no chance for it to have been used in current profile
+    # 2) we have no chance to find its check script
+    # 1.1 configure environment
+    generate_Environment_Inputs_File(FILE_EXISTS ${toolset_name})
+    # 1.2 import variable description file
+    if(NOT FILE_EXISTS)
+      set_Configuration_Temporary_Optimization_Variables(${toolset_name} ${mode} FALSE "${RES_CONSTRAINTS}")#remember that test failed with those constraints
+      return()
+    endif()
+  endif()
+
+  # from here environment defining the toolset at least exists in workspace and provides a description
+  # Note: it can be unused in current environment BUT it can also be IMPLICITLY used in the default host environment
+  include(${WORKSPACE_DIR}/environments/${toolset_name}/build/PID_Inputs.cmake)
+  prepare_Configuration_Expression_Arguments(${toolset_name} ${toolset_args} ${toolset_name}_INPUTS)
+  evaluate_Language_Toolset_Configuration(RES ${lang_name} ${toolset_name})
+  if(NOT RES)#language configuration cannot be satisfied
+    set_Configuration_Temporary_Optimization_Variables(${toolset_name} ${mode} FALSE "${RES_CONSTRAINTS}")#remember that test failed with those constraints
+    return()
+  endif()
+
+  #return the complete set of binary contraints
+  set(${CHECK_OK} TRUE PARENT_SCOPE)
+  set_Configuration_Temporary_Optimization_Variables(${toolset_name} ${mode} TRUE "${RES_CONSTRAINTS}")#remember that test failed with those constraints
+endfunction(check_Language_Toolset_Configuration_With_Arguments)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |evaluate_Language_Toolset_Configuration| replace:: ``evaluate_Language_Toolset_Configuration``
+#  .. _evaluate_Language_Toolset_Configuration:
+#
+#  evaluate_Language_Toolset_Configuration
+#  ---------------------------------------
+#
+#   .. command:: evaluate_Language_Toolset_Configuration(lang toolset)
+#
+#    evaluate a language toolset configuration expression. If test successful the toolset is configured to be used with that language in current project.
+#
+#     :lang: the target language.
+#
+#     :toolset: the target toolset for this language.
+#
+function(evaluate_Language_Toolset_Configuration RESULT lang toolset)
+  set(${RESULT} FALSE PARENT_SCOPE)
+  #first check is only for testing if current toolset is not already OK
+  include(${WORKSPACE_DIR}/environments/${toolset}/build/PID_Environment_Solution_Info.cmake)
+  if(NOT ${toolset}_CHECK)# no check script defined so cannot evaluate if current build env config is OK
+    return()
+  endif()
+  include(${${toolset}_CHECK})
+  if(ENVIRONMENT_CHECK_RESULT)
+    set(${RESULT} TRUE PARENT_SCOPE)
+    return()
+  endif()
+  #from here check is not successfull so build env need to be reconfigured by using an available additional toolset
+  if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
+    evaluate_Toolset_From_Environment(IS_OK ${lang} ${toolset} ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
+    if(IS_OK)
+      set(${RESULT} TRUE PARENT_SCOPE)
+      return()
+    endif()
+  endif()
+  foreach(env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
+    evaluate_Toolset_From_Environment(IS_OK ${lang} ${toolset} ${env})
+    if(IS_OK)
+      set(${RESULT} TRUE PARENT_SCOPE)
+      return()
+    endif()
+  endforeach()
+  # from here there is no known solution due to constraint (probably version)
+  # need to generate another solution for same toolset in current profile
+  # => simply evaluate it, it will overwrite global profiles info if required
+  evaluate_Environment_From_Package(EVAL_OK ${toolset})
+  if(NOT EVAL_OK)
+    return()
+  endif()
+
+  use_Language_Toolset(${lang} ${toolset}_${lang}_TOOLSET_0)#always toolset 0 since added or overwrite more environments
+endfunction(evaluate_Language_Toolset_Configuration)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |evaluate_Toolset_From_Environment| replace:: ``evaluate_Toolset_From_Environment``
+#  .. _evaluate_Toolset_From_Environment:
+#
+#  evaluate_Toolset_From_Environment
+#  ---------------------------------
+#
+#   .. command:: evaluate_Toolset_From_Environment( RES_OK lang toolset environment_in_solution)
+#
+#    Check whether the given build environment provide the target language toolset.
+#
+#     :lang: the name of the language
+#
+#     :toolset: the name of the toolset.
+#
+#     :environment: the environment defining the toolset.
+#
+#     :RES_OK: the output variable that is TRUE if language toolset constraints are satisfied by given build environment.
+#
+function(evaluate_Toolset_From_Environment RES_OK lang toolset environment)
+  set(${RES_OK} FALSE PARENT_SCOPE)
+  list(FIND ${environment}_LANGUAGES ${lang} INDEX)
+  if(INDEX EQUAL -1)
+    return()
+  endif()
+  math(EXPR max_index "${${environment}_${lang}_TOOLSETS}-1")
+  foreach(index RANGE ${max_index})
+    check_Tool_Expression(EXPRESSION_MATCH_REQUIRED ${toolset} ${${environment}_${lang}_TOOLSET_${index}_CONSTRAINT_EXPRESSION})
+    if(EXPRESSION_MATCH_REQUIRED)
+      use_Language_Toolset(${environment}_${lang}_TOOLSET_${index})
+      set(${RES_OK} TRUE PARENT_SCOPE)
+      return()
+    endif()
+  endforeach()
+endfunction(evaluate_Toolset_From_Environment)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |use_Language_Toolset| replace:: ``use_Language_Toolset``
+#  .. _use_Language_Toolset:
+#
+#  use_Language_Toolset
+#  --------------------
+#
+#   .. command:: use_Language_Toolset(lang toolset_prefix_in_solution)
+#
+#    set the global CMake language related compilation variables of the current project from profile variables.
+#
+#     :lang: the name of the language
+#
+#     :toolset_prefix_in_solution: prefix of the toolset in CMake variables defining the profile.
+#
+function(use_Language_Toolset lang toolset_prefix_in_solution)
+  if(${toolset_prefix_in_solution}_COMPILER)
+    file(APPEND ${PACKAGE_SPECIFIC_BUILD_INFO_FILE} "set(CMAKE_${lang}_COMPILER ${${toolset_prefix_in_solution}_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
+    if(${toolset_prefix_in_solution}_COMPILER_ID)
+      file(APPEND ${PACKAGE_SPECIFIC_BUILD_INFO_FILE} "set(CMAKE_${lang}_COMPILER_ID ${${toolset_prefix_in_solution}_COMPILER_ID} CACHE INTERNAL \"\" FORCE)\n")
+    endif()
+    if(${toolset_prefix_in_solution}_COMPILER_RANLIB)
+      file(APPEND ${PACKAGE_SPECIFIC_BUILD_INFO_FILE} "set(CMAKE_${lang}_COMPILER_RANLIB ${${toolset_prefix_in_solution}_COMPILER_RANLIB} CACHE INTERNAL \"\" FORCE)\n")
+    endif()
+    if(${toolset_prefix_in_solution}_COMPILER_AR)
+      file(APPEND ${PACKAGE_SPECIFIC_BUILD_INFO_FILE} "set(CMAKE_${lang}_COMPILER_AR ${${toolset_prefix_in_solution}_COMPILER_AR} CACHE INTERNAL \"\" FORCE)\n")
+    endif()
+  endif()
+  if(${toolset_prefix_in_solution}_HOST_COMPILER)
+    file(APPEND ${PACKAGE_SPECIFIC_BUILD_INFO_FILE} "set(CMAKE_${lang}_HOST_COMPILER ${${toolset_prefix_in_solution}_HOST_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
+  endif()
+  if(${toolset_prefix_in_solution}_COMPILER_FLAGS)
+    file(APPEND ${PACKAGE_SPECIFIC_BUILD_INFO_FILE} "set(CMAKE_${lang}_COMPILER_FLAGS ${${toolset_prefix_in_solution}_COMPILER_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
+  endif()
+endfunction(use_Language_Toolset)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Extra_Tool_Configuration| replace:: ``check_Extra_Tool_Configuration``
+#  .. _check_Extra_Tool_Configuration:
+#
+#  check_Extra_Tool_Configuration
+#  -------------------------------
+#
+#   .. command:: check_Extra_Tool_Configuration(RESULT CONFIG_CONSTRAINTS tool mode)
+#
+#    Check whether the current build profile provides the corresponding tool.
+#
+#     :tool: the environment extra tool check expression (may contain arguments).
+#
+#     :mode: the current build mode.
+#
+#     :RESULT: the output variable that is TRUE environment constraints is satisfied by current build environment.
+#
+#     :CONFIG_CONSTRAINTS: the output variable that contains the platform configuration constraints that may be required by the environment. This is a list of check expressions.
+#
+function(check_Extra_Tool_Configuration RESULT CONFIG_CONSTRAINTS tool mode)
+  # find_Mathing_Tool_In_Current_Profile(TOOL_PREFIX ${tool})
+  parse_Configuration_Expression(TOOL_NAME TOOL_ARGS "${tool}")
+  if(NOT TOOL_NAME)
+    set(${RESULT} FALSE PARENT_SCOPE)
+    set(${CONFIG_CONSTRAINTS} PARENT_SCOPE)
+    message("[PID] CRITICAL ERROR : extra toolset check ${tool} is ill formed.")
+    return()
+  endif()
+  add_Required_Extra_Tool(${TOOL_NAME})
+  check_Extra_Tool_Configuration_With_Arguments(RESULT_WITH_ARGS CONSTRAINTS ${TOOL_NAME} TOOL_ARGS ${mode})
+  set(${RESULT} ${RESULT_WITH_ARGS} PARENT_SCOPE)
+  set(${CONFIG_CONSTRAINTS} ${CONSTRAINTS} PARENT_SCOPE)
+endfunction(check_Extra_Tool_Configuration)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Extra_Tool_Configuration_With_Arguments| replace:: ``check_Extra_Tool_Configuration_With_Arguments``
+#  .. _check_Extra_Tool_Configuration_With_Arguments:
+#
+#  check_Extra_Tool_Configuration_With_Arguments
+#  ---------------------------------------------
+#
+#   .. command:: check_Extra_Tool_Configuration_With_Arguments(CHECK_OK lang_name lang_args mode)
+#
+#    Check whether the given build environment provide the target language toolset.
+#
+#     :tool: the name of the extra tool
+#
+#     :tool_args: the constraints passed as arguments by the user of the tool (typically version).
+#
+#     :mode: the current build mode.
+#
+#     :CHECK_OK: the output variable that is TRUE if language toolset constraints are satisfied by current build environment.
+#
+#     :CONFIGS: the output variable that contains the list of configruation constraints to check when using this tool.
+#
+function(check_Extra_Tool_Configuration_With_Arguments CHECK_OK CONFIGS tool tool_args mode)
+  set(${CHECK_OK} FALSE PARENT_SCOPE)
+  set(${CONFIGS} PARENT_SCOPE)
+  #if code pass here we have to (re)evaluate the toolset configuration
+  if(NOT EXISTS ${WORKSPACE_DIR}/environments/${tool})
+    # Note : if environment does not exists it means:
+    # 1) there is no chance for it to have been used in current profile
+    # 2) we have no chance to find its check script
+    # Consequence: immediately force its deployment if possible
+    deploy_Environment_Repository(IS_DEPLOYED ${tool})
+    if(NOT IS_DEPLOYED)
+      return()
+    endif()
+  endif()
+  if(NOT EXISTS ${WORKSPACE_DIR}/environments/${tool}/build/PID_Inputs.cmake)
+    # Note : if environment does not have an inputs description file, it means it has never been generated
+    # 1) there is no chance for it to have been used in current profile
+    # 2) we have no chance to find its check script
+    # 1.1 configure environment
+    generate_Environment_Inputs_File(FILE_EXISTS ${tool})
+    # 1.2 import variable description file
+    if(NOT FILE_EXISTS)
+      return()
+    endif()
+  endif()
+
+  # from here environment defining the toolset at least exists in workspace and provides a description
+  # Note: it can be unused in current environment BUT it can also be IMPLICITLY used in the default host environment
+  include(${WORKSPACE_DIR}/environments/${tool}/build/PID_Inputs.cmake)
+  prepare_Configuration_Expression_Arguments(${tool} ${tool_args} ${tool}_INPUTS)
+
+  evaluate_Extra_Tool_Configuration(RES RES_CONFIGS ${tool})
+  if(NOT RES)#language configuration cannot be satisfied
+    return()
+  endif()
+
+  #return the complete set of binary contraints
+  set(${CHECK_OK} TRUE PARENT_SCOPE)
+  set(${CONFIGS} ${RES_CONFIGS} PARENT_SCOPE)
+endfunction(check_Extra_Tool_Configuration_With_Arguments)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Tool_Expression| replace:: ``check_Tool_Expression``
+#  .. check_Tool_Expression:
+#
+#  check_Tool_Expression
+#  ---------------------
+#
+#   .. command:: check_Tool_Expression(COMPATIBLE tool tool_expression)
+#
+#    Check whether a constraint expression provided into a profile description is compatible with current constraints of a an extra tool or language toolset.
+#
+#     :tool: the name of the extra tool or language toolset
+#
+#     :tool_expression: the constraints expression to check against.
+#
+#     :COMPATIBLE: the output variable that is TRUE if tool_expression is compatible with tool constraints.
+#
+function(check_Tool_Expression COMPATIBLE tool tool_expression)
+  set(${COMPATIBLE} FALSE PARENT_SCOPE)
+  parse_Configuration_Expression(TOOL_NAME TOOL_ARGS "${tool_expression}")
+  if(TOOL_NAME STREQUAL tool)
+    prepare_Configuration_Expression_Arguments(temp_${tool} ${TOOL_ARGS} ${tool}_INPUTS)
+    #getting toolset args coming from the local expression (i.e. package level constraint) into current context
+    set(RESULT_VERS TRUE)# by default (no constraint required) result is OK
+    set(RESULT_ARCH TRUE)# by default (no constraint required) result is OK
+    if(${tool}_version)# a specific version is required
+      check_Environment_Version(RESULT_VERS ${tool}_version "${${tool}_exact}" "${temp_${tool}_version}")
+    endif()
+    if(${tool}_architecture)# a specific architecture is required
+      check_Environment_Architecture(RESULT_ARCH ${tool}_architecture "${temp_${tool}_architecture}")
+    endif()
+    if(RESULT_VERS AND RESULT_ARCH)
+      set(${COMPATIBLE} TRUE PARENT_SCOPE)
+      return()
+    endif()
+  endif()
+endfunction(check_Tool_Expression)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |evaluate_Extra_Tool_In_Environment| replace:: ``evaluate_Extra_Tool_In_Environment``
+#  .. _evaluate_Extra_Tool_In_Environment:
+#
+#  evaluate_Extra_Tool_In_Environment
+#  ----------------------------------
+#
+#   .. command:: evaluate_Extra_Tool_In_Environment(RESULT CONFIGS_TO_CHECK tool environment)
+#
+#    Evaluate a specific extra tool if it is provided by a given environment.
+#
+#     :tool: the name of the extra tool
+#
+#     :environment: the name of the environment providing the tool.
+#
+#     :CHECK_OK: the output variable that is TRUE if language toolset constraints are satisfied by current build environment.
+#
+#     :CONFIGS_TO_CHECK: the output variable that contains the list of configuration constraints to check when using this tool.
+#
+function(evaluate_Extra_Tool_In_Environment RESULT CONFIGS_TO_CHECK tool environment)
+  set(${RESULT} FALSE PARENT_SCOPE)
+  set(${CONFIGS_TO_CHECK} PARENT_SCOPE)
+  foreach(extra IN LISTS ${environment}_EXTRA_TOOLS)
+    if(tool STREQUAL extra)
+      check_Extra_Tool_Expression(EXPRESSION_MATCH_REQUIRED ${tool} ${${environment}_EXTRA_${tool}_CONSTRAINT_EXPRESSION})
+      if(EXPRESSION_MATCH_REQUIRED)
+        set(${CONFIGS_TO_CHECK} ${${environment}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS} PARENT_SCOPE)
+        set(${RESULT} TRUE PARENT_SCOPE)
+        return()
+      endif()
+    endif()
+  endforeach()
+endfunction(evaluate_Extra_Tool_In_Environment)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |evaluate_Extra_Tool_Configuration| replace:: ``evaluate_Extra_Tool_Configuration``
+#  .. _evaluate_Extra_Tool_Configuration:
+#
+#  evaluate_Extra_Tool_Configuration
+#  ----------------------------------
+#
+#   .. command:: evaluate_Extra_Tool_Configuration(RES CONFIGS tool)
+#
+#    Evaluate an extra tool, if it is provided in current profile.
+#
+#     :tool: the contraint expression
+#
+#     :RES: the output variable that is TRUE if extra tool constraints are satisfied by current profile.
+#
+#     :CONFIGS: the output variable that contains the list of configuration constraints to check when using this tool.
+#
+function(evaluate_Extra_Tool_Configuration RES CONFIGS tool)
+  set(${CHECK_OK} FALSE PARENT_SCOPE)
+  set(${CONFIGS} PARENT_SCOPE)
+  if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
+    evaluate_Extra_Tool_In_Environment(IS_OK RES_CONFIGS ${tool} ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
+    if(IS_OK)
+      set(${RESULT} TRUE PARENT_SCOPE)
+      set(${CONFIGS} ${RES_CONFIGS} PARENT_SCOPE)
+      return()
+    endif()
+  endif()
+  foreach(env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
+    evaluate_Extra_Tool_In_Environment(IS_OK RES_CONFIGS ${tool} ${env})
+    if(IS_OK)
+      set(${RESULT} TRUE PARENT_SCOPE)
+      set(${CONFIGS} ${RES_CONFIGS} PARENT_SCOPE)
+      return()
+    endif()
+  endforeach()
+  # from here there is no known solution due to constraint (probably version)
+  # need to generate another solution for same toolset in current profile
+  # => simply evaluate it, it will overwrite global profiles info if required
+  evaluate_Environment_From_Package(EVAL_OK ${tool})
+  if(NOT EVAL_OK)
+    return()
+  endif()
+  evaluate_Extra_Tool_In_Environment(RESULT CONFIGS_TO_CHECK ${tool} ${tool})
+
+  set(${RESULT} ${RESULT} PARENT_SCOPE)
+  set(${CONFIGS} ${CONFIGS_TO_CHECK} PARENT_SCOPE)
+endfunction(evaluate_Extra_Tool_Configuration)

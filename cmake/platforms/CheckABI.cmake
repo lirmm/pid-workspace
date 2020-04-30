@@ -17,137 +17,153 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-function(check_Current_OS_Allow_CXX11_ABI ALLOWED)
-set(${ALLOWED} TRUE PARENT_SCOPE)#by default CXX11 is allowed
+function(check_Current_Standard_Library_Is_CXX11_ABI_Compatible COMPATIBLE)
+set(${COMPATIBLE} TRUE PARENT_SCOPE)#by default CXX11 is allowed
 
-if(CURRENT_PLATFORM_OS STREQUAL windows)
-	set(${ALLOWED} FALSE PARENT_SCOPE)#for now windows support only legacy ABI
+if(CURRENT_PLATFORM_OS STREQUAL "windows")
+	set(${COMPATIBLE} FALSE PARENT_SCOPE)#for now windows support only legacy ABI
 	return ()
 else()#other systems
 	#from here we will look into the symbols
+	#first compiling with default
 	try_compile(RES ${CMAKE_BINARY_DIR}
 		SOURCES ${WORKSPACE_DIR}/cmake/platforms/checks/abi_check.cpp
 		COPY_FILE abi_check
 		OUTPUT_VARIABLE out)
-
-	if(NOT RES)#cannot compile for unknow reason -> use a predefined check
-		if(CURRENT_PLATFORM_OS STREQUAL linux)
-			if(CURRENT_DISTRIBUTION STREQUAL ubuntu)
-				if(CURRENT_DISTRIBUTION_VERSION VERSION_LESS 16.04)
-					set(${ALLOWED} FALSE PARENT_SCOPE)#ubuntu < 16.04
-				endif()
-			endif()
-		endif()
-		return()
-	endif()
-
 	execute_process(COMMAND ${CMAKE_NM} ${CMAKE_BINARY_DIR}/abi_check OUTPUT_VARIABLE check_symbols)
 	string(FIND ${check_symbols} "__cxx11" INDEX)
-	if(INDEX EQUAL -1)#no cxx11 abi symbol found -> it is a legacy abi by default
-		set(${ALLOWED} FALSE PARENT_SCOPE)
+	if(INDEX EQUAL -1)#no cxx11 abi symbol found -> it is a legacy abi by default on the current OS
+		set(${COMPATIBLE} FALSE PARENT_SCOPE)
 		return()
 	endif()
 endif()
-endfunction(check_Current_OS_Allow_CXX11_ABI)
+endfunction(check_Current_Standard_Library_Is_CXX11_ABI_Compatible)
 
-set(CURRENT_ABI CACHE INTERNAL "")
+#those two functions must be extended anytime a new standard C library is used
+function(get_C_Standard_Library_Symbols_Version RES_SYMBOL_VERSIONS operating_system library_name path_to_library)
+	set(STD_SYMBOLS)
+	#symbols name depends on the standard library implementation...
+	if(library_name STREQUAL "c")#gnu c library
+		get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "GLIBC_")
+	elseif(library_name MATCHES "gcc")#gcc library
+		get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "GCC_")
+	endif()
+	set(${RES_SYMBOL_VERSIONS} ${STD_SYMBOLS} PARENT_SCOPE)
+endfunction(get_C_Standard_Library_Symbols_Version)
 
-function(get_Standard_Library_Symbols_Version RES_SYMBOL_VERSIONS operating_system library_name path_to_library)
+function(get_CXX_Standard_Library_Symbols_Version RES_SYMBOL_VERSIONS operating_system library_name path_to_library)
 	set(STD_SYMBOLS)
 	#symbols name depends on the standard library implementation...
 	if(library_name MATCHES "stdc\\+\\+")#gnu c++ library (may be named stdc++11 as well)
 		get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "GLIBCXX_;CXXABI_")
-	#elseif(library_name STREQUAL "c++")#the new libc++ library
-	elseif(library_name STREQUAL "c")#gnu c library
-		get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "GLIBC_")
-		#what to do ??
-	elseif(library_name MATCHES "gcc")#gcc library
-		get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "GCC_")
-		#what to do ??
-	elseif(library_name MATCHES "gfortran")#gfortran library
-		get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "GFORTRAN_;GFORTRAN_C99_")
-		#what to do ??
-	elseif(library_name MATCHES "quadmath")#quadmath library
-		get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "QUADMATH_")
-		#what to do ??
+		#elseif(library_name STREQUAL "c++")#the new libc++ library
 	endif()
 	set(${RES_SYMBOL_VERSIONS} ${STD_SYMBOLS} PARENT_SCOPE)
-endfunction(get_Standard_Library_Symbols_Version)
+endfunction(get_CXX_Standard_Library_Symbols_Version)
 
 #resetting symbols to avoid any problem
-foreach(symbol IN LISTS STD_ABI_SYMBOLS)
-	set(${symbol}_ABI_VERSION)
-endforeach()
-set(STD_ABI_SYMBOLS)
-set(STD_LIBS)
+set(C_STD_ABI_SYMBOLS)
+set(C_STD_LIBS)
+set(CXX_STD_ABI_SYMBOLS)
+set(CXX_STD_LIBS)
 
-foreach(symbol IN LISTS CXX_STD_SYMBOLS)
-	set(CXX_STD_SYMBOL_${symbol}_VERSION CACHE INTERNAL "")
-endforeach()
 set(CXX_STD_SYMBOLS CACHE INTERNAL "")
-
-foreach(lib IN LISTS CXX_STANDARD_LIBRARIES)
-	set(CXX_STD_LIB_${lib}_ABI_SOVERSION CACHE INTERNAL "")
-endforeach()
 set(CXX_STANDARD_LIBRARIES CACHE INTERNAL "")
+set(C_STD_SYMBOLS CACHE INTERNAL "")
+set(C_STANDARD_LIBRARIES CACHE INTERNAL "")
 
-set(IMPLICIT_LIBS ${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES})
-set(IMPLICIT_DIRS ${CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES})
-list(REMOVE_DUPLICATES IMPLICIT_LIBS)
-list(REMOVE_DUPLICATES IMPLICIT_DIRS)
-# detect current C++ library ABI in use
-foreach(lib IN LISTS IMPLICIT_LIBS)
+#getting standard libraries for C and C++
+set(IMPLICIT_CXX_LIBS ${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES})
+list(REMOVE_DUPLICATES IMPLICIT_CXX_LIBS)
+
+set(IMPLICIT_C_LIBS ${CMAKE_C_IMPLICIT_LINK_LIBRARIES})
+list(REMOVE_DUPLICATES IMPLICIT_C_LIBS)
+list(REMOVE_ITEM IMPLICIT_CXX_LIBS ${IMPLICIT_C_LIBS})#simply remove the implicit C libs from CXX implicit libs (avoir doing two times same thing)
+
+# detect current C library ABI in use
+foreach(lib IN LISTS IMPLICIT_C_LIBS)
 	#lib is the short name of the library
 	find_Library_In_Implicit_System_Dir(VALID_PATH LIB_SONAME LIB_SOVERSION ${lib})
 	if(VALID_PATH)
-		if(LIB_SOVERSION)
-			set(CXX_STD_LIB_${lib}_ABI_SOVERSION ${LIB_SOVERSION} CACHE INTERNAL "")
-		endif()
 		#getting symbols versions from the implicit library
-		get_Standard_Library_Symbols_Version(RES_SYMBOL_VERSIONS ${CURRENT_OS} ${lib} ${VALID_PATH})
+		get_C_Standard_Library_Symbols_Version(RES_SYMBOL_VERSIONS ${CURRENT_OS} ${lib} ${VALID_PATH})
 		while(RES_SYMBOL_VERSIONS)
 			pop_ELF_Symbol_Version_From_List(SYMB VERS RES_SYMBOL_VERSIONS)
-			list(APPEND STD_ABI_SYMBOLS ${SYMB})
-			set(${SYMB}_ABI_VERSION ${VERS})
+			serialize_Symbol(SERIALIZED_SYMBOL ${SYMB} ${VERS})
+			list(APPEND C_STD_ABI_SYMBOLS ${SERIALIZED_SYMBOL})
 		endwhile()
-		list(APPEND STD_LIBS ${lib})
+		list(APPEND C_STD_LIBS ${LIB_SONAME})
 	endif()#otherwise simply do nothing and check with another folder
 endforeach()
 
 #memorize symbol versions
-if(STD_ABI_SYMBOLS)
-	list(REMOVE_DUPLICATES STD_ABI_SYMBOLS)
-	foreach(symbol IN LISTS STD_ABI_SYMBOLS)
-		set(CXX_STD_SYMBOL_${symbol}_VERSION ${${symbol}_ABI_VERSION} CACHE INTERNAL "")
+if(C_STD_ABI_SYMBOLS)
+	list(REMOVE_DUPLICATES C_STD_ABI_SYMBOLS)
+	foreach(symbol IN LISTS C_STD_ABI_SYMBOLS)
+		set(C_STD_SYMBOL_${symbol}_VERSION ${${symbol}_ABI_VERSION} CACHE INTERNAL "")
 	endforeach()
 endif()
-set(CXX_STD_SYMBOLS ${STD_ABI_SYMBOLS} CACHE INTERNAL "")
-set(CXX_STANDARD_LIBRARIES ${STD_LIBS} CACHE INTERNAL "")
+set(C_STD_SYMBOLS ${C_STD_ABI_SYMBOLS} CACHE INTERNAL "")
+set(C_STANDARD_LIBRARIES ${C_STD_LIBS} CACHE INTERNAL "")
 
-#depending on symbol versions we can detect which compiler was used to build the standard library !!
-list(FIND CMAKE_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=1" INDEX)
-if(NOT INDEX EQUAL -1)#there is a flag that explicilty sets the ABI to 11
-		set(CURRENT_ABI "CXX11" CACHE INTERNAL "")
-else()
-	list(FIND CMAKE_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=0" INDEX)
-	if(NOT INDEX EQUAL -1)#there is a flag that explicilty sets the ABI to 98
-			set(CURRENT_ABI "CXX" CACHE INTERNAL "")
-	else()
-		set(CURRENT_ABI CACHE INTERNAL "")
-	endif()
+# detect current C++ library ABI in use
+foreach(lib IN LISTS IMPLICIT_CXX_LIBS)
+	#lib is the short name of the library
+	find_Library_In_Implicit_System_Dir(VALID_PATH LIB_SONAME LIB_SOVERSION ${lib})
+	if(VALID_PATH)
+		#getting symbols versions from the implicit library
+		get_CXX_Standard_Library_Symbols_Version(RES_SYMBOL_VERSIONS ${CURRENT_OS} ${lib} ${VALID_PATH})
+		while(RES_SYMBOL_VERSIONS)
+			pop_ELF_Symbol_Version_From_List(SYMB VERS RES_SYMBOL_VERSIONS)
+			serialize_Symbol(SERIALIZED_SYMBOL ${SYMB} ${VERS})
+			list(APPEND CXX_STD_ABI_SYMBOLS ${SERIALIZED_SYMBOL})#memorize symbol versions
+		endwhile()
+		list(APPEND CXX_STD_LIBS ${LIB_SONAME})
+	endif()#otherwise simply do nothing and check with another folder
+endforeach()
+
+set(CXX_STD_SYMBOLS ${CXX_STD_ABI_SYMBOLS} CACHE INTERNAL "")
+set(CXX_STANDARD_LIBRARIES ${CXX_STD_LIBS} CACHE INTERNAL "")
+
+#NOW check the C++ compiler ABI used to build the c++ standard library
+
+set(CURRENT_ABI CACHE INTERNAL "")#reset value of current ABI
+if( PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT
+		AND NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
+		#we are not in the context of evaluating an environment or current host
+		#So MAYBE there is no need to detect the ABI since specified using corresponding compiler flags
+		string(REGEX MATCH "-D_GLIBCXX_USE_CXX11_ABI=0" IS_LEGACY "${CMAKE_CXX_FLAGS}")
+		if(IS_LEGACY)
+			set(CURRENT_ABI CXX CACHE INTERNAL "")#reset value of current ABI
+		else()
+				string(REGEX MATCH "-D_GLIBCXX_USE_CXX11_ABI=1" IS_NEW "${CMAKE_CXX_FLAGS}")
+				if(IS_NEW)
+					set(CURRENT_ABI CXX11 CACHE INTERNAL "")#reset value of current ABI
+				endif()
+		endif()
 endif()
 
-if(NOT CURRENT_ABI)#no ABI explictly specified
+# remove any compilation setting that forces a specific compiler ABI
+#this line is needed to force the compiler to use libstdc++11 newer version of API whatever the version of the distribution is
+#e.g. on ubuntu 14 with compiler gcc 5.4 the default value is 0 (legacy ABI)
+set(TEMP_FLAGS "${CMAKE_CXX_FLAGS}")
+string(REPLACE "-D_GLIBCXX_USE_CXX11_ABI=0" "" TEMP_FLAGS "${TEMP_FLAGS}")
+string(REPLACE "-D_GLIBCXX_USE_CXX11_ABI=1" "" TEMP_FLAGS "${TEMP_FLAGS}")
+string(STRIP "${TEMP_FLAGS}" TEMP_FLAGS)
+set(CMAKE_CXX_FLAGS "${TEMP_FLAGS}" CACHE STRING "" FORCE)#needed for following system checks
+
+#depending on symbol versions we can detect which compiler was used to build the standard library !!
+if(NOT CURRENT_ABI)#no C++ ABI explictly specified
 	#use default ABI of the binary version of current std libc++ in use
-	foreach(symb IN LISTS STD_ABI_SYMBOLS)
-		if(symb STREQUAL "CXXABI_")
-			if(NOT ${symb}_ABI_VERSION VERSION_LESS 1.3.9) #build from gcc 5.1 or more (or equivalent compiler ABI settings for clang)
+	foreach(symb IN LISTS CXX_STD_SYMBOLS) #detect ABI based on standard library symbols
+		if(symb MATCHES "^<CXXABI_/([.0-9]+)>$")
+			if(NOT CMAKE_MATCH_1 VERSION_LESS 1.3.9) #build from gcc 5.1 or more (or equivalent compiler ABI settings for clang)
 				set(cxxabi_is_cxx11_capable TRUE)
 			else()
 				set(cxxabi_is_cxx11_capable FALSE)
 			endif()
-		elseif(symb STREQUAL "GLIBCXX_")
-			if(NOT ${symb}_ABI_VERSION VERSION_LESS 3.4.21) #build from gcc 5.1 or more (or equivalent compiler ABI settings for clang)
+		elseif(symb MATCHES "^<GLIBCXX_/([.0-9]+)>$")
+			if(NOT CMAKE_MATCH_1 VERSION_LESS 3.4.21) #build from gcc 5.1 or more (or equivalent compiler ABI settings for clang)
 				set(glibcxx_is_cxx11_capable TRUE)
 			else()
 				set(glibcxx_is_cxx11_capable FALSE)
@@ -157,9 +173,9 @@ if(NOT CURRENT_ABI)#no ABI explictly specified
 	if(NOT cxxabi_is_cxx11_capable OR NOT glibcxx_is_cxx11_capable)
 		set(CURRENT_ABI "CXX" CACHE INTERNAL "")#no need to question about ABI, it must be legacy ABI since this ABI is not implemented into the standard library
 	else()# now the standard library is (theorically) capable of supporting CXX11 and legacy ABI
-	#but the OS can impose the use of a given ABI : old systems impose the use of legacy ABI to enforce the binary compatiblity of their binary packages)
+		#but the OS can impose the use of a given ABI : old systems impose the use of legacy ABI to enforce the binary compatiblity of their binary packages)
 		#in the end on those system the standard library is only compiled with legacy ABI and so does not support CXX11 ABI
-		check_Current_OS_Allow_CXX11_ABI(ALLOWED_CXX11)
+		check_Current_Standard_Library_Is_CXX11_ABI_Compatible(ALLOWED_CXX11)
 		if(ALLOWED_CXX11)
 			set(CURRENT_ABI "CXX11" CACHE INTERNAL "")
 		else()
@@ -168,9 +184,8 @@ if(NOT CURRENT_ABI)#no ABI explictly specified
 	endif()
 endif()
 
-
 # ABI detection is no more based on knowledge of the compiler version
-#but now we check that minumum version of the compiler are used together with ABI CXX11
+#but now we check that minumum version of the compiler are used together with ABI CXX11 (not sure if we force a given ABI and did not detect it)
 if(CURRENT_ABI STREQUAL "CXX11")#check that compiler in use supports the CXX11 ABI
 	if(CURRENT_CXX_COMPILER STREQUAL "gcc")
 		if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.1)#before version 5.1 of gcc the cxx11 abi is not supported
@@ -182,5 +197,32 @@ if(CURRENT_ABI STREQUAL "CXX11")#check that compiler in use supports the CXX11 A
 		endif()
 	else()# add new support for compiler or use CMake generic mechanism to do so for instance : CURRENT_CXX_COMPILER STREQUAL "msvc"
 		message("[PID] WARNING : compiler in use (${CMAKE_CXX_COMPILER_ID} version ${CMAKE_CXX_COMPILER_VERSION}) ABI support is not identified in PID.")
+	endif()
+endif()
+
+#finally setting the C++ compiler flags adequately
+if(CURRENT_ABI STREQUAL "CXX11")
+	set(CMAKE_CXX_FLAGS "${TEMP_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=1" CACHE STRING "" FORCE)
+else()#using legacy ABI
+	set(CMAKE_CXX_FLAGS "${TEMP_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0" CACHE STRING "" FORCE)
+endif()
+
+
+#finally deal with compile flags
+if(UNIX AND NOT APPLE)
+	# need to deal also with linker option related to rpath/runpath. With recent version of the linker the RUNPATH is set by default NOT the RPATH
+	# cmake does not manage this aspect it consider that this is always the RPATH in USE BUT this is not TRUE
+	# so force the usage of a linker flag to deactivate the RUNPATH generation
+	string(REPLACE "-Wl,--disable-new-dtags" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+	if(NOT CMAKE_EXE_LINKER_FLAGS)
+		set(CMAKE_EXE_LINKER_FLAGS "-Wl,--disable-new-dtags" CACHE STRING "" FORCE)
+	endif()
+	string(REPLACE "-Wl,--disable-new-dtags" "" CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS}")
+	if(NOT CMAKE_MODULE_LINKER_FLAGS)
+		set(CMAKE_MODULE_LINKER_FLAGS "-Wl,--disable-new-dtags" CACHE STRING "" FORCE)
+	endif()
+	string(REPLACE "-Wl,--disable-new-dtags" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
+	if(NOT CMAKE_SHARED_LINKER_FLAGS)
+		set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--disable-new-dtags" CACHE STRING "" FORCE)
 	endif()
 endif()

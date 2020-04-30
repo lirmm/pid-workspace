@@ -88,7 +88,12 @@ macro(declare_PID_External_Package)
 	set(${package}_HAS_DESCRIPTION TRUE CACHE INTERNAL "")#variable to be used to test if the package is described with a wrapper (if this macro is used this is always TRUE)
 	if(NOT ${package}_DECLARED${VAR_SUFFIX})
 		#reset all variables related to this external package
-		set(${package}_PLATFORM${VAR_SUFFIX} CACHE INTERNAL "")
+    foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX})
+      set(${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX} CACHE INTERNAL "")
+    endforeach()
+    set(${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX} CACHE INTERNAL "")
+
+    set(${package}_PLATFORM${VAR_SUFFIX} CACHE INTERNAL "")
     foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})
       set(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX} CACHE INTERNAL "")
     endforeach()
@@ -129,6 +134,72 @@ macro(declare_PID_External_Package)
 	endif()
 	set(${package}_DECLARED${VAR_SUFFIX} TRUE)
 endmacro(declare_PID_External_Package)
+
+#.rst:
+#
+# .. ifmode:: user
+#
+#  .. |check_PID_External_Package_Language| replace:: ``check_PID_External_Package_Language``
+#  .. _check_PID_External_Package_Language:
+#
+#  check_PID_External_Package_Language
+#  -----------------------------------
+#
+#   .. command:: check_PID_External_Package_Language(PACKAGE ... CONFIGURATION ...)
+#
+#      Check if the current build environment conforms to the given platform configuration. If constraints are violated then the configuration of the currently built package will fail. Otherwise the project will be configured and built accordingly.
+#
+#     .. rubric:: Required parameters
+#
+#     :PACKAGE <name>: the name of the external package being defined.
+#     :CONFIGURATION <list of configuration>: The list of configuration to check in order to use the external package version being defined.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - This function must be called in the use file provided by external package version after the call to declare_PID_External_Package.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         Each language configuration is checked individually.
+#         If the build environments conforms to all required configurations, then the configuration of the currently built PID package continues, otherwise it fails.
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        check_PID_External_Package_Language(PACKAGE opencv CONFIGURATION CUDA[architecture=3.1,soname=libcudart.so.10])
+#
+macro(check_PID_External_Package_Language)
+set(options)
+set(oneValueArgs PACKAGE)
+set(multiValueArgs CONFIGURATION)
+cmake_parse_arguments(CHECK_EXTERNAL_PID_LANGUAGE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+if(CHECK_EXTERNAL_PID_LANGUAGE_PACKAGE
+	AND CHECK_EXTERNAL_PID_LANGUAGE_CONFIGURATION)
+  set(package ${CHECK_EXTERNAL_PID_LANGUAGE_PACKAGE})
+	if(NOT ${package}_DECLARED${VAR_SUFFIX})
+		message("[PID] WARNING: Bad usage of function check_PID_External_Package_Language: package ${package} is unknown. Use macro declare_PID_External_Package to declare it")
+		return() #return will exit from current Use file included (because we are in a macro)
+	endif()
+
+  foreach(lang IN LISTS CHECK_EXTERNAL_PID_LANGUAGE_CONFIGURATION)
+    parse_Configuration_Expression(LANG_NAME LANG_ARGS "${lang}")
+    if(LANG_NAME)
+      append_Unique_In_Cache(${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX} ${LANG_NAME})
+      append_Unique_In_Cache(${package}_LANGUAGE_CONFIGURATION_${LANG_NAME}_ARGS${VAR_SUFFIX} "${LANG_ARGS}")
+    else()
+      message("[PID] WARNING: when calling check_PID_External_Package_Language configuration ${CHECK_EXTERNAL_PID_LANGUAGE_CONFIGURATION} cannot be evaluated since unknown!")
+      return() #return will exit from current Use file included (because we are in a macro)
+    endif()
+  endforeach()
+else()
+	message("[PID] WARNING: Bad usage of function check_PID_External_Package_Language: PACKAGE (value: ${CHECK_EXTERNAL_PID_LANGUAGE_PACKAGE}) and CONFIGURATION (value: ${CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION}) keywords must be used !")
+	return() #return will exit from current Use file included (because we are in a macro)
+endif()
+endmacro(check_PID_External_Package_Language)
 
 #.rst:
 #
@@ -185,7 +256,7 @@ if(CHECK_EXTERNAL_PID_PLATFORM_PACKAGE
 	set(${package}_PLATFORM${VAR_SUFFIX} ${CHECK_EXTERNAL_PID_PLATFORM_PLATFORM} CACHE INTERNAL "")
 
   foreach(config IN LISTS CHECK_EXTERNAL_PID_PLATFORM_CONFIGURATION)
-    parse_Constraints_Check_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
+    parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
     if(CONFIG_NAME)
       append_Unique_In_Cache(${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX} ${CONFIG_NAME})
       append_Unique_In_Cache(${package}_PLATFORM_CONFIGURATION_${CONFIG_NAME}_ARGS${VAR_SUFFIX} "${CONFIG_ARGS}")

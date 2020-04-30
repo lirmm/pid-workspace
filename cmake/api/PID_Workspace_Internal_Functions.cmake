@@ -1846,7 +1846,7 @@ else()#deploying a specific version of the external package
 		endif()
 		if(version STREQUAL "SYSTEM")
 			#need to determine the OS installed version first
-			check_System_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${package}" Release)#use the configuration to determine if a version is installed on OS
+			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${package}" Release)#use the configuration to determine if a version is installed on OS
 			if(NOT RESULT_OK)
 				message("[PID] ERROR : cannot deploy external package ${package} in its OS installed version since no OS version of ${package} can be found in system. Deployment aborted !")
 				return()
@@ -3480,42 +3480,6 @@ endfunction(print_License_Info)
 #
 function(write_Current_Configuration_Build_Related_Variables file)
 file(WRITE ${file} "")
-if(CURRENT_ABI STREQUAL "CXX11")
-	#this line is needed to force the compiler to use libstdc++11 newer version of API whatever the version of the distribution is
-	#e.g. on ubuntu 14 with compiler gcc 5.4 the default value keeps
-	list(FIND CMAKE_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=0" INDEX)
-	if(NOT INDEX EQUAL -1)
-		list(REMOVE_ITEM CMAKE_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=0")
-	endif()
-	set(TEMP_FLAGS ${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=1)
-else()#using legacy ABI
-	list(FIND CMAKE_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=1" INDEX)
-	if(NOT INDEX EQUAL -1)
-		list(REMOVE_ITEM CMAKE_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=1")
-	endif()
-	set(TEMP_FLAGS ${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0)
-endif()
-
-if(UNIX AND NOT APPLE)
-	# need to deal also with linker option related to rpath/runpath. With recent version of the linker the RUNPATH is set by default NOT the RPATH
-	# cmake does not manage this aspect it consider that this is always the RPATH in USE BUT this is not TRUE
-	# so force the usage of a linker flag to deactivate the RUNPATH generation
-	string(REPLACE "-Wl,--disable-new-dtags" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-	if(NOT CMAKE_EXE_LINKER_FLAGS)
-		set(CMAKE_EXE_LINKER_FLAGS "-Wl,--disable-new-dtags" CACHE STRING "" FORCE)
-	endif()
-	string(REPLACE "-Wl,--disable-new-dtags" "" CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS}")
-	if(NOT CMAKE_MODULE_LINKER_FLAGS)
-		set(CMAKE_MODULE_LINKER_FLAGS "-Wl,--disable-new-dtags" CACHE STRING "" FORCE)
-	endif()
-	string(REPLACE "-Wl,--disable-new-dtags" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
-	if(NOT CMAKE_SHARED_LINKER_FLAGS)
-		set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--disable-new-dtags" CACHE STRING "" FORCE)
-	endif()
-endif()
-
-list(REMOVE_DUPLICATES TEMP_FLAGS)#just to avoid repeating the same option again and again at each workspace configuration time
-set(CMAKE_CXX_FLAGS ${TEMP_FLAGS} CACHE STRING "" FORCE)
 
 # memorizing information about compilers
 file(APPEND ${file} "set(CMAKE_CXX_COMPILER \"${CMAKE_CXX_COMPILER}\" CACHE INTERNAL \"\" FORCE)\n")
@@ -3597,7 +3561,7 @@ if(CUDA_Language_AVAILABLE)
 	file(APPEND ${file} "set(CUDA_LIBRARIES \"${CUDA_LIBRARIES}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CUDA_INCLUDE_DIRS \"${CUDA_INCLUDE_DIRS}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CUDA_CUDART_LIBRARY \"${CUDA_CUDART_LIBRARY}\" CACHE INTERNAL \"\" FORCE)\n")
-	file(APPEND ${file} "set(CUDA_CUDA_LIBRARY: \"${CUDA_CUDA_LIBRARY}\" CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CUDA_CUDA_LIBRARY \"${CUDA_CUDA_LIBRARY}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CUDA_NVCC_EXECUTABLE \"${CUDA_NVCC_EXECUTABLE}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CUDA_HOST_COMPILER \"${CUDA_HOST_COMPILER}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CUDA_HOST_COMPILATION_CPP \"${CUDA_HOST_COMPILATION_CPP}\" CACHE INTERNAL \"\" FORCE)\n")
@@ -3678,7 +3642,6 @@ file(APPEND ${file} "set(CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO \"${CMAKE_STAT
 # defining additionnal build configuration variables related to the current platform build system in use (private variables)
 
 ## cmake related
-file(APPEND ${file} "set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\" CACHE INTERNAL \"\" FORCE)\n")
 file(APPEND ${file} "set(CMAKE_MAKE_PROGRAM \"${CMAKE_MAKE_PROGRAM}\" CACHE INTERNAL \"\" FORCE)\n")
 file(APPEND ${file} "set(CMAKE_GENERATOR \"${CMAKE_GENERATOR}\" CACHE INTERNAL \"\" FORCE)\n")
 file(APPEND ${file} "set(CMAKE_EXTRA_GENERATOR \"${CMAKE_EXTRA_GENERATOR}\" CACHE INTERNAL \"\" FORCE)\n")
@@ -3721,7 +3684,6 @@ if(CUDA_Language_AVAILABLE)
 endif()
 
 # Finally defining variables related to crosscompilation
-file(APPEND ${file} "set(PID_CROSSCOMPILATION ${PID_CROSSCOMPILATION} CACHE INTERNAL \"\" FORCE)\n")
 if(PID_CROSSCOMPILATION) #only write these information if we are trully cross compiling
 	file(APPEND ${file} "set(CMAKE_CROSSCOMPILING \"${CMAKE_CROSSCOMPILING}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_SYSTEM_NAME \"${CMAKE_SYSTEM_NAME}\" CACHE INTERNAL \"\" FORCE)\n")
@@ -3788,28 +3750,29 @@ function(write_Platform_Description file)
 		file(APPEND ${file} "set(CURRENT_ENVIRONMENT host CACHE INTERNAL \"\" FORCE)\n")
 	endif()
 	# managing abi related variables, used to check for binary compatibility
-	file(APPEND ${file} "set(CURRENT_CXX_ABI ${CURRENT_ABI} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_INTERNAL_PLATFORM_ABI ${CMAKE_INTERNAL_PLATFORM_ABI} CACHE INTERNAL \"\" FORCE)\n")
-	file(APPEND ${file} "set(CXX_STANDARD_LIBRARIES ${CXX_STANDARD_LIBRARIES} CACHE INTERNAL \"\" FORCE)\n")
-	foreach(lib IN LISTS CXX_STANDARD_LIBRARIES)
-		file(APPEND ${file} "set(CXX_STD_LIB_${lib}_ABI_SOVERSION ${CXX_STD_LIB_${lib}_ABI_SOVERSION} CACHE INTERNAL \"\" FORCE)\n")
-	endforeach()
-	file(APPEND ${file} "set(CXX_STD_SYMBOLS ${CXX_STD_SYMBOLS} CACHE INTERNAL \"\" FORCE)\n")
-	foreach(symbol IN LISTS CXX_STD_SYMBOLS)
-		file(APPEND ${file} "set(CXX_STD_SYMBOL_${symbol}_VERSION ${CXX_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\" FORCE)\n")
-	endforeach()
+	file(APPEND ${file} "set(C_STANDARD_LIBRARIES ${C_STANDARD_LIBRARIES} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(C_STD_SYMBOLS ${C_STD_SYMBOLS} CACHE INTERNAL \"\" FORCE)\n")
 
+	file(APPEND ${file} "set(CURRENT_CXX_ABI ${CURRENT_ABI} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CXX_STANDARD_LIBRARIES ${CXX_STANDARD_LIBRARIES} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CXX_STD_SYMBOLS ${CXX_STD_SYMBOLS} CACHE INTERNAL \"\" FORCE)\n")
+
+	file(APPEND ${file} "set(ASM_Language_AVAILABLE ${ASM_Language_AVAILABLE} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(C_Language_AVAILABLE ${C_Language_AVAILABLE} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CXX_Language_AVAILABLE ${CXX_Language_AVAILABLE} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(Python_Language_AVAILABLE ${Python_Language_AVAILABLE} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(Fortran_Language_AVAILABLE ${Fortran_Language_AVAILABLE} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CUDA_Language_AVAILABLE ${CUDA_Language_AVAILABLE} CACHE INTERNAL \"\" FORCE)\n")
 	if(Fortran_Language_AVAILABLE)
 		file(APPEND ${file} "set(Fortran_STANDARD_LIBRARIES ${Fortran_STANDARD_LIBRARIES} CACHE INTERNAL \"\" FORCE)\n")
-		foreach(lib IN LISTS Fortran_STANDARD_LIBRARIES)
-			file(APPEND ${file} "set(Fortran_STD_LIB_${lib}_ABI_SOVERSION ${Fortran_STD_LIB_${lib}_ABI_SOVERSION} CACHE INTERNAL \"\" FORCE)\n")
-		endforeach()
 		file(APPEND ${file} "set(Fortran_STD_SYMBOLS ${Fortran_STD_SYMBOLS} CACHE INTERNAL \"\" FORCE)\n")
-		foreach(symbol IN LISTS Fortran_STD_SYMBOLS)
-			file(APPEND ${file} "set(Fortran_STD_SYMBOL_${symbol}_VERSION ${Fortran_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\" FORCE)\n")
+	endif()
+	if(CUDA_Language_AVAILABLE)
+		file(APPEND ${file} "set(CUDA_STANDARD_LIBRARIES ${CUDA_STANDARD_LIBRARIES} CACHE INTERNAL \"\" FORCE)\n")
+		file(APPEND ${file} "set(CUDA_STD_SYMBOLS ${CUDA_STD_SYMBOLS} CACHE INTERNAL \"\" FORCE)\n")
+		foreach(symbol IN LISTS CUDA_STD_SYMBOLS)
+			file(APPEND ${file} "set(CUDA_STD_SYMBOL_${symbol}_VERSION ${CUDA_STD_SYMBOL_${symbol}_VERSION} CACHE INTERNAL \"\" FORCE)\n")
 		endforeach()
 	endif()
 	#managing python
@@ -3820,10 +3783,33 @@ function(write_Platform_Description file)
 	file(APPEND ${file} "set(CURRENT_PYTHON_PACKAGER ${CURRENT_PYTHON_PACKAGER} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CURRENT_PYTHON_PACKAGER_EXE ${CURRENT_PYTHON_PACKAGER_EXE} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CURRENT_PYTHON_PACKAGER_EXE_OPTIONS ${CURRENT_PYTHON_PACKAGER_EXE_OPTIONS} CACHE INTERNAL \"\" FORCE)\n")
+endfunction(write_Platform_Description)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |write_Global_Info| replace:: ``write_Global_Info``
+#  .. _write_Global_Info:
+#
+#  write_Global_Info
+#  -----------------
+#
+#   .. command:: write_Global_Info(file)
+#
+#     (Re)Writing to a given file the cache variables of the workspace defining global info related to PID and CMake.
+#
+#      :file: the path to the file to write in.
+#
+function(write_Global_Info file)
 	#managing CI
 	file(APPEND ${file} "set(IN_CI_PROCESS ${IN_CI_PROCESS} CACHE INTERNAL \"\" FORCE)\n")
+	#managing crosscompilation
+	file(APPEND ${file} "set(PID_CROSSCOMPILATION ${PID_CROSSCOMPILATION} CACHE INTERNAL \"\" FORCE)\n")
 
+	#store the PID module path
+	file(APPEND ${file} "set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\" CACHE INTERNAL \"\" FORCE)\n")
 	# store the CMake generator
 	file(APPEND ${file} "set(CMAKE_MAKE_PROGRAM ${CMAKE_MAKE_PROGRAM} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_GENERATOR \"${CMAKE_GENERATOR}\" CACHE INTERNAL \"\" FORCE)\n")
@@ -3831,7 +3817,7 @@ function(write_Platform_Description file)
 	file(APPEND ${file} "set(CMAKE_GENERATOR_TOOLSET \"${CMAKE_GENERATOR_TOOLSET}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_GENERATOR_PLATFORM \"${CMAKE_GENERATOR_PLATFORM}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_GENERATOR_INSTANCE \"${CMAKE_GENERATOR_INSTANCE}\" CACHE INTERNAL \"\" FORCE)\n")
-endfunction(write_Platform_Description)
+endfunction(write_Global_Info)
 
 #.rst:
 #
@@ -3885,6 +3871,8 @@ write_Current_Configuration_Build_Related_Variables(${CMAKE_BINARY_DIR}/Workspac
 file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake NO_POLICY_SCOPE)\n")
 # defining all build configuration variables related to the current platform
 file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Solution_File.cmake NO_POLICY_SCOPE)\n")
+write_Global_Info(${CMAKE_BINARY_DIR}/Workspace_Global_Info.cmake)
+file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Global_Info.cmake NO_POLICY_SCOPE)\n")
 endfunction(write_Current_Configuration)
 
 #.rst:

@@ -192,8 +192,8 @@ function(resolve_Package_Dependencies package mode first_time)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 ################## management of configuration : for both external and native packages ##################
 foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX}) ## all configuration constraints must be satisfied
-  parse_Constraints_Check_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
-  check_System_Configuration_With_Arguments(SYSCHECK_RESULT BINARY_CONTRAINTS ${config} args_as_list ${mode})
+  parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+  check_Platform_Configuration_With_Arguments(SYSCHECK_RESULT BINARY_CONTRAINTS ${config} args_as_list ${mode})
   if(NOT SYSCHECK_RESULT)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to resolve configuration ${config} required by package ${package}.")
@@ -1366,8 +1366,8 @@ if(RES_PLATFORM_BASE STREQUAL platfom_str) # OK this binary version is theorical
 		endif()
 	endif()
 	foreach(config IN LISTS CONFIGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
-	parse_Constraints_Check_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
-    is_Allowed_System_Configuration(ALLOWED ${config} args_as_list)
+	parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+    is_Allowed_Platform_Configuration(ALLOWED ${config} args_as_list)
     if(NOT ALLOWED)
       set(${CHECK_OK} FALSE PARENT_SCOPE)
       return()
@@ -2905,8 +2905,8 @@ endif()
 
 # 2) checking constraints on configuration
 foreach(config IN LISTS CONFIGS_TO_CHECK)#if empty no configuration for this platform is supposed to be necessary
-  parse_Constraints_Check_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
-  check_System_Configuration_With_Arguments(RESULT_OK BINARY_CONSTRAINTS ${config} args_as_list ${mode})
+  parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+  check_Platform_Configuration_With_Arguments(RESULT_OK BINARY_CONSTRAINTS ${config} args_as_list ${mode})
   if(RESULT_OK)
     message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
   else()

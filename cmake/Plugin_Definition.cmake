@@ -51,6 +51,26 @@ endfunction(is_Language_Available)
 #
 # .. ifmode:: plugin
 #
+#  .. |abort_When_Not_Required| replace:: ``abort_When_Not_Required``
+#  .. _abort_When_Not_Required:
+#
+#  abort_When_Not_Required
+#  ^^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: abort_When_Not_Required()
+#
+#    Abort when the tool is not explictly required by current project
+#
+macro(abort_When_Not_Required tool)
+  if(NOT ${tool}_REQUIRED)
+    return()
+  endif()
+endmacro(abort_When_Not_Required)
+
+#.rst:
+#
+# .. ifmode:: plugin
+#
 #  .. |get_Package_Component_Links| replace:: ``get_Package_Component_Links``
 #  .. _get_Package_Component_Links:
 #
@@ -753,14 +773,9 @@ endfunction(get_Current_Component_Files)
 #
 #      :environment: The name of environment defining the plugin.
 #
-#      :INTERNAL: if used then the following configruation is internal to the current component
-#      :EXPORTED: if used then the following configruation is exported by the current component
-#      :RUNTIME_RESOURCES ... : The list of runtime path to set as runtime resources
-#      :INCLUDE_DIRS ... : The list of include path to set
-#      :LINKS ... : The list of links to set
-#      :LIBRARY_DIRS ... : The list of library dirs to set
-#      :OPTIONS ... : The list of compiler options to set
-#      :DEFINITIONS ... : The list of preprocessor definitions to set
+#      :INTERNAL: if used then the following configuration is internal to the current component
+#      :EXPORTED: if used then the following configuration is exported by the current component
+#      :CONFIGURATION ... : The list of platform configuration to use to configure the component
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -769,31 +784,17 @@ endfunction(get_Current_Component_Files)
 #
 function(configure_Current_Component environment)
   set(options INTERNAL EXPORTED)
-  set(multiValueArgs RUNTIME_RESOURCES INCLUDE_DIRS STATIC_LINKS SHARED_LINKS LIBRARY_DIRS DEFINITIONS OPTIONS)
+  set(multiValueArgs CONFIGURATION)
   cmake_parse_arguments(CONF_CURR_COMP "${options}" "" "${multiValueArgs}" ${ARGN})
   if(NOT ${CURRENT_COMP_DEFINED}_ENVIRONMENTS)
     set(${CURRENT_COMP_DEFINED}_ENVIRONMENTS ${environment} PARENT_SCOPE)
   else()
     set(${CURRENT_COMP_DEFINED}_ENVIRONMENTS ${${CURRENT_COMP_DEFINED}_ENVIRONMENTS} ${environment} PARENT_SCOPE)
   endif()
-
   if(CONF_CURR_COMP_INTERNAL)
-    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL TRUE PARENT_SCOPE)
-    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_INCLUDE_DIRS ${CONF_CURR_COMP_INCLUDE_DIRS} PARENT_SCOPE)
-    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_STATIC_LINKS ${CONF_CURR_COMP_STATIC_LINKS} PARENT_SCOPE)
-    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_SHARED_LINKS ${CONF_CURR_COMP_SHARED_LINKS} PARENT_SCOPE)
-    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_LIBRARY_DIRS ${CONF_CURR_COMP_LIBRARY_DIRS} PARENT_SCOPE)
-    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_DEFINITIONS ${CONF_CURR_COMP_DEFINITIONS} PARENT_SCOPE)
-    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_OPTIONS ${CONF_CURR_COMP_OPTIONS} PARENT_SCOPE)
-  elseif(CONF_CURR_COMP_EXPORTED)#TODO how to manage that ?
-    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED TRUE PARENT_SCOPE)
-    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_RUNTIME_RESOURCES ${CONF_CURR_COMP_RUNTIME_RESOURCES} PARENT_SCOPE)
-    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_INCLUDE_DIRS ${CONF_CURR_COMP_INCLUDE_DIRS} PARENT_SCOPE)
-    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_STATIC_LINKS ${CONF_CURR_COMP_STATIC_LINKS} PARENT_SCOPE)
-    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_SHARED_LINKS ${CONF_CURR_COMP_SHARED_LINKS} PARENT_SCOPE)
-    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_LIBRARY_DIRS ${CONF_CURR_COMP_LIBRARY_DIRS} PARENT_SCOPE)
-    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_DEFINITIONS ${CONF_CURR_COMP_DEFINITIONS} PARENT_SCOPE)
-    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_OPTIONS ${CONF_CURR_COMP_OPTIONS} PARENT_SCOPE)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_CONFIGURATION ${CONF_CURR_COMP_CONFIGURATION} PARENT_SCOPE)
+  elseif(CONF_CURR_COMP_EXPORTED)
+    set(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_CONFIGURATION ${CONF_CURR_COMP_CONFIGURATION} PARENT_SCOPE)
   else()
     message("[PID] WARNING: when calling configure_Current_Component in plugin script defined in ${environment},  ")
   endif()
@@ -815,14 +816,12 @@ endfunction(configure_Current_Component)
 #
 #      :environment: The name of environment defining the plugin.
 #
-#      :PROGRAM ... : The output variable containing the path to the program defined by the environment
-#      :PROGRAM_DIRS ... : The output variable containing the list of runtime path defined by the environment
-#      :INCLUDE_DIRS ... : The output variable containing the list of include path  defined by the environment
-#      :LIBRARY ... : The output variable containing the path to the library defined by the environment
-#      :LIBRARY_DIRS ... : The output variable containing the list of library directories defined by the environment
+#      :PROGRAM var : The output variable containing the path to the program defined by the environment
+#      :PROGRAM_DIRS var : The output variable containing the list of runtime path defined by the environment
+#      :CONFIGURATION var : The output variable containing the list of platform configurations required by the environment
 #
 function(get_Environment_Configuration environment)
-  set(oneValueArgs PROGRAM PROGRAM_DIRS INCLUDE_DIRS LIBRARY LIBRARY_DIRS)
+  set(oneValueArgs PROGRAM PROGRAM_DIRS CONFIGURATION)
   cmake_parse_arguments(GET_ENV_CONF "" "${oneValueArgs}" "" ${ARGN})
   find_Environment_Tool_For_Current_Profile(TOOL_PREFIX ${environment})
   if(GET_ENV_CONF_PROGRAM)
@@ -831,14 +830,8 @@ function(get_Environment_Configuration environment)
   if(GET_ENV_CONF_PROGRAM_DIRS)
     set(${GET_ENV_CONF_PROGRAM_DIRS} ${${TOOL_PREFIX}_PROGRAM_DIRS} PARENT_SCOPE)
   endif()
-  if(GET_ENV_CONF_INCLUDE_DIRS)
-    set(${GET_ENV_CONF_INCLUDE_DIRS} ${${TOOL_PREFIX}_INCLUDE_DIRS} PARENT_SCOPE)
-  endif()
-  if(GET_ENV_CONF_LIBRARY)
-    set(${GET_ENV_CONF_LIBRARY} ${${TOOL_PREFIX}_LIBRARY} PARENT_SCOPE)
-  endif()
-  if(GET_ENV_CONF_LIBRARY_DIRS)
-    set(${GET_ENV_CONF_LIBRARY_DIRS} ${${TOOL_PREFIX}_LIBRARY_DIRS} PARENT_SCOPE)
+  if(GET_ENV_CONF_CONFIGURATION)
+    set(${GET_ENV_CONF_CONFIGURATION} ${${TOOL_PREFIX}_PLATFORM_CONFIGURATIONS} PARENT_SCOPE)
   endif()
 endfunction(get_Environment_Configuration)
 

@@ -31,28 +31,201 @@ include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
 
 
 ##########################################################################################
-################# Management of constraint expressions ###################################
+################# Management of configuration expressions ################################
 ##########################################################################################
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |parse_Constraints_Check_Expression_Argument_Value| replace:: ``parse_Constraints_Check_Expression_Argument_Value``
+#  .. |get_Configuration_Expression_Resulting_Constraints| replace:: ``get_Configuration_Expression_Resulting_Constraints``
+#  .. _get_Configuration_Expression_Resulting_Constraints:
+#
+#  get_Configuration_Expression_Resulting_Constraints
+#  --------------------------------------------------
+#
+#   .. command:: get_Configuration_Expression_Resulting_Constraints(BINARY_CONSTRAINTS config possible_constraints)
+#
+#     Get the list of constraints that should apply to a given configuration when used in a binary.
+#
+#     :config: the name of the configuration to be checked.
+#
+#     :possible_constraints: the parent scope variable that contains names of constraint that should be part of the binary.
+#
+#     :BINARY_CONSTRAINTS: the output variable the contains the list of constraints to be used in binaries. A constraint is represented by two following elements in the list with the form : name value.
+#
+function(get_Configuration_Expression_Resulting_Constraints BINARY_CONSTRAINTS config possible_constraints)
+
+  #updating all constraints to apply in binary package, they correspond to variable that will be outputed
+  set(all_constraints)
+  foreach(constraint IN LISTS ${possible_constraints})
+    if(DEFINED ${config}_${constraint}_BINARY_VALUE)#interpret the value of the adequate internal variable instead of the default generated one
+      generate_Value_For_Configuration_Expression_Parameter(RES_VALUE ${${config}_${constraint}_BINARY_VALUE})
+    else()
+      generate_Value_For_Configuration_Expression_Parameter(RES_VALUE ${config}_${constraint})
+    endif()
+    list(APPEND all_constraints ${constraint} "${RES_VALUE}")#use guillemet to set exactly one element
+  endforeach()
+
+  #optional constraints are never propagated to binaries description
+  set(${BINARY_CONSTRAINTS} ${all_constraints} PARENT_SCOPE)#the value of the variable is not the real value but the name of the variable
+endfunction(get_Configuration_Expression_Resulting_Constraints)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |prepare_Configuration_Expression_Arguments| replace:: ``prepare_Configuration_Expression_Arguments``
+#  .. _prepare_Configuration_Expression_Arguments:
+#
+#  prepare_Configuration_Expression_Arguments
+#  ------------------------------------------
+#
+#   .. command:: prepare_Configuration_Expression_Arguments(config arguments possible_constraints)
+#
+#     Set the variables corresponding to configuration arguments in the parent scope, as well as the list of variables that are set and unset.
+#
+#     :config: the name of the configuration to be checked.
+#
+#     :arguments: the parent scope variable containing the list of arguments generated from parse_Configuration_Expression.
+#
+#     :possible_constraints: the parent scope variable containing the list of possible constraints that can be valued by arguments.
+#
+function(prepare_Configuration_Expression_Arguments config arguments possible_constraints)
+  if(NOT arguments OR NOT ${arguments})#testing if the variable containing arguments is not empty
+    return()
+  endif()
+  if(NOT ${possible_constraints})#if no possible constraints simply exit
+    return()
+  endif()
+  set(all_args_set)
+  set(argument_couples ${${arguments}})
+  while(argument_couples)
+    list(GET argument_couples 0 name)
+    list(GET argument_couples 1 value)
+    list(REMOVE_AT argument_couples 0 1)#update the list of arguments in parent scope
+    if(value AND NOT value STREQUAL \"\")#special case of an empty list (represented with \"\") must be avoided
+      string(REPLACE " " "" VAL_LIST ${value})#remove the spaces in the string if any
+      string(REPLACE "," ";" VAL_LIST ${VAL_LIST})#generate a cmake list (with ";" as delimiter) from an argument list (with "," delimiter)
+    else()
+      set(VAL_LIST)
+    endif()
+
+    list(FIND ${possible_constraints} ${name} INDEX)
+    list(APPEND all_args_set ${name})
+    if(NOT INDEX EQUAL -1)
+      #now interpret variables contained in the list
+      set(final_list_of_values)
+      foreach(element IN LISTS VAL_LIST)#for each value in the list
+        if(element AND DEFINED ${element})#element is a variable
+          list(APPEND final_list_of_values ${${element}})#evaluate it
+        else()
+          list(APPEND final_list_of_values ${element})#simply copy the value
+        endif()
+      endforeach()
+      set(${config}_${name} ${final_list_of_values} PARENT_SCOPE)#create the variable in parent scope
+    endif()
+  endwhile()
+  set(all_args_to_unset)
+  foreach(constraint IN LISTS ${possible_constraints})
+    list(FIND all_args_set ${constraint} INDEX)
+    if(INDEX EQUAL -1)#not found in argument set ... need to unset it from cache in the end
+      list(APPEND all_args_to_unset ${constraint})
+    endif()
+  endforeach()
+
+  set(${config}_arguments ${all_args_set} PARENT_SCOPE)
+  set(${config}_no_arguments ${all_args_to_unset} PARENT_SCOPE)
+endfunction(prepare_Configuration_Expression_Arguments)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Configuration_Arguments_Included_In_Constraints| replace:: ``check_Configuration_Arguments_Included_In_Constraints``
+#  .. check_Configuration_Arguments_Included_In_Constraints:
+#
+#  check_Configuration_Arguments_Included_In_Constraints
+#  -----------------------------------------------------
+#
+#   .. command:: check_Configuration_Arguments_Included_In_Constraints(INCLUDED arguments_var constraints_var)
+#
+#    Check whether a set of arguments of a configuration have already been checked in the current configuration process
+#
+#     :arguments_var: the variable containing the list of arguments to check.
+#
+#     :constraints_var: the variable containing the list of constraints already checked.
+#
+#     :INCLUDED: the output variable that is true if al arguments have already been checked.
+#
+function(check_Configuration_Arguments_Included_In_Constraints INCLUDED arguments_var constraints_var)
+set(${INCLUDED} FALSE PARENT_SCOPE)
+
+set(argument_couples ${${arguments_var}})
+while(argument_couples)
+  list(GET argument_couples 0 arg_name)
+  list(GET argument_couples 1 arg_value)
+  list(REMOVE_AT argument_couples 0 1)#update the list of arguments
+  #from here we get a constraint name and a value
+  set(is_arg_found FALSE)
+  #evaluate values of the argument so that we can compare it
+  parse_Configuration_Expression_Argument_Value(ARG_VAL_LIST "${arg_value}")
+
+  set(constraints_couples ${${constraints_var}})
+  while(constraints_couples)
+    list(GET constraints_couples 0 constraint_name)
+    list(GET constraints_couples 1 constraint_value)
+    list(REMOVE_AT constraints_couples 0 1)#update the list of arguments
+    if(constraint_name STREQUAL arg_name)#argument found in constraints
+      set(is_arg_found TRUE)
+      #OK we need to check the value
+      parse_Configuration_Expression_Argument_Value(CONSTRAINT_VAL_LIST "${constraint_value}")
+
+      #second : do the comparison
+      foreach(arg_list_val IN LISTS ARG_VAL_LIST)
+        set(val_found FALSE)
+        foreach(ct_list_val IN LISTS CONSTRAINT_VAL_LIST)
+          if(ct_list_val STREQUAL arg_list_val)
+            set(val_found TRUE)
+            break()
+          endif()
+        endforeach()
+        if(NOT val_found)
+          #we can immediately return => not included
+          return()
+        endif()
+      endforeach()
+      break()#exit the loop if argument has been found
+    endif()
+  endwhile()
+  if(NOT is_arg_found)
+    #if argument not found in constraint we can conclude that it is not included in constraints
+    return()
+  endif()
+endwhile()
+set(${INCLUDED} TRUE PARENT_SCOPE)
+endfunction(check_Configuration_Arguments_Included_In_Constraints)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |parse_Configuration_Expression_Argument_Value| replace:: ``parse_Configuration_Expression_Argument_Value``
 #  .. _parse_Constraints_Check_Expression_Argument_Value:
 #
-#  parse_Constraints_Check_Expression_Argument_Value
+#  parse_Configuration_Expression_Argument_Value
 #  -------------------------------------------------
 #
-#   .. command:: parse_Constraints_Check_Expression_Argument_Value(RESULT_VALUE value_expression)
+#   .. command:: parse_Configuration_Expression_Argument_Value(RESULT_VALUE value_expression)
 #
-#    Parse the value expression for a check expression argument. Usefull to manage value that are lists in constraints expessions.
+#    Parse the value expression of an argument of a configuration expression. Usefull to manage value that are lists in expessions.
 #
-#     :value_expression: the string repsenting the value of a check expression's argument.
+#     :value_expression: the string repsenting the value of a configuration expression's argument.
 #
 #     :RESULT_VALUE: the output variable that contains the value (in CMake format) of the argument variable.
 #
-function(parse_Constraints_Check_Expression_Argument_Value RESULT_VALUE value_expression)
+function(parse_Configuration_Expression_Argument_Value RESULT_VALUE value_expression)
   if(value_expression AND NOT value_expression STREQUAL \"\")#special case of an empty list (represented with \"\") must be avoided
     string(REPLACE " " "" ARG_VAL_LIST ${value_expression})#remove the spaces in the string if any
     string(REPLACE "," ";" ARG_VAL_LIST ${ARG_VAL_LIST})#generate a cmake list (with ";" as delimiter) from an argument list (with "," delimiter)
@@ -60,27 +233,27 @@ function(parse_Constraints_Check_Expression_Argument_Value RESULT_VALUE value_ex
     set(ARG_VAL_LIST)
   endif()
   set(${RESULT_VALUE} ${ARG_VAL_LIST} PARENT_SCOPE)
-endfunction(parse_Constraints_Check_Expression_Argument_Value)
+endfunction(parse_Configuration_Expression_Argument_Value)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |parse_Constraints_Check_Expression_Arguments| replace:: ``parse_Constraints_Check_Expression_Arguments``
+#  .. |parse_Configuration_Expression_Arguments| replace:: ``parse_Configuration_Expression_Arguments``
 #  .. _parse_Constraints_Check_Expression_Arguments:
 #
-#  parse_Constraints_Check_Expression_Arguments
+#  parse_Configuration_Expression_Arguments
 #  --------------------------------------------
 #
-#   .. command:: parse_Constraints_Check_Expression_Arguments(RESULT_VARIABLE config_args_var)
+#   .. command:: parse_Configuration_Expression_Arguments(RESULT_VARIABLE config_args_var)
 #
-#    Parse the configruation arguments when they come from the use file of a binary package
+#    Parse the configruation expression arguments when they come from the use file of a binary package
 #
-#     :config_args_var: the list of arguments coming from a native packag euse file. They the pattern variable=value with list value separated by ,.
+#     :config_args_var: the list of arguments coming from a use file. They the pattern variable=value with list value separated by ,.
 #
 #     :RESULT_VARIABLE: the output variable that contains the list of parsed arguments. Elements come two by two in the list, first being the variable name and the second being the value (unchanged from input).
 #
-function(parse_Constraints_Check_Expression_Arguments RESULT_VARIABLE config_args_var)
+function(parse_Configuration_Expression_Arguments RESULT_VARIABLE config_args_var)
 set(result)
 foreach(arg IN LISTS ${config_args_var})
   if(arg MATCHES "^([^=]+)=(.+)$")
@@ -88,22 +261,22 @@ foreach(arg IN LISTS ${config_args_var})
   endif()
 endforeach()
 set(${RESULT_VARIABLE} ${result} PARENT_SCOPE)
-endfunction(parse_Constraints_Check_Expression_Arguments)
+endfunction(parse_Configuration_Expression_Arguments)
 
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |parse_Constraints_Check_Expression| replace:: ``parse_Constraints_Check_Expression``
+#  .. |parse_Configuration_Expression| replace:: ``parse_Configuration_Expression``
 #  .. _parse_Constraints_Check_Expression:
 #
-#  parse_Constraints_Check_Expression
+#  parse_Configuration_Expression
 #  ----------------------------------
 #
-#   .. command:: parse_Constraints_Check_Expression(NAME ARGS constraint)
+#   .. command:: parse_Configuration_Expression(NAME ARGS constraint)
 #
-#     Extract the arguments of a constraint check expression.
+#     Extract the arguments of a configuration expression.
 #
 #     :constraint: the string representing the constraint check.
 #
@@ -111,7 +284,7 @@ endfunction(parse_Constraints_Check_Expression_Arguments)
 #
 #     :ARGS: the output variable containing the list of arguments of the constraint check. Elements in the list go by pair (name or argument, value)
 #
-function(parse_Constraints_Check_Expression NAME ARGS constraint)
+function(parse_Configuration_Expression NAME ARGS constraint)
   string(REPLACE " " "" constraint ${constraint})#remove the spaces if any
   string(REPLACE "\t" "" constraint ${constraint})#remove the tabulations if any
   if(constraint MATCHES "^([^[]+)\\[([^]]+)\\]$")#it matches !! => there are arguments in the check expression
@@ -123,36 +296,36 @@ function(parse_Constraints_Check_Expression NAME ARGS constraint)
       return()#this is a ill formed description of a system check
     endif()
     string(REPLACE ":" ";" ARGS_LIST "${THE_ARGS}")
-    parse_Constraints_Check_Expression_Arguments(result ARGS_LIST)#here parsing
+    parse_Configuration_Expression_Arguments(result ARGS_LIST)#here parsing
     set(${ARGS} ${result} PARENT_SCOPE)
     set(${NAME} ${THE_NAME} PARENT_SCOPE)
   else()#this is a configuration constraint without arguments
     set(${ARGS} PARENT_SCOPE)
     set(${NAME} ${constraint} PARENT_SCOPE)
   endif()
-endfunction(parse_Constraints_Check_Expression)
+endfunction(parse_Configuration_Expression)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |generate_Constraints_Check_Parameters| replace:: ``generate_Constraints_Check_Parameters``
+#  .. |generate_Configuration_Expression_Parameters| replace:: ``generate_Configuration_Expression_Parameters``
 #  .. _generate_Constraints_Check_Parameters:
 #
-#  generate_Constraints_Check_Parameters
+#  generate_Configuration_Expression_Parameters
 #  -------------------------------------
 #
-#   .. command:: generate_Constraints_Check_Parameters(RESULTING_EXPRESSION config_name config_args)
+#   .. command:: generate_Configuration_Expression_Parameters(RESULTING_EXPRESSION config_name config_args)
 #
 #     Generate a list whose each element is an expression of the form name=value.
 #
-#     :config_name: the name of the system configuration.
+#     :config_name: the name of the configuration to check.
 #
-#     :config_args: list of arguments to use as constraints when checking the system configuration.
+#     :config_args: list of arguments to use as constraints when checking the configuration.
 #
 #     :LIST_OF_PAREMETERS: the output variable containing the list of expressions used to value the parameters of the expression.
 #
-function(generate_Constraints_Check_Parameters LIST_OF_PAREMETERS config_name config_args)
+function(generate_Configuration_Expression_Parameters LIST_OF_PAREMETERS config_name config_args)
   set(returned)
   if(config_args)
     set(first_time TRUE)
@@ -165,20 +338,20 @@ function(generate_Constraints_Check_Parameters LIST_OF_PAREMETERS config_name co
     endwhile()
   endif()
   set(${LIST_OF_PAREMETERS} ${returned} PARENT_SCOPE)
-endfunction(generate_Constraints_Check_Parameters)
+endfunction(generate_Configuration_Expression_Parameters)
 
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |generate_Value_For_Constraints_Check_Expression_Parameter| replace:: ``generate_Value_For_Constraints_Check_Expression_Parameter``
+#  .. |generate_Value_For_Configuration_Expression_Parameter| replace:: ``generate_Value_For_Configuration_Expression_Parameter``
 #  .. _generate_Value_For_Constraints_Check_Expression_Parameter:
 #
-#  generate_Value_For_Constraints_Check_Expression_Parameter
+#  generate_Value_For_Configuration_Expression_Parameter
 #  ---------------------------------------------------------
 #
-#   .. command:: generate_Value_For_Constraints_Check_Expression_Parameter(RES_VAL variable)
+#   .. command:: generate_Value_For_Configuration_Expression_Parameter(RES_VAL variable)
 #
 #     Generate a string that represent the value of an argument in a constraint check expression.
 #
@@ -186,7 +359,7 @@ endfunction(generate_Constraints_Check_Parameters)
 #
 #     :RES_VAL: the output variable containing the representation of the variable's value in a constraint check expression.
 #
-function(generate_Value_For_Constraints_Check_Expression_Parameter RES_VAL variable)
+function(generate_Value_For_Configuration_Expression_Parameter RES_VAL variable)
   set(VAL_LIST "${${variable}}")#interpret the value of the adequate parent scope variable
   if(NOT VAL_LIST)#list is empty
     set(${RES_VAL} "\"\"" PARENT_SCOPE)#specific case: dealing with an empty value
@@ -195,32 +368,32 @@ function(generate_Value_For_Constraints_Check_Expression_Parameter RES_VAL varia
     string(REPLACE ";" "," VAL_LIST "${VAL_LIST}")#generate a constraint expression value list (with "," as delimiter) from an argument list (with ";" delimiter)
     set(${RES_VAL} "${VAL_LIST}" PARENT_SCOPE)#use guillemet to set exactly one element
   endif()
-endfunction(generate_Value_For_Constraints_Check_Expression_Parameter)
+endfunction(generate_Value_For_Configuration_Expression_Parameter)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |generate_Constraints_Check_Expression| replace:: ``generate_Constraints_Check_Expression``
+#  .. |generate_Configuration_Expression| replace:: ``generate_Configuration_Expression``
 #  .. _generate_Constraints_Check_Expression:
 #
-#  generate_Constraints_Check_Expression
+#  generate_Configuration_Expression
 #  -------------------------------------
 #
-#   .. command:: generate_Constraints_Check_Expression(RESULTING_EXPRESSION config_name config_args)
+#   .. command:: generate_Configuration_Expression(RESULTING_EXPRESSION config_name config_args)
 #
-#     Generate an expression (string) that describes a check given by configuration or environment name and arguments. Inverse operation of parse_Constraints_Check_Expression.
+#     Generate an expression (string) that describes a check given by configuration or environment name and arguments. Inverse operation of parse_Configuration_Expression.
 #
 #     :config_name: the name of the system configuration.
 #
-#     :config_args: list of arguments to use as constraints when checking the system configuration. Value for the variables have already been generated by using generate_Value_For_Constraints_Check_Expression_Parameter
+#     :config_args: list of arguments to use as constraints when checking the system configuration. Value for the variables have already been generated by using generate_Value_For_Configuration_Expression_Parameter
 #
 #     :RESULTING_EXPRESSION: the output variable containing the configuration check equivalent expression.
 #
-function(generate_Constraints_Check_Expression RESULTING_EXPRESSION config_name config_args)
+function(generate_Configuration_Expression RESULTING_EXPRESSION config_name config_args)
   if(config_args)
     set(final_expression "${config_name}[")
-    generate_Constraints_Check_Parameters(PARAMS ${config_name} "${config_args}")
+    generate_Configuration_Expression_Parameters(PARAMS ${config_name} "${config_args}")
     set(first_time TRUE)
     #now generating expression for each argument
     foreach(arg IN LISTS PARAMS)
@@ -237,7 +410,7 @@ function(generate_Constraints_Check_Expression RESULTING_EXPRESSION config_name 
     set(final_expression "${config_name}")
   endif()
   set(${RESULTING_EXPRESSION} "${final_expression}" PARENT_SCOPE)
-endfunction(generate_Constraints_Check_Expression)
+endfunction(generate_Configuration_Expression)
 
 
 #############################################################
@@ -2441,7 +2614,7 @@ endfunction(shared_Library_Needs_Soname)
 #
 #   .. command:: convert_Library_Path_To_Default_System_Library_Link(RESULTING_LINK library_path)
 #
-#    Check whether a shared library needs to have a soname extension appended to its name.
+#    Concert a path to a system library into a linker option
 #
 #     :library_path: the path to the library.
 #
@@ -2454,15 +2627,19 @@ function(convert_Library_Path_To_Default_System_Library_Link RESULTING_LINK libr
   endif()
   get_filename_component(LIB_NAME ${library_path} NAME)
   string(REGEX REPLACE "^lib(.+)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
-  if(APPLE)
-    string(REGEX REPLACE "^(.+)\\.(dylib(\\.[0-9]+)*|l?a)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
-  elseif(UNIX)
-    string(REGEX REPLACE "^(.+)\\.(so(\\.[0-9]+)*|l?a)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
+  #remove the extensions only if
+  if(LIB_NAME MATCHES "^(.+)\\.(lib|l?a)$")#static library => need to force their usage
+    set(${RESULTING_LINK} "-l${LIB_NAME}" PARENT_SCOPE)#keep the extension to force use of a static library
   else()
-    string(REGEX REPLACE "^(.+)\\.(dll(\\.[0-9]+)*|lib)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
+    if(APPLE)
+      string(REGEX REPLACE "^(.+)\\.(\\.[0-9]+)*dylib$" "\\1" LIB_NAME ${LIB_NAME})
+    elseif(UNIX)
+      string(REGEX REPLACE "^(.+)\\.so(\\.[0-9]+)*$" "\\1" LIB_NAME ${LIB_NAME})
+    else()
+      string(REGEX REPLACE "^(.+)\\.dll(\\.[0-9]+)*$" "\\1" LIB_NAME ${LIB_NAME})
+    endif()
+    set(${RESULTING_LINK} "-l${LIB_NAME}" PARENT_SCOPE)
   endif()
-
-  set(${RESULTING_LINK} "-l${LIB_NAME}" PARENT_SCOPE)
 endfunction(convert_Library_Path_To_Default_System_Library_Link)
 
 #.rst:

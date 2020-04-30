@@ -46,7 +46,7 @@ set(package_dir ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE})
 set(package_system_install_dir ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/system/${TARGET_EXTERNAL_PACKAGE})
 
 begin_Progress(${TARGET_EXTERNAL_PACKAGE} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
-check_System_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${TARGET_EXTERNAL_PACKAGE}${constraints}" Release)
+check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${TARGET_EXTERNAL_PACKAGE}${constraints}" Release)
 finish_Progress(${GLOBAL_PROGRESS_VAR})
 if(NOT RESULT_OK)
   message("[PID] ERROR : Evaluation of ${CONFIG_NAME} system configuration FAILED !")

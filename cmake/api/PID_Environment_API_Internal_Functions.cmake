@@ -91,7 +91,7 @@ function(reset_Environment_Description)
     if(${PROJECT_NAME}_${lang}_TOOLSETS GREATER 0)#some toolset already defined
       math(EXPR max_toolset "${${PROJECT_NAME}_${lang}_TOOLSETS}-1")
       foreach(toolset RANGE ${max_toolset})
-        set_Language_Toolset(${lang} ${toolset} "" "" "" "" "" "" "" "" "" "")
+        set_Language_Toolset(${lang} ${toolset} "" "" "" "" "" "" "" "" "" "" "")
       endforeach()
     endif()
     set(${PROJECT_NAME}_${lang}_TOOLSETS 0 CACHE INTERNAL "")
@@ -99,7 +99,7 @@ function(reset_Environment_Description)
   set(${PROJECT_NAME}_LANGUAGES CACHE INTERNAL "")
 
   foreach(tool IN LISTS ${PROJECT_NAME}_EXTRA_TOOLS)
-    set_Extra_Tool(${tool} "" "" "" "" "" "" "" "" "" "")
+    set_Extra_Tool(${tool} "" "" "" "" "" "" "" "" "")
   endforeach()
   set(${PROJECT_NAME}_EXTRA_TOOLS CACHE INTERNAL "")
 
@@ -514,7 +514,7 @@ macro(build_Environment_Project)
   #generate workspace configuration files only if really usefull
   deduce_Platform_Variables()
   compute_Resulting_Environment_Contraints()
-  adjust_Environment_Constraint_Expression()#need to set the previously computed expression where it is required
+  adjust_Environment_Binary_Variables()#need to set the previously computed expression where it is required
   generate_Environment_Solution_File()#generate the global solution file
   generate_Environment_Toolchain_File()#from global solution generate the toolchain file
 endmacro(build_Environment_Project)
@@ -539,7 +539,7 @@ endmacro(build_Environment_Project)
 #
 function(manage_Environment_Dependency MANAGE_RESULT environment)
 # 1) parse the environment dependency to get its name and args separated
-parse_Constraints_Check_Expression(ENV_NAME ENV_ARGS ${environment}) #get environment name from environment expression (extract arguments and base name)
+parse_Configuration_Expression(ENV_NAME ENV_ARGS ${environment}) #get environment name from environment expression (extract arguments and base name)
 
 # 2) load the environment if required
 load_Environment(LOAD_RESULT ${ENV_NAME})
@@ -548,7 +548,7 @@ if(NOT LOAD_RESULT)
   return()
 endif()
 # 3) evaluate the dependent environment with current target platform constraints then if OK transfer its build properties to the current environment
-evaluate_Environment(GEN_RESULT ${ENV_NAME} "${ENV_ARGS}")
+evaluate_Environment_From_Environment(GEN_RESULT ${ENV_NAME} "${ENV_ARGS}")
 set(${MANAGE_RESULT} ${GEN_RESULT} PARENT_SCOPE)
 endfunction(manage_Environment_Dependency)
 
@@ -772,7 +772,7 @@ endfunction(get_Platform_Constraints_Definitions)
 # .. ifmode:: internal
 #
 #  .. |prepare_Environment_Arguments| replace:: ``prepare_Environment_Arguments``
-#  .. _prepare_Config_Arguments:
+#  .. _prepare_Environment_Arguments:
 #
 #  prepare_Environment_Arguments
 #  -------------------------------
@@ -783,7 +783,7 @@ endfunction(get_Platform_Constraints_Definitions)
 #
 #     :environment: the name of the environment to be checked.
 #
-#     :arguments: the parent scope variable containing the list of arguments generated from parse_Constraints_Check_Expression.
+#     :arguments: the parent scope variable containing the list of arguments generated from parse_Configuration_Expression.
 #
 #     :LIST_OF_DEFS: the output variable containing the list of CMake definitions to pass to configuration process.
 #
@@ -797,7 +797,7 @@ function(prepare_Environment_Arguments LIST_OF_DEFS environment arguments)
     list(GET argument_couples 0 name)
     list(GET argument_couples 1 value)
     list(REMOVE_AT argument_couples 0 1)#update the list of arguments in parent scope
-    generate_Value_For_Constraints_Check_Expression_Parameter(VAL_LIST value)
+    generate_Value_For_Configuration_Expression_Parameter(VAL_LIST value)
     #generate the variable
     list(APPEND result_list "-DVAR_${name}=${VAL_LIST}")
   endwhile()
@@ -892,13 +892,13 @@ endfunction(evaluate_Environment_From_Script)
 #
 # .. ifmode:: internal
 #
-#  .. |evaluate_Environment| replace:: ``evaluate_Environment``
-#  .. _evaluate_Environment:
+#  .. |evaluate_Environment_From_Environment| replace:: ``evaluate_Environment_From_Environment``
+#  .. _evaluate_Environment_From_Environment:
 #
-#  evaluate_Environment
-#  --------------------
+#  evaluate_Environment_From_Environment
+#  -------------------------------------
 #
-#   .. command:: evaluate_Environment(EVAL_OK environment)
+#   .. command:: evaluate_Environment_From_Environment(EVAL_OK environment)
 #
 #     configure the environment with platform variables and arguments coming from current environment (or user).
 #
@@ -908,7 +908,7 @@ endfunction(evaluate_Environment_From_Script)
 #
 #      :EVAL_OK: the output variable that is TRUE if the environment has been evaluated and exitted without errors.
 #
-function(evaluate_Environment EVAL_OK environment list_of_args)
+function(evaluate_Environment_From_Environment EVAL_OK environment list_of_args)
 # 1) clean and configure the environment project with definitions coming from target (even inherited)
 # those definitions are : "user variables" (e.g. version) and current platform description (that will impose constraints)
 
@@ -941,7 +941,84 @@ endif()
 include(${env_build_folder}/PID_Environment_Solution_Info.cmake)
 import_Solution_From_Dependency(${environment})
 set(${EVAL_OK} TRUE PARENT_SCOPE)
-endfunction(evaluate_Environment)
+endfunction(evaluate_Environment_From_Environment)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |evaluate_Environment_From_Package| replace:: ``evaluate_Environment_From_Package``
+#  .. _evaluate_Environment_From_Package:
+#
+#  evaluate_Environment_From_Package
+#  ---------------------------------
+#
+#   .. command:: evaluate_Environment_From_Package(EVAL_OK environment)
+#
+#     configure the environment with platform variables and arguments coming from current environment (or user).
+#
+#      :environment: the name of the target environment.
+#
+#      :list_of_args: the list of arguments passed to the environment
+#
+#      :EVAL_OK: the output variable that is TRUE if the environment has been evaluated and exitted without errors.
+#
+function(evaluate_Environment_From_Package EVAL_OK environment)
+# 1) clean and configure the environment project with definitions coming from target (even inherited)
+# those definitions are : "user variables" (e.g. version) and current platform description (that will impose constraints)
+
+set(env_build_folder ${WORKSPACE_DIR}/environments/${environment}/build)
+#clean the build folder cache
+file(REMOVE ${env_build_folder}/CMakeCache.txt ${env_build_folder}/PID_Toolchain.cmake ${env_build_folder}/PID_Environment_Solution_Info.cmake)
+
+#build the list of variables that will be passed to configuration process
+# prepare_Environment_Arguments(LIST_OF_DEFS_ARGS ${environment} list_of_args)TODO
+# 1.3 for each variable, look if a corresponfing environment variable exists and if yes create the CMake definition to pass to environment
+set(list_of_defs)
+foreach(var IN LISTS ${environment}_INPUTS)
+  if(DEFINED ${environment}_${var})# variable is defined for that constraint
+    string(REPLACE " " "" VAL_LIST "${${environment}_${var}}")#remove the spaces in the string if any
+    string(REPLACE ";" "," VAL_LIST "${VAL_LIST}")#generate an argument list (with "," delim) from a cmake list (with ";" as delimiter)
+    list(APPEND list_of_defs "-DVAR_${var}=${VAL_LIST}")
+  else()
+    list(APPEND list_of_defs -U VAR_${var})
+  endif()
+endforeach()
+
+# Note: using settings of the current target platform (possible since we are in a package/wrapper)
+# Note: we still need to manage specific variabels related to crosscompilation to ensure that the environment is corrrectly evaluated
+if(NOT default_env STREQUAL "host")
+  set(target_sysroot ${${environment}_TARGET_SYSROOT})#cross compilation can take place
+  set(target_staging ${${environment}_TARGET_STAGING})#cross compilation can take place
+else()
+  set(target_sysroot)#no cross compilation
+  set(target_staging)#no cross compilation
+endif()
+get_Platform_Constraints_Definitions(PLATFORM_DEFS ${environment}
+        "${CURRENT_PLATFORM_INSTANCE}" "${target_sysroot}" "${target_staging}"
+        "${CURRENT_PLATFORM_TYPE}" "${CURRENT_PLATFORM_ARCH}"
+        "${CURRENT_PLATFORM_OS}" "${CURRENT_PLATFORM_ABI}"
+        "${CURRENT_DISTRIBUTION}" "${CURRENT_DISTRIBUTION_VERSION}")
+
+execute_process(COMMAND ${CMAKE_COMMAND}
+                        -DEVALUATION_RUN=TRUE
+                        ${list_of_defs}
+                        ${PLATFORM_DEFS} ..
+                WORKING_DIRECTORY ${env_build_folder})#configure, then build
+
+# 2) => it should produce a resulting solution info file => including this file locally to get all definitions then apply them to local variables (overwritting).
+# locally we manage thoses variables at configuration time. VAR_<name> is the variable for <name> argument.
+# The platform is set using same variables as for target platform description but with FORCE_ prefix.
+
+if(NOT EXISTS ${env_build_folder}/PID_Environment_Solution_Info.cmake)
+  set(${EVAL_OK} FALSE PARENT_SCOPE)
+  return()
+endif()
+include(${env_build_folder}/PID_Environment_Solution_Info.cmake)
+set(${EVAL_OK} TRUE PARENT_SCOPE)
+endfunction(evaluate_Environment_From_Package)
+
 
 
 #.rst:
@@ -979,6 +1056,7 @@ function(import_Solution_From_Dependency environment)
     foreach(toolset RANGE ${max_toolsets})
       add_Language_Toolset(${lang} FALSE
                           "${${environment}_${lang}_TOOLSET_${toolset}_CONSTRAINT_EXPRESSION}"
+                          "${${environment}_${lang}_TOOLSET_${toolset}_CHECK_SCRIPT}"
                           "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER}"
                           "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_ID}"
                           "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_AR}"
@@ -993,12 +1071,13 @@ function(import_Solution_From_Dependency environment)
   endforeach()
 
   foreach(tool IN LISTS ${environment}_EXTRA_TOOLS)
-      add_Extra_Tool(${tool} "${${environment}_EXTRA_${tool}_CONSTRAINT_EXPRESSION}" FALSE
+      add_Extra_Tool(${tool}
+                    "${${environment}_EXTRA_${tool}_CONSTRAINT_EXPRESSION}"
+                    "${${environment}_EXTRA_${tool}_CHECK_SCRIPT}"
+                    FALSE
                     "${${environment}_EXTRA_${tool}_PROGRAM}"
+                    "${${environment}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS}"
                     "${${environment}_EXTRA_${tool}_PROGRAM_DIRS}"
-                    "${${environment}_EXTRA_${tool}_INCLUDE_DIRS}"
-                    "${${environment}_EXTRA_${tool}_LIBRARY}"
-                    "${${environment}_EXTRA_${tool}_LIBRARY_DIRS}"
                     "${${environment}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES}"
                     "${${environment}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS}"
                     "${${environment}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS}"
@@ -1480,7 +1559,7 @@ endmacro(evaluate_Environment_Solution)
 function(evaluate_Environment_Constraints)
 foreach(opt IN LISTS ${PROJECT_NAME}_OPTIONAL_CONSTRAINTS ${PROJECT_NAME}_IN_BINARY_CONSTRAINTS)
   if(opt AND DEFINED VAR_${opt}) #cmake variable containing the input variable exist => input variable passed by the user
-    parse_Constraints_Check_Expression_Argument_Value(VAL_LIST "${VAR_${opt}}")
+    parse_Configuration_Expression_Argument_Value(VAL_LIST "${VAR_${opt}}")
     set(${PROJECT_NAME}_${opt} ${VAL_LIST} PARENT_SCOPE)#create the local variable used in scripts
   endif()
 endforeach()
@@ -1490,7 +1569,7 @@ foreach(req IN LISTS ${PROJECT_NAME}_REQUIRED_CONSTRAINTS)
     message(FATAL_ERROR "[PID] CRITICAL ERROR: environment ${PROJECT_NAME} requires ${req} to be defined.")
     return()
   endif()
-  parse_Constraints_Check_Expression_Argument_Value(VAL_LIST "${VAR_${req}}")
+  parse_Configuration_Expression_Argument_Value(VAL_LIST "${VAR_${req}}")
   set(${PROJECT_NAME}_${req} ${VAL_LIST} PARENT_SCOPE)#create the local variable used in scripts
 endforeach()
 #also evaluate constraints coming from dependent environment or configuration script
@@ -1832,11 +1911,11 @@ function(compute_Resulting_Environment_Contraints)
   set(all_constraints)
   #updating all constraints to apply in binary package, they correspond to variable that will be outputed
   foreach(constraint IN LISTS ${PROJECT_NAME}_REQUIRED_CONSTRAINTS ${PROJECT_NAME}_IN_BINARY_CONSTRAINTS)
-    generate_Value_For_Constraints_Check_Expression_Parameter(RES_VALUE ${PROJECT_NAME}_${constraint})
+    generate_Value_For_Configuration_Expression_Parameter(RES_VALUE ${PROJECT_NAME}_${constraint})
     list(APPEND all_constraints ${constraint} "${RES_VALUE}")#use guillemet to set exactly one element
   endforeach()
 
-  generate_Constraints_Check_Expression(RESULTING_EXPRESSION ${PROJECT_NAME} "${all_constraints}")
+  generate_Configuration_Expression(RESULTING_EXPRESSION ${PROJECT_NAME} "${all_constraints}")
   set(${PROJECT_NAME}_CONSTRAINT_EXPRESSION ${RESULTING_EXPRESSION} CACHE INTERNAL "")
 endfunction(compute_Resulting_Environment_Contraints)
 
@@ -1844,23 +1923,26 @@ endfunction(compute_Resulting_Environment_Contraints)
 #
 # .. ifmode:: internal
 #
-#  .. |adjust_Environment_Constraint_Expression| replace:: ``adjust_Environment_Constraint_Expression``
-#  .. adjust_Environment_Constraint_Expression:
+#  .. |adjust_Environment_Binary_Variables| replace:: ``adjust_Environment_Binary_Variables``
+#  .. adjust_Environment_Binary_Variables:
 #
-#  adjust_Environment_Constraint_Expression
+#  adjust_Environment_Binary_Variables
 #  -----------------------------
 #
-#   .. command:: adjust_Environment_Constraint_Expression()
+#   .. command:: adjust_Environment_Binary_Variables()
 #
 #   Compute the result constraint for the environment that includes all required and in binary parameters for the current environment.
 #
-function(adjust_Environment_Constraint_Expression)
+function(adjust_Environment_Binary_Variables)
   foreach(lang IN LISTS ${PROJECT_NAME}_LANGUAGES)
     if(${PROJECT_NAME}_${lang}_TOOLSETS GREATER 0)#some toolset already defined
       math(EXPR max_toolset "${${PROJECT_NAME}_${lang}_TOOLSETS}-1")
       foreach(toolset RANGE ${max_toolset})
         if(NOT ${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CONSTRAINT_EXPRESSION)#toolset has been defined by the current project => need to adjust the constraint expression
           set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CONSTRAINT_EXPRESSION ${${PROJECT_NAME}_CONSTRAINT_EXPRESSION} CACHE INTERNAL "")
+        endif()
+        if(NOT ${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CHECK_SCRIPT)#toolset has been defined by the current project => need to adjust the path to check script
+          set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CHECK_SCRIPT ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_CHECK} CACHE INTERNAL "")
         endif()
       endforeach()
     endif()
@@ -1870,9 +1952,12 @@ function(adjust_Environment_Constraint_Expression)
     if(NOT ${PROJECT_NAME}_EXTRA_${tool}_CONSTRAINT_EXPRESSION)#extra tool has been defined by the current project => need to adjust the constraint expression
       set(${PROJECT_NAME}_EXTRA_${tool}_CONSTRAINT_EXPRESSION ${${PROJECT_NAME}_CONSTRAINT_EXPRESSION} CACHE INTERNAL "")
     endif()
+    if(NOT ${PROJECT_NAME}_EXTRA_${tool}_CHECK_SCRIPT)#toolset has been defined by the current project => need to adjust the path to check script
+      set(${PROJECT_NAME}_EXTRA_${tool}_CHECK_SCRIPT ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_CHECK} CACHE INTERNAL "")
+    endif()
   endforeach()
 
-endfunction(adjust_Environment_Constraint_Expression)
+endfunction(adjust_Environment_Binary_Variables)
 
 #.rst:
 #
@@ -1884,7 +1969,7 @@ endfunction(adjust_Environment_Constraint_Expression)
 #  set_Language_Toolset
 #  --------------------
 #
-#   .. command:: set_Language_Toolset(lang toolset compiler comp_id comp_ar comp_ranlib comp_flags interp includes library)
+#   .. command:: set_Language_Toolset(lang toolset expression script compiler comp_id comp_ar comp_ranlib comp_flags interp includes library)
 #
 #   Set the description of a language toolset in cache
 #
@@ -1893,6 +1978,8 @@ endfunction(adjust_Environment_Constraint_Expression)
 #     :toolset: the index of language toolset
 #
 #     :expression: the constraint expression corresponding to the use of the given environment.
+#
+#     :script: the path to the check script used to evaluate the environment.
 #
 #     :compiler: the path to language compiler program.
 #
@@ -1912,8 +1999,9 @@ endfunction(adjust_Environment_Constraint_Expression)
 #
 #     :host_cc: the C or C++ compiler required by the higher level compiler
 #
-function(set_Language_Toolset lang toolset expression compiler comp_id comp_ar comp_ranlib comp_flags interp includes library host_cc)
+function(set_Language_Toolset lang toolset expression script compiler comp_id comp_ar comp_ranlib comp_flags interp includes library host_cc)
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CONSTRAINT_EXPRESSION ${expression} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CHECK_SCRIPT ${script} CACHE INTERNAL "")
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER ${compiler} CACHE INTERNAL "")
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_ID ${comp_id} CACHE INTERNAL "")
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_AR ${comp_ar} CACHE INTERNAL "")
@@ -1935,13 +2023,17 @@ endfunction(set_Language_Toolset)
 #  add_Language_Toolset
 #  --------------------
 #
-#   .. command:: add_Language_Toolset(lang default compiler comp_id comp_ar comp_ranlib comp_flags interp includes library host_cc)
+#   .. command:: add_Language_Toolset(lang default expression script compiler comp_id comp_ar comp_ranlib comp_flags interp includes library host_cc)
 #
 #   Add definition of a new toolset for language. This toolset becomes default toolset.
 #
 #     :lang: the label of target language
 #
 #     :default: if TRUE the new toolset is supposed to be default and so toolsets will be reordered, otherwise solution is appended to existing ones
+#
+#     :expression: the constraknt expression for the corresponding toolset.
+#
+#     :script: the path to the check script used to evaluate the environment.
 #
 #     :compiler: the path to language compiler program.
 #
@@ -1961,7 +2053,7 @@ endfunction(set_Language_Toolset)
 #
 #     :host_cc: the C or C++ compiler required by the higher level compiler
 #
-function(add_Language_Toolset lang default compiler comp_id comp_ar comp_ranlib comp_flags interp includes library host_cc)
+function(add_Language_Toolset lang default expression script compiler comp_id comp_ar comp_ranlib comp_flags interp includes library host_cc)
   append_Unique_In_Cache(${PROJECT_NAME}_LANGUAGES ${lang})
   if(NOT ${PROJECT_NAME}_${lang}_TOOLSETS)
     set(${PROJECT_NAME}_${lang}_TOOLSETS 0 CACHE INTERNAL "")
@@ -1972,6 +2064,7 @@ function(add_Language_Toolset lang default compiler comp_id comp_ar comp_ranlib 
       math(EXPR prev "${count}-1")
       set_Language_Toolset(${lang} "${count}"
                           "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_CONSTRAINT_EXPRESSION}"
+                          "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_CHECK_SCRIPT}"
                           "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_COMPILER}"
                           "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_COMPILER_ID}"
                           "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_COMPILER_AR}"
@@ -1990,7 +2083,8 @@ function(add_Language_Toolset lang default compiler comp_id comp_ar comp_ranlib 
   endif()
   #add the new default toolset at index 0
   set_Language_Toolset(${lang} "${new_index}"
-                      "" #not possible to resolve the expression immediately, need the environment to be completely evaluated
+                      "${expression}"
+                      "${script}"
                       "${compiler}"
                       "${comp_id}"
                       "${comp_ar}"
@@ -2016,7 +2110,9 @@ endfunction(add_Language_Toolset)
 #  set_Extra_Tool
 #  --------------
 #
-#   .. command:: set_Extra_Tool(tool_name tool_program tool_plugin_before_deps tool_plugin_before_comps tool_plugin_after_comps)
+#   .. command:: set_Extra_Tool(tool_name expression on_demand
+#                               tool_program tool_configs tool_program_dirs
+#                               tool_plugin_before_deps tool_plugin_before_comps tool_plugin_after_comps)
 #
 #   Set definition of an extra tool.
 #
@@ -2024,15 +2120,13 @@ endfunction(add_Language_Toolset)
 #
 #     :expression: the constraint expression provided by the environment defining the extra tool.
 #
+#     :script: the path to the check script used to evaluate the environment.
+#
 #     :tool_program: path to the tool program (may be let empty).
 #
+#     :tool_configs: platform configuration required by the tool.
+#
 #     :tool_program_dirs: runtime path to use for the program executable.
-#
-#     :tool_include_dirs: path to include dirs to use with program.
-#
-#     :tool_library: path to tool library to use.
-#
-#     :tool_lib_dirs: path to tool library dirs to use.
 #
 #     :tool_plugin_before_deps: path to plugin script that is executed before dependencies description.
 #
@@ -2042,13 +2136,12 @@ endfunction(add_Language_Toolset)
 #
 #     :tool_plugin_after_comps: path to plugin script that is executed after components description.
 #
-function(set_Extra_Tool tool expression tool_program tool_program_dirs tool_include_dirs tool_library tool_library_dirs tool_plugin_before_deps tool_plugin_before_comps tool_plugin_during_comps tool_plugin_after_comps)
+function(set_Extra_Tool tool expression script tool_program tool_configs tool_program_dirs tool_plugin_before_deps tool_plugin_before_comps tool_plugin_during_comps tool_plugin_after_comps)
   set(${PROJECT_NAME}_EXTRA_${tool}_CONSTRAINT_EXPRESSION ${expression} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_EXTRA_${tool}_CHECK_SCRIPT ${script} CACHE INTERNAL "")
   set(${PROJECT_NAME}_EXTRA_${tool}_PROGRAM ${tool_program} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS ${tool_configs} CACHE INTERNAL "")
   set(${PROJECT_NAME}_EXTRA_${tool}_PROGRAM_DIRS ${tool_program_dirs} CACHE INTERNAL "")
-  set(${PROJECT_NAME}_EXTRA_${tool}_INCLUDE_DIRS ${tool_include_dirs} CACHE INTERNAL "")
-  set(${PROJECT_NAME}_EXTRA_${tool}_LIBRARY ${tool_library} CACHE INTERNAL "")
-  set(${PROJECT_NAME}_EXTRA_${tool}_LIBRARY_DIRS ${tool_library_dirs} CACHE INTERNAL "")
   if(tool_plugin_before_deps)
     set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES ${CMAKE_SOURCE_DIR}/src/${tool_plugin_before_deps} CACHE INTERNAL "")
   endif()
@@ -2073,8 +2166,8 @@ endfunction(set_Extra_Tool)
 #  add_Extra_Tool
 #  --------------
 #
-#   .. command:: add_Extra_Tool(tool_name force
-#                              tool_program tool_include_dirs tool_library tool_lib_dirs
+#   .. command:: add_Extra_Tool(tool expression script force on_demand
+#                              tool_program tool_configs tool_program_dirs
 #                              tool_plugin_before_deps tool_plugin_before_comps tool_plugin_after_comps)
 #
 #   Add definition of an extra tool to the set of extra tools of the environment.
@@ -2083,17 +2176,15 @@ endfunction(set_Extra_Tool)
 #
 #     :expression: the constraint expression of the environment providing the extra tool.
 #
+#     :script: the path to the check script used to evaluate the environment.
+#
 #     :force: if TRUE force the update even if already defined.
 #
 #     :tool_program: path to the program main executable.
 #
+#     :tool_configs: platform configuration required by the tool.
+#
 #     :tool_program_dirs: runtime path to use for the program executable.
-#
-#     :tool_include_dirs: path to include dirs to use with program.
-#
-#     :tool_library: path to tool library to use.
-#
-#     :tool_lib_dirs: path to tool library dirs to use.
 #
 #     :force: if TRUE force the update even if already defined.
 #
@@ -2105,7 +2196,7 @@ endfunction(set_Extra_Tool)
 #
 #     :tool_plugin_after_comps: path to plugin script that is executed after components description.
 #
-function(add_Extra_Tool tool expression force tool_program tool_program_dirs tool_include_dirs tool_library tool_library_dirs tool_plugin_before_deps tool_plugin_before_comps tool_plugin_during_comps tool_plugin_after_comps)
+function(add_Extra_Tool tool expression script force tool_program tool_configs tool_program_dirs tool_plugin_before_deps tool_plugin_before_comps tool_plugin_during_comps tool_plugin_after_comps)
   if(NOT force)
     list(FIND ${PROJECT_NAME}_EXTRA_TOOLS ${tool} INDEX)
     if(NOT INDEX EQUAL -1)#already define, do not overwrite
@@ -2113,9 +2204,8 @@ function(add_Extra_Tool tool expression force tool_program tool_program_dirs too
     endif()
   endif()
   append_Unique_In_Cache(${PROJECT_NAME}_EXTRA_TOOLS ${tool})
-  set_Extra_Tool(${tool} "${expression}"
-                "${tool_program}" "${tool_program_dirs}"
-                "${tool_include_dirs}" "${tool_library}" "${tool_library_dirs}"
+  set_Extra_Tool(${tool} "${expression}" "${script}"
+                "${tool_program}" "${tool_configs}" "${tool_program_dirs}"
                 "${tool_plugin_before_deps}" "${tool_plugin_before_comps}" "${tool_plugin_during_comps}" "${tool_plugin_after_comps}")
 endfunction(add_Extra_Tool)
 
@@ -2142,6 +2232,7 @@ endfunction(add_Extra_Tool)
 function(write_Language_Toolset file lang toolset)
   #write the constraint expression corresponding to that toolset
   file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CONSTRAINT_EXPRESSION ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CONSTRAINT_EXPRESSION} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CHECK_SCRIPT ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CHECK_SCRIPT} CACHE INTERNAL \"\")\n")
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER)#for compiled languages
     file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER} CACHE INTERNAL \"\")\n")
   endif()
@@ -2192,11 +2283,10 @@ endfunction(write_Language_Toolset)
 #
 function(write_Extra_Tool file tool)
   file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_CONSTRAINT_EXPRESSION \"${${PROJECT_NAME}_EXTRA_${tool}_CONSTRAINT_EXPRESSION}\" CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_CHECK_SCRIPT \"${${PROJECT_NAME}_EXTRA_${tool}_CHECK_SCRIPT}\" CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PROGRAM ${${PROJECT_NAME}_EXTRA_${tool}_PROGRAM} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS ${${PROJECT_NAME}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PROGRAM_DIRS ${${PROJECT_NAME}_EXTRA_${tool}_PROGRAM_DIRS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_INCLUDE_DIRS ${${PROJECT_NAME}_EXTRA_${tool}_INCLUDE_DIRS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_LIBRARY ${${PROJECT_NAME}_EXTRA_${tool}_LIBRARY} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_LIBRARY_DIRS ${${PROJECT_NAME}_EXTRA_${tool}_LIBRARY_DIRS} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS} CACHE INTERNAL \"\")\n")
@@ -2224,6 +2314,7 @@ file(WRITE ${file} "")#reset the description
 file(APPEND ${file} "set(${PROJECT_NAME}_ACTION_INFO \"${${PROJECT_NAME}_ACTION_INFO}\" CACHE INTERNAL \"\")\n")
 # need to write the constraints that will lie in binary of the environment
 file(APPEND ${file} "set(${PROJECT_NAME}_CONSTRAINT_EXPRESSION ${${PROJECT_NAME}_CONSTRAINT_EXPRESSION} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_CHECK ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_CHECK} CACHE INTERNAL \"\")\n")
 
 file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_INSTANCE ${${PROJECT_NAME}_TARGET_INSTANCE} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_PLATFORM ${${PROJECT_NAME}_TARGET_PLATFORM} CACHE INTERNAL \"\")\n")
@@ -2356,7 +2447,9 @@ function(print_Extra_Tool environment tool)
   if(${environment}_EXTRA_${tool}_PROGRAM)
     set(tool_str "    * program: ${${environment}_EXTRA_${tool}_PROGRAM}\n")
   endif()
-
+  if(${environment}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS)
+    set(tool_str "    * platform requirements: ${${environment}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS}\n")
+  endif()
   if(${environment}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES
     OR ${environment}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS
     OR ${environment}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS
@@ -2377,7 +2470,6 @@ function(print_Extra_Tool environment tool)
   endif()
   message("${tool_str}")
 endfunction(print_Extra_Tool)
-
 
 #.rst:
 #

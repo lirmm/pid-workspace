@@ -108,43 +108,31 @@ endmacro(manage_Plugins_In_Package_During_Components_Description)
 #
 macro(manage_Plugins_Contribution_Into_Current_Component)
   foreach(environment IN LISTS ${CURRENT_COMP_DEFINED}_ENVIRONMENTS)
-    if(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL)
-      #Note : no need to give as they will not be part of the component interface
-      declare_System_Component_Dependency(${CURRENT_COMP_DEFINED} FALSE
-                                          "${${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_INCLUDE_DIRS}"
-                                          "${${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_LIBRARY_DIRS}"
-                                          ""#no locally defined definition
-                                          ""#no exported definition
-                                          "${${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_DEFINITIONS}"#only dependency defintions
-                                          "${${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_OPTIONS}"
-                                          "${${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_STATIC_LINKS}"
-                                          "${${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_SHARED_LINKS}"
-                                          "" "" "")
+    if(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_CONFIGURATION)
+      foreach(config IN LISTS ${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_INTERNAL_CONFIGURATION)
+        #Note : no need to give as they will not be part of the component interface
+        declare_System_Component_Dependency_Using_Configuration(
+          ${CURRENT_COMP_DEFINED}
+          FALSE
+          ${config}
+          ""
+          ""
+          ""
+        )
+      endforeach()
     endif()
-    if(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED)
-      #TODO Note: need to manage export of this system dependency into binary description
-      #need to say somethin equivalent to BUILD_WITH_XXX variables generated in binary packages
-      # generate_Plugins_Cache_Variables(${environment}
-      #                                 "${${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_INCLUDE_DIRS}"
-      #                                 "${${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_LIBRARY_DIRS}"
-      #                                 "${${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_DEFINITIONS}"#only dependency defintions
-      #                                 "${${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_OPTIONS}"
-      #                                 "${${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_STATIC_LINKS}"
-      #                                 "${${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_SHARED_LINKS}"
-      #                                 "${${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_RUNTIME_RESOURCES}"
-      #                               )
-      #TODO : why not use expressions like for configurations since this is same kind of expressions?
-      declare_System_Component_Dependency(${CURRENT_COMP_DEFINED} TRUE
-                                          "${environment}_INCLUDE_DIRS"
-                                          "${environment}_LIBRARY_DIRS"
-                                          ""#no locally defined definition
-                                          ""#no exported definition
-                                          "${environment}_DEFINITIONS"#only dependency defintions
-                                          "${environment}_COMPILER_OPTIONS"
-                                          "${environment}_STATIC_LINKS"
-                                          "${environment}_SHARED_LINKS"
-                                          "" ""
-                                          "${environment}_RPATH")
+    if(${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_CONFIGURATION)
+      foreach(config IN LISTS ${CURRENT_COMP_DEFINED}_ENVIRONMENT_${environment}_EXPORTED_CONFIGURATION)
+        declare_System_Component_Dependency_Using_Configuration(
+          ${CURRENT_COMP_DEFINED}
+          TRUE
+          ${config}
+          ""
+          ""
+          ""
+        )
+        #need to say somethin equivalent to BUILD_WITH_XXX variables generated in binary packages
+      endforeach()
     endif()
   endforeach()
 endmacro(manage_Plugins_Contribution_Into_Current_Component)

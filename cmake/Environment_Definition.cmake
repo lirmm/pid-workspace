@@ -205,7 +205,6 @@ endmacro(add_PID_Environment_Author)
 #     :ABI <abi>: the default c++ ABI used by the platform, 98 or 11.
 #     :DISTRIBUTION <distrib name>: the name of the distribution of the target platform.
 #     :DISTRIB_VERSION <version>: the version of the distribution of the target platform.
-#     :CHECK ...: the path to the script file defining how to check if current host already defines adequate build variables.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -265,7 +264,9 @@ else()#getting more specific contraint on platform
   endif()
 endif()
 
-define_Build_Environment_Platform("${DECLARE_PID_ENV_INSTANCE}" "${type_constraint}" "${arch_constraint}" "${os_constraint}" "${abi_constraint}" "${DECLARE_PID_ENV_PLATFORM_DISTRIBUTION}" "${DECLARE_PID_ENV_PLATFORM_DISTRIB_VERSION}")
+define_Build_Environment_Platform("${DECLARE_PID_ENV_PLATFORM_INSTANCE}" "${type_constraint}" "${arch_constraint}" "${os_constraint}" "${abi_constraint}"
+                                  "${DECLARE_PID_ENV_PLATFORM_DISTRIBUTION}" "${DECLARE_PID_ENV_PLATFORM_DISTRIB_VERSION}"
+                                 )
 unset(arch_constraint)
 unset(type_constraint)
 unset(os_constraint)
@@ -776,8 +777,9 @@ endfunction(get_Configured_Environment_Tool)
 #     :PROGRAM: memorize the path to the main extra tool program (for EXTRA).
 #     :LIBRARY: path to the target library (for EXTRA, LANGUAGE and SYSTEM).
 #     :PROGRAM_DIRS ... : list of path to library dirs (for EXTRA and SYSTEM).
-#     :INCLUDE_DIRS ... : list of path to include dirs (for EXTRA, LANGUAGE and SYSTEM).
-#     :LIBRARY_DIRS ... : list of path to library dirs (for EXTRA and SYSTEM).
+#     :INCLUDE_DIRS ... : list of path to include dirs (for LANGUAGE and SYSTEM).
+#     :LIBRARY_DIRS ... : list of path to library dirs (for SYSTEM).
+#     :CONFIGURATION ... : list of required platform configurations (for EXTRA).
 #     :PLUGIN [ BEFORE_DEPS ...] [BEFORE_COMPS ...] [DURING_COMPS ...] [AFTER_COMPS ...] : plugin script to call at specific package configuration times.
 #
 #     .. admonition:: Constraints
@@ -804,7 +806,7 @@ endfunction(get_Configured_Environment_Tool)
 function(configure_Environment_Tool)
   set(options SYSTEM EXE MODULE STATIC SHARED CURRENT)
 
-  set(monoValueArgs EXTRA PROGRAM SYSROOT STAGING LANGUAGE COMPILER HOST_COMPILER TOOLCHAIN_ID INTERPRETER NM OBJDUMP OBJCOPY LIBRARY AR RANLIB LINKER GEN_TOOLSET GEN_PLATFORM )
+  set(monoValueArgs EXTRA PROGRAM CONFIGURATION SYSROOT STAGING LANGUAGE COMPILER HOST_COMPILER TOOLCHAIN_ID INTERPRETER NM OBJDUMP OBJCOPY LIBRARY AR RANLIB LINKER GEN_TOOLSET GEN_PLATFORM )
   set(multiValueArgs PLUGIN FLAGS PROGRAM_DIRS LIBRARY_DIRS INCLUDE_DIRS)
   cmake_parse_arguments(CONF_ENV_TOOL "${options}" "${monoValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -830,6 +832,7 @@ function(configure_Environment_Tool)
   if(CONF_ENV_TOOL_LANGUAGE)
     if(CONF_ENV_TOOL_CURRENT)#using current detected compiler settings
       add_Language_Toolset(${CONF_ENV_TOOL_LANGUAGE} TRUE
+                           "" "" #Note: for local toolset, not possible to resolve the expression immediately, need the environment to be completely evaluated, and same for check script
                            "${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_COMPILER}"
                            "${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_COMPILER_ID}"
                            "${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_COMPILER_AR}"
@@ -839,6 +842,7 @@ function(configure_Environment_Tool)
                            "${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_HOST_COMPILER}")
     else()
       add_Language_Toolset(${CONF_ENV_TOOL_LANGUAGE} TRUE
+                           "" "" #Note: for local toolset, not possible to resolve the expression immediately, need the environment to be completely evaluated, and same for check script
                            "${CONF_ENV_TOOL_COMPILER}"
                            "${CONF_ENV_TOOL_TOOLCHAIN_ID}"
                            "${CONF_ENV_TOOL_AR}"
@@ -954,11 +958,11 @@ function(configure_Environment_Tool)
       set(plugin_during_comps ${CONF_PLUGIN_DURING_COMPS})
       set(plugin_after_comps ${CONF_PLUGIN_AFTER_COMPS})
     endif()
-    #Note: no expression provided since it will be computable when envronment is fully configured
-    add_Extra_Tool(${CONF_ENV_TOOL_EXTRA} "" TRUE
-                  "${CONF_ENV_TOOL_PROGRAM}" "${CONF_ENV_TOOL_PROGRAM_DIRS}"
-                  "${CONF_ENV_TOOL_INCLUDE_DIRS}" "${CONF_ENV_TOOL_LIBRARY}" "${CONF_ENV_TOOL_LIBRARY_DIRS}"
-                "${plugin_before_deps}" "${plugin_before_comps}" "${plugin_during_comps}" "${plugin_after_comps}")
+    # Note: no expression provided since it will be computable when envronment is fully configured
+    # Note same for check script that is automatically added when generating solution description
+    add_Extra_Tool(${CONF_ENV_TOOL_EXTRA} "" "" TRUE
+                  "${CONF_ENV_TOOL_PROGRAM}" "${CONF_ENV_TOOL_CONFIGURATION}" "${CONF_ENV_TOOL_PROGRAM_DIRS}"
+                  "${plugin_before_deps}" "${plugin_before_comps}" "${plugin_during_comps}" "${plugin_after_comps}")
   endif()
 endfunction(configure_Environment_Tool)
 
@@ -1482,6 +1486,46 @@ function(get_Program_Version VERSION program_str version_extraction_regex)
   endif()
 endfunction(get_Program_Version)
 
+#.rst:
+#
+# .. ifmode:: script
+#
+#  .. |check_Environment_Architecture| replace:: ``check_Environment_Architecture``
+#  .. _check_Environment_Architecture:
+#
+#  check_Environment_Architecture
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: check_Environment_Architecture(RESULT arch_var arch_list)
+#
+#      Check whether a set of architectures is allowed.
+#
+#     .. rubric:: Required parameters
+#
+#     :RESULT: the output variable that is TRUE if architecture(s) are all managed managed
+#     :arch_var: the input variable containing architecture(s) to check
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        check_Environment_Architecture(EVAL_RES cuda_architecture "6.1;7.1")
+#        if(EVAL_RES)
+#         ...
+#        endif()
+#
+function(check_Environment_Architecture RESULT arch_var arch_list)
+  if(${arch_var})#a version constraint has been specified
+    set(${RESULT} FALSE PARENT_SCOPE)
+    foreach(arch IN LISTS arch_list)
+      list(FIND arch_var "${arch_list}" INDEX)
+      if(INDEX EQUAL -1)#not found in available arch list
+        return()
+      endif()
+    endforeach()
+  endif()
+  set(${RESULT} TRUE PARENT_SCOPE)
+endfunction(check_Environment_Architecture)
 
 #.rst:
 #

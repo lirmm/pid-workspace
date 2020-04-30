@@ -275,7 +275,6 @@ function(find_PID_Library_In_Linker_Order possible_library_names_ot_path search_
     #from here only one path given => must resolve everything to be sure we do not target a linker script but we want soname info from real binary
     list(GET possible_library_names_ot_path 0 the_path)
     get_filename_component(LIB_NAME_WE ${the_path} NAME_WE)
-    get_filename_component(LIB_FULL_NAME ${the_path} NAME)
     get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION ${CURRENT_PLATFORM_OS} "SHARED")
     if(PREFIX)
       string(FIND "${LIB_NAME_WE}" "${PREFIX}" INDEX)
@@ -288,7 +287,7 @@ function(find_PID_Library_In_Linker_Order possible_library_names_ot_path search_
     else()
       set(lib_name ${LIB_NAME_WE})
     endif()
-    get_Soname_Info_From_Library_Path(LIB_PATH SONAME SOVERSION ${lib_name} ${LIB_FULL_NAME} ${the_path})
+    get_Soname_Info_From_Library_Path(LIB_PATH SONAME SOVERSION ${lib_name} ${the_path})
     set(${LIBRARY_PATH} ${LIB_PATH} PARENT_SCOPE)
     set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
     return()
