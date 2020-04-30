@@ -43,7 +43,7 @@ if(DEFINED ENV{arguments})
 endif()
 set(ENV{arguments})#reset environment variable
 set(package_dir ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE})
-set(package_system_install_dir ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/system/${TARGET_EXTERNAL_PACKAGE})
+set(package_system_install_dir ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/__system__/${TARGET_EXTERNAL_PACKAGE})
 
 begin_Progress(${TARGET_EXTERNAL_PACKAGE} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
 check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${TARGET_EXTERNAL_PACKAGE}${constraints}" Release)

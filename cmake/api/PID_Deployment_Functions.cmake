@@ -2486,7 +2486,7 @@ endfunction(install_External_Package)
 #
 function(install_System_Configuration_Check INSTALLED package)
   set(path_to_wrapper ${WORKSPACE_DIR}/wrappers/${package})
-  set(path_to_config ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/system/${package})
+  set(path_to_config ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/__system__/${package})
 
   if(EXISTS ${path_to_config}/check_${package}.cmake)#system configuration check is not available
     set(${INSTALLED} ${path_to_config} PARENT_SCOPE)

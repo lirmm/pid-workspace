@@ -786,7 +786,7 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/src/system)
 	add_dependencies(eval_system_check gen_system_check)
 
 	add_custom_target(rem_system_check
-		COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/system/${PROJECT_NAME}
+		COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/__system__/${PROJECT_NAME}
 	  VERBATIM
 	)
 endif()

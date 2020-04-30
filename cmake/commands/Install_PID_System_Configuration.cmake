@@ -26,7 +26,7 @@ configure_Contribution_Spaces()
 
 set(package_dir ${WORKSPACE_DIR}/wrappers/${TARGET_EXTERNAL_PACKAGE})
 set(package_system_src_dir ${package_dir}/src/system)
-set(package_system_install_dir ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/system/${TARGET_EXTERNAL_PACKAGE})
+set(package_system_install_dir ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/__system__/${TARGET_EXTERNAL_PACKAGE})
 
 if(NOT EXISTS ${package_dir}/build/Build${TARGET_EXTERNAL_PACKAGE}.cmake)
   message(FATAL_ERROR "[PID] CRITICAL ERROR : build configuration file has not been generated for ${TARGET_EXTERNAL_PACKAGE}, please rerun wrapper configruation...")
