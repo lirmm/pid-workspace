@@ -2194,7 +2194,7 @@ elseif(RUN_PID_TEST_COMPONENT)# run test by executing a PID component
 elseif(RUN_PID_TEST_PYTHON)#run PID test with python
 	wrap_CTest_Call(${RUN_PID_TEST_NAME} "${CURRENT_PYTHON_EXECUTABLE}" "${PATH_TO_PYTHON_FILE}")
 	#setting the python path automatically for this test
-	set_tests_properties(${RUN_PID_TEST_NAME} PROPERTIES ENVIRONMENT "PYTHONPATH=${WORKSPACE_DIR}/install/python${CURRENT_PYTHON}")
+	set_tests_properties(${RUN_PID_TEST_NAME} PROPERTIES ENVIRONMENT "PYTHONPATH=${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/__python${CURRENT_PYTHON}__")
 endif()
 endfunction(run_PID_Test)
 

@@ -41,7 +41,7 @@ endif()
 
 # compute the path to the target module install folder
 set(path_to_package_install ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}/${TARGET_VERSION})
-set(path_to_python_install ${WORKSPACE_DIR}/install/python${CURRENT_PYTHON})
+set(path_to_python_install ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/__python${CURRENT_PYTHON}__)
 set(path_to_module_python_wrapper ${path_to_package_install}/share/script/${TARGET_MODULE})#name is unique for DEBUG or RELEASE versions
 
 # 2) now in python folder creating a symlink pointing to the module script folder

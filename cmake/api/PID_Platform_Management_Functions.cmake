@@ -106,7 +106,7 @@ function(write_Platform_Reporting_File file)
   set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION} + compiler ABI= ${CURRENT_PLATFORM_ABI}\n")
 
   if(Python_Language_AVAILABLE)
-    set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION}[PID] INFO : Python may be used, target python version in use is ${CURRENT_PYTHON}. To use python modules installed in workspace please set the PYTHONPATH to =${WORKSPACE_DIR}/install/python${CURRENT_PYTHON}\n")
+    set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION}[PID] INFO : Python may be used, target python version in use is ${CURRENT_PYTHON}. To use python modules installed in workspace please set the PYTHONPATH to =${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/__python${CURRENT_PYTHON}__\n")
   endif()
   if(CUDA_Language_AVAILABLE)
     set(WORKSPACE_CONFIGURATION_DESCRIPTION "${WORKSPACE_CONFIGURATION_DESCRIPTION}[PID] INFO : CUDA language (version ${CUDA_VERSION}) may be used.\n")

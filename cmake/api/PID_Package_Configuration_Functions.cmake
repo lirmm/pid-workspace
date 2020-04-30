@@ -1436,7 +1436,7 @@ function(create_Python_Install_Symlinks package component mode)
   endif()
   set(path_to_package ${${package}_ROOT_DIR})
   set(path_to_python_package ${path_to_package}/share/script/${component})#Note: name is unique for DEBUG or RELEASE versions
-  set(path_to_python_install ${WORKSPACE_DIR}/install/python${CURRENT_PYTHON})
+  set(path_to_python_install ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/__python${CURRENT_PYTHON}__)
 
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   if(${package}_${component}_TYPE STREQUAL "MODULE")
