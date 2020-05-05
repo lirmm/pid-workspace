@@ -53,9 +53,10 @@ if [[ $platform =~ $reg_expr ]]; then
 fi
 
 if [  "$instance" != "" ]; then
+  using_profile=use_$1
   echo "[PID] CI : configuring environment $instance on platform $platform ..."
   cd binaries/pid-workspace/pid
-  environment=$instance platform=$platform cmake --build . --target configure
+  cmd=mk profile=$using_profile env=$instance instance=$instance platform=$platform cmake --build . --target profiles
   CONFIGURE_RES=$?
   cd ../../..
   if [ $CONFIGURE_RES != 0 ]; then

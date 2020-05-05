@@ -434,6 +434,8 @@ macro(reset_Profiles)
           file(	COPY ${WORKSPACE_DIR}/environments/${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}/build/PID_Toolchain.cmake
                 DESTINATION ${dir})
         endif()
+      elseif(IN_CI_PROCESS)# crash with an error since IN CI contraints on dev env MUST be fulfilled
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : cannot evaluate environment ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT} on current host, abort.")
       else()#reset to default profile
         set(CURRENT_PROFILE default CACHE INTERNAL "")
       endif()

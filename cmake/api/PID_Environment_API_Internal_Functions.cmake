@@ -484,7 +484,7 @@ macro(build_Environment_Project)
 
   evaluate_Environment_Platform(HOST_MATCHES_TARGET)
   if(NOT HOST_MATCHES_TARGET)#if host does not match all constraints -> we need to configure the toochain using available solutions
-    message("[PID] INFO: current host configuration does not satisfy constraints on platform")
+    message("[PID] INFO: current host configuration does not satisfy constraints on platform, need to find a solution for cross compiling.")
   endif()
   evaluate_Environment_Dependencies(EVAL_DEPS)
   if(NOT EVAL_DEPS)
