@@ -17,6 +17,16 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+function(get_Greatest_CUDA_Arch RES_ARCH available_archs)
+  set(max_arch 0.0)
+  foreach(arch IN LISTS available_archs)
+    if(arch VERSION_GREATER max_arch)
+      set(max_arch ${arch})
+    endif()
+  endforeach()
+  set(RES_ARCH ${max_arch} PARENT_SCOPE)
+endfunction()
+
 set(CUDA_Language_AVAILABLE FALSE CACHE INTERNAL "")
 
 set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE INTERNAL "")
@@ -94,32 +104,60 @@ else()#version is greater than 9, deprecated arch are 201 21, etc.
   set(AVAILABLE_CUDA_ARCHS  "3.0" "3.2" "3.5" "5.0" "5.2" "6.0" "6.1" "6.2" "7.0" "7.2" "7.5" CACHE INTERNAL "")
 endif()
 
-# detecting current CUDA architecture on host, if any
-# goal is to set default values for used architectures
-execute_process( COMMAND ${CUDA_NVCC_EXECUTABLE} --compiler-bindir ${CMAKE_CUDA_HOST_COMPILER} ${WORKSPACE_DIR}/cmake/platforms/checks/DetectCudaArch.cu --run
-                   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-                   RESULT_VARIABLE _nvcc_res OUTPUT_VARIABLE _nvcc_out ERROR_VARIABLE _nvcc_error
-                   OUTPUT_STRIP_TRAILING_WHITESPACE)
+if( PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT
+		AND NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
+		#we are not in the context of evaluating an environment or current host
+    # detecting current CUDA architecture on host, if any
+    # goal is to set default values for used architectures
+    execute_process( COMMAND ${CUDA_NVCC_EXECUTABLE} --compiler-bindir ${CMAKE_CUDA_HOST_COMPILER} ${WORKSPACE_DIR}/cmake/platforms/checks/DetectCudaArch.cu --run
+      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+      RESULT_VARIABLE _nvcc_res OUTPUT_VARIABLE _nvcc_out ERROR_VARIABLE _nvcc_error
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-if(_nvcc_res EQUAL 0)#OK default arch has been found
-  list(GET _nvcc_out 0 nb_devices)
-  set(nb_device_managed 0)
-  while(nb_device_managed LESS nb_devices)
-    math(EXPR nb_device_managed "${nb_device_managed}+1")#increment first to use it in list(GET)
-    list(GET _nvcc_out ${nb_device_managed} device_managed)
-    list(APPEND using_arch ${device_managed})
-  endwhile()
-  math(EXPR nb_device_managed "${nb_device_managed}+1")
-  list(GET _nvcc_out ${nb_device_managed} driver_version)
-  math(EXPR nb_device_managed "${nb_device_managed}+1")
-  list(GET _nvcc_out ${nb_device_managed} runtime_version)
-  # choose the default arch among those available (take the greatest version)
-  set(DEFAULT_CUDA_ARCH ${using_arch} CACHE INTERNAL "")#there may have more than one arch specified if more than one CPU is used
-  set(DEFAULT_CUDA_DRIVER ${driver_version} CACHE INTERNAL "")
-  set(DEFAULT_CUDA_RUNTIME ${runtime_version} CACHE INTERNAL "")
-else()#error during nvcc compilation
-  message("[PID] WARNING: no CUDA GPU found while a CUDA compiler is installed. Error message from nvcc is : ${_nvcc_error}")
-  set(DEFAULT_CUDA_ARCH CACHE INTERNAL "")#no default arch means no nvidia card installed
+    if(_nvcc_res EQUAL 0)#OK default arch has been found
+      list(GET _nvcc_out 0 nb_devices)
+      set(nb_device_managed 0)
+      while(nb_device_managed LESS nb_devices)
+        math(EXPR nb_device_managed "${nb_device_managed}+1")#increment first to use it in list(GET)
+        list(GET _nvcc_out ${nb_device_managed} device_managed)
+        list(APPEND using_arch ${device_managed})
+      endwhile()
+      math(EXPR nb_device_managed "${nb_device_managed}+1")
+      list(GET _nvcc_out ${nb_device_managed} driver_version)
+      math(EXPR nb_device_managed "${nb_device_managed}+1")
+      list(GET _nvcc_out ${nb_device_managed} runtime_version)
+      # choose the default arch among those available (take the greatest version)
+      set(DEFAULT_CUDA_ARCH ${using_arch} CACHE INTERNAL "")#there may have more than one arch specified if more than one CPU is used
+      set(DEFAULT_CUDA_DRIVER ${driver_version} CACHE INTERNAL "")
+      set(DEFAULT_CUDA_RUNTIME ${runtime_version} CACHE INTERNAL "")
+    else()#error during nvcc compilation
+      message("[PID] WARNING: no CUDA GPU found while a CUDA compiler is installed. Cannot detect default CUDA architecture.")
+      get_Greatest_CUDA_Arch(CHOSEN_ARCH "${AVAILABLE_CUDA_ARCHS}")
+      set(DEFAULT_CUDA_ARCH ${CHOSEN_ARCH} CACHE INTERNAL "")#default arch is greater available
+      set(DEFAULT_CUDA_DRIVER CACHE INTERNAL "")#no default driver means no nvidia card installed
+      set(DEFAULT_CUDA_RUNTIME CACHE INTERNAL "")#no default runtime means no nvidia card installed
+    endif()
+    string(REGEX REPLACE "\\." "" arch "${DEFAULT_CUDA_ARCH}")
+    set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${arch},code=sm_${arch} -D_FORCE_INLINES" CACHE STRING "" FORCE)
+    set(CUDA_NVCC_FLAGS "-gencode arch=compute_${arch},code=sm_${arch} -D_FORCE_INLINES" CACHE STRING "" FORCE)
+else()#environment is not host so there is no default arch
+  get_Greatest_CUDA_Arch(CHOSEN_ARCH "${AVAILABLE_CUDA_ARCHS}")
+  set(DEFAULT_CUDA_ARCH ${CHOSEN_ARCH} CACHE INTERNAL "")#default arch is greater available
   set(DEFAULT_CUDA_DRIVER CACHE INTERNAL "")#no default driver means no nvidia card installed
   set(DEFAULT_CUDA_RUNTIME CACHE INTERNAL "")#no default runtime means no nvidia card installed
+  # CUDA arch may have been directly set in CMAKE_CUDA_FLAGS
+  set(CUDA_NVCC_FLAGS "${CMAKE_CUDA_FLAGS}")
+  set(temp_flags "${CUDA_NVCC_FLAGS}")
+  string(REGEX REPLACE " " ";" temp_flags "${temp_flags}")
+  set(arch_set FALSE)
+  foreach(flag IN LISTS temp_flags)
+    if(flag MATCHES "-gencode arch=compute_[0-9]+,code=sm_[0-9]+")
+      set(arch_set TRUE)# an arch has been specified using an environment
+    endif()
+  endforeach()
+  if(NOT arch_set)
+    string(REGEX REPLACE "\\." "" arch "${DEFAULT_CUDA_ARCH}")
+    set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${arch},code=sm_${arch} -D_FORCE_INLINES" CACHE STRING "" FORCE)
+    set(CUDA_NVCC_FLAGS "-gencode arch=compute_${arch},code=sm_${arch} -D_FORCE_INLINES" CACHE STRING "" FORCE)
+  endif()
 endif()

@@ -131,7 +131,7 @@ set(CURRENT_ABI CACHE INTERNAL "")#reset value of current ABI
 if( PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT
 		AND NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
 		#we are not in the context of evaluating an environment or current host
-		#So MAYBE there is no need to detect the ABI since specified using corresponding compiler flags
+		#So MAYBE there is no need to detect the ABI since specified using corresponding compiler flags provided by environment
 		string(REGEX MATCH "-D_GLIBCXX_USE_CXX11_ABI=0" IS_LEGACY "${CMAKE_CXX_FLAGS}")
 		if(IS_LEGACY)
 			set(CURRENT_ABI CXX CACHE INTERNAL "")#reset value of current ABI
