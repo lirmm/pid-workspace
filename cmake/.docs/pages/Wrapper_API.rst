@@ -13,8 +13,8 @@ Script functions
 .. cmake-module:: ../../Wrapper_Definition.cmake
 
 
-Configuration functions
------------------------
+Platform Configuration functions
+--------------------------------
 
 .. setmode:: system
 

@@ -313,7 +313,7 @@ endfunction(parse_Configuration_Expression)
 #  .. _generate_Constraints_Check_Parameters:
 #
 #  generate_Configuration_Expression_Parameters
-#  -------------------------------------
+#  --------------------------------------------
 #
 #   .. command:: generate_Configuration_Expression_Parameters(RESULTING_EXPRESSION config_name config_args)
 #

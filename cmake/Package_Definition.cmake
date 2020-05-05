@@ -672,8 +672,8 @@ endmacro(declare_PID_Component_Documentation)
 #
 #   :OPTIONAL: if used then the requirement on build environment is optional.
 #   :LANGUAGE ...: Set of constraint check expressions defining which languages must/can be used (testing only C and C++ is not necessary).
-#   :TOOLSET ... : Set of constraint check expressions defining which toolset must/can be used for target language. If many languages are specified then there must have as many toolsets defined, in same order.
-#   :TOOL ... : Set of constraint check expressions defining which tools (compiler, interpreter, generators, etc.) must/can be used.
+#   :TOOLSET ...: Set of constraint check expressions defining which toolset must/can be used for target language. If many languages are specified then there must have as many toolsets defined, in same order.
+#   :TOOL ...: Set of constraint check expressions defining which tools (compiler, interpreter, generators, etc.) must/can be used.
 #
 #   .. admonition:: Constraints
 #      :class: warning

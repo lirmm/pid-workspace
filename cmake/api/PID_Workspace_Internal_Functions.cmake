@@ -2497,7 +2497,7 @@ else()# check that integration branch is a fast forward of master
 	register_PID_Package(${package})#automate the registering after release
 
 	#remove the installed version built from integration branch
-	file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM_NAME}/${package}/${STRING})
+	file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${STRING})
 	#rebuild package from master branch to get a clean installed version (getting clean use file)
 	build_And_Install_Source(IS_BUILT ${package} ${STRING} "" FALSE)
 	if(NOT IS_BUILT AND NOT STRING VERSION_LESS "1.0.0")#if the package is in a preliminary development state do not stop the versionning if package does not build

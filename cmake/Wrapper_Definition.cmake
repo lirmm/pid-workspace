@@ -420,6 +420,7 @@ endmacro(define_PID_Wrapper_User_Option)
 #     :GIT <repository address>: This is the address of the lone static site repository for the wrapper. It is used to automatically clone/update the static site of the wrapper. With this option the wrapper will not contribute to a framework but will have its own isolated deployment. You must use either this argument or FRAMEWORK one.
 #     :PAGE <url>:  This is the online URL of the static site index page. Must be used if you use the GIT argument.
 #     :CATEGORIES <list>: list of categories the package belongs to into the framework
+#
 #     .. admonition:: Constraints
 #        :class: warning
 #
@@ -729,10 +730,10 @@ endmacro(add_PID_Wrapper_Known_Version)
 #
 #     .. rubric:: Required parameters
 #
-#      :OPTIONAL: if used then the requirement on build environment is optional.
-#      :LANGUAGE ...: Set of constraint check expressions defining which languages must/can be used (testing only C and C++ is not necessary).
-#      :TOOLSET ... : Set of constraint check expressions defining which toolset must/can be used for target language. If many languages are specified then there must have as many toolsets defined, in same order.
-#      :TOOL ... : Set of constraint check expressions defining which tools (compiler, interpreter, generators, etc.) must/can be used.
+#     :OPTIONAL: if used then the requirement on build environment is optional.
+#     :LANGUAGE ...: Set of constraint check expressions defining which languages must/can be used (testing only C and C++ is not necessary).
+#     :TOOLSET ...: Set of constraint check expressions defining which toolset must/can be used for target language. If many languages are specified then there must have as many toolsets defined, in same order.
+#     :TOOL ...: Set of constraint check expressions defining which tools (compiler, interpreter, generators, etc.) must/can be used.
 #
 #     .. rubric:: Optional parameters
 #

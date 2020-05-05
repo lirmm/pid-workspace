@@ -1900,7 +1900,7 @@ endfunction(generate_Environment_Toolchain_File)
 #  .. _compute_Resulting_Environment_Contraints:
 #
 #  compute_Resulting_Environment_Contraints
-#  -------------------------
+#  ----------------------------------------
 #
 #   .. command:: compute_Resulting_Environment_Contraints()
 #
@@ -1927,7 +1927,7 @@ endfunction(compute_Resulting_Environment_Contraints)
 #  .. adjust_Environment_Binary_Variables:
 #
 #  adjust_Environment_Binary_Variables
-#  -----------------------------
+#  -----------------------------------
 #
 #   .. command:: adjust_Environment_Binary_Variables()
 #

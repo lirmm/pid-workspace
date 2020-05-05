@@ -1302,7 +1302,7 @@ endfunction(into_Configuration_Argument_List)
 #  .. _is_Allowed_Platform_Configuration:
 #
 #  is_Allowed_Platform_Configuration
-#  -------------------------------
+#  ---------------------------------
 #
 #   .. command:: is_Allowed_Platform_Configuration(ALLOWED config_name config_args)
 #

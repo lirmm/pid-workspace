@@ -730,7 +730,7 @@ if(tool_constraints)
 			endif()
 		endif()
 		if(RESULT_OK OR NOT optional)#if the result if FALSE and the constraint was optional then skip it
-			
+
 			list(APPEND config_constraints ${CONFIG_CONSTRAINTS})#memorize platform configurations required by the environment
 		endif()
 	endforeach()
@@ -2473,18 +2473,16 @@ endfunction(declare_External_Component_Dependency)
 #
 # .. ifmode:: internal
 #
-#  .. |declare_System_Component_Dependency| replace:: ``declare_System_Component_Dependency``
-#  .. _declare_System_Component_Dependency:
+#  .. |declare_System_Component_Dependency_Using_Configuration| replace:: ``declare_System_Component_Dependency_Using_Configuration``
+#  .. _declare_System_Component_Dependency_Using_Configuration:
 #
-#  declare_System_Component_Dependency
-#  -----------------------------------
+#  declare_System_Component_Dependency_Using_Configuration
+#  -------------------------------------------------------
 #
-#   .. command:: declare_System_Component_Dependency(component export inc_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links c_standard cxx_standard runtime_resources)
+#   .. command:: declare_System_Component_Dependency_Using_Configuration(component export platform_config comp_defs comp_exp_defs dep_defs)
 #
-#     Specify a dependency between a component of the currently defined native package and system components.
-#     details: declare a dependancy that does not create new targets, but directly configures the component with adequate flags coming from system dependencies.
-#     Should be avoided anytime possible, but useful to configure a component with flags and options coming from a platform configuration.
-#
+#     Specify a dependency between a component of the currently defined native package and system components defined using a platform configuration.
+	#
 #     :component: the name of the component that have a dependency.
 #
 #     :export: if TRUE component exports the content of the dependency.

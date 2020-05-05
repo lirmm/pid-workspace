@@ -773,9 +773,9 @@ endfunction(get_Current_Component_Files)
 #
 #      :environment: The name of environment defining the plugin.
 #
-#      :INTERNAL: if used then the following configuration is internal to the current component
-#      :EXPORTED: if used then the following configuration is exported by the current component
-#      :CONFIGURATION ... : The list of platform configuration to use to configure the component
+#      :INTERNAL: if used then the following configuration is internal to the current component.
+#      :EXPORTED: if used then the following configuration is exported by the current component.
+#      :CONFIGURATION ...: The list of platform configuration to use to configure the component.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -921,7 +921,7 @@ endfunction(list_Component_Direct_External_Package_Dependencies)
 #  .. _list_Component_Direct_External_Component_Dependencies:
 #
 #  list_Component_Direct_External_Component_Dependencies
-#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 #   .. command:: list_Component_Direct_External_Component_Dependencies(DIRECT_EXT_DEPS package component ext_package)
 #

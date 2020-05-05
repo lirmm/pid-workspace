@@ -977,7 +977,7 @@ endfunction(declare_Wrapped_Language_Configuration)
 #  .. _declare_Wrapped_Platform_Configuration:
 #
 #  declare_Wrapped_Platform_Configuration
-#  -----------------------------
+#  --------------------------------------
 #
 #   .. command:: declare_Wrapped_Platform_Configuration(platform configurations options)
 #

@@ -776,11 +776,11 @@ endfunction(get_Configured_Environment_Tool)
 #     :CURRENT: use the current environment to set all adequate variables of the target language (for LANGUAGE AND SYSTEM).
 #     :PROGRAM: memorize the path to the main extra tool program (for EXTRA).
 #     :LIBRARY: path to the target library (for EXTRA, LANGUAGE and SYSTEM).
-#     :PROGRAM_DIRS ... : list of path to library dirs (for EXTRA and SYSTEM).
-#     :INCLUDE_DIRS ... : list of path to include dirs (for LANGUAGE and SYSTEM).
-#     :LIBRARY_DIRS ... : list of path to library dirs (for SYSTEM).
-#     :CONFIGURATION ... : list of required platform configurations (for EXTRA).
-#     :PLUGIN [ BEFORE_DEPS ...] [BEFORE_COMPS ...] [DURING_COMPS ...] [AFTER_COMPS ...] : plugin script to call at specific package configuration times.
+#     :PROGRAM_DIRS ...: list of path to library dirs (for EXTRA and SYSTEM).
+#     :INCLUDE_DIRS ...: list of path to include dirs (for LANGUAGE and SYSTEM).
+#     :LIBRARY_DIRS ...: list of path to library dirs (for SYSTEM).
+#     :CONFIGURATION ...: list of required platform configurations (for EXTRA).
+#     :PLUGIN [ BEFORE_DEPS ...] [BEFORE_COMPS ...] [DURING_COMPS ...] [AFTER_COMPS ...]: plugin script to call at specific package configuration times.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -1062,10 +1062,10 @@ endmacro(return_Environment_Check)
 #
 #     .. code-block:: cmake
 #
-#       host_Match_Target_Platform(MATCHING)
-#       if(MATCHING)
-#         ...
-#       endif()
+#        host_Match_Target_Platform(MATCHING)
+#        if(MATCHING)
+#          # do something
+#        endif()
 #
 function(host_Match_Target_Platform IT_MATCHES)
   set(${IT_MATCHES} FALSE PARENT_SCOPE)
@@ -1315,7 +1315,7 @@ endfunction(get_Environment_Target_ABI_Flags)
 #
 #        evaluate_Host_Platform(EVAL_RES)
 #        if(EVAL_RES)
-#         ...
+#         # do something
 #        endif()
 #
 macro(evaluate_Host_Platform RESULT)
@@ -1365,7 +1365,7 @@ endmacro(evaluate_Host_Platform)
 #
 #        check_Program_Version(EVAL_RES gcc_version "${gcc_exact}" "gcc -v" "^gcc[ \t]+version[ \t]+([^ \t]+)[ \t]+.*$")
 #        if(EVAL_RES)
-#         ...
+#         # do something
 #        endif()
 #
 function(check_Program_Version RESULT version_var is_exact program_str version_extraction_regex)
@@ -1414,7 +1414,7 @@ endfunction(check_Program_Version)
 #
 #        check_Program_Version(EVAL_RES gcc_version "${gcc_exact}" "gcc -v" "^gcc[ \t]+version[ \t]+([^ \t]+)[ \t]+.*$")
 #        if(EVAL_RES)
-#         ...
+#         # do something
 #        endif()
 #
 function(check_Environment_Version RESULT version_var is_exact version_to_check)
@@ -1459,7 +1459,7 @@ endfunction(check_Environment_Version)
 #
 #        get_Program_Version(VERSION_RES "gcc -v" "^gcc[ \t]+version[ \t]+([^ \t]+)[ \t]+.*$")
 #        if(VERSION_RES)
-#         ...
+#         # do something
 #        endif()
 #
 function(get_Program_Version VERSION program_str version_extraction_regex)
@@ -1511,7 +1511,7 @@ endfunction(get_Program_Version)
 #
 #        check_Environment_Architecture(EVAL_RES cuda_architecture "6.1;7.1")
 #        if(EVAL_RES)
-#         ...
+#         # do something
 #        endif()
 #
 function(check_Environment_Architecture RESULT arch_var arch_list)
@@ -1602,7 +1602,7 @@ endfunction(set_Environment_Constraints)
 #
 #        install_System_Packages(VERSION_RES "gcc -v" "^gcc[ \t]+version[ \t]+([^ \t]+)[ \t]+.*$")
 #        if(VERSION_RES)
-#         ...
+#         # do something
 #        endif()
 #
 function(install_System_Packages RESULT)

@@ -13,13 +13,13 @@ Contents
 
    /pages/Package_API.rst
    /pages/Wrapper_API.rst
-   /pages/External_API.rst
    /pages/Framework_API.rst
    /pages/Environment_API.rst
    /pages/Use_PID_From_CMake_API.rst
    /pages/Package_Files.rst
    /pages/internal.rst
    /pages/developers.rst
+   /pages/External_API.rst
 
 Indices and tables
 ##################
