@@ -1,0 +1,14 @@
+before_script:
+    - cd pid
+    - cmake -DADDITIONNAL_DEBUG_INFO=ON ..
+    - make contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git
+    - make contributions cmd=prio_max space=pid-tests
+
+
+deploy:
+    script: 
+        - make deploy package=mytestpackage
+        - make deploy package=open-phri version=1.0.0
+    tags: 
+        - pid
+        - x86_64_linux_abi11

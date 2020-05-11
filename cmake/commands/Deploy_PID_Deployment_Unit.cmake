@@ -288,6 +288,7 @@ else()# a package deployment is required
 	endif()
 	if(NOT PACK_DEPLOYED)
 		message("[PID] CRITICAL ERROR : there were errors during deployment of ${DEPLOYED_PACKAGE}")
+		set(PID_FATAL_ERROR TRUE)
 	endif()
 	## global management of the process
 	if(MANAGE_PROGRESS)
@@ -296,5 +297,8 @@ else()# a package deployment is required
 		print_Managed_Packages()
 		message("--------------------------------------------")
 		finish_Progress(TRUE) #reset the build progress information
+	endif()
+	if(PID_FATAL_ERROR)
+		message(FATAL_ERROR "[PID] Package deployment aborted")
 	endif()
 endif()
