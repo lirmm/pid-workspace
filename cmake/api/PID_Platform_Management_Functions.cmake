@@ -1383,6 +1383,7 @@ macro(evaluate_Platform_Configuration config path_to_config)
   # finding artifacts to fulfill system configuration
   set(${config}_CONFIG_FOUND FALSE)
   set(eval_file ${path_to_config}/${${config}_EVAL_FILE})
+  set(check_file ${path_to_config}/check_${config}.cmake)#used only to know if regeneration is required
   set(eval_project_file ${path_to_config}/CMakeLists.txt)
   set(eval_result_config_file ${path_to_config}/output_vars.cmake.in)
   set(eval_result_file ${path_to_config}/output_vars.cmake)
@@ -1416,7 +1417,12 @@ macro(evaluate_Platform_Configuration config path_to_config)
   if(NOT EXISTS ${eval_folder})#create the build folder used for evaluation
     file(MAKE_DIRECTORY ${eval_folder})
   endif()
-  if(NOT EXISTS ${eval_project_file})
+
+  if(${check_file} IS_NEWER_THAN ${eval_project_file})# only regenerate the project file if check file has changed (project regenerated)
+    file(GLOB eval_build_files "${eval_folder}/*")#clean the eval project subfolder when necessary
+    if(eval_build_files)
+      file(REMOVE_RECURSE ${eval_build_files})
+    endif()
     file(WRITE ${eval_project_file} "cmake_minimum_required(VERSION 3.0.2)\n")
     file(APPEND ${eval_project_file} "set(WORKSPACE_DIR ${WORKSPACE_DIR} CACHE PATH \"root of the PID workspace\")\n")
     file(APPEND ${eval_project_file} "list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)\n")
