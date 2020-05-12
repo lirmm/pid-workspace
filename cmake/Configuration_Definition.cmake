@@ -130,12 +130,13 @@ endmacro(installable_PID_Configuration)
 #  execute_OS_Configuration_Command
 #  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-#   .. command:: execute_OS_Configuration_Command(...)
+#   .. command:: execute_OS_Configuration_Command([NOT_PRIVILEGED] ...)
 #
 #      invoque a command of the operating system with adequate privileges.
 #
 #     .. rubric:: Required parameters
 #
+#     :NOT_PRIVILEGED: is used ass first argument privileged execution is never required
 #     :...: the commands to be passed (do not use sudo !)
 #
 #     .. admonition:: Effects
@@ -147,11 +148,15 @@ endmacro(installable_PID_Configuration)
 #
 #     .. code-block:: cmake
 #
-#        execute_OS_Configuration_Command(apt-get install -y libgtk2.0-dev libgtkmm-2.4-dev)
+#        execute_OS_Configuration_Command(apt install -y libgtk2.0-dev libgtkmm-2.4-dev)
 #
 macro(execute_OS_Configuration_Command)
 if(NOT DO_NOT_INSTALL)
-  if(IN_CI_PROCESS)
+  if("${ARGV0}" STREQUAL "NOT_PRIVILEGED")
+    set(args ${ARGN})
+    list(REMOVE_AT args 0)
+    execute_process(COMMAND ${args})
+  elseif(IN_CI_PROCESS)
     execute_process(COMMAND ${ARGN})
   else()
     execute_process(COMMAND sudo ${ARGN})#need to have super user privileges except in CI where suding sudi is forbidden
