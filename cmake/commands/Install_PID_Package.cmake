@@ -62,20 +62,18 @@ if(INSTALLED_PACKAGE AND TARGET_VERSION)
 	if(	 NOT EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${INSTALLED_PACKAGE}/${TARGET_VERSION}
 		OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${INSTALLED_PACKAGE}/${TARGET_VERSION}
 	)
-		message("[PID] ERROR : binary package ${INSTALLED_PACKAGE} version ${TARGET_VERSION} is not installed in workspace,cannot install it in system.")
-		return()
+		message(FATAL_ERROR "[PID] ERROR : binary package ${INSTALLED_PACKAGE} version ${TARGET_VERSION} is not installed in workspace,cannot install it in system.")
 	endif()
 	remove_Progress_File() #reset the build progress information (sanity action)
 	begin_Progress(workspace GLOBAL_PROGRESS_VAR)
 
 	install_Package_In_System(IS_INSTALLED ${INSTALLED_PACKAGE} ${TARGET_VERSION})
 	if(NOT IS_INSTALLED)
-		message("[PID] ERROR : cannot install version ${TARGET_VERSION} of package ${INSTALLED_PACKAGE} in system. Maybe you must have greater permission ... try using sudo.")
+		message(SEND_ERROR "[PID] ERROR : cannot install version ${TARGET_VERSION} of package ${INSTALLED_PACKAGE} in system. Maybe you must have greater permission ... try using sudo.")
 	else()
 		message("[PID] INFO : version ${TARGET_VERSION} of package ${INSTALLED_PACKAGE} has been installed in ${CMAKE_INSTALL_PREFIX}.")
 	endif()
 	finish_Progress(TRUE) #reset the build progress information
 else()
-	message("[PID] ERROR : you must specify (1) a package using argument package=<name of package>, (2) a package version using argument version=<version number>.")
-	return()
+	message(FATAL_ERROR "[PID] ERROR : you must specify (1) a package using argument package=<name of package>, (2) a package version using argument version=<version number>.")
 endif()

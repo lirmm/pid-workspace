@@ -45,20 +45,18 @@ if(RESOLVED_PACKAGE AND TARGET_VERSION)
 	if(	 NOT EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${RESOLVED_PACKAGE}/${TARGET_VERSION}
 		OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${RESOLVED_PACKAGE}/${TARGET_VERSION}
 	)
-		message("[PID] ERROR : binary package version ${TARGET_VERSION} is not installed on the system.")
-		return()
+		message(FATAL_ERROR "[PID] ERROR : binary package version ${TARGET_VERSION} is not installed on the system.")
 	endif()
 	remove_Progress_File() #reset the build progress information (sanity action)
 	begin_Progress(workspace GLOBAL_PROGRESS_VAR)
 
 	bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${RESOLVED_PACKAGE} ${TARGET_VERSION} TRUE)
 	if(NOT BOUND)
-		message("[PID] ERROR : cannot configure runtime dependencies for installed version ${TARGET_VERSION} of package ${RESOLVED_PACKAGE}.")
+		message(SEND_ERROR "[PID] ERROR : cannot configure runtime dependencies for installed version ${TARGET_VERSION} of package ${RESOLVED_PACKAGE}.")
 	else()
 		message("[PID] INFO : runtime dependencies for installed version ${TARGET_VERSION} of package ${RESOLVED_PACKAGE} have been regenerated.")
 	endif()
 	finish_Progress(TRUE) #reset the build progress information
 else()
-	message("[PID] ERROR : you must specify (1) a package using argument name=<name of package>, (2) a package version using argument version=<version number>.")
-	return()
+	message(FATAL_ERROR "[PID] ERROR : you must specify (1) a package using argument name=<name of package>, (2) a package version using argument version=<version number>.")
 endif()
