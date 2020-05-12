@@ -1,14 +1,122 @@
 before_script:
-    - cd pid
-    - cmake -DADDITIONNAL_DEBUG_INFO=ON ..
-    - make contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git
-    - make contributions cmd=prio_max space=pid-tests
+    - ./pid contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONNAL_DEBUG_INFO=ON
+    - ./pid contributions cmd=prio_max space=pid-tests
+
+stages:
+ - create_and_build
+ - deploy
+
+ ############ generic jobs patterns #############
+
+ ### configure (cmake configuration), build (compile/test/install), deploy (make interesting part of the result available wiki+doc, binaries)
+
+.create_and_build_: &create_and_build
+   stage: create_and_build
+   script: 
+        - ./pid create package=foobar author=CI
+        - ./pid build package=foobar
+        - ./pid rebuild package=foobar
+        - ./pid info package=foobar
+        - sh -c "! ./pid info package=foobar2" # assert failure 
 
 
-deploy:
-    script: 
-        - make deploy package=mytestpackage
-        - make deploy package=open-phri version=1.0.0
-    tags: 
+.deploy_: &deploy
+   stage: deploy
+   script:
+        - ./pid deploy package=mytestpackage
+        - ./pid deploy package=open-phri version=1.0.0
+
+
+############ patterns for platforms selection #############
+# here the project generates patterns for runner selection according for all platforms defined in the workspace
+#platform x86_64_linux_abi11
+
+.selection_raspbian_: &selection_raspbian
+   tags:
         - pid
-        - x86_64_linux_abi11
+        - raspbian
+
+.selection_freebsd_: &selection_freebsd
+   tags:
+        - pid
+        - freebsd
+
+.selection_archlinux_: &selection_archlinux
+   tags:
+        - pid
+        - archlinux
+
+.selection_debian_: &selection_debian
+   tags:
+        - pid
+        - debian
+
+.selection_fedora_: &selection_fedora
+   tags:
+        - pid
+        - fedora
+
+.selection_macos_catalina_: &selection_macos_catalina
+   tags:
+        - pid
+        - macos_catalina
+
+
+############ jobs description #############
+
+freebsd deploy:
+  <<: *deploy
+  <<: *selection_freebsd
+
+freebsd create_and_build:
+  <<: *create_and_build
+  <<: *selection_freebsd
+
+archlinux deploy:
+  <<: *deploy
+  <<: *selection_archlinux
+
+archlinux create_and_build:
+  <<: *create_and_build
+  <<: *selection_archlinux
+
+fedora deploy:
+  <<: *deploy
+  <<: *selection_fedora
+
+fedora create_and_build:
+  <<: *create_and_build
+  <<: *selection_fedora
+
+debian deploy:
+  <<: *deploy
+  <<: *selection_debian
+
+debian create_and_build:
+  <<: *create_and_build
+  <<: *selection_debian
+
+catalina deploy:
+  <<: *deploy
+  <<: *selection_macos_catalina
+
+catalina create_and_build:
+  <<: *create_and_build
+  <<: *selection_macos_catalina
+
+############ more specific jobs #############
+
+raspbian deploy:
+    stage: deploy
+    before_script:
+        - ~/start_buster.sh 
+        - echo "Waiting for system to boot"
+        - sleep 60 # TODO proper boot detection
+        - rsync -avX --rsh="/usr/bin/sshpass -p lirmm ssh -o StrictHostKeyChecking=no -l root -p 2722" /root/.ssh root@127.0.0.1:/root/
+        - rsync -avX --rsh="/usr/bin/sshpass -p lirmm ssh -o StrictHostKeyChecking=no -l root -p 2722" `pwd` root@127.0.0.1:/root/
+        - ~/run.sh "ssh-keyscan gite.lirmm.fr > /root/.ssh/known_hosts"
+        - ~/run.sh ./pid contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONNAL_DEBUG_INFO=ON
+        - ~/run.sh ./pid contributions cmd=prio_max space=pid-tests
+    script: 
+        - ~/run.sh ./pid deploy package=mytestpackage
+    <<: *selection_raspbian
