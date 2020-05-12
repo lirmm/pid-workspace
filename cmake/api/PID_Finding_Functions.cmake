@@ -234,11 +234,12 @@ endif()
 foreach(version IN LISTS available_versions)
 	get_Version_String_Numbers("${version}" COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH)
 	if(COMPARE_MAJOR EQUAL MAJOR)
-		if(	COMPARE_MINOR EQUAL curr_max_minor_number
-      AND (NOT COMPARE_PATCH LESS MINOR))#do not use GREATER as if a patch version is defined we can be in a situation where PATCH=PATCH and curr_major has never been set
-      set(curr_major ${COMPARE_MAJOR})
-      set(curr_max_patch_number ${COMPARE_PATCH})# taking the newest patch version for the current major.minor
-		endif()
+		if(	COMPARE_MINOR EQUAL MINOR)
+      if (NOT COMPARE_PATCH LESS PATCH)#do not use GREATER as if a patch version is defined we can be in a situation where PATCH=PATCH and curr_major has never been set
+        set(curr_major ${MAJOR})
+        set(curr_max_patch_number ${COMPARE_PATCH})# taking the newest patch version for the current major.minor
+      endif()
+    endif()
 	endif()
 endforeach()
 if(curr_max_patch_number EQUAL -1 OR curr_major EQUAL -1)#i.e. nothing found
