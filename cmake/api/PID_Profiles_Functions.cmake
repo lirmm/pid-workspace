@@ -170,25 +170,43 @@ endfunction(read_Profiles_Description_File)
 #
 function(write_Profiles_Description_File)
   set(target_file_path ${WORKSPACE_DIR}/environments/profiles_list.cmake)
-  file(WRITE ${target_file_path} "set(PROFILES ${PROFILES} CACHE INTERNAL \"\")\n")#reset file content and define all available profiles
-  file(APPEND ${target_file_path} "set(CURRENT_PROFILE ${CURRENT_PROFILE} CACHE INTERNAL \"\")\n")
-  #contribution spaces list is ordered from highest to lowest priority
+  file(WRITE ${target_file_path} "")#reset file content
   foreach(profile IN LISTS PROFILES)
-    #all variables used to configrue all environments in use
-    file(APPEND ${target_file_path} "set(PROFILE_${profile}_TARGET_SYSROOT ${PROFILE_${profile}_TARGET_SYSROOT} CACHE INTERNAL \"\")\n")
-    file(APPEND ${target_file_path} "set(PROFILE_${profile}_TARGET_STAGING ${PROFILE_${profile}_TARGET_STAGING} CACHE INTERNAL \"\")\n")
-    file(APPEND ${target_file_path} "set(PROFILE_${profile}_TARGET_INSTANCE ${PROFILE_${profile}_TARGET_INSTANCE} CACHE INTERNAL \"\")\n")
-    file(APPEND ${target_file_path} "set(PROFILE_${profile}_TARGET_PLATFORM_OS ${PROFILE_${profile}_TARGET_PLATFORM_OS} CACHE INTERNAL \"\")\n")
-    file(APPEND ${target_file_path} "set(PROFILE_${profile}_TARGET_PLATFORM_PROC_ARCH ${PROFILE_${profile}_TARGET_PLATFORM_PROC_ARCH} CACHE INTERNAL \"\")\n")
-    file(APPEND ${target_file_path} "set(PROFILE_${profile}_TARGET_PLATFORM_PROC_TYPE ${PROFILE_${profile}_TARGET_PLATFORM_PROC_TYPE} CACHE INTERNAL \"\")\n")
-    file(APPEND ${target_file_path} "set(PROFILE_${profile}_TARGET_PLATFORM_ABI ${PROFILE_${profile}_TARGET_PLATFORM_ABI} CACHE INTERNAL \"\")\n")
-    file(APPEND ${target_file_path} "set(PROFILE_${profile}_TARGET_DISTRIBUTION ${PROFILE_${profile}_TARGET_DISTRIBUTION} CACHE INTERNAL \"\")\n")
-    file(APPEND ${target_file_path} "set(PROFILE_${profile}_TARGET_DISTRIBUTION_VERSION ${PROFILE_${profile}_TARGET_DISTRIBUTION_VERSION} CACHE INTERNAL \"\")\n")
-    file(APPEND ${target_file_path} "set(PROFILE_${profile}_DEFAULT_ENVIRONMENT ${PROFILE_${profile}_DEFAULT_ENVIRONMENT} CACHE INTERNAL \"\")\n")
-    file(APPEND ${target_file_path} "set(PROFILE_${profile}_MORE_ENVIRONMENTS ${PROFILE_${profile}_MORE_ENVIRONMENTS} CACHE INTERNAL \"\")\n")
+
+    #all variables used to configure all environments in use
+    set(all_envs ${PROFILE_${profile}_DEFAULT_ENVIRONMENT})
+    list(APPEND all_envs ${PROFILE_${profile}_MORE_ENVIRONMENTS})
+    fill_String_From_List(all_envs all_envs_str)
+    if(profile STREQUAL CURRENT_PROFILE)
+      set(str_to_write "PID_Profile(NAME ${profile} CURRENT ENVIRONMENTS ${all_envs_str}")
+    else()
+      set(str_to_write "PID_Profile(NAME ${profile} ENVIRONMENTS ${all_envs_str}")
+    endif()
+    if(PROFILE_${profile}_TARGET_PLATFORM_PROC_TYPE)
+      set(str_to_write "${str_to_write}\n            PROC_TYPE ${PROFILE_${profile}_TARGET_PLATFORM_PROC_TYPE}")
+    endif()
+    if(PROFILE_${profile}_TARGET_PLATFORM_PROC_ARCH)
+      set(str_to_write "${str_to_write}\n            PROC_ARCH ${PROFILE_${profile}_TARGET_PLATFORM_PROC_ARCH}")
+    endif()
+    if(PROFILE_${profile}_TARGET_PLATFORM_OS)
+      set(str_to_write "${str_to_write}\n            OS         ${PROFILE_${profile}_TARGET_PLATFORM_OS}")
+    endif()
+    if(PROFILE_${profile}_TARGET_PLATFORM_ABI)
+      set(str_to_write "${str_to_write}\n            ABI        ${PROFILE_${profile}_TARGET_PLATFORM_ABI}")
+    endif()
+    if(PROFILE_${profile}_TARGET_INSTANCE)
+      set(str_to_write "${str_to_write}\n            INSTANCE    ${PROFILE_${profile}_TARGET_INSTANCE}")
+    endif()
+    if(PROFILE_${profile}_TARGET_DISTRIBUTION)
+      set(str_to_write "${str_to_write}\n            DISTRIBUTION ${PROFILE_${profile}_TARGET_DISTRIBUTION}")
+    endif()
+    if(PROFILE_${profile}_TARGET_DISTRIBUTION_VERSION)
+      set(str_to_write "${str_to_write}\n            DISTRIBUTION_VERSION ${PROFILE_${profile}_TARGET_DISTRIBUTION_VERSION}")
+    endif()
+    set(str_to_write "${str_to_write})")
+    file(APPEND ${target_file_path} "${str_to_write}\n")
   endforeach()
 endfunction(write_Profiles_Description_File)
-
 
 #.rst:
 #
@@ -393,7 +411,6 @@ endfunction(remove_Additional_Environment)
 #      Reset any information about user profiles and reload them from a profile list file.
 #
 macro(reset_Profiles)
-  set(path_to_description_file ${WORKSPACE_DIR}/environments/profiles_list.cmake)
   #situations to deal with:
   #- empty environments folder
   #- missing profile list file
@@ -1377,3 +1394,95 @@ function(evaluate_Extra_Tool_Configuration RES CONFIGS tool)
   set(${RESULT} ${RESULT} PARENT_SCOPE)
   set(${CONFIGS} ${CONFIGS_TO_CHECK} PARENT_SCOPE)
 endfunction(evaluate_Extra_Tool_Configuration)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |PID_Profile| replace:: ``PID_Profile``
+#  .. _PID_Profile:
+#
+#  PID_Profile
+#  ------------
+#
+#   .. command:: PID_Profile(NAME ... [OPTIONS...]])
+#
+#      Declare a profile in the profile list file.
+#      Note: to be used only in profiles list file.
+#
+#      :NAME <string>: name of the profile (must be unique in the file).
+#      :CURRENT: if specified, the profile is the one currently used.
+#      :ENVIRONMENTS <list>: list of environments to use, the first element being considered as the default one. If none specified only host environemnt will be used.
+#      :PLATFORM <string>: platform description string, may include also instance name. Alternatively the profile can impose more specifc constraints using other arguments.
+#      :PROC_TYPE <string>: type of the processor (e.g. x86, arm).
+#      :PROC_ARCH <string>: address type of the processor (32 or 64 bits).
+#      :OS <string>: operating system of the platform (linux, macos).
+#      :ABI <string>: ABI to use for C++ compilation ("abi98" or "abi11").
+#      :INSTANCE <string>: instance name for target platform.
+#      :DISTRIBUTION <string>: name of the operating system distribution.
+#      :DISTRIBUTION_VERSION <version>: version of the distribution.
+#
+#      :SYSROOT <path>: path to the sysroot when crosscompiling.
+#      :STAGING <path>: path to the staging area when crosscompiling.
+#
+function(PID_Profile)
+  set(options CURRENT)
+  set(oneValueArgs NAME SYSROOT STAGING INSTANCE PLATFORM OS PROC_ARCH PROC_TYPE ABI DISTRIBUTION DISTRIBUTION_VERSION)
+  set(multiValueArgs ENVIRONMENTS)
+  cmake_parse_arguments(PID_PROFILE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+
+  if(NOT PID_PROFILE_NAME)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR: in PID_Profile, NAME of the profile must be defined.")
+    return()
+  endif()
+  set(profile ${PID_PROFILE_NAME})
+
+  if(NOT PID_PROFILE_ENVIRONMENTS)
+    set(env "host")
+    set(other_envs)
+  else()
+    set(temp_list ${PID_PROFILE_ENVIRONMENTS})
+    list(GET temp_list 0 env)
+    list(REMOVE_AT temp_list 0)
+    set(other_envs "${temp_list}")
+  endif()
+  set(PROFILE_${profile}_DEFAULT_ENVIRONMENT ${env} CACHE INTERNAL "")
+  set(PROFILE_${profile}_MORE_ENVIRONMENTS ${other_envs} CACHE INTERNAL "")
+
+  if(NOT PROFILES)
+    #first profile defined => becomes the default one to avoid any misdescription by user
+    set(CURRENT_PROFILE ${profile} CACHE INTERNAL "")
+  endif()
+  append_Unique_In_Cache(PROFILES ${profile})
+  if(PID_PROFILE_CURRENT)
+    set(CURRENT_PROFILE ${profile}   CACHE INTERNAL "")
+  endif()
+  if(PID_PROFILE_PLATFORM)
+    extract_Info_From_Platform(type arch os abi instance PLATFORM_BASE ${PID_PROFILE_PLATFORM})
+  endif()
+  if(PID_PROFILE_PROC_TYPE)
+    set(type ${PID_PROFILE_PROC_TYPE})
+  endif()
+  if(PID_PROFILE_PROC_ARCH)
+    set(arch ${PID_PROFILE_PROC_ARCH})
+  endif()
+  if(PID_PROFILE_OS)
+    set(os ${PID_PROFILE_OS})
+  endif()
+  if(PID_PROFILE_ABI)
+    set(abi ${PID_PROFILE_ABI})
+  endif()
+  if(PID_PROFILE_INSTANCE)
+    set(instance ${PID_PROFILE_INSTANCE})
+  endif()
+  set(PROFILE_${profile}_TARGET_SYSROOT ${PID_PROFILE_SYSROOT} CACHE INTERNAL "")
+  set(PROFILE_${profile}_TARGET_STAGING ${PID_PROFILE_STAGING} CACHE INTERNAL "")
+  set(PROFILE_${profile}_TARGET_INSTANCE ${instance} CACHE INTERNAL "")
+  set(PROFILE_${profile}_TARGET_PLATFORM_OS ${os} CACHE INTERNAL "")
+  set(PROFILE_${profile}_TARGET_PLATFORM_PROC_TYPE ${type} CACHE INTERNAL "")
+  set(PROFILE_${profile}_TARGET_PLATFORM_PROC_ARCH ${arch} CACHE INTERNAL "")
+  set(PROFILE_${profile}_TARGET_PLATFORM_ABI ${abi} CACHE INTERNAL "")
+  set(PROFILE_${profile}_TARGET_DISTRIBUTION ${PID_PROFILE_DISTRIBUTION} CACHE INTERNAL "")
+  set(PROFILE_${profile}_TARGET_DISTRIBUTION_VERSION ${DISTRIBUTION_VERSION}  CACHE INTERNAL "")
+endfunction(PID_Profile)
