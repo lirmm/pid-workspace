@@ -801,7 +801,6 @@ endfunction(check_Language_Configuration)
 function(check_Language_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS lang_name lang_args mode)
   set(${BINARY_CONTRAINTS} PARENT_SCOPE)
   set(${CHECK_OK} FALSE PARENT_SCOPE)
-
   if(NOT ${lang_name}_Language_AVAILABLE)
     return()#if language is not available in the current build environment, simply stop
   endif()
