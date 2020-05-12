@@ -36,11 +36,12 @@ endif()
 
 if(TARGET_PACKAGES AND NOT TARGET_PACKAGES STREQUAL "all")
 	#clean them first
+	set(LIST_OF_TARGETS)
 	foreach(package IN LISTS TARGET_PACKAGES)
 		if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build) #rebuild all target packages
 			list(APPEND LIST_OF_TARGETS ${package})
 		else()
-			message("[PID] WARNING : target package ${package} does not exist in workspace")
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : target package ${package} does not exist in workspace. Build aborted.")
 		endif()
 	endforeach()
 else()#default is all
@@ -50,10 +51,14 @@ endif()
 
 #clean them first
 foreach(package IN LISTS LIST_OF_TARGETS)
-	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} clean WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
-endforeach()
-#then build them
-foreach(package IN LISTS LIST_OF_TARGETS)
+	set(path_to_build ${WORKSPACE_DIR}/packages/${package}/build)
+	if(NOT EXISTS ${path_to_build}/CMakeCache.txt)#package not already configured so do it
+			execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR}/packages/${package}
+											WORKING_DIRECTORY ${path_to_build})
+	else()#otherwise clean it to force the rebuild
+		execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} clean WORKING_DIRECTORY ${path_to_build})
+	endif()
+	#then build
 	target_Options_Passed_Via_Environment(use_env)
 	if(${use_env})
 		SET(ENV{force} true)
