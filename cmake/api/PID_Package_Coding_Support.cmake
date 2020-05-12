@@ -150,7 +150,7 @@ endfunction(generate_Coverage)
 #
 function(add_Static_Check component is_library)
 
-	if(NOT TARGET ${component})
+	if(NOT TARGET ${PROJECT_NAME}_${component})
     finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: unknown target name ${component} when trying to cppcheck !")
 	endif()
