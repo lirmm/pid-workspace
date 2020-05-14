@@ -451,7 +451,7 @@ endfunction(generate_Install_Procedure_Documentation)
 #      :generated_site_folder: path to the folder that contains generated site pages for target package.
 #
 function(generate_Package_Page_Index_In_Framework generated_site_folder)
-configure_file(${WORKSPACE_DIR}/cmake/patterns/static_sites/index.html.in ${generated_site_folder}/index.html @ONLY)
+configure_file(${WORKSPACE_DIR}/cmake/patterns/static_sites/index.md.in ${generated_site_folder}/index.md @ONLY)
 endfunction(generate_Package_Page_Index_In_Framework)
 
 #.rst:
@@ -1082,6 +1082,11 @@ else()
 	set(PACKAGE_DESCRIPTION "${RES_INTRO}") #otherwise use detailed one specific for site
 endif()
 
+if(${PROJECT_NAME}_USER_README_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE})
+	file(READ ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE} CONTENT_OF_README)
+	set(PACKAGE_README "<div markdown=\"1\">\n${CONTENT_OF_README}\n</div>")
+endif()
+
 ## managing authors
 get_Formatted_Package_Contact_String(${PROJECT_NAME} RES_STRING)
 set(PACKAGE_MAINTAINER_NAME ${RES_STRING})
@@ -1681,7 +1686,7 @@ if(NOT only_bin)#no need to generate anything related to documentation
       WORKING_DIRECTORY ${PATH_TO_PACKAGE_BUILD})# copy content from binary dir to site repository source dir
   	set(NEW_POST_CONTENT_PAGES TRUE)
   else()
-    file(COPY ${PATH_TO_PACKAGE_BUILD}/release/site/index.html DESTINATION ${TARGET_PACKAGE_PATH}) # QUESTION: why copy the index page only ?
+    file(COPY ${PATH_TO_PACKAGE_BUILD}/release/site/index.md DESTINATION ${TARGET_PACKAGE_PATH}) # QUESTION: why copy the index page only ?
   endif()
 endif()
 

@@ -10,12 +10,14 @@ has_coverage: @PACKAGE_HAS_COVERAGE@
 ---
 
 <center>
-<h2>{{ page.package }} package documentation</h2>
+<h2>Welcome to {{ page.package }} package !</h2>
 </center>
 
 <br>
 
 @PACKAGE_DESCRIPTION@
+
+@PACKAGE_README@
 
 <br><br><br><br>
 
