@@ -19,7 +19,7 @@
 
 set(PID_KNOWN_PACKAGING_SYSTEMS APT PACMAN YUM BREW PORTS CHOCO CACHE INTERNAL "")
 #try to detect available packaging system depending on operating system
-if(CURRENT_DISTRIBUTION AND NOT PID_CROSSCOMPILATION) #there is a pâckaging system only if a distribution is defined
+if(NOT PID_CROSSCOMPILATION) #there is a pâckaging system only if a distribution is defined
 
   if(CURRENT_PLATFORM_OS STREQUAL "linux")
     find_program(PATH_TO_APT NAMES apt NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)

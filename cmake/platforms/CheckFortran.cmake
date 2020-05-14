@@ -57,7 +57,7 @@ foreach(lib IN LISTS IMPLICIT_Fortran_LIBS)
 	find_Library_In_Implicit_System_Dir(VALID_PATH LIB_SONAME LIB_SOVERSION ${lib})
 	if(VALID_PATH)
 		#getting symbols versions from the implicit library
-		get_Fortran_Standard_Library_Symbols_Version(RES_SYMBOL_VERSIONS ${CURRENT_OS} ${lib} ${VALID_PATH})
+		get_Fortran_Standard_Library_Symbols_Version(RES_SYMBOL_VERSIONS ${CURRENT_PLATFORM_OS} ${lib} ${VALID_PATH})
 		while(RES_SYMBOL_VERSIONS)
 			pop_ELF_Symbol_Version_From_List(SYMB VERS RES_SYMBOL_VERSIONS)
       serialize_Symbol(SERIALIZED_SYMBOL ${SYMB} ${VERS})

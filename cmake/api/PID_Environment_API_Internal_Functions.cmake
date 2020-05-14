@@ -208,7 +208,7 @@ endmacro(declare_Environment_Global_Cache_Options)
 #
 #      :arch_constraint: constraint on processor architecture (16, 32, 64)
 #
-#      :os_constraint: constraint on operating system (linux, macos, windows).
+#      :os_constraint: constraint on operating system (linux, freebsd, macos, windows).
 #
 #      :abi_constraint: constraint on abi in use (98 or 11).
 #
@@ -247,7 +247,7 @@ endfunction(define_Build_Environment_Platform)
 #
 #      :arch_constraint: constraint on processor architecture (16, 32, 64)
 #
-#      :os_constraint: constraint on operating system (linux, macos, windows).
+#      :os_constraint: constraint on operating system (linux, freebsd, macos, windows).
 #
 #      :abi_constraint: constraint on abi in use (98 or 11).
 #
@@ -1706,6 +1706,8 @@ function(deduce_Platform_Variables)
     #configuring OS
     if(use_os STREQUAL "linux")
       set(os_name Linux)
+    elseif(use_os STREQUAL "freebsd")
+      set(os_name FreeBSD)
     elseif(use_os STREQUAL "macos")
       set(os_name Darwin)
     elseif(use_os STREQUAL "windows")

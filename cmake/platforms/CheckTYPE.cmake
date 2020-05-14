@@ -17,16 +17,16 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(CURRENT_TYPE CACHE INTERNAL "")
+set(CURRENT_PLATFORM_TYPE CACHE INTERNAL "")
 
 #test of processor type is based on system variables affected by cross compilation
 #So it adapts to the current development environment in use
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86|x64|i686|i386|i486|x86_32|x86_64|amd64|AMD64")
-	set(CURRENT_TYPE x86 CACHE INTERNAL "")
+	set(CURRENT_PLATFORM_TYPE x86 CACHE INTERNAL "")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM|aarch64|AARCH64")
-	set(CURRENT_TYPE arm CACHE INTERNAL "")
+	set(CURRENT_PLATFORM_TYPE arm CACHE INTERNAL "")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "powerpc64|ppc64|ppc64le|powerpc64le|ppc")
-	set(CURRENT_TYPE ppc CACHE INTERNAL "")
+	set(CURRENT_PLATFORM_TYPE ppc CACHE INTERNAL "")
 else()# Note: add more check to test other processor architectures
 	message(FATAL_ERROR "[PID] CRITICAL ERROR: unsupported processor architecture")
 endif()

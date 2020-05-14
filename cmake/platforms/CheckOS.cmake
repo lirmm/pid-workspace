@@ -17,11 +17,8 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(CURRENT_DISTRIBUTION CACHE INTERNAL "")
-set(CURRENT_DISTRIBUTION_VERSION "" CACHE INTERNAL "")
 set(CURRENT_PACKAGE_STRING CACHE INTERNAL "")
-set(CURRENT_OS CACHE INTERNAL "")
-
+set(CURRENT_PLATFORM_OS CACHE INTERNAL "")
 set(CURRENT_PLATFORM_INSTANCE ${PID_USE_INSTANCE_NAME} CACHE INTERNAL "")#reset with current value of instance name
 
 #test of the os is based on the compiler used  (APPLE and UNIX variables) AND on system variables affected by crosscompilation (CMAKE_SYSTEM_NAME)
@@ -32,81 +29,14 @@ if(CMAKE_SYSTEM_NAME)
 	set(CURRENT_PACKAGE_STRING "${CMAKE_SYSTEM_NAME}" CACHE INTERNAL "")
 endif()
 if(WIN32)
-	set(CURRENT_OS windows CACHE INTERNAL "")
-	if(NOT PID_CROSSCOMPILATION)
-		set(CURRENT_DISTRIBUTION "windows" CACHE INTERNAL "")
-		# set(CURRENT_PACKAGE_STRING "NT" CACHE INTERNAL "") #TODO check if not mandatory
-		if(CMAKE_SYSTEM_VERSION)
-			set(CURRENT_DISTRIBUTION_VERSION ${CMAKE_SYSTEM_VERSION} CACHE INTERNAL "")
-		endif()
-	else()
-		set(CURRENT_DISTRIBUTION "${PID_USE_DISTRIBUTION}" CACHE INTERNAL "")
-		set(CURRENT_DISTRIBUTION_VERSION "${PID_USE_DISTRIB_VERSION}" CACHE INTERNAL "")
-	endif()
+	set(CURRENT_PLATFORM_OS "windows" CACHE INTERNAL "")
+	# set(CURRENT_PACKAGE_STRING "NT" CACHE INTERNAL "") #TODO check if mandatory or not to force this
 elseif(UNIX AND APPLE AND CMAKE_SYSTEM_NAME STREQUAL Darwin) #darwin = kernel name for macos systems
-	set(CURRENT_OS macos  CACHE INTERNAL "")
-	if(NOT PID_CROSSCOMPILATION)
-		set(CURRENT_DISTRIBUTION "macos" CACHE INTERNAL "")
-		if(CMAKE_SYSTEM_VERSION)
-			set(CURRENT_DISTRIBUTION_VERSION ${CMAKE_SYSTEM_VERSION} CACHE INTERNAL "")
-		endif()
-	else()
-		set(CURRENT_DISTRIBUTION "${PID_USE_DISTRIBUTION}" CACHE INTERNAL "")
-		set(CURRENT_DISTRIBUTION_VERSION "${PID_USE_DISTRIB_VERSION}" CACHE INTERNAL "")
-	endif()
+	set(CURRENT_PLATFORM_OS "macos"  CACHE INTERNAL "")
 elseif(UNIX)
-	if(CMAKE_SYSTEM_NAME STREQUAL Xenomai)# linux kernel patched with xenomai
-		set(CURRENT_PACKAGE_STRING "Xenomai")
-		set(CURRENT_OS "xenomai" CACHE INTERNAL "")
-	elseif(CMAKE_SYSTEM_NAME STREQUAL Linux)# linux kernel = the reference !!
-		set(CURRENT_OS "linux" CACHE INTERNAL "")
+	if(CMAKE_SYSTEM_NAME STREQUAL Linux)# linux kernel = the reference !!
+		set(CURRENT_PLATFORM_OS "linux" CACHE INTERNAL "")
 	elseif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)# free BSD kernel
-		set(CURRENT_OS freebsd CACHE INTERNAL "")
-		if(NOT PID_CROSSCOMPILATION)
-			set(CURRENT_DISTRIBUTION "freebsd" CACHE INTERNAL "")
-			if(CMAKE_SYSTEM_VERSION)
-				set(CURRENT_DISTRIBUTION_VERSION ${CMAKE_SYSTEM_VERSION} CACHE INTERNAL "")
-			endif()
-		else()
-			set(CURRENT_DISTRIBUTION "${PID_USE_DISTRIBUTION}" CACHE INTERNAL "")
-			set(CURRENT_DISTRIBUTION_VERSION "${PID_USE_DISTRIB_VERSION}" CACHE INTERNAL "")
-		endif()
-	endif()
-
-	# now check for distribution (shoud not influence contraints but only the way to install required constraints)
-	# only for system that have multiple distributions
-	if(NOT PID_CROSSCOMPILATION AND NOT CURRENT_DISTRIBUTION)
-		execute_process(COMMAND lsb_release -i
-										OUTPUT_VARIABLE DISTRIB_STR RESULT_VARIABLE lsb_res ERROR_QUIET) #lsb_release is a standard linux command to get information about the system, including the distribution ID
-		if(NOT lsb_res EQUAL 0)
-			# lsb_release is not available
-			# checking for archlinux
-			if(EXISTS "/etc/arch-release")
-				set(DISTRIB_STR "Distributor ID:	Arch") # same string as lsb_release -i would return
-			endif()
-		endif()
-		string(REGEX REPLACE "^[^:]+:[ \t\r]*([A-Za-z_0-9]+)[ \t\r\n]*$" "\\1" RES "${DISTRIB_STR}")
-
-		if(NOT RES STREQUAL "${DISTRIB_STR}")#match
-			string(TOLOWER "${RES}" DISTRIB_ID)
-			set(CURRENT_DISTRIBUTION "${DISTRIB_ID}" CACHE INTERNAL "")
-			execute_process(COMMAND lsb_release -r
-											OUTPUT_VARIABLE VERSION_STR ERROR_QUIET) #lsb_release is a standard linux command to get information about the system, including the distribution ID
-			string(REGEX REPLACE "^[^:]+:[ \t\r]*([\\.0-9]+)[ \t\r\n]*$" "\\1" RES "${VERSION_STR}")
-			if(NOT RES STREQUAL "${VERSION_STR}")#match
-				string(TOLOWER "${RES}" VERSION_NUMBER)
-				set(CURRENT_DISTRIBUTION_VERSION "${VERSION_NUMBER}" CACHE INTERNAL "")
-			else()
-				set(CURRENT_DISTRIBUTION_VERSION "" CACHE INTERNAL "")
-			endif()
-		else()
-			set(CURRENT_DISTRIBUTION "" CACHE INTERNAL "")
-			set(CURRENT_DISTRIBUTION_VERSION "" CACHE INTERNAL "")
-		endif()
-	else()# when cross compiling we cannot deduce distribution info
-		#but we can still use information coming from environment description
-		set(CURRENT_DISTRIBUTION "${PID_USE_DISTRIBUTION}" CACHE INTERNAL "")
-		set(CURRENT_DISTRIBUTION_VERSION "${PID_USE_DISTRIB_VERSION}" CACHE INTERNAL "")
+		set(CURRENT_PLATFORM_OS "freebsd" CACHE INTERNAL "")
 	endif()
 endif()
-#other OS are not known (add new elseif statement to check for other OS and set adequate variables)
