@@ -2720,11 +2720,9 @@ endfunction(is_Library_Type)
 #  get_Platform_Related_Binary_Prefix_Suffix
 #  -----------------------------------------
 #
-#   .. command:: get_Platform_Related_Binary_Prefix_Suffix(PREFIX SUFFIX platform type_of_binary)
+#   .. command:: get_Platform_Related_Binary_Prefix_Suffix(PREFIX SUFFIX type_of_binary)
 #
 #    Get prefix and suffix of the name for a given component binary that depends on the platform and type of component.
-#
-#     :platform_os: the target operating system of the target platform
 #
 #     :type_of_binary: the type of the component.
 #
@@ -2732,32 +2730,17 @@ endfunction(is_Library_Type)
 #
 #     :SUFFIX: the output variable that contains the extension of the binary.
 #
-function(get_Platform_Related_Binary_Prefix_Suffix PREFIX SUFFIX platform_os type_of_binary)
+function(get_Platform_Related_Binary_Prefix_Suffix PREFIX SUFFIX type_of_binary)
   set(${PREFIX} PARENT_SCOPE)
   set(${SUFFIX} PARENT_SCOPE)
   if(type_of_binary STREQUAL "STATIC")
-    if(platform_os STREQUAL "windows")
-      set(${SUFFIX} .lib PARENT_SCOPE)
-    else()
-      set(${SUFFIX} .a PARENT_SCOPE)
-      set(${PREFIX} lib PARENT_SCOPE)
-    endif()
+    set(${SUFFIX} ${CMAKE_STATIC_LIBRARY_SUFFIX} PARENT_SCOPE)
+    set(${PREFIX} ${CMAKE_STATIC_LIBRARY_PREFIX} PARENT_SCOPE)
   elseif(type_of_binary STREQUAL "SHARED" OR type_of_binary STREQUAL "MODULE")
-    if(platform_os STREQUAL "windows")
-      set(${SUFFIX} .dll PARENT_SCOPE)
-    elseif(platform_os STREQUAL "macos")
-      set(${SUFFIX} .dylib PARENT_SCOPE)
-      set(${PREFIX} lib PARENT_SCOPE)
-    elseif(platform_os STREQUAL "linux")
-      set(${SUFFIX} .so PARENT_SCOPE)
-      set(${PREFIX} lib PARENT_SCOPE)
-    endif()
+    set(${SUFFIX} ${CMAKE_SHARED_LIBRARY_SUFFIX} PARENT_SCOPE)
+    set(${PREFIX} ${CMAKE_SHARED_LIBRARY_PREFIX} PARENT_SCOPE)
   elseif(type_of_binary STREQUAL "APPLICATION" OR type_of_binary STREQUAL "EXAMPLE")
-    if(platform_os STREQUAL "windows")
-      set(${SUFFIX} .exe PARENT_SCOPE)
-    else()
-      set(${SUFFIX} PARENT_SCOPE)
-    endif()
+    set(${SUFFIX} ${CMAKE_EXECUTABLE_SUFFIX} PARENT_SCOPE)
   endif()
 endfunction(get_Platform_Related_Binary_Prefix_Suffix)
 

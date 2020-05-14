@@ -333,7 +333,7 @@ function(find_Possible_Library_Path REAL_PATH LINK_PATH LIB_SONAME folder librar
   set(${REAL_PATH} PARENT_SCOPE)
   set(${LINK_PATH} PARENT_SCOPE)
   set(${LIB_SONAME} PARENT_SCOPE)
-  get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION ${CURRENT_PLATFORM_OS} "SHARED")
+  get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION "SHARED")
   set(prefixed_name ${PREFIX}${library_name})
   file(GLOB POSSIBLE_NAMES RELATIVE ${folder} "${folder}/${PREFIX}${library_name}*" )
   if(NOT POSSIBLE_NAMES)
@@ -393,7 +393,7 @@ endfunction(find_Possible_Library_Path)
 #
 function(extract_Library_Path_From_Linker_Script LIBRARY_PATH library path_to_linker_script)
     set(${LIBRARY_PATH} PARENT_SCOPE)
-    get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION ${CURRENT_PLATFORM_OS} "SHARED")
+    get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION "SHARED")
     set(prefixed_name ${PREFIX}${library})
     set(pattern "^.*(GROUP|INPUT)[ \t]*\\([ \t]*([^ \t]+${prefixed_name}[^ \t]*\\${EXTENSION}[^ \t]*)[ \t]+.*$")#\\ is for adding \ at the beginning of extension (.so) so taht . will not be interpreted as a
     file(STRINGS ${path_to_linker_script} EXTRACTED REGEX "${pattern}")

@@ -62,6 +62,14 @@ if(CURRENT_DISTRIBUTION AND NOT PID_CROSSCOMPILATION) #there is a pâckaging sys
       endif()
     endif()
 
+  elseif(CURRENT_PLATFORM_OS STREQUAL "freebsd")
+    find_program(PATH_TO_PKG NAMES pkg NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)
+    if(PATH_TO_PKG)
+      set(CURRENT_PACKAGING_SYSTEM PKG  CACHE INTERNAL "")#sudo brew install ...
+      set(CURRENT_PACKAGING_SYSTEM_EXE pkg  CACHE INTERNAL "")
+      set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS install -y CACHE INTERNAL "")
+    endif()
+
   elseif(CURRENT_PLATFORM_OS STREQUAL "windows") #only chocolatey for now
     find_program(PATH_TO_CHOCO NAMES choco NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)
     if(PATH_TO_CHOCO)
