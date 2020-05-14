@@ -77,8 +77,10 @@ set(IMPLICIT_CXX_LIBS ${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES})
 list(REMOVE_DUPLICATES IMPLICIT_CXX_LIBS)
 
 set(IMPLICIT_C_LIBS ${CMAKE_C_IMPLICIT_LINK_LIBRARIES})
-list(REMOVE_DUPLICATES IMPLICIT_C_LIBS)
-list(REMOVE_ITEM IMPLICIT_CXX_LIBS ${IMPLICIT_C_LIBS})#simply remove the implicit C libs from CXX implicit libs (avoir doing two times same thing)
+if(IMPLICIT_C_LIBS)
+	list(REMOVE_DUPLICATES IMPLICIT_C_LIBS)
+	list(REMOVE_ITEM IMPLICIT_CXX_LIBS ${IMPLICIT_C_LIBS})#simply remove the implicit C libs from CXX implicit libs (avoir doing two times same thing)
+endif()
 
 # detect current C library ABI in use
 foreach(lib IN LISTS IMPLICIT_C_LIBS)
