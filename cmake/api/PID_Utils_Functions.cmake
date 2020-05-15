@@ -4970,14 +4970,6 @@ function(target_Options_Passed_Via_Environment RESULT)
     endif()
 endfunction(target_Options_Passed_Via_Environment)
 
-#TODO manage clang format as a plugin ? need to be found on host not in target platform so it is a plugin
-function(get_Clang_Format_Program CLANG_FORMAT_EXE)
-  find_program(CLANG_FORMAT_PATH clang-format)
-  if(CLANG_FORMAT_PATH)
-      set(${CLANG_FORMAT_EXE} ${CLANG_FORMAT_PATH} PARENT_SCOPE)
-  endif()
-endfunction()
-
 #.rst:
 #
 # .. ifmode:: internal

@@ -151,7 +151,7 @@ macro(detect_Current_Platform)
 	include(CheckPython)
 	include(CheckFortran)
 	include(CheckCUDA)
-
+  include(CheckDevTools)
   #simply rewriting previously defined variable to normalize their names between workspace and packages (same accessor function can then be used from any place)
   set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL "" FORCE)
   set(CURRENT_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL "" FORCE)

@@ -106,12 +106,10 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
   endif()
 
   #finding doxygen tool and doxygen configuration file
-  find_package(Doxygen)
-  if(NOT DOXYGEN_FOUND)
+  if(NOT DOXYGEN_EXECUTABLE)
   	message("[PID] WARNING : Doxygen not found please install it to generate the API documentation")
   	return()
   endif()
-
 
   find_file(DOXYFILE_IN   "Doxyfile.in"
   			PATHS "${CMAKE_SOURCE_DIR}/share/doxygen"
@@ -134,7 +132,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
   	set(DOXYFILE_PATH ${DOXYFILE_IN})
   endif()
   unset(DOXYFILE_IN CACHE)
-  if(DOXYGEN_FOUND AND DOXYFILE_PATH) #we are able to generate the doc
+  if(DOXYFILE_PATH) #we are able to generate the doc
   	# general variables
   	set(DOXYFILE_SOURCE_DIRS "${CMAKE_SOURCE_DIR}/include/")
   	set(DOXYFILE_MAIN_PAGE "${CMAKE_BINARY_DIR}/share/APIDOC_welcome.md")
@@ -189,17 +187,14 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
   			ADDITIONAL_MAKE_CLEAN_FILES
   			"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
   		set(DOXYFILE_GENERATE_LATEX "YES")
-  		find_package(LATEX)
-  		find_program(DOXYFILE_MAKE make)
-  		mark_as_advanced(DOXYFILE_MAKE)
-  		if(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
+  		if(LATEX_COMPILER AND MAKEINDEX_COMPILER AND MAKE_TOOL_EXECUTABLE)
   			if(PDFLATEX_COMPILER)
   				set(DOXYFILE_PDFLATEX "YES")
   			endif(PDFLATEX_COMPILER)
 
-  			add_custom_command(TARGET doxygen
+  			add_custom_command(TARGET doxygen-pid
   				POST_BUILD
-  				COMMAND "${DOXYFILE_MAKE}"
+  				COMMAND "${MAKE_TOOL_EXECUTABLE}"
   				COMMENT	"Running LaTeX for Doxygen documentation in ${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}..."
   				WORKING_DIRECTORY "${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
   		else()

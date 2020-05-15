@@ -2511,10 +2511,7 @@ function(build_Autotools_External_Project)
     return()
   endif()
 
-  find_program(MAKE_PATH make)
-  if(MAKE_PATH)
-    set(MAKE_EXE ${MAKE_PATH})
-  else()
+  if(NOT MAKE_TOOL_EXECUTABLE)
     message(FATAL_ERROR "[PID] CRITICAL ERROR : GNU make is required to build ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} but cannot be found. Please install it and try again.")
   endif()
   if(BUILD_AUTOTOOLS_EXTERNAL_PROJECT_QUIET)
@@ -2620,14 +2617,14 @@ function(build_Autotools_External_Project)
   endif()
 
   message("[PID] INFO : Building ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
-  execute_process(COMMAND ${MAKE_EXE} ${jobs} WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE} RESULT_VARIABLE result)#build
+  execute_process(COMMAND ${MAKE_TOOL_EXECUTABLE} ${jobs} WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE} RESULT_VARIABLE result)#build
   if(NOT result EQUAL 0)#error at configuration time
     message("[PID] ERROR : cannot build autotools project ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
   endif()
   message("[PID] INFO : Installing ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
-  execute_process(COMMAND ${MAKE_EXE} install WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE} RESULT_VARIABLE result)#install
+  execute_process(COMMAND ${MAKE_TOOL_EXECUTABLE} install WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE} RESULT_VARIABLE result)#install
   if(NOT result EQUAL 0)#error at configuration time
     message("[PID] ERROR : cannot install autotools project ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)

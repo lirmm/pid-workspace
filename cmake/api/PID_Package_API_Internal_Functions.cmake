@@ -432,12 +432,11 @@ elseif(DIR_NAME STREQUAL "build")
 		else()
 			file(COPY ${PATH_TO_STYLE} DESTINATION ${PACKAGE_FORMAT_FOLDER})
 			file(RENAME ${PACKAGE_FORMAT_FOLDER}/.clang-format.${code_style} ${PACKAGE_FORMAT_FILE})
-			get_Clang_Format_Program(CLANG_FORMAT_EXE)
-			if(CLANG_FORMAT_EXE)
+			if(CLANG_FORMAT_EXECUTABLE)
 				add_custom_target(format
 					COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
 								 -DPACKAGE_NAME=${PROJECT_NAME}
-								 -DCLANG_FORMAT_EXE=${CLANG_FORMAT_EXE}
+								 -DCLANG_FORMAT_EXE=${CLANG_FORMAT_EXECUTABLE}
 								 -P ${WORKSPACE_DIR}/cmake/commands/Format_PID_Package_Sources.cmake
 					COMMENT "[PID] formatting the source files"
 				)

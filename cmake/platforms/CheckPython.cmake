@@ -29,6 +29,8 @@ find_package(PythonInterp) # find the default python interpreter (but will be co
 
 if(PYTHONINTERP_FOUND)
   set(PY_VERSION "${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
+  #Note: here the package is is installed on host but find_file and find_library calls it contains
+  # will be interpreter relative to the system root (even in crosscompilation)
   find_package(PythonLibs ${PY_VERSION}) #searching for libs with the adequate version
   if(PYTHONLIBS_FOUND)
     set(CURRENT_PYTHON ${PY_VERSION} CACHE INTERNAL "")

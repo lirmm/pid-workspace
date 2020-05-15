@@ -3699,11 +3699,24 @@ if(PID_CROSSCOMPILATION) #only write these information if we are trully cross co
 	file(APPEND ${file} "set(CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN \"${CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_CXX_COMPILER_EXTERNAL_TOOLCHAIN \"${CMAKE_CXX_COMPILER_EXTERNAL_TOOLCHAIN}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_SYSROOT \"${CMAKE_SYSROOT}\" CACHE INTERNAL \"\" FORCE)\n")
-	file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM \"${CMAKE_FIND_ROOT_PATH_MODE_PROGRAM}\" CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM ONLY CACHE INTERNAL \"\" FORCE)\n")#force the search to be on target platform (searching for applciation components)
+	file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY CACHE INTERNAL \"\" FORCE)\n")#force the search of packages to be on target platform (searching for application components on target)
 	file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY \"${CMAKE_FIND_ROOT_PATH_MODE_LIBRARY}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE \"${CMAKE_FIND_ROOT_PATH_MODE_INCLUDE}\" CACHE INTERNAL \"\" FORCE)\n")
-	file(APPEND ${file} "set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE \"${CMAKE_FIND_ROOT_PATH_MODE_PACKAGE}\" CACHE INTERNAL \"\" FORCE)\n")
 endif()
+
+#add also detected dev tools
+file(APPEND ${file} "set(DOXYGEN_EXECUTABLE ${DOXYGEN_EXECUTABLE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(LATEX_COMPILER ${LATEX_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(MAKEINDEX_COMPILER ${MAKEINDEX_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(JEKYLL_EXECUTABLE ${JEKYLL_EXECUTABLE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CLANG_FORMAT_EXECUTABLE ${CLANG_FORMAT_EXECUTABLE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(MAKE_TOOL_EXECUTABLE ${MAKE_TOOL_EXECUTABLE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(GCOV_EXECUTABLE ${GCOV_EXECUTABLE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(LCOV_EXECUTABLE ${LCOV_EXECUTABLE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(GENHTML_EXECUTABLE ${GENHTML_EXECUTABLE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CPPCHECK_EXECUTABLE ${CPPCHECK_EXECUTABLE} CACHE INTERNAL \"\" FORCE)\n")
+file(APPEND ${file} "set(CPPCHECK_HTMLREPORT_EXECUTABLE ${CPPCHECK_HTMLREPORT_EXECUTABLE} CACHE INTERNAL \"\" FORCE)\n")
 
 endfunction(write_Current_Configuration_Build_Related_Variables)
 
@@ -3939,18 +3952,17 @@ endfunction(manage_Migrations)
 #
 function(manage_Platforms)
 
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER) # during local profile evaluation, program MUST be in host system
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE NEVER) # during local profile evaluation, packages MUST be found in host system
+
 if(PID_CROSSCOMPILATION)
 	#when cross compiling all artefacts must be found in sysroot including programs
 	#those programs like compiler or interpreters that are not in sysroot must have been defined by environment in use
-  set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM ONLY)
   set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
   set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-  set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 else()
-  set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
   set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
   set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY NEVER)
-  set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE NEVER)
 endif()
 # detecting which platform is in use according to environment description
 detect_Current_Platform()

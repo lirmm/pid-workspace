@@ -219,32 +219,29 @@ if(DIR_NAME STREQUAL "build")
 	generate_Site_Binary_References() #generating the cmake script that references available binaries
 
 	#searching for jekyll (static site generator)
-	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searching for the jekyll executable in standard paths
-
 	if(JEKYLL_EXECUTABLE)
-	get_Jekyll_URLs(${${PROJECT_NAME}_PROJECT_PAGE} PUBLIC_URL BASE_URL)
-	set(STATIC_SITE_BASEURL "${BASE_URL}")
-	add_custom_target(build
-		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
-						-P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Package_Site.cmake
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-		COMMENT "[PID] Building package site ..."
-		VERBATIM
-	)
+		get_Jekyll_URLs(${${PROJECT_NAME}_PROJECT_PAGE} PUBLIC_URL BASE_URL)
+		set(STATIC_SITE_BASEURL "${BASE_URL}")
+		add_custom_target(build
+			COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+							-DTARGET_PACKAGE=${PROJECT_NAME}
+							-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+							-P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Package_Site.cmake
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+			COMMENT "[PID] Building package site ..."
+			VERBATIM
+		)
 
-	add_custom_target(serve
-		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
-						-DSITE_BASE_URL=${STATIC_SITE_BASEURL}
-						-P ${WORKSPACE_DIR}/cmake/commands/Serve_PID_Package_Site.cmake
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-		COMMENT "[PID] Serving the static site of the package ..."
-		VERBATIM
-	)
-
+		add_custom_target(serve
+			COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+							-DTARGET_PACKAGE=${PROJECT_NAME}
+							-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+							-DSITE_BASE_URL=${STATIC_SITE_BASEURL}
+							-P ${WORKSPACE_DIR}/cmake/commands/Serve_PID_Package_Site.cmake
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+			COMMENT "[PID] Serving the static site of the package ..."
+			VERBATIM
+		)
 	else()
 		message("[PID] ERROR: the jekyll executable cannot be found in the system, please install it and put it in a standard path.")
 	endif()
@@ -317,8 +314,6 @@ if(DIR_NAME STREQUAL "build")
 	check_For_Remote_Respositories("${ADDITIONNAL_DEBUG_INFO}")#configuring git remotes
 
 	#searching for jekyll (static site generator)
-	find_program(JEKYLL_EXECUTABLE NAMES jekyll) #searcinh for the jekyll executable in standard paths
-
 	if(JEKYLL_EXECUTABLE)
 		get_Jekyll_URLs(${${PROJECT_NAME}_SITE} PUBLIC_URL BASE_URL)
 		set(STATIC_SITE_BASEURL "${BASE_URL}")

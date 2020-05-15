@@ -48,24 +48,19 @@ if(CMAKE_BUILD_TYPE MATCHES Debug) # coverage is well generated in debug mode on
 		return()
 	endif()
 
-	find_program( GCOV_PATH gcov ) # for generating coverage traces
-	find_program( LCOV_PATH lcov ) # for generating HTML coverage reports
-	find_program( GENHTML_PATH genhtml ) #for generating HTML
-	mark_as_advanced(GCOV_PATH LCOV_PATH GENHTML_PATH)
-
-	if(NOT GCOV_PATH)
+	if(NOT GCOV_EXECUTABLE)
 		message("[PID] WARNING : gcov not found please install it to generate coverage reports.")
 	endif()
 
-	if(NOT LCOV_PATH)
+	if(NOT LCOV_EXECUTABLE)
 		message("[PID] WARNING : lcov not found please install it to generate coverage reports.")
 	endif()
 
-	if(NOT GENHTML_PATH)
+	if(NOT GENHTML_EXECUTABLE)
 		message("[PID] WARNING : genhtml not found please install it to generate coverage reports.")
 	endif()
 
-	if(NOT GCOV_PATH OR NOT LCOV_PATH OR NOT GENHTML_PATH)
+	if(NOT GCOV_EXECUTABLE OR NOT LCOV_EXECUTABLE OR NOT GENHTML_EXECUTABLE)
 		message("[PID] WARNING : generation of coverage reports has been deactivated.")
 		set(BUILD_COVERAGE_REPORT  OFF CACHE BOOL "" FORCE)
 	endif()
@@ -100,11 +95,11 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 		# Setup coverage target
 		add_custom_target(coverage
 
-			COMMAND ${LCOV_PATH} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --zerocounters #prepare coverage generation
+			COMMAND ${LCOV_EXECUTABLE} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --zerocounters #prepare coverage generation
 			COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG} # Run tests
-			COMMAND ${LCOV_PATH} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --capture --output-file ${coverage_info} --no-external
-			COMMAND ${LCOV_PATH} --remove ${coverage_info} 'test/*' '/usr/*' 'install/*' --output-file ${coverage_cleaned} #configure the filter of output (remove everything that is not related to
-			COMMAND ${GENHTML_PATH} -o ${coverage_dir} ${coverage_cleaned} #generating output
+			COMMAND ${LCOV_EXECUTABLE} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --capture --output-file ${coverage_info} --no-external
+			COMMAND ${LCOV_EXECUTABLE} --remove ${coverage_info} 'test/*' '/usr/*' 'install/*' --output-file ${coverage_cleaned} #configure the filter of output (remove everything that is not related to
+			COMMAND ${GENHTML_EXECUTABLE} -o ${coverage_dir} ${coverage_cleaned} #generating output
 			COMMAND ${CMAKE_COMMAND} -E remove ${coverage_info} ${coverage_cleaned} #cleanup lcov files
 
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -229,27 +224,16 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	if(NOT BUILD_STATIC_CODE_CHECKING_REPORT)
 		return()
 	endif()
-	# cppcheck app bundles on Mac OS X are GUI, we want command line only
-	set(_oldappbundlesetting ${CMAKE_FIND_APPBUNDLE})
-	set(CMAKE_FIND_APPBUNDLE NEVER)
-	#trying to find the cpp check executable
-	find_program(CPPCHECK_EXECUTABLE NAMES cppcheck)
 
 	if(NOT CPPCHECK_EXECUTABLE)
-		message(STATUS "[PID] WARNING: cppcheck not found, forcing option BUILD_STATIC_CODE_CHECKING_REPORT to OFF.")
+		message(STATUS "[PID] WARNING: cppcheck not available, forcing option BUILD_STATIC_CODE_CHECKING_REPORT to OFF.")
 		set(BUILD_STATIC_CODE_CHECKING_REPORT OFF CACHE INTERNAL "" FORCE)
 	endif()
 
-	#trying to find the cppcheck-htmlreport executable
-	find_program(CPPCHECK_HTMLREPORT_EXECUTABLE NAMES cppcheck-htmlreport)
 	if(NOT CPPCHECK_HTMLREPORT_EXECUTABLE)
-		message(STATUS "[PID] WARNING: cppcheck-htmlreport not found, forcing option BUILD_STATIC_CODE_CHECKING_REPORT to OFF.")
+		message(STATUS "[PID] WARNING: cppcheck-htmlreport not available, forcing option BUILD_STATIC_CODE_CHECKING_REPORT to OFF.")
 		set(BUILD_STATIC_CODE_CHECKING_REPORT OFF CACHE INTERNAL "" FORCE)
 	endif()
-
-	# Restore original setting for appbundle finding
-	set(CMAKE_FIND_APPBUNDLE ${_oldappbundlesetting})
-	mark_as_advanced(CPPCHECK_EXECUTABLE CPPCHECK_HTMLREPORT_EXECUTABLE)
 else()
 	return()
 endif()
