@@ -42,11 +42,12 @@ set(CUDA_soname ${CUDA_STANDARD_LIBRARIES})
 
 # now set the flags according to the selected archs
 set(NVCC_FLAGS_EXTRA "")# NVCC flags to be set when using target architectures
-foreach(an_arch IN LIST CUDA_architecture)
+foreach(an_arch IN LISTS CUDA_architecture)
   string(REGEX REPLACE "\\." "" res_number "${an_arch}")
   # Tell NVCC to add binaries for the specified GPUs
   set(NVCC_FLAGS_EXTRA "${NVCC_FLAGS_EXTRA} -gencode arch=compute_${res_number},code=sm_${res_number}")
 endforeach()
+
 set(NVCC_FLAGS_EXTRA "${NVCC_FLAGS_EXTRA} -D_FORCE_INLINES")
 #set the compile flags to ensure that locally compiled units match requirements in binary
 set(CUDA_NVCC_FLAGS ${NVCC_FLAGS_EXTRA} CACHE STRING "" FORCE)
