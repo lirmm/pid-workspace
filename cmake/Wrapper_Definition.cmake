@@ -2358,9 +2358,14 @@ function(build_B2_External_Project)
   if(CMAKE_COMPILER_IS_GNUCXX)
     set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} toolset=gcc")
     set(install_toolset "gcc")
-  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_CXX_COMPILER_ID STREQUAL "clang")
-    set(install_toolset "clang")
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
+      OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"
+      OR CMAKE_CXX_COMPILER_ID STREQUAL "clang")
     set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} toolset=clang")
+    set(install_toolset "clang")
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} toolset=msvc")
+    set(install_toolset "msvc")
 	else()# add new support for compiler or use CMake generic mechanism to do so for instance : CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"
     set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} toolset=${CMAKE_CXX_COMPILER_ID}")
     set(install_toolset "${CMAKE_CXX_COMPILER_ID}")
@@ -2412,7 +2417,7 @@ function(build_B2_External_Project)
   endif()
 
   message("[PID] INFO : Configuring ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
-  execute_process(COMMAND ${project_dir}/bootstrap.sh WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}  RESULT_VARIABLE result)
+  execute_process(COMMAND ${project_dir}/bootstrap.sh --with-toolset=${install_toolset} WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}  RESULT_VARIABLE result)
   if(NOT result EQUAL 0)#error at configuration time
     message("[PID] ERROR : cannot configure boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
@@ -2439,8 +2444,15 @@ function(build_B2_External_Project)
   endif()
 
   message("[PID] INFO : Building and installing ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
-  execute_process(COMMAND ${project_dir}/b2 install ${jobs} --prefix=${TARGET_INSTALL_DIR} --user-config=${jamfile} ${COMMAND_ARGS_AS_LIST}
-  WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE} RESULT_VARIABLE result ERROR_VARIABLE varerr)
+  execute_process(COMMAND ${project_dir}/b2 install
+                          ${jobs}
+                          --prefix=${TARGET_INSTALL_DIR}
+                          --user-config=${jamfile}
+                          ${COMMAND_ARGS_AS_LIST}
+                 WORKING_DIRECTORY ${project_dir}
+                 ${OUTPUT_MODE} 
+                 RESULT_VARIABLE result
+                 ERROR_VARIABLE varerr)
   if(NOT result EQUAL 0
     AND NOT (varerr MATCHES "^link\\.jam: No such file or directory[ \t\n]*$"))#if the error is the one specified this is a normal situation (i.e. a BUG in previous version of b2, -> this message should be a warning)
     message("[PID] ERROR : cannot build and install boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")

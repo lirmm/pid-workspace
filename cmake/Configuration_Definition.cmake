@@ -233,7 +233,7 @@ endfunction(resolve_PID_System_Libraries_From_Path)
 #
 #     .. rubric:: Required parameters
 #
-#     :<possible_library_names_ot_path>: the list of possible names or path for the library.
+#     :<possible_library_names_or_path>: the list of possible names or path for the library.
 #
 #     :<search_folders_type>: if equal to "ALL" all path will be searched in. If equal to "IMPLICIT" only implicit link folders (non user install folders) will be searched in. If equal to "USER" implicit link folders are not used.
 #
@@ -257,11 +257,11 @@ endfunction(resolve_PID_System_Libraries_From_Path)
 #
 #        find_PID_Library_In_Linker_Order("tiff" ALL TIFF_LIB TIFF_SONAME)
 #
-function(find_PID_Library_In_Linker_Order possible_library_names_ot_path search_folders_type LIBRARY_PATH LIB_SONAME)
+function(find_PID_Library_In_Linker_Order possible_library_names_or_path search_folders_type LIBRARY_PATH LIB_SONAME)
   #0)extract name from full path, is any
   set(IS_PATH FALSE)
   set(IS_NAME FALSE)
-  foreach(name_or_path IN LISTS possible_library_names_ot_path)
+  foreach(name_or_path IN LISTS possible_library_names_or_path)
     if(EXISTS ${name_or_path})#this is a path
       set(IS_PATH TRUE)
     else()
@@ -272,13 +272,13 @@ function(find_PID_Library_In_Linker_Order possible_library_names_ot_path search_
     message("[PID] ERROR: bad usage of function find_PID_Library_In_Linker_Order, must provide name or path as argument but not both")
     return()
   elseif(IS_PATH)
-    list(LENGTH possible_library_names_ot_path SIZE)
+    list(LENGTH possible_library_names_or_path SIZE)
     if(SIZE GREATER 1)
       message("[PID] ERROR: bad usage of function find_PID_Library_In_Linker_Order, only one path must be provided !")
       return()
     endif()
     #from here only one path given => must resolve everything to be sure we do not target a linker script but we want soname info from real binary
-    list(GET possible_library_names_ot_path 0 the_path)
+    list(GET possible_library_names_or_path 0 the_path)
     get_filename_component(LIB_NAME_WE ${the_path} NAME_WE)
     get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION "SHARED")
     if(PREFIX)
@@ -299,7 +299,7 @@ function(find_PID_Library_In_Linker_Order possible_library_names_ot_path search_
   endif()
   #1) search in implicit system folders
   if(NOT search_folders_type STREQUAL "USER")
-    foreach(lib IN LISTS possible_library_names_ot_path)
+    foreach(lib IN LISTS possible_library_names_or_path)
       find_Library_In_Implicit_System_Dir(IMPLICIT_LIBRARY_PATH RET_SONAME LIB_SOVERSION ${lib})
       if(IMPLICIT_LIBRARY_PATH)#found
         set(${LIBRARY_PATH} ${IMPLICIT_LIBRARY_PATH} PARENT_SCOPE)
@@ -310,7 +310,7 @@ function(find_PID_Library_In_Linker_Order possible_library_names_ot_path search_
   endif()
   if(NOT search_folders_type STREQUAL "IMPLICIT")
   #2) search in cmake defined system search folders
-    find_library(RET_LIBRARY NAMES ${possible_library_names_ot_path})
+    find_library(RET_LIBRARY NAMES ${possible_library_names_or_path})
     if(RET_LIBRARY)
       set(lib_path ${RET_LIBRARY})
       unset(RET_LIBRARY CACHE)

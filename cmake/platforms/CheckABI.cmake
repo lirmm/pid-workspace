@@ -39,6 +39,26 @@ else()#other systems
 endif()
 endfunction(check_Current_Standard_Library_Is_CXX11_ABI_Compatible)
 
+function(get_Current_Standard_Library_Version VERSION)
+set(${VERSION} PARENT_SCOPE)#by default CXX11 is allowed
+
+if(CURRENT_PLATFORM_OS STREQUAL "windows")
+	#probably need to do some specific things in windows
+	return ()
+else()#other systems
+	#from here we will look into the symbols
+	#first compiling with default
+	try_compile(RES ${CMAKE_BINARY_DIR}
+		SOURCES ${WORKSPACE_DIR}/cmake/platforms/checks/std_lib_version.cpp
+		COPY_FILE std_lib_version
+		OUTPUT_VARIABLE out)
+	execute_process(COMMAND ${CMAKE_BINARY_DIR}/std_lib_version OUTPUT_VARIABLE version)
+	if(version)
+		set(${VERSION} ${version} PARENT_SCOPE)
+	endif()
+endif()
+endfunction(get_Current_Standard_Library_Version)
+
 #those two functions must be extended anytime a new standard C library is used
 function(get_C_Standard_Library_Symbols_Version RES_SYMBOL_VERSIONS operating_system library_name path_to_library)
 	set(STD_SYMBOLS)
@@ -51,12 +71,17 @@ function(get_C_Standard_Library_Symbols_Version RES_SYMBOL_VERSIONS operating_sy
 	set(${RES_SYMBOL_VERSIONS} ${STD_SYMBOLS} PARENT_SCOPE)
 endfunction(get_C_Standard_Library_Symbols_Version)
 
-function(get_CXX_Standard_Library_Symbols_Version RES_SYMBOL_VERSIONS operating_system library_name path_to_library)
+function(get_CXX_Standard_Library_Symbols_Version RES_SYMBOL_VERSIONS RES_STD_ABI operating_system library_name path_to_library)
 	set(STD_SYMBOLS)
+	set(${RES_STD_ABI} PARENT_SCOPE)
 	#symbols name depends on the standard library implementation...
 	if(library_name MATCHES "stdc\\+\\+")#gnu c++ library (may be named stdc++11 as well)
 		get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "GLIBCXX_;CXXABI_")
-		#elseif(library_name STREQUAL "c++")#the new libc++ library
+		set(${RES_STD_ABI} DUAL PARENT_SCOPE)
+	elseif(library_name MATCHES "c\\+\\+")#the new libc++ library
+		#no ELF symbol version defined in libc++ => use inline namespace of c++11
+		set(${RES_STD_ABI} NEW PARENT_SCOPE)
+	# elseif(library_name STREQUAL "c++")#the new libc++ library
 	endif()
 	set(${RES_SYMBOL_VERSIONS} ${STD_SYMBOLS} PARENT_SCOPE)
 endfunction(get_CXX_Standard_Library_Symbols_Version)
@@ -99,12 +124,6 @@ foreach(lib IN LISTS IMPLICIT_C_LIBS)
 endforeach()
 
 #memorize symbol versions
-if(C_STD_ABI_SYMBOLS)
-	list(REMOVE_DUPLICATES C_STD_ABI_SYMBOLS)
-	foreach(symbol IN LISTS C_STD_ABI_SYMBOLS)
-		set(C_STD_SYMBOL_${symbol}_VERSION ${${symbol}_ABI_VERSION} CACHE INTERNAL "")
-	endforeach()
-endif()
 set(C_STD_SYMBOLS ${C_STD_ABI_SYMBOLS} CACHE INTERNAL "")
 set(C_STANDARD_LIBRARIES ${C_STD_LIBS} CACHE INTERNAL "")
 
@@ -114,13 +133,16 @@ foreach(lib IN LISTS IMPLICIT_CXX_LIBS)
 	find_Library_In_Implicit_System_Dir(VALID_PATH LIB_SONAME LIB_SOVERSION ${lib})
 	if(VALID_PATH)
 		#getting symbols versions from the implicit library
-		get_CXX_Standard_Library_Symbols_Version(RES_SYMBOL_VERSIONS ${CURRENT_PLATFORM_OS} ${lib} ${VALID_PATH})
+		get_CXX_Standard_Library_Symbols_Version(RES_SYMBOL_VERSIONS COMP_ABI ${CURRENT_PLATFORM_OS} ${lib} ${VALID_PATH})
 		while(RES_SYMBOL_VERSIONS)
 			pop_ELF_Symbol_Version_From_List(SYMB VERS RES_SYMBOL_VERSIONS)
 			serialize_Symbol(SERIALIZED_SYMBOL ${SYMB} ${VERS})
 			list(APPEND CXX_STD_ABI_SYMBOLS ${SERIALIZED_SYMBOL})#memorize symbol versions
 		endwhile()
 		list(APPEND CXX_STD_LIBS ${LIB_SONAME})
+		if(COMP_ABI AND NOT COMP_ABI STREQUAL "DUAL")# the compiler ABI cannot be adapted
+			set(FORCE_COMPILER_ABI ${COMP_ABI})
+		endif()
 	endif()#otherwise simply do nothing and check with another folder
 endforeach()
 
@@ -156,31 +178,46 @@ set(CMAKE_CXX_FLAGS "${TEMP_FLAGS}" CACHE STRING "" FORCE)#needed for following 
 
 #depending on symbol versions we can detect which compiler was used to build the standard library !!
 if(NOT CURRENT_ABI)#no C++ ABI explictly specified
-	#use default ABI of the binary version of current std libc++ in use
-	foreach(symb IN LISTS CXX_STD_SYMBOLS) #detect ABI based on standard library symbols
-		if(symb MATCHES "^<CXXABI_/([.0-9]+)>$")
-			if(NOT CMAKE_MATCH_1 VERSION_LESS 1.3.9) #build from gcc 5.1 or more (or equivalent compiler ABI settings for clang)
-				set(cxxabi_is_cxx11_capable TRUE)
-			else()
-				set(cxxabi_is_cxx11_capable FALSE)
+
+	if(CXX_STD_SYMBOLS) #there are versionned symbols
+		#use default ABI of the binary version of current std libc++ in use
+		foreach(symb IN LISTS CXX_STD_SYMBOLS) #detect ABI based on standard library symbols
+			if(symb MATCHES "^<CXXABI_/([.0-9]+)>$")
+				if(NOT CMAKE_MATCH_1 VERSION_LESS 1.3.9) #build from gcc 5.1 or more (or equivalent compiler ABI settings for clang)
+					set(cxxabi_is_cxx11_capable TRUE)
+				else()
+					set(cxxabi_is_cxx11_capable FALSE)
+				endif()
+			elseif(symb MATCHES "^<GLIBCXX_/([.0-9]+)>$")
+				if(NOT CMAKE_MATCH_1 VERSION_LESS 3.4.21) #build from gcc 5.1 or more (or equivalent compiler ABI settings for clang)
+					set(glibcxx_is_cxx11_capable TRUE)
+				else()
+					set(glibcxx_is_cxx11_capable FALSE)
+				endif()
 			endif()
-		elseif(symb MATCHES "^<GLIBCXX_/([.0-9]+)>$")
-			if(NOT CMAKE_MATCH_1 VERSION_LESS 3.4.21) #build from gcc 5.1 or more (or equivalent compiler ABI settings for clang)
-				set(glibcxx_is_cxx11_capable TRUE)
+		endforeach()
+		if(NOT cxxabi_is_cxx11_capable OR NOT glibcxx_is_cxx11_capable)
+			set(CURRENT_ABI "CXX" CACHE INTERNAL "")#no need to question about ABI, it must be legacy ABI since this ABI is not implemented into the standard library
+		else()# now the standard library is (theorically) capable of supporting CXX11 and legacy ABI
+			#but the OS can impose the use of a given ABI : old systems impose the use of legacy ABI to enforce the binary compatiblity of their binary packages)
+			#in the end on those system the standard library is only compiled with legacy ABI and so does not support CXX11 ABI
+			check_Current_Standard_Library_Is_CXX11_ABI_Compatible(ALLOWED_CXX11)
+			if(ALLOWED_CXX11)
+				set(CURRENT_ABI "CXX11" CACHE INTERNAL "")
 			else()
-				set(glibcxx_is_cxx11_capable FALSE)
+				set(CURRENT_ABI "CXX" CACHE INTERNAL "")
 			endif()
 		endif()
-	endforeach()
-	if(NOT cxxabi_is_cxx11_capable OR NOT glibcxx_is_cxx11_capable)
-		set(CURRENT_ABI "CXX" CACHE INTERNAL "")#no need to question about ABI, it must be legacy ABI since this ABI is not implemented into the standard library
-	else()# now the standard library is (theorically) capable of supporting CXX11 and legacy ABI
-		#but the OS can impose the use of a given ABI : old systems impose the use of legacy ABI to enforce the binary compatiblity of their binary packages)
-		#in the end on those system the standard library is only compiled with legacy ABI and so does not support CXX11 ABI
-		check_Current_Standard_Library_Is_CXX11_ABI_Compatible(ALLOWED_CXX11)
-		if(ALLOWED_CXX11)
+	else()
+		# adding a generic fake symbol representing the version of the library
+		# make it generic for every standard library in use
+		get_Current_Standard_Library_Version(res_version)
+		if(res_version)
+			set(sym_version "<VERSION_/${res_version}>")#will be used to checl std lib compatibility
+		endif()
+		if(FORCE_COMPILER_ABI STREQUAL "NEW")
 			set(CURRENT_ABI "CXX11" CACHE INTERNAL "")
-		else()
+		elseif(ORCE_COMPILER_ABI STREQUAL "OLD")
 			set(CURRENT_ABI "CXX" CACHE INTERNAL "")
 		endif()
 	endif()
@@ -202,11 +239,18 @@ if(CURRENT_ABI STREQUAL "CXX11")#check that compiler in use supports the CXX11 A
 	endif()
 endif()
 
-#finally setting the C++ compiler flags adequately
-if(CURRENT_ABI STREQUAL "CXX11")
-	set(CMAKE_CXX_FLAGS "${TEMP_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=1" CACHE STRING "" FORCE)
-else()#using legacy ABI
-	set(CMAKE_CXX_FLAGS "${TEMP_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0" CACHE STRING "" FORCE)
+if(FORCE_COMPILER_ABI)
+	if(CURRENT_ABI STREQUAL "CXX11" AND FORCE_COMPILER_ABI STREQUAL "OLD")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : new CXX11 ABI is not supported by standard library in use.")
+	elseif(CURRENT_ABI STREQUAL "CXX" AND FORCE_COMPILER_ABI STREQUAL "NEW")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : old CXX ABI is not supported by standard library in use.")
+	endif()
+else()# setting the C++ compiler flags adequately if DUAL abi is supported
+	if(CURRENT_ABI STREQUAL "CXX11")
+		set(CMAKE_CXX_FLAGS "${TEMP_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=1" CACHE STRING "" FORCE)
+	else()#using legacy ABI
+		set(CMAKE_CXX_FLAGS "${TEMP_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0" CACHE STRING "" FORCE)
+	endif()
 endif()
 
 
