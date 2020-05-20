@@ -2728,7 +2728,7 @@ endfunction(is_Library_Type)
 #
 #     :PREFIX: the output variable that contains the prefix of the binary.
 #
-#     :SUFFIX: the output variable that contains the extension of the binary.
+#     :SUFFIX: the output variable that contains the list of possible extension for the binary.
 #
 function(get_Platform_Related_Binary_Prefix_Suffix PREFIX SUFFIX type_of_binary)
   set(${PREFIX} PARENT_SCOPE)
@@ -2737,7 +2737,11 @@ function(get_Platform_Related_Binary_Prefix_Suffix PREFIX SUFFIX type_of_binary)
     set(${SUFFIX} ${CMAKE_STATIC_LIBRARY_SUFFIX} PARENT_SCOPE)
     set(${PREFIX} ${CMAKE_STATIC_LIBRARY_PREFIX} PARENT_SCOPE)
   elseif(type_of_binary STREQUAL "SHARED" OR type_of_binary STREQUAL "MODULE")
-    set(${SUFFIX} ${CMAKE_SHARED_LIBRARY_SUFFIX} PARENT_SCOPE)
+    if(CURRENT_PLATFORM_OS STREQUAL "macos")
+      set(${SUFFIX} ${CMAKE_SHARED_LIBRARY_SUFFIX} ".tbd" PARENT_SCOPE)#.tbd are linker script in macos
+    else()
+      set(${SUFFIX} ${CMAKE_SHARED_LIBRARY_SUFFIX} PARENT_SCOPE)
+    endif()
     set(${PREFIX} ${CMAKE_SHARED_LIBRARY_PREFIX} PARENT_SCOPE)
   elseif(type_of_binary STREQUAL "APPLICATION" OR type_of_binary STREQUAL "EXAMPLE")
     set(${SUFFIX} ${CMAKE_EXECUTABLE_SUFFIX} PARENT_SCOPE)

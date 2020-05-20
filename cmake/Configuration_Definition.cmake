@@ -280,7 +280,7 @@ function(find_PID_Library_In_Linker_Order possible_library_names_or_path search_
     #from here only one path given => must resolve everything to be sure we do not target a linker script but we want soname info from real binary
     list(GET possible_library_names_or_path 0 the_path)
     get_filename_component(LIB_NAME_WE ${the_path} NAME_WE)
-    get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION "SHARED")
+    get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSIONS "SHARED")
     if(PREFIX)
       string(FIND "${LIB_NAME_WE}" "${PREFIX}" INDEX)
       if(INDEX EQUAL 0)#avoid removing prefix like "lib" if same string is used within library name

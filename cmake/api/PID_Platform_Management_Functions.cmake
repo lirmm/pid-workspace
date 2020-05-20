@@ -253,12 +253,18 @@ endfunction(pop_ELF_Symbol_Version_From_List)
 #     :DESCRITION: the output variable that contains the description of the binary object.
 #
 function(get_Binary_Description DESCRITION path_to_library)
-  execute_process(COMMAND ${CMAKE_OBJDUMP} -p ${path_to_library}
-                  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-                  ERROR_QUIET
-                  OUTPUT_VARIABLE OBJECT_CONTENT
-                  RESULT_VARIABLE res)
-  if(res EQUAL 0)
+  set(options)
+  if(CURRENT_PLATFORM_OS MATCHES "linux|freebsd")
+    set(options -p)
+  elseif(CURRENT_PLATFORM_OS MATCHES "macos")
+    set(options --dylib-id -macho)
+  endif()
+  execute_process(COMMAND ${CMAKE_OBJDUMP} ${options} ${path_to_library}
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    # ERROR_QUIET
+    OUTPUT_VARIABLE OBJECT_CONTENT
+    RESULT_VARIABLE res)
+  if(res EQUAL 0 AND (NOT OBJECT_CONTENT MATCHES "not an object file"))
     set(${DESCRITION} ${OBJECT_CONTENT} PARENT_SCOPE)
   else()
     set(${DESCRITION} PARENT_SCOPE)
@@ -288,15 +294,23 @@ endfunction(get_Binary_Description)
 function(get_Soname SONAME SOVERSION library_description)
   set(full_soname)
   set(so_version)
-  if(${library_description} MATCHES ".*SONAME[ \t]+([^ \t\n]+)[ \t\n]*")
-    set(full_soname ${CMAKE_MATCH_1})
-    get_filename_component(extension ${full_soname} EXT)
-    if(CURRENT_PLATFORM_OS STREQUAL linux OR CURRENT_PLATFORM_OS STREQUAL freebsd)
+  if(CURRENT_PLATFORM_OS MATCHES "linux|freebsd")
+    if(${library_description} MATCHES ".*SONAME[ \t]+([^ \t\n]+)[ \t\n]*")
+      set(full_soname ${CMAKE_MATCH_1})
+      get_filename_component(extension ${full_soname} EXT)
       if(extension MATCHES "^\\.so\\.([.0-9]+)$")
         set(so_version ${CMAKE_MATCH_1})
       endif()
-    elseif(CURRENT_PLATFORM_OS STREQUAL macos AND extension MATCHES "^\\.([.0-9]+)\\.dylib$")
-      set(so_version ${CMAKE_MATCH_1})
+    endif()
+  elseif(CURRENT_PLATFORM_OS MATCHES "macos")
+    #need to get the first line of output and extract soname from that
+    if(${library_description} MATCHES "^[ \t]*[^ \t\n]+[ \t]*:[^ \t\n]*\n[ \t]*([^ \t\n]+)")
+      get_filename_component(VAR_SONAME ${CMAKE_MATCH_1} NAME)
+      set(full_soname ${VAR_SONAME})
+      get_filename_component(extension ${full_soname} EXT)
+      if(extension MATCHES "^\\.([.0-9]+)\\.dylib$")
+        set(so_version ${CMAKE_MATCH_1})
+      endif()
     endif()
   endif()
   set(${SONAME} ${full_soname} PARENT_SCOPE)#i.e. NO soname
@@ -331,7 +345,7 @@ function(find_Possible_Library_Path REAL_PATH LINK_PATH LIB_SONAME folder librar
   set(${REAL_PATH} PARENT_SCOPE)
   set(${LINK_PATH} PARENT_SCOPE)
   set(${LIB_SONAME} PARENT_SCOPE)
-  get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION "SHARED")
+  get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSIONS "SHARED")
   set(prefixed_name ${PREFIX}${library_name})
   file(GLOB POSSIBLE_NAMES RELATIVE ${folder} "${folder}/${PREFIX}${library_name}*" )
   if(NOT POSSIBLE_NAMES)
@@ -339,26 +353,36 @@ function(find_Possible_Library_Path REAL_PATH LINK_PATH LIB_SONAME folder librar
   endif()
   #first check for the complete name without soversion
   set(possible_path)
-  list(FIND POSSIBLE_NAMES ${PREFIX}${library_name}${EXTENSION} INDEX)
-  if(INDEX EQUAL -1)#not found "as is"
-    usable_In_Regex(libregex ${library_name})
-    if(CURRENT_PLATFORM_OS STREQUAL linux OR CURRENT_PLATFORM_OS STREQUAL freebsd)
-      set(pattern "^${PREFIX}${libregex}\\${EXTENSION}\\.([\\.0-9])+$")
-    elseif(CURRENT_PLATFORM_OS STREQUAL macos)
-      set(pattern "^${PREFIX}${libregex}\\.([\\.0-9])+\\${EXTENSION}$")
-    else()#uncuspported OS => no pattern for SONAMED files
-      return()#no solution
+  foreach(ext IN LISTS EXTENSIONS)
+    list(FIND POSSIBLE_NAMES ${PREFIX}${library_name}${ext} INDEX)
+    if(NOT INDEX EQUAL -1)#found "as is"
+      set(possible_path ${folder}/${PREFIX}${library_name}${ext})#direct name has the priority over the others
+      break()
     endif()
-    set(possible_path)
-    foreach(name IN LISTS POSSIBLE_NAMES)
-      #take the first one
-      if(name MATCHES "${pattern}")
-        set(possible_path ${folder}/${name})
+  endforeach()
+
+  if(NOT possible_path)
+    usable_In_Regex(libregex ${library_name})
+    foreach(ext IN LISTS EXTENSIONS)
+      if(CURRENT_PLATFORM_OS STREQUAL linux OR CURRENT_PLATFORM_OS STREQUAL freebsd)
+        set(pattern "^${PREFIX}${libregex}\\${ext}\\.([\\.0-9])+$")
+      elseif(CURRENT_PLATFORM_OS STREQUAL macos)
+        set(pattern "^${PREFIX}${libregex}\\.([\\.0-9])+\\${ext}$")
+      else()#uncuspported OS => no pattern for SONAMED files
+        return()#no solution
+      endif()
+      set(possible_path)
+      foreach(name IN LISTS POSSIBLE_NAMES)
+        #take the first one
+        if(name MATCHES "${pattern}")
+          set(possible_path ${folder}/${name})
+          break()
+        endif()
+      endforeach()
+      if(possible_path)
         break()
       endif()
     endforeach()
-  else()#it has the priority over the others
-    set(possible_path ${folder}/${PREFIX}${library_name}${EXTENSION})
   endif()
   if(possible_path)
     get_filename_component(RET_PATH ${possible_path} REALPATH)
@@ -391,22 +415,34 @@ endfunction(find_Possible_Library_Path)
 #
 function(extract_Library_Path_From_Linker_Script LIBRARY_PATH library path_to_linker_script)
     set(${LIBRARY_PATH} PARENT_SCOPE)
-    get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSION "SHARED")
+    get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSIONS "SHARED")
     usable_In_Regex(libpattern "${library}")
     set(prefixed_name ${PREFIX}${libpattern})
-    set(pattern "^.*(GROUP|INPUT)[ \t]*\\([ \t]*([^ \t]+${prefixed_name}[^ \t]*\\${EXTENSION}[^ \t]*)[ \t]+.*$")#\\ is for adding \ at the beginning of extension (.so) so taht . will not be interpreted as a
-    file(STRINGS ${path_to_linker_script} EXTRACTED REGEX "${pattern}")
 
-    if(NOT EXTRACTED)#not a linker script or script does not contain
-      return()
-    endif()
-    #from here the implicit linker script gioves the real path to library
-    foreach(extracted IN LISTS EXTRACTED)
-      if(EXTRACTED MATCHES "${pattern}")
-        set(${LIBRARY_PATH} ${CMAKE_MATCH_2} PARENT_SCOPE)
-        return()
+    set(res_extraction)
+    foreach(ext IN LISTS EXTENSIONS)
+      set(pattern)
+      set(index)
+      if(CURRENT_PLATFORM_OS STREQUAL "linux"
+      OR CURRENT_PLATFORM_OS STREQUAL "freebsd") #GNU linker scripts
+        set(pattern "^.*(GROUP|INPUT)[ \t]*\\([ \t]*([^ \t]+${prefixed_name}[^ \t]*\\${ext}[^ \t]*)[ \t]+.*$")#\\ is for adding \ at the beginning of extension (.so) so taht . will not be interpreted as a
+        set(index 2)
+      elseif(CURRENT_PLATFORM_OS STREQUAL "macos")
+        set(pattern "^install-name:[ \t]*'([^ \t]+${prefixed_name}[^ \t]*\\${ext})'[ \t]*.*$")#\\ is for adding \ at the beginning of extension (.so) so taht . will not be interpreted as a
+        set(index 1)
+      endif()
+      file(STRINGS ${path_to_linker_script} EXTRACTED REGEX "${pattern}")
+      if(EXTRACTED)
+        # the implicit linker script gives the real path to library
+        foreach(extracted IN LISTS EXTRACTED)
+          if(extracted MATCHES "${pattern}")
+            set(${LIBRARY_PATH} ${CMAKE_MATCH_${index}} PARENT_SCOPE)
+            return()
+          endif()
+        endforeach()
       endif()
     endforeach()
+
 endfunction(extract_Library_Path_From_Linker_Script)
 
 #.rst:

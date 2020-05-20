@@ -54,7 +54,11 @@ else()#other systems
 		OUTPUT_VARIABLE out)
 	execute_process(COMMAND ${CMAKE_BINARY_DIR}/std_lib_version OUTPUT_VARIABLE version)
 	if(version)
-		set(${VERSION} ${version} PARENT_SCOPE)
+		if(version MATCHES "^([0-9]+)([0-9][0-9][0-9])$")#VERSION + REVISION
+			set(${VERSION} ${CMAKE_MATCH_1}.${CMAKE_MATCH_2} PARENT_SCOPE)
+		else()#only VERSION
+			set(${VERSION} ${version} PARENT_SCOPE)
+		endif()
 	endif()
 endif()
 endfunction(get_Current_Standard_Library_Version)
@@ -213,7 +217,7 @@ if(NOT CURRENT_ABI)#no C++ ABI explictly specified
 		# make it generic for every standard library in use
 		get_Current_Standard_Library_Version(res_version)
 		if(res_version)
-			set(sym_version "<VERSION_/${res_version}>")#will be used to checl std lib compatibility
+			set(CXX_STD_SYMBOLS "<VERSION_/${res_version}>" CACHE INTERNAL "")#will be used to checl std lib compatibility
 		endif()
 		if(FORCE_COMPILER_ABI STREQUAL "NEW")
 			set(CURRENT_ABI "CXX11" CACHE INTERNAL "")
