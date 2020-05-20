@@ -3974,3 +3974,24 @@ write_Platform_Reporting_File(${CMAKE_BINARY_DIR}/Platform_Description.txt)
 write_Current_Configuration(${CMAKE_BINARY_DIR}/Workspace_Info.cmake)
 
 endfunction(manage_Platforms)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Backward_Compatibility_Symlinks| replace:: ``create_Backward_Compatibility_Symlinks``
+#  .. create_Backward_Compatibility_Symlinks:
+#
+#  create_Backward_Compatibility_Symlinks
+#  ----------------
+#
+#   .. command:: create_Backward_Compatibility_Symlinks()
+#
+#     Creates the share/cmake -> cmake and cmake/system -> cmake for backward compatibility
+#     with PID versions < 4
+#
+function(create_Backward_Compatibility_Symlinks)
+	file(REMOVE ${CMAKE_SOURCE_DIR}/share/cmake ${CMAKE_SOURCE_DIR}/cmake/system)
+	create_Symlink(${CMAKE_SOURCE_DIR}/cmake ${CMAKE_SOURCE_DIR}/share/cmake)
+	create_Symlink(${CMAKE_SOURCE_DIR}/cmake ${CMAKE_SOURCE_DIR}/cmake/system)
+endfunction(create_Backward_Compatibility_Symlinks)

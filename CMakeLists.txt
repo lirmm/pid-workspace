@@ -80,6 +80,9 @@ elseif(DIR_NAME MATCHES "pid/(.+)")#subfolder of pid: profile specific folder
 	return()
 endif()
 
+### generate symlinks necessary for backward compatibility with versions < 4 ###
+create_Backward_Compatibility_Symlinks()
+
 ### memorize local workspace content ###
 #1) reset information about categories
 reset_All_Categories()
