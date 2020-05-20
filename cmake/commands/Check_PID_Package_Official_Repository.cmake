@@ -23,7 +23,7 @@ include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
-load_Current_Platform() #loading the current platform configuration
+load_Workspace_Info() #loading the current platform configuration
 
 is_Repository_Connected(CONNECTED ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} official)
 if(CONNECTED)

@@ -21,7 +21,7 @@
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
-load_Current_Platform() #loading the current platform configuration
+load_Workspace_Info() #loading the current platform configuration
 message("[PID] INFO : launching release of package ${TARGET_PACKAGE} ...")
 
 #first check that commmand parameters are not passed as environment variables

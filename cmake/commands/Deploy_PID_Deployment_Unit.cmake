@@ -22,7 +22,7 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 include(Package_Definition NO_POLICY_SCOPE) # to be able to interpret description of external components
-load_Current_Platform() #loading the current platform configuration
+load_Workspace_Info() #loading the current platform configuration
 configure_Contribution_Spaces()
 
 set(CMAKE_BUILD_TYPE Release)

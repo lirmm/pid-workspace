@@ -22,7 +22,7 @@ include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
-load_Current_Platform() #loading the current platform configuration
+load_Workspace_Info() #loading the current platform configuration
 
 function(Find_Unique_Elements first_list second_list unique_in_first unique_in_second prefix_for_elements)
 

@@ -28,7 +28,7 @@
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
-load_Current_Platform() #loading the current platform configuration
+load_Workspace_Info() #loading the current platform configuration
 
 # needed to parse adequately CMAKe variables passed to the script
 SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PROGRAM_PATH)

@@ -26,7 +26,7 @@ include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 
-load_Current_Platform() #loading the current platform configuration
+load_Workspace_Info() #loading the current platform configuration
 #manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
 if(NOT SYNCHRO AND DEFINED ENV{synchro})
 	set(SYNCHRO $ENV{synchro} CACHE INTERNAL "" FORCE)

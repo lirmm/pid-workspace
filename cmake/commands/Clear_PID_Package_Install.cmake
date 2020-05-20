@@ -22,7 +22,7 @@ list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
-load_Current_Platform() #loading the current platform configuration
+load_Workspace_Info() #loading the current platform configuration
 
 function(remove_Installed_Component component package install_version platform workspace)
 	set(PATH_TO_INSTALL_DIR ${workspace}/install/${platform}/${package}/${install_version})

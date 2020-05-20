@@ -426,7 +426,7 @@ macro(reset_Profiles)
 
   set(dir ${WORKSPACE_DIR}/pid/${CURRENT_PROFILE})
 
-  if(NOT EXISTS ${dir}/Workspace_Platforms_Info.cmake #check if the complete platform description exists for current profile (may have not been generated yet or may has been removed by hand)
+  if(NOT EXISTS ${dir}/Workspace_Info.cmake #check if the complete platform description exists for current profile (may have not been generated yet or may has been removed by hand)
      OR NOT EXISTS ${dir}/Workspace_Solution_File.cmake
      OR FORCE_CURRENT_PROFILE_EVALUATION) # explicit query to a reevaluation of the profile
     if(FORCE_CURRENT_PROFILE_EVALUATION)

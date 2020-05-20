@@ -3971,6 +3971,6 @@ detect_Current_Platform()
 write_Platform_Reporting_File(${CMAKE_BINARY_DIR}/Platform_Description.txt)
 
 # generate the current platform configuration file (that will be used to build packages)
-write_Current_Configuration(${CMAKE_BINARY_DIR}/Workspace_Platforms_Info.cmake)
+write_Current_Configuration(${CMAKE_BINARY_DIR}/Workspace_Info.cmake)
 
 endfunction(manage_Platforms)

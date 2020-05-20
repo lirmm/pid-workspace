@@ -33,7 +33,7 @@ include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 
 include(CMakeParseArguments)
-load_Current_Platform()
+load_Current_Platform_Only()
 
 ##################################################################################################
 #################### API to ease the description of system configurations ########################

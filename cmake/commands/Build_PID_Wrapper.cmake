@@ -28,7 +28,7 @@ include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(Wrapper_Definition NO_POLICY_SCOPE) # to be able to interpret description of external packages and generate the use files
 include(External_Definition NO_POLICY_SCOPE) #to be able to interpret description of dependencies (external packages)
 
-load_Current_Platform() #loading the current platform configuration before executing the deploy script
+load_Workspace_Info() #loading the current platform configuration before executing the deploy script
 #########################################################################################
 #######################################Build script #####################################
 #########################################################################################
