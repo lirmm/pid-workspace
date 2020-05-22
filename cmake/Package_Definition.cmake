@@ -951,11 +951,12 @@ endfunction(get_PID_Platform_Info)
 #      build_PID_Package()
 #
 macro(build_PID_Package)
-if(${ARGC} GREATER 0)
-  finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the build_PID_Package command requires no arguments.")
-endif()
-build_Package()
+  create_Shell_Script_Symlinks()
+  if(${ARGC} GREATER 0)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the build_PID_Package command requires no arguments.")
+  endif()
+  build_Package()
 endmacro(build_PID_Package)
 
 #.rst:

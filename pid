@@ -1,0 +1,32 @@
+#!/usr/bin/env sh
+
+build_dir=`dirname "$0"`/build
+
+# Configure the project if necessary
+if [ ! -f $build_dir/CMakeCache.txt ]; then
+    cmake -B $build_dir
+fi
+
+# If no argument are given then simply configure the project
+if [ "$#" -eq 0 ]; then
+    cmake --build $build_dir
+else
+    # Extract the target
+    target=$1
+
+    # Extract the remaining arguments
+    args="${@:2}"
+    
+    # Set the arguments as environment variables and store CMake options
+    cmake_options=""
+    for arg in $args; do
+        if [[ $arg == -D* ]]; then
+            cmake_options="$cmake_options $arg"
+        else
+            export $arg
+        fi
+    done
+
+    # Execute the target
+    cmake $cmake_options --build $build_dir --target $target
+fi
