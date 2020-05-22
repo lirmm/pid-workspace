@@ -124,8 +124,8 @@ include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_External_Use_Internal_Functions NO_POLICY_SCOPE)
 
-execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR} -B ${WORKSPACE_DIR}/pid
-								WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)#force reconfiguration (in case workspace was deployed as a submodule and never configured)
+execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR} -B ${WORKSPACE_DIR}/build
+								WORKING_DIRECTORY ${WORKSPACE_DIR}/build)#force reconfiguration (in case workspace was deployed as a submodule and never configured)
 
 load_Platform_Info()
 #need to reset the variables used to describe dependencies

@@ -45,7 +45,7 @@ include(CMakeParseArguments)
 #      Load information about current profile into current process.
 #
 function(load_Profile_Info)
-  if(EXISTS ${WORKSPACE_DIR}/pid/Workspace_Profile_Info.cmake)
+  if(EXISTS ${WORKSPACE_DIR}/build/Workspace_Profile_Info.cmake)
     set(TEMP_PROFILES ${PROFILES} CACHE INTERNAL "")
     set(TEMP_CURRENT_PROFILE ${CURRENT_PROFILE} CACHE INTERNAL "")
     set(TEMP_CURRENT_GENERATOR ${CURRENT_GENERATOR} CACHE INTERNAL "")
@@ -53,7 +53,7 @@ function(load_Profile_Info)
     set(TEMP_CURRENT_GENERATOR_INSTANCE ${CURRENT_GENERATOR_INSTANCE} CACHE INTERNAL "")
     set(TEMP_CURRENT_GENERATOR_TOOLSET ${CURRENT_GENERATOR_TOOLSET} CACHE INTERNAL "")
     set(TEMP_CURRENT_GENERATOR_PLATFORM ${CURRENT_GENERATOR_PLATFORM} CACHE INTERNAL "")
-    include(${WORKSPACE_DIR}/pid/Workspace_Profile_Info.cmake)
+    include(${WORKSPACE_DIR}/build/Workspace_Profile_Info.cmake)
   endif()
 endfunction(load_Profile_Info)
 
@@ -223,7 +223,7 @@ endfunction(write_Profiles_Description_File)
 #      Write current profile required information into a file used at deployment unit level to decide which profile to use
 #
 function(write_Workspace_Profiles_Info_File)
-  set(target_file_path ${WORKSPACE_DIR}/pid/Workspace_Profile_Info.cmake)
+  set(target_file_path ${WORKSPACE_DIR}/build/Workspace_Profile_Info.cmake)
   file(WRITE ${target_file_path} "set(PROFILES ${PROFILES} CACHE INTERNAL \"\")\n")#reset file content and define all available profiles
   file(APPEND ${target_file_path} "set(CURRENT_PROFILE ${CURRENT_PROFILE} CACHE INTERNAL \"\")\n")
   # also memorizing generator info required to generate the CMake projects from native build system
@@ -424,7 +424,7 @@ macro(reset_Profiles)
     endif()
   endif()
 
-  set(dir ${WORKSPACE_DIR}/pid/${CURRENT_PROFILE})
+  set(dir ${WORKSPACE_DIR}/build/${CURRENT_PROFILE})
 
   if(NOT EXISTS ${dir}/Workspace_Info.cmake #check if the complete platform description exists for current profile (may have not been generated yet or may has been removed by hand)
      OR NOT EXISTS ${dir}/Workspace_Solution_File.cmake

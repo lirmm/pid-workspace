@@ -24,9 +24,9 @@ fi
 echo "[PID] CI : initializing workspace ..."
 #initializing the pid-workspace
 if [ ! -d "./binaries/pid-workspace" ]; then
-  cd binaries && git clone git@gite.lirmm.fr:pid/pid-workspace.git && cd pid-workspace/pid && git checkout master && cmake -DIN_CI_PROCESS=ON -DFORCE_CONTRIBUTION_SPACE="$PACKAGE_CONTRIBUTION_SPACES" .. && cd ../../..
+  cd binaries && git clone git@gite.lirmm.fr:pid/pid-workspace.git && cd pid-workspace/build && git checkout master && cmake -DIN_CI_PROCESS=ON -DFORCE_CONTRIBUTION_SPACE="$PACKAGE_CONTRIBUTION_SPACES" .. && cd ../../..
 else
-  cd binaries/pid-workspace/pid && git pull -f official master && cmake -DIN_CI_PROCESS=ON -DFORCE_CONTRIBUTION_SPACE="$PACKAGE_CONTRIBUTION_SPACES" .. && cd ../../..
+  cd binaries/pid-workspace/build && git pull -f official master && cmake -DIN_CI_PROCESS=ON -DFORCE_CONTRIBUTION_SPACE="$PACKAGE_CONTRIBUTION_SPACES" .. && cd ../../..
 fi
 
 # previous to an execution we need to set a link into the workspace that point to the current package
@@ -56,7 +56,7 @@ fi
 if [  "$instance" != "" ]; then
   using_profile=use_$1
   echo "[PID] CI : configuring environment $instance on platform $platform ..."
-  cd binaries/pid-workspace/pid
+  cd binaries/pid-workspace/build
   cmd=mk profile=$using_profile env=$instance instance=$instance platform=$platform cmake --build . --target profiles
   CONFIGURE_RES=$?
   cd ../../..

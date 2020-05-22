@@ -70,7 +70,7 @@ if(NOT IS_INITIALIZED)#repository must be initialized first
 		return()
 	endif()
 	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/cmake/patterns/static_sites/package ${WORKSPACE_DIR}/sites/packages/${package}
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)#create the folder containing the site from the pattern folder
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/build)#create the folder containing the site from the pattern folder
 
   set(PACKAGE_NAME ${package})
 	set(PACKAGE_PROJECT_URL ${package_url})

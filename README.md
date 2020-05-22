@@ -73,7 +73,7 @@ Change `<pid-workspace repository>` by the address of this project in the hostin
 + configure **your local repository**
 
 ```bash
-cd pid-workspace/pid
+cd pid-workspace/build
 cmake ..
 ```
 
@@ -85,7 +85,7 @@ This step initializes the PID system, more precisely:
 You can now start using PID methdology. To test if everything works you can do:
 
 ```bash
-cd pid-workspace/pid
+cd pid-workspace/build
 make deploy package=pid-rpath
 ```
 

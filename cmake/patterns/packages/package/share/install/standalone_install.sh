@@ -72,7 +72,7 @@ else
 fi
 
 # launch workspace configuration using the pkg-config plugin to generate adequate pc files
-cd pid && cmake .. && make profiles cmd=add env=pkg-config
+cd build && cmake .. && make profiles cmd=add env=pkg-config
 
 #################################################################
 #############  --  building the project  --  ####################
@@ -83,7 +83,7 @@ cd $package_root_path/build && rm -Rf *
 # configuring the package's project
 cmake -DREQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=ON -DADDITIONNAL_DEBUG_INFO=OFF -DBUILD_AND_RUN_TESTS=$with_tests -DENABLE_SANITIZERS=$with_sanitizers -DENABLE_PARALLEL_BUILD=ON -DBUILD_EXAMPLES=$with_examples -DBUILD_API_DOC=OFF -DBUILD_STATIC_CODE_CHECKING_REPORT=OFF -DGENERATE_INSTALLER=OFF -DWORKSPACE_DIR="../binaries/pid-workspace" ..
 # building the project
-cmake --build . --target build -- force=true && echo "The path $package_root_path/binaries/pid-workspace/pid/share/pkgconfig must be added to your PKG_CONFIG_PATH environment variable. To make the change permanent, write the line \"export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$package_root_path/binaries/pid-workspace/pid/share/pkgconfig\" into your .bashrc file."
+cmake --build . --target build -- force=true && echo "The path $package_root_path/binaries/pid-workspace/build/share/pkgconfig must be added to your PKG_CONFIG_PATH environment variable. To make the change permanent, write the line \"export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$package_root_path/binaries/pid-workspace/build/share/pkgconfig\" into your .bashrc file."
 #NB: provide the generated libraries as pkg-config modules
 
 #go back to initial folder

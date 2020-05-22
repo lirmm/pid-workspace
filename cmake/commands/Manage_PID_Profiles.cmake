@@ -194,7 +194,7 @@ elseif(TARGET_COMMAND STREQUAL "del")
 		return()
 	endif()
 	remove_Profile(CHANGED ${TARGET_PROFILE})
-	file(REMOVE_RECURSE ${WORKSPACE_DIR}/pid/${TARGET_PROFILE})
+	file(REMOVE_RECURSE ${WORKSPACE_DIR}/build/${TARGET_PROFILE})
 	if(CHANGED)
 		set(need_reconfigure TRUE)#reconfigrue if necessary
 	endif()
@@ -285,5 +285,5 @@ if(need_reconfigure)
 									-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 									-DFORCE_CURRENT_PROFILE_EVALUATION=TRUE
 									${WORKSPACE_DIR}
-									WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+									WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
 endif()

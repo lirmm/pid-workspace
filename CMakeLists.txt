@@ -28,7 +28,7 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 PROJECT(pid-workspace C CXX ASM)
 
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
-if(DIR_NAME STREQUAL "pid")
+if(DIR_NAME STREQUAL "build")
 
 	### set global workspace variables ###
 	set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR} CACHE INTERNAL "")
@@ -71,7 +71,7 @@ if(DIR_NAME STREQUAL "pid")
 	# manage_Migrations() #specific action to manage migration between workspace versions
 	reset_Contribution_Spaces() #define what is known in the local workspace
 	reset_Profiles() # define the development environment based on current profile
-elseif(DIR_NAME MATCHES "pid/(.+)")#subfolder of pid: profile specific folder
+elseif(DIR_NAME MATCHES "build/(.+)")#subfolder of build: profile specific folder
 	load_Current_Contribution_Spaces()#simply load the contribution space from higher level
 	read_Profiles_Description_File(FILE_EXISTS)#from here we are sure the file exists
 	include(${CMAKE_BINARY_DIR}/Workspace_Solution_File.cmake)#get the complete description

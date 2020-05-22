@@ -18,9 +18,9 @@ fi
 
 #initializing the pid-workspace 
 if [ ! -d "./binaries/pid-workspace" ]; then
-  cd binaries && git clone git@gite.lirmm.fr:pid/pid-workspace.git && cd pid-workspace/pid && cmake .. && cd ../../..
+  cd binaries && git clone git@gite.lirmm.fr:pid/pid-workspace.git && cd pid-workspace/build && cmake .. && cd ../../..
 else
-  cd binaries/pid-workspace/pid && git pull -f official master && cmake .. && cd ../../..
+  cd binaries/pid-workspace/build && git pull -f official master && cmake .. && cd ../../..
 fi
 
 

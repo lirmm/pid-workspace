@@ -23,7 +23,7 @@ include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 load_Workspace_Info() #loading the current platform configuration
 
-include(${WORKSPACE_DIR}/pid/CategoriesInfo.cmake NO_POLICY_SCOPE)
+include(${WORKSPACE_DIR}/build/CategoriesInfo.cmake NO_POLICY_SCOPE)
 
 #manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
 if(NOT TARGET_FRAMEWORK AND DEFINED ENV{framework})
@@ -141,6 +141,6 @@ elseif(TARGET_LICENSE)
 	endif()
 
 else() #no argument passed, printing general information about the workspace
-	include(${WORKSPACE_DIR}/pid/PID_version.cmake)
+	include(${WORKSPACE_DIR}/build/PID_version.cmake)
 	message("[PID] INFO : current workspace version is ${PID_WORKSPACE_VERSION}.")
 endif()

@@ -922,7 +922,7 @@ macro(reset_Contribution_Spaces)
   #- empty contributions folder
   #- missing contributions management file
   read_Contribution_Spaces_Description_File(FILE_EXISTS)
-  if(NOT CONTRIBUTION_SPACES)#case at first configuration time just after a clone or a clean (rm -Rf *) of the pid folder
+  if(NOT CONTRIBUTION_SPACES)#case at first configuration time just after a clone or a clean (rm -Rf *) of thefolder
     add_Contribution_Space(${official_cs_name} ${official_cs_update_remote} ${official_cs_publish_remote})# pid official CS is the default one and must be present
   else()
     list(FIND CONTRIBUTION_SPACES pid INDEX)
@@ -955,7 +955,7 @@ macro(reset_Contribution_Spaces)
   write_Contribution_Spaces_Description_File()
   # configure workspace (set CMAKE_MODULE_PATH adequately)
   configure_Contribution_Spaces()
-  # and finally write the file that contains all required information for packages, in pid folder (since contribution spaces are global to the whole workspace)
+  # and finally write the file that contains all required information for packages, in build folder (since contribution spaces are global to the whole workspace)
   write_Contribution_Spaces(${CMAKE_BINARY_DIR}/Workspace_Contribution_Spaces.cmake)
 endmacro(reset_Contribution_Spaces)
 

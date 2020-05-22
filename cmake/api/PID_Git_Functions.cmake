@@ -1681,15 +1681,15 @@ endfunction(initialize_Git_Repository_Push_Address)
 #     :INITIALIZED: the output variable that is TRUE if package's remote is initialized, FALSE otherwise
 #
 function(test_Package_Remote_Initialized package url INITIALIZED)
-  if(EXISTS ${WORKSPACE_DIR}/pid/${package})
-    file(REMOVE_RECURSE ${WORKSPACE_DIR}/pid/${package})
+  if(EXISTS ${WORKSPACE_DIR}/build/${package})
+    file(REMOVE_RECURSE ${WORKSPACE_DIR}/build/${package})
   endif()
 execute_process(COMMAND git clone ${url}
-                WORKING_DIRECTORY ${WORKSPACE_DIR}/pid
+                WORKING_DIRECTORY ${WORKSPACE_DIR}/build
                 OUTPUT_QUIET ERROR_QUIET) #cloning in a temporary area
 
 execute_process(COMMAND git branch -a
-            		WORKING_DIRECTORY ${WORKSPACE_DIR}/pid/${package}
+            		WORKING_DIRECTORY ${WORKSPACE_DIR}/build/${package}
             		OUTPUT_VARIABLE all_branches ERROR_QUIET)#getting all branches
 
 if(all_branches)
@@ -1706,8 +1706,8 @@ if(all_branches)
 else()
 	set(${INITIALIZED} FALSE PARENT_SCOPE)
 endif()
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pid/${package}
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/pid
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/build/${package}
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/build
                   OUTPUT_QUIET ERROR_QUIET)
 endfunction(test_Package_Remote_Initialized)
 
@@ -1732,15 +1732,15 @@ endfunction(test_Package_Remote_Initialized)
 #     :INITIALIZED: the output variable that is TRUE if package's remote is initialized, FALSE otherwise
 #
 function(test_Remote_Initialized repository url INITIALIZED)
-if(EXISTS ${WORKSPACE_DIR}/pid/${repository})#cleaning pid folder if for any reason a repo with same name already lie in there
-  file(REMOVE_RECURSE ${WORKSPACE_DIR}/pid/${repository})
+if(EXISTS ${WORKSPACE_DIR}/build/${repository})#cleaning pid folder if for any reason a repo with same name already lie in there
+  file(REMOVE_RECURSE ${WORKSPACE_DIR}/build/${repository})
 endif()
 execute_process(COMMAND git clone ${url}
-                WORKING_DIRECTORY ${WORKSPACE_DIR}/pid
+                WORKING_DIRECTORY ${WORKSPACE_DIR}/build
                 OUTPUT_QUIET ERROR_QUIET) #cloning in a temporary area
 
 execute_process(COMMAND git branch -a
-            		WORKING_DIRECTORY ${WORKSPACE_DIR}/pid/${repository}
+            		WORKING_DIRECTORY ${WORKSPACE_DIR}/build/${repository}
             		OUTPUT_VARIABLE all_branches ERROR_QUIET)#getting all branches
 
 if(all_branches)#the repository must have branches to be initialized
@@ -1748,8 +1748,8 @@ if(all_branches)#the repository must have branches to be initialized
 else()
 	set(${INITIALIZED} FALSE PARENT_SCOPE)
 endif()
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/pid/${repository}
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/pid
+	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/build/${repository}
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/build
                   OUTPUT_QUIET ERROR_QUIET)
 
 endfunction(test_Remote_Initialized)
@@ -2457,7 +2457,7 @@ function(clone_Framework_Repository IS_DEPLOYED framework url)
   else()
   	if(EXISTS ${framework_path}-framework AND IS_DIRECTORY ${framework_path}-framework)
   		execute_process(COMMAND ${CMAKE_COMMAND} -E rename ${framework_path}-framework ${framework_path}
-                      WORKING_DIRECTORY ${WORKSPACE_DIR}/pid OUTPUT_QUIET ERROR_QUIET)
+                      WORKING_DIRECTORY ${WORKSPACE_DIR}/build OUTPUT_QUIET ERROR_QUIET)
   	  set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
   	else()
   		set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
@@ -2767,7 +2767,7 @@ function(clone_Environment_Repository IS_DEPLOYED environment url)
     if(EXISTS ${env_path}-environment
       AND IS_DIRECTORY ${env_path}-environment)
   		execute_process(COMMAND ${CMAKE_COMMAND} -E rename ${env_path}-environment ${env_path}
-                      WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+                      WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
   		set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
   	else()
   		set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
@@ -3043,7 +3043,7 @@ function(clone_Static_Site_Repository IS_INITIALIZED BAD_URL package url)
   if(EXTENSION AND NOT EXTENSION STREQUAL "") # there is an extension to the name of the package
   	if(EXISTS ${site_path}${EXTENSION} AND IS_DIRECTORY ${site_path}${EXTENSION})
   		execute_process(COMMAND ${CMAKE_COMMAND} -E rename ${site_path}${EXTENSION} ${site_path}
-                      WORKING_DIRECTORY ${WORKSPACE_DIR}/pid OUTPUT_QUIET ERROR_QUIET)
+                      WORKING_DIRECTORY ${WORKSPACE_DIR}/build OUTPUT_QUIET ERROR_QUIET)
   	endif()
   endif()
 
@@ -3054,7 +3054,7 @@ function(clone_Static_Site_Repository IS_INITIALIZED BAD_URL package url)
   		set(${IS_INITIALIZED} TRUE PARENT_SCOPE)
   	else() # the site's repository appear to be non existing
   		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${site_path}
-                      WORKING_DIRECTORY ${WORKSPACE_DIR}/pid OUTPUT_QUIET ERROR_QUIET) #just in case of
+                      WORKING_DIRECTORY ${WORKSPACE_DIR}/build OUTPUT_QUIET ERROR_QUIET) #just in case of
   		set(${IS_INITIALIZED} FALSE PARENT_SCOPE)
       return()
   	endif()

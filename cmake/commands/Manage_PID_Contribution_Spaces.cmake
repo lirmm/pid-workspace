@@ -300,5 +300,5 @@ endif()
 if(reconfigure)
   #finally update the file and reconfigure the workspace
   write_Contribution_Spaces_Description_File()
-  execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)#reconfigure the workspace
+  execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${WORKSPACE_DIR}/build)#reconfigure the workspace
 endif()
