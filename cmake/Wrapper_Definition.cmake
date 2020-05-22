@@ -2425,15 +2425,15 @@ function(build_B2_External_Project)
   endif()
 
   #generating the jam file for boost build
-  set(jamfile ${project_dir}/user-config.jam)
-  set(TOOLSET_NAME ${install_toolset})
-  set(TOOLSET_COMPILER_PATH ${cxx_compiler})
-  if(CURRENT_PYTHON)
-    set(PYTHON_TOOLSET "using python : ${CURRENT_PYTHON} : ${CURRENT_PYTHON_EXECUTABLE} ;")
-  endif()
-  configure_file( ${WORKSPACE_DIR}/cmake/patterns/wrappers/b2_pid_config.jam.in
-                  ${jamfile}
-                  @ONLY)
+  # set(jamfile ${project_dir}/user-config.jam)
+  # set(TOOLSET_NAME ${install_toolset})
+  # set(TOOLSET_COMPILER_PATH ${cxx_compiler})
+  # if(CURRENT_PYTHON)
+  #   set(PYTHON_TOOLSET "using python : ${CURRENT_PYTHON} : ${CURRENT_PYTHON_EXECUTABLE} ;")
+  # endif()
+  # configure_file( ${WORKSPACE_DIR}/cmake/patterns/wrappers/b2_pid_config.jam.in
+  #                 ${jamfile}
+  #                 @ONLY)
 
 
   if(ENABLE_PARALLEL_BUILD)#parallel build is allowed from CMake configuration
@@ -2442,15 +2442,14 @@ function(build_B2_External_Project)
       set(jobs -j${BUILD_B2_EXTERNAL_PROJECT_USER_JOBS})
     endif()
   endif()
-
   message("[PID] INFO : Building and installing ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
   execute_process(COMMAND ${project_dir}/b2 install
                           ${jobs}
                           --prefix=${TARGET_INSTALL_DIR}
-                          --user-config=${jamfile}
+                          # --user-config=${jamfile}
                           ${COMMAND_ARGS_AS_LIST}
                  WORKING_DIRECTORY ${project_dir}
-                 ${OUTPUT_MODE} 
+                 ${OUTPUT_MODE}
                  RESULT_VARIABLE result
                  ERROR_VARIABLE varerr)
   if(NOT result EQUAL 0
