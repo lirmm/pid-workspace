@@ -542,6 +542,7 @@ endfunction(create_Module_Lib_Target)
 #     :internal_links: list of private linker options to use when building the library.
 #
 function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links internal_links)
+	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 	add_library(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} SHARED ${sources})
 
   if(WIN32)
@@ -744,7 +745,8 @@ function(create_Executable_Target c_name c_standard cxx_standard sources interna
 	elseif(UNIX)
 		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "\$ORIGIN/../.rpath/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the application targets a specific folder that contains symbolic links to used shared libraries
   elseif(WIN32)#need to install a specific run.bat script file
-    install(FILES ${WORKSPACE_DIR}/cmake/patterns/packages/run.bat DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH})
+	install(FILES ${WORKSPACE_DIR}/cmake/patterns/packages/run.bat DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH})
+	file(COPY ${WORKSPACE_DIR}/cmake/patterns/packages/run.bat DESTINATION ${CMAKE_BINARY_DIR}/apps)
 	endif()
 endfunction(create_Executable_Target)
 
@@ -781,6 +783,7 @@ endfunction(create_Executable_Target)
 function(create_TestUnit_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
 	add_executable(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} ${sources})
 	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
+	file(COPY ${WORKSPACE_DIR}/cmake/patterns/packages/run.bat DESTINATION ${CMAKE_BINARY_DIR}/test)
 endfunction(create_TestUnit_Target)
 
 #.rst:

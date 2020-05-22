@@ -972,11 +972,10 @@ function(create_Symlink path_to_old path_to_new)
         endif()
 
         # check if target is a directory or a file to pass to proper argument to mklink
-        get_filename_component(DIR ${path_to_old} DIRECTORY)
-        if(${path_to_old} STREQUAL ${DIR})
-            set(mklink_option "/D")
-        else()
-            set(mklink_option "")
+        if(IS_DIRECTORY ${path_to_old})
+            set(mklink_option "/J")
+          else()
+            set(mklink_option "/H")
         endif()
     endif()
 
@@ -997,11 +996,13 @@ function(create_Symlink path_to_old path_to_new)
                 COMMAND cmd.exe /c mklink ${mklink_option} ${path_to_new} ${path_to_old}
                 WORKING_DIRECTORY ${OPT_WORKING_DIR}
                 OUTPUT_QUIET
+                ERROR_QUIET
             )
         else()
             execute_process(
                 COMMAND cmd.exe /c mklink ${mklink_option} ${path_to_new} ${path_to_old}
                 OUTPUT_QUIET
+                ERROR_QUIET
             )
         endif()
     else()

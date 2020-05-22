@@ -1271,6 +1271,11 @@ if(DECLARE_PID_COMPONENT_LOGGABLE)
   endif()
 endif()
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  list(APPEND internal_compiler_options "/permissive-") # Force MSVC to be standard compliant
+  list(APPEND internal_defs "_USE_MATH_DEFINES") # Force MSVC to define math constants in math.h/cmath (e.g M_PI)
+endif()
+
 if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 	if(ENABLE_SANITIZERS)
 		if(SANITIZE_ADDRESS)
@@ -2049,10 +2054,14 @@ endmacro(declare_PID_Component_Dependency)
 
 
 function(wrap_CTest_Call name command args)
-	if(NOT CMAKE_VERSION VERSION_LESS 3.4)#cannot do if on tests before this version
-		add_test(NAME ${name} COMMAND ${command} ${args})
-	else()
-		add_test(${name} ${command} ${args})
+  if(NOT CMAKE_VERSION VERSION_LESS 3.4)#cannot do if on tests before this version
+    if(WIN32)
+      add_test(NAME ${name} COMMAND run.bat ${command}.exe ${args})
+    else()
+      add_test(NAME ${name} COMMAND ${command} ${args})
+    endif()
+  else()
+    add_test(${name} ${command} ${args})
 	endif()
 endfunction(wrap_CTest_Call)
 
