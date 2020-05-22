@@ -294,16 +294,14 @@ endfunction(declare_Site)
 #      :contrib_space: name of the default contribution space for the package.
 #
 macro(declare_Framework author institution mail year site license git_address public_address repo_site description welcome contrib_space)
-file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
-manage_Current_Platform("${DIR_NAME}" "FRAMEWORK") #loading the current platform configuration and perform adequate actions if any changes
+manage_Current_Platform("${CMAKE_BINARY_DIR}" "FRAMEWORK") #loading the current platform configuration and perform adequate actions if any changes
 
 configure_Git()
 if(NOT GIT_CONFIGURED)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR: your git tool is NOT configured. To use PID you need to configure git:\ngit config --global user.name \"Your Name\"\ngit config --global user.email <your email address>\n")
 	return()
 endif()
-if(DIR_NAME STREQUAL "build")
-	unset(DIR_NAME)
+if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 	set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake ${CMAKE_MODULE_PATH}) # adding the cmake scripts files from the framework
 

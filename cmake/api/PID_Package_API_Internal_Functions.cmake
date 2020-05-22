@@ -74,8 +74,7 @@ include(Environment_Definition NO_POLICY_SCOPE) #to be able to interpret descrip
 #
 macro(declare_Package author institution mail year license address public_address description readme_file code_style contrib_space)
 set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")#to avoid the use of -isystem that may be not so well managed by some compilers
-file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
-manage_Current_Platform("${DIR_NAME}" "NATIVE") #loading the current platform configuration and perform adequate actions if any changes
+manage_Current_Platform("${CMAKE_BINARY_DIR}" "NATIVE") #loading the current platform configuration and perform adequate actions if any changes
 set(PACKAGE_SPECIFIC_BUILD_INFO_FILE ${CMAKE_BINARY_DIR}/Package_Build_Info.cmake)
 # TODO check all of that
 if(EXISTS ${PACKAGE_SPECIFIC_BUILD_INFO_FILE}) #loading package specific build info
@@ -107,8 +106,7 @@ manage_Parrallel_Build_Option()
 #################################################
 ############ MANAGING build mode ################
 #################################################
-if(DIR_NAME STREQUAL "build/release")
-	unset(DIR_NAME)
+if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build/release$")
 	reset_Mode_Cache_Options(CACHE_POPULATED)
 	#setting the variables related to the current build mode
 	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "the type of build is dependent from build location" FORCE)
@@ -119,8 +117,7 @@ if(DIR_NAME STREQUAL "build/release")
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : misuse of PID functionnalities -> you must run cmake command from the build folder at first time.")
 		return()
 	endif()
-elseif(DIR_NAME STREQUAL "build/debug")
-	unset(DIR_NAME)
+elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build/debug$")
 	reset_Mode_Cache_Options(CACHE_POPULATED)
 	#setting the variables related to the current build mode
 	set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "the type of build is dependent from build location" FORCE)
@@ -131,8 +128,7 @@ elseif(DIR_NAME STREQUAL "build/debug")
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : misuse of PID functionnalities -> you must run cmake command from the build folder at first time.")
 		return()
 	endif()
-elseif(DIR_NAME STREQUAL "build")
-	unset(DIR_NAME)
+elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	declare_Native_Global_Cache_Options() #first of all declaring global options so that the package is preconfigured with default options values and adequate comments for each variable
 	set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/checksources "")

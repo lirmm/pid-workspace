@@ -630,7 +630,7 @@ endfunction(get_Library_ELF_Symbols_Max_Versions)
 #     :type: type of the deployment unit (NATIVE, EXTERNAL, FRAMEWORK, ENVIRONMENT)
 #
 macro(manage_Current_Platform build_folder type)
-	if(build_folder STREQUAL "build")
+	if("${build_folder}" MATCHES "${PROJECT_NAME}/build$")
 		if(CURRENT_PLATFORM)# a current platform is already defined
 			#if any of the following variable changed, the cache of the CMake project needs to be regenerated from scratch
 			set(TEMP_PLATFORM ${CURRENT_PLATFORM})
@@ -648,7 +648,7 @@ macro(manage_Current_Platform build_folder type)
 		endif()
 	endif()
   load_Workspace_Info()
-	if(build_folder STREQUAL "build")
+	if("${build_folder}" MATCHES "${PROJECT_NAME}/build$")
 		if(TEMP_PLATFORM)
 			if( (NOT TEMP_PLATFORM STREQUAL CURRENT_PLATFORM) #the current platform has changed to we need to regenerate
 					OR (NOT TEMP_C_COMPILER STREQUAL CMAKE_C_COMPILER)

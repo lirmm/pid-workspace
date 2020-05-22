@@ -213,8 +213,7 @@ macro(declare_Wrapper author institution mail year license address public_addres
 set(CMAKE_BUILD_TYPE Release CACHE INTERNAL "")
 set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")#to avoid the use of -isystem that may be not so well managed by some compilers
 set(${PROJECT_NAME}_ROOT_DIR ${WORKSPACE_DIR}/wrappers/${PROJECT_NAME} CACHE INTERNAL "")
-file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
-manage_Current_Platform("${DIR_NAME}" "EXTERNAL") #loading the current platform configuration and perform adequate actions if any changes
+manage_Current_Platform("${CMAKE_BINARY_DIR}" "EXTERNAL") #loading the current platform configuration and perform adequate actions if any changes
 
 configure_Git()
 if(NOT GIT_CONFIGURED)
@@ -244,8 +243,7 @@ check_For_Remote_Respositories("${ADDITIONNAL_DEBUG_INFO}")#configuring git remo
 ############ Managing build process #########################
 #############################################################
 
-if(DIR_NAME STREQUAL "build")
-		unset(DIR_NAME)
+if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	  #################################################
 	  ######## create global targets ##################
 	  #################################################
