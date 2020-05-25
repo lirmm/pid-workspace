@@ -472,3 +472,5 @@ set(contributions_options "\
 	-DIN_CI_PROCESS=${IN_CI_PROCESS} \
 	-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}") #using default or current native build system
 add_PID_Command(contributions Manage_PID_Contribution_Spaces.cmake)
+
+add_PID_Command(workspace_path Print_Workspace_Path.cmake)

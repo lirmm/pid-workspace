@@ -435,6 +435,12 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			VERBATIM
 		)
 	endif()
+	add_custom_target(
+		workspace_path
+		COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} -P ${WORKSPACE_DIR}/cmake/commands/Print_Workspace_Path.cmake
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	)
+
 	set(PACKAGE_FORMAT_FOLDER ${CMAKE_SOURCE_DIR})
 	set(PACKAGE_FORMAT_FILE ${PACKAGE_FORMAT_FOLDER}/.clang-format)
 	# if a code style is provided, copy the configuration file to the package root folder

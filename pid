@@ -1,32 +1,62 @@
 #!/usr/bin/env sh
 
-build_dir=`dirname "$0"`/build
+source_dir=`dirname "$0"`
 
-# Configure the project if necessary
-if [ ! -f $build_dir/CMakeCache.txt ]; then
-    cmake -B $build_dir
-fi
+# $1: source dir, $2 cmake options
+configure() {
+    cmake -S $1 -B $1/build $2
+}
 
-# If no argument are given then simply configure the project
-if [ "$#" -eq 0 ]; then
-    cmake --build $build_dir
+# $1: source_dir, uses $cmake_options
+apply_options() {
+    if [ ! -z "$cmake_options" ]; then
+        configure $1 $cmake_options
+    fi
+}
+
+# $1: source_dir, $2: target
+run() {
+    # Configure the project a first time if necessary
+    if [ ! -f $1/build/CMakeCache.txt ]; then
+        cmake -S $1 -B $1/build
+    fi
+
+    apply_options $1
+
+    if [ -z "$2" ]; then
+        cmake --build $1/build
+    else
+        cmake --build $1/build --target $2
+    fi
+}
+
+target=""
+fake_target=""
+cmake_options=""
+
+# Set the arguments as environment variables and store CMake options
+for arg in $@; do
+    if [ "`expr \"$arg\" : \"-D.*\"`" != "0" ]; then
+        cmake_options="$cmake_options $arg"
+    elif [ -z "$target" -a "$arg" = "workspace" ]; then
+        fake_target=$arg
+    elif [ -z "$target" -a "$arg" = "hard_clean" ]; then
+        fake_target=$arg
+    elif [ -z "$target" ]; then
+        target=$arg
+    else
+        export $arg
+    fi  
+done
+
+# Execute the given target or any of the "fake" targets
+# First handle "fake" targets
+if [ "$fake_target" = "workspace" ]; then
+    run $source_dir workspace_path > /dev/null 2>&1
+    ws_dir=$(<$source_dir/build/ws_path.txt)
+    run $ws_dir $target
+elif [ "$fake_target" = "hard_clean" ]; then
+    rm -rf $source_dir/build/*
 else
-    # Extract the target
-    target=$1
-
-    # Extract the remaining arguments
-    args="${@:2}"
-    
-    # Set the arguments as environment variables and store CMake options
-    cmake_options=""
-    for arg in $args; do
-        if [[ $arg == -D* ]]; then
-            cmake_options="$cmake_options $arg"
-        else
-            export $arg
-        fi
-    done
-
-    # Execute the target
-    cmake $cmake_options --build $build_dir --target $target
+    run $source_dir $target
 fi
