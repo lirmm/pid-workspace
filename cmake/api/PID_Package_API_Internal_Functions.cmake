@@ -991,7 +991,8 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 				return()
 			else()#OK resolution took place !!
 				add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
-				if(${dep_pack}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} OR ${dep_pack}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}) #are there any dependency (external only) for this external package
+				if(${dep_pack}_DEPENDENCIES${USE_MODE_SUFFIX}
+					OR ${dep_pack}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}) #are there any dependency for this package
 					resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)#recursion : resolving dependencies for each external package dependency
 				endif()
 			endif()
