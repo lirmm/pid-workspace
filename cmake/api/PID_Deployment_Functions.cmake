@@ -1040,12 +1040,12 @@ list(FIND already_installed_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) #not found in installed versions
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
 	if(RES STREQUAL "UNKNOWN" OR RES STREQUAL "PROBLEM") # this package version has not been build since beginning of the process  OR this package version has FAILED TO be deployed from binary during current process
-		set(ALL_IS_OK FALSE)
 		build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}" "${run_tests}")
-
 		if(ALL_IS_OK)
-			message("[PID] INFO : package ${package} version ${RES_VERSION} has been deployed ...")
-			set(${DEPLOYED} TRUE PARENT_SCOPE)
+      if(ADDITIONNAL_DEBUG_INFO)
+	      message("[PID] INFO : package ${package} version ${RES_VERSION} has been deployed ...")
+      endif()
+      set(${DEPLOYED} TRUE PARENT_SCOPE)
 			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
 		else()
 			message("[PID] ERROR : automatic build and install of source package ${package} FAILED !!")
@@ -1241,11 +1241,12 @@ list(FIND already_installed_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
 	if(RES STREQUAL "UNKNOWN" OR RES STREQUAL "PROBLEM") # this package version has not been build since last command OR this package version has FAILED TO be deployed from binary during current process
-		set(ALL_IS_OK FALSE)
 		build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}" "${run_tests}")
 		if(ALL_IS_OK)
-			message("[PID] INFO : package ${package} version ${RES_VERSION} has been deployed ...")
-			set(${DEPLOYED} TRUE PARENT_SCOPE)
+      if(ADDITIONNAL_DEBUG_INFO)
+			     message("[PID] INFO : package ${package} version ${RES_VERSION} has been deployed ...")
+      endif()
+      set(${DEPLOYED} TRUE PARENT_SCOPE)
 			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
 		else()
 			message("[PID]  ERROR : automatic build and install of package ${package} (version ${RES_VERSION}) FAILED !!")
@@ -2079,17 +2080,29 @@ if(NOT RES_VERSION)
 endif()
 list(FIND already_installed_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) # selected version is not excluded from deploy process
-	build_And_Install_External_Package_Version(INSTALLED ${package} ${RES_VERSION} FALSE)
-	if(NOT INSTALLED) # this package version has FAILED TO be built during current process
-		set(${DEPLOYED} FALSE PARENT_SCOPE)
-		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" TRUE)
-	else() #SUCCESS because last correct version already built
-		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] INFO : wrapper for external package ${package} has deployed the version ${RES_VERSION}...")
+  check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
+  if(RES STREQUAL "UNKNOWN" OR RES STREQUAL "PROBLEM") # this package version has not been build since beginning of the process  OR this package version has FAILED TO be deployed from binary during current process
+  	build_And_Install_External_Package_Version(ALL_IS_OK ${package} ${RES_VERSION} FALSE)
+  	if(NOT ALL_IS_OK) # this package version has FAILED TO be built during current process
+  		set(${DEPLOYED} FALSE PARENT_SCOPE)
+  		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" TRUE)
+  	else() #SUCCESS because last correct version already built
+  		if(ADDITIONNAL_DEBUG_INFO)
+  			message("[PID] INFO : wrapper for external package ${package} has deployed the version ${RES_VERSION}...")
+  		endif()
+  		set(${DEPLOYED} TRUE PARENT_SCOPE)
+  		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
+  	endif()
+  else()
+    if(RES STREQUAL "FAIL") # this package version has FAILED TO be built during current process
+			set(${DEPLOYED} FALSE PARENT_SCOPE)
+		else() #SUCCESS (should never happen since if build was successfull then it would have generate an installed version)
+			if(ADDITIONNAL_DEBUG_INFO)
+				message("[PID] INFO : wrapper for ${package} version ${RES_VERSION} is deployed ...")
+			endif()
+			set(${DEPLOYED} TRUE PARENT_SCOPE)
 		endif()
-		set(${DEPLOYED} TRUE PARENT_SCOPE)
-		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
-	endif()
+  endif()
 else() #nothing to do but result is OK
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 	message("[PID] WARNING : no need to deploy external package ${package} version ${RES_VERSION} from wrapper, since version already exists.")
@@ -2147,17 +2160,29 @@ if(NOT RES_VERSION)
 endif()
 list(FIND already_installed_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) # selected version is not excluded from deploy process
-	build_And_Install_External_Package_Version(INSTALLED ${package} ${RES_VERSION} "${is_system}")
-	if(NOT INSTALLED) # this package version has FAILED TO be built during current process
-		set(${DEPLOYED} FALSE PARENT_SCOPE)
-		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" TRUE)
-	else() #SUCCESS because last correct version already built
-		if(ADDITIONNAL_DEBUG_INFO)
-			message("[PID] INFO : wrapper for external package ${package} has deployed the version ${RES_VERSION}...")
+  check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
+	if(RES STREQUAL "UNKNOWN" OR RES STREQUAL "PROBLEM") # this package version has not been build since last command OR this package version has FAILED TO be deployed from binary during current process
+  	build_And_Install_External_Package_Version(ALL_IS_OK ${package} ${RES_VERSION} "${is_system}")
+  	if(NOT ALL_IS_OK) # this package version has FAILED TO be built during current process
+  		set(${DEPLOYED} FALSE PARENT_SCOPE)
+  		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" TRUE)
+  	else() #SUCCESS because last correct version already built
+  		if(ADDITIONNAL_DEBUG_INFO)
+  			message("[PID] INFO : wrapper for external package ${package} has deployed the version ${RES_VERSION}...")
+  		endif()
+  		set(${DEPLOYED} TRUE PARENT_SCOPE)
+  		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
+  	endif()
+  else()
+    if(RES STREQUAL "FAIL") # this package version has FAILED TO be built during current process
+			set(${DEPLOYED} FALSE PARENT_SCOPE)
+		else() #SUCCESS because last correct version already built
+			if(ADDITIONNAL_DEBUG_INFO)
+				message("[PID] INFO : package ${package} version ${RES_VERSION} is deployed ...")
+			endif()
+			set(${DEPLOYED} TRUE PARENT_SCOPE)
 		endif()
-		set(${DEPLOYED} TRUE PARENT_SCOPE)
-		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
-	endif()
+  endif()
 else() #nothing to do but result is OK
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
@@ -2359,7 +2384,7 @@ elseif(reinstall)#reinstall from source not required simply want to redeploy
   set(NO_VERSION FALSE)# we need to specify a version !
   set(IS_EXACT TRUE)#this version must be exact !!
   set(SELECTED ${${package}_VERSION_STRING})#the version to reinstall is the currenlty used one
-  set(FORCE_REBUILD TRUE) #if reinstall from sources is finallly required then force the rebuild 
+  set(FORCE_REBUILD TRUE) #if reinstall from sources is finallly required then force the rebuild
 elseif(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
   #based on missing dependency, deduce the version constraint that applies
 	resolve_Required_External_Package_Version(VERSION_POSSIBLE SELECTED IS_EXACT IS_SYSTEM ${package})
