@@ -2093,7 +2093,7 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 else() #nothing to do but result is OK
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 	message("[PID] WARNING : no need to deploy external package ${package} version ${RES_VERSION} from wrapper, since version already exists.")
-add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
+  add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
 endif()
 endfunction(deploy_Source_External_Package)
 
@@ -2355,6 +2355,11 @@ if(reinstall AND from_sources)#if the package does not belong to packages to ins
   set(IS_EXACT TRUE)#this version must be exact !!
   set(SELECTED ${${package}_VERSION_STRING})#the version to reinstall is the currenlty used one
   set(FORCE_REBUILD TRUE)
+elseif(reinstall)#reinstall from source not required simply want to redeploy
+  set(NO_VERSION FALSE)# we need to specify a version !
+  set(IS_EXACT TRUE)#this version must be exact !!
+  set(SELECTED ${${package}_VERSION_STRING})#the version to reinstall is the currenlty used one
+  set(FORCE_REBUILD TRUE) #if reinstall from sources is finallly required then force the rebuild 
 elseif(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
   #based on missing dependency, deduce the version constraint that applies
 	resolve_Required_External_Package_Version(VERSION_POSSIBLE SELECTED IS_EXACT IS_SYSTEM ${package})
