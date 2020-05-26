@@ -27,7 +27,8 @@ endif()
 set(WRAPPER_DEFINITION_INCLUDED TRUE)
 ##########################################################################################
 
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
+get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
+set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Wrapper_API_Internal_Functions NO_POLICY_SCOPE)
 include(External_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
