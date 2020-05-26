@@ -2005,9 +2005,17 @@ function(generate_Description_For_External_Component file_for_version package pl
 		set(options_str " SHARED_LINKS ${RES_SHARED}")
 	endif()
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS)
-		#TODO for Windows ? need to manage static lib name to adapt them to OS => for windows archive have .lib extension !!
-		#may be not usefull because Windows version will be very different ?
-		fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS RES_STR)
+		create_Static_Lib_Extension(RES_EXT ${platform})
+		set(final_list_of_static)#add the adequate extension name depending on the platform
+		foreach(static_lib_path IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS)
+				static_Library_Needs_Extension(NEEDS_EXT ${static_lib_path} ${platform})
+				if(NEEDS_EXT)#OK no extension defined we can apply
+					list(APPEND final_list_of_static "${static_lib_path}${RES_EXT}")
+				else()
+					list(APPEND final_list_of_static "${static_lib_path}")
+				endif()
+		endforeach()
+		fill_String_From_List(final_list_of_static RES_STR)
 		set(options_str "${options_str} STATIC_LINKS ${RES_STR}")
 	endif()
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INCLUDES)

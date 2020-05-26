@@ -2564,13 +2564,39 @@ endfunction(create_Shared_Lib_Extension)
 #
 # .. ifmode:: internal
 #
+#  .. |create_Static_Lib_Extension| replace:: ``create_Static_Lib_Extension``
+#  .. _create_Static_Lib_Extension:
+#
+#  create_Static_Lib_Extension
+#  ---------------------------
+#
+#   .. command:: create_Static_Lib_Extension(RES_EXT platform)
+#
+#    Get the extension string to use for static libraries.
+#
+#     :platform: the identifier of target platform.
+#
+#     :RES_EXT: the output variable containing the resulting extension to use for statlic libraries.
+#
+function(create_Static_Lib_Extension RES_EXT platform)
+  if(CURRENT_PLATFORM_OS STREQUAL "windows")
+		set(${RES_EXT} ".lib" PARENT_SCOPE)
+	else()# Linux or any other standard UNIX system
+		set(${RES_EXT} ".a" PARENT_SCOPE)
+	endif()
+endfunction(create_Static_Lib_Extension)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |shared_Library_Needs_Soname| replace:: ``shared_Library_Needs_Soname``
 #  .. _shared_Library_Needs_Soname:
 #
 #  shared_Library_Needs_Soname
 #  -----------------------------------
 #
-#   .. command:: shared_Library_Needs_Soname(NEEDS_SONAME library_path)
+#   .. command:: shared_Library_Needs_Soname(NEEDS_SONAME library_path platform)
 #
 #    Check whether a shared library needs to have a soname extension appended to its name.
 #
@@ -2601,6 +2627,47 @@ function(shared_Library_Needs_Soname NEEDS_SONAME library_path platform)
   endif()
   set(${NEEDS_SONAME} TRUE PARENT_SCOPE)
 endfunction(shared_Library_Needs_Soname)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |static_Library_Needs_Extension| replace:: ``static_Library_Needs_Extension``
+#  .. _static_Library_Needs_Extension:
+#
+#  static_Library_Needs_Extension
+#  -----------------------------------
+#
+#   .. command:: static_Library_Needs_Extension(NEEDS_EXT library_path platform)
+#
+#    Check whether a static library needs to have an extension appended to its name.
+#
+#     :library_path: the path to the library.
+#
+#     :platform: the target platform.
+#
+#     :NEEDS_EXT: the output variable that is TRUE if the extension finish by a SONAME.
+#
+function(static_Library_Needs_Extension NEEDS_EXT library_path platform)
+  set(${NEEDS_EXT} TRUE PARENT_SCOPE)
+  get_filename_component(EXTENSION ${library_path} EXT)#get the longest extension of the file
+  if(NOT EXTENSION)
+    return()
+  endif()
+  if(CURRENT_PLATFORM_OS STREQUAL "windows")
+    set(target_extension "\\.lib")
+  else()
+    set(target_extension "\\.l?a")
+  endif()
+  if(EXTENSION MATCHES "^(\\.[^\\.]+)*${target_extension}$")#there is already a .so|.dylib|.dll extension
+    # this check is here to ensure that a library name ending with a dot followed by any characters
+    # will not be considered as a library extension (e.g. example libusb-1.0)
+    set(${NEEDS_EXT} FALSE PARENT_SCOPE)
+    return()
+  endif()
+endfunction(static_Library_Needs_Extension)
+
 
 #.rst:
 #
