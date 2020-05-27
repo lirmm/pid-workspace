@@ -2418,13 +2418,22 @@ function(build_B2_External_Project)
   endif()
 
   message("[PID] INFO : Configuring ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
-  execute_process(COMMAND ${project_dir}/bootstrap.sh --with-toolset=${install_toolset} WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}  RESULT_VARIABLE result)
+  set(TEMP_CXX $ENV{CXX})
+  set(TEMP_CXXFLAGS $ENV{CXXFLAGS})
+  set(ENV{CXX})
+  set(ENV{CXXFLAGS})
+  execute_process(COMMAND ${project_dir}/bootstrap.sh --with-toolset=${install_toolset}
+                  WORKING_DIRECTORY ${project_dir}
+                  ${OUTPUT_MODE}
+                  RESULT_VARIABLE result)
   if(NOT result EQUAL 0)#error at configuration time
     message("[PID] ERROR : cannot configure boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
   endif()
 
+  set(ENV{CXX} ${TEMP_CXX})
+  set(ENV{CXXFLAGS} ${TEMP_CXXFLAGS})
   #generating the jam file for boost build
   # set(jamfile ${project_dir}/user-config.jam)
   # set(TOOLSET_NAME ${install_toolset})
