@@ -5121,3 +5121,29 @@ function(append_Join_Generator_Expressions inout_expr input_expr)
     set(${inout_expr} "${input_expr}" PARENT_SCOPE)
   endif()
 endfunction(append_Join_Generator_Expressions)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |symlink_DLLs_To_Lib_Folder| replace:: ``symlink_DLLs_To_Lib_Folder``
+#  .. _symlink_DLLs_To_Lib_Folder:
+#
+#  symlink_DLLs_To_Lib_Folder
+#  ---------------------------------
+#
+#   .. command:: symlink_DLLs_To_Lib_Folder(install_directory)
+#
+#    On Windows, symlinks any DLL present in install_directory/bin to install_directory/src for consistency with UNIX platforms
+#
+#     :install_directory: the installation directory containing the bin and src folders
+#
+function(symlink_DLLs_To_Lib_Folder install_directory)
+  if(WIN32)
+    file(GLOB dlls ${install_directory}/bin/*.dll)
+    foreach(dll ${dlls})
+      string(REPLACE "/bin/" "/lib/" dll_in_src ${dll})
+      create_Symlink(${dll} ${dll_in_src})
+    endforeach()
+  endif()
+endfunction(symlink_DLLs_To_Lib_Folder)

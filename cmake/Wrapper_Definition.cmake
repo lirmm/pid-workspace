@@ -2360,6 +2360,9 @@ function(build_B2_External_Project)
   endif()
   # configure current platform
   set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} address-model=${CURRENT_PLATFORM_ARCH}")#address model is specified the same way in PID and b2
+  set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} link=shared")#build shared libraries
+  set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} runtime-link=shared")#link to shared C and C++ runtime
+  set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} threading=multi")#build shared libraries
   set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} architecture=${CURRENT_PLATFORM_TYPE}")#processor architecture supported are "x86" and "arm" so PID uses same names than b2
   if(CURRENT_PLATFORM_OS STREQUAL macos)#we use a specific identifier in PID only for macos otherwise thay are the same than b2
     set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} target-os=darwin")#processor architecture
@@ -2387,11 +2390,13 @@ function(build_B2_External_Project)
   get_Environment_Info(CXX RELEASE CFLAGS cxx_flags COMPILER cxx_compiler)
   get_Environment_Info(C RELEASE CFLAGS c_flags)
 
-  if(c_flags)
-    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} cflags=\"${c_flags}\"")#need to use guillemet because pass "as is"
-  endif()
-  if(cxx_flags)
-    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} cxxflags=\"${cxx_flags}\"")#need to use guillemet because pass "as is"
+  if(NOT WIN32)
+    if(c_flags)
+      set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} cflags=\"${c_flags}\"")#need to use guillemet because pass "as is"
+    endif()
+    if(cxx_flags)
+      set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} cxxflags=\"${cxx_flags}\"")#need to use guillemet because pass "as is"
+    endif()
   endif()
 
   if(BUILD_B2_EXTERNAL_PROJECT_LINKS)
@@ -2424,20 +2429,26 @@ function(build_B2_External_Project)
   endif()
 
   if(CMAKE_HOST_WIN32)#on a window host path must be resolved
-    separate_arguments(COMMAND_ARGS_AS_LIST WINDOWS_COMMAND "${ARGS_FOR_B2_BUILD}")
+    # separate_arguments(COMMAND_ARGS_AS_LIST WINDOWS_COMMAND "${ARGS_FOR_B2_BUILD}")
+    string(REGEX REPLACE "/" "-" COMMAND_ARGS_AS_LIST ${ARGS_FOR_B2_BUILD})
+    string(REGEX REPLACE " " ";" COMMAND_ARGS_AS_LIST ${COMMAND_ARGS_AS_LIST})
   else()#if not on wondows use a UNIX like command syntac
     separate_arguments(COMMAND_ARGS_AS_LIST UNIX_COMMAND "${ARGS_FOR_B2_BUILD}")#always from host perpective
   endif()
 
   message("[PID] INFO : Configuring ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+
   set(TEMP_CXX $ENV{CXX})
   set(TEMP_CXXFLAGS $ENV{CXXFLAGS})
   set(ENV{CXX})
   set(ENV{CXXFLAGS})
-  execute_process(COMMAND ${project_dir}/bootstrap.sh --with-toolset=${install_toolset}
-                  WORKING_DIRECTORY ${project_dir}
-                  ${OUTPUT_MODE}
-                  RESULT_VARIABLE result)
+
+  if(WIN32)
+    execute_process(COMMAND ${project_dir}/bootstrap.bat --with-toolset=${install_toolset} --layout=system WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}  RESULT_VARIABLE result)
+  else()
+    execute_process(COMMAND ${project_dir}/bootstrap.sh --with-toolset=${install_toolset} WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}  RESULT_VARIABLE result)
+  endif()
+  
   if(NOT result EQUAL 0)#error at configuration time
     message("[PID] ERROR : cannot configure boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
@@ -2465,15 +2476,19 @@ function(build_B2_External_Project)
     endif()
   endif()
   message("[PID] INFO : Building and installing ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+
+  message("b2 install ${jobs} --prefix=${TARGET_INSTALL_DIR} --layout=system ${COMMAND_ARGS_AS_LIST}")
   execute_process(COMMAND ${project_dir}/b2 install
                           ${jobs}
                           --prefix=${TARGET_INSTALL_DIR}
+                          --layout=system
                           # --user-config=${jamfile}
                           ${COMMAND_ARGS_AS_LIST}
                  WORKING_DIRECTORY ${project_dir}
                  ${OUTPUT_MODE}
                  RESULT_VARIABLE result
                  ERROR_VARIABLE varerr)
+
   if(NOT result EQUAL 0
     AND NOT (varerr MATCHES "^link\\.jam: No such file or directory[ \t\n]*$"))#if the error is the one specified this is a normal situation (i.e. a BUG in previous version of b2, -> this message should be a warning)
     message("[PID] ERROR : cannot build and install boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
@@ -2482,10 +2497,12 @@ function(build_B2_External_Project)
   endif()
 
   # Build systems may install libraries in a lib64 folder on some platforms
-	# If it's the case, rename the folder to lib in order to have a unique wrapper description
-	if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
-    file(RENAME ${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
+	# If it's the case, symlink the folder to lib in order to have a unique wrapper description
+  if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
+    create_Symlink(${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
   endif()
+
+  symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
 endfunction(build_B2_External_Project)
 
 
@@ -2663,11 +2680,14 @@ function(build_Autotools_External_Project)
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
   endif()
+
   # Build systems may install libraries in a lib64 folder on some platforms
-	# If it's the case, rename the folder to lib in order to have a unique wrapper description
-	if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
-    file(RENAME ${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
+	# If it's the case, symlink the folder to lib in order to have a unique wrapper description
+  if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
+    create_Symlink(${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
   endif()
+
+  symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
 endfunction(build_Autotools_External_Project)
 
 #.rst:
@@ -2813,10 +2833,12 @@ function(build_Waf_External_Project)
   endif()
 
   # Build systems may install libraries in a lib64 folder on some platforms
-	# If it's the case, rename the folder to lib in order to have a unique wrapper description
-	if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
-    file(RENAME ${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
+	# If it's the case, symlink the folder to lib in order to have a unique wrapper description
+  if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
+    create_Symlink(${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
   endif()
+
+  symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
 endfunction(build_Waf_External_Project)
 
 #.rst:
@@ -2982,6 +3004,8 @@ function(build_CMake_External_Project)
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
   endif()
+
+  symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
 endfunction(build_CMake_External_Project)
 
 #.rst:
@@ -3172,8 +3196,10 @@ function(build_Bazel_External_Project)
   endif()
 
   # Build systems may install libraries in a lib64 folder on some platforms
-	# If it's the case, rename the folder to lib in order to have a unique wrapper description
-	if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
-    file(RENAME ${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
+	# If it's the case, symlink the folder to lib in order to have a unique wrapper description
+  if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
+    create_Symlink(${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
   endif()
+
+  symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
 endfunction(build_Bazel_External_Project)

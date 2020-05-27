@@ -1282,7 +1282,7 @@ endfunction(get_Environment_Host_Platform)
 function(get_Environment_Target_ABI_Flags FLAGS target_abi)
   if(target_abi STREQUAL "CXX11" OR target_abi EQUAL 11 OR target_abi STREQUAL "abi11")
     set(${FLAGS} "-D_GLIBCXX_USE_CXX11_ABI=1" PARENT_SCOPE)
-  else()#use legacy abi
+  elseif(NOT WIN32)#use legacy abi
     set(${FLAGS} "-D_GLIBCXX_USE_CXX11_ABI=0" PARENT_SCOPE)
   endif()
 endfunction(get_Environment_Target_ABI_Flags)

@@ -2990,6 +2990,7 @@ if(external)#external packages may be provided with specific script to use when 
     message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/cmake_script/${${package}_SCRIPT_POST_INSTALL} ...")
     include(${TARGET_INSTALL_DIR}/cmake_script/${${package}_SCRIPT_POST_INSTALL} NO_POLICY_SCOPE)#execute the script
   endif()
+  symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
 else()
   # Manage native package dependencies => need to check direct native dependencies
 	foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX}) #check that version of these dependencies is OK
