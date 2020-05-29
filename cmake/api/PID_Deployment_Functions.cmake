@@ -783,34 +783,52 @@ function(load_Package_Binary_References REFERENCES_FOUND package)
 set(${REFERENCES_FOUND} FALSE PARENT_SCOPE)
 set(to_include)
 if(${package}_FRAMEWORK) #references are deployed in a framework
-  include_Framework_Reference_File(PATH_TO_FILE ${${package}_FRAMEWORK})
+  include_Framework_Reference_File(PATH_TO_REF ${${package}_FRAMEWORK})
 	if(PATH_TO_REF)
 		#when package is in a framework there is one more indirection to get references (we need to get information about this framework before downloading the reference file)
 		set(FRAMEWORK_ADDRESS ${${${package}_FRAMEWORK}_SITE})#get the address of the framework static site
-    file(DOWNLOAD ${FRAMEWORK_ADDRESS}/packages/${package}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
-		list(GET res 0 numeric_error)
-
-		if(numeric_error EQUAL 0 #framework site is online & reference available.
-		AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
-      set(to_include ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
-		else() #it may be an external package, try this
-			file(DOWNLOAD ${FRAMEWORK_ADDRESS}/external/${package}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
-			list(GET res 0 numeric_error)
-			if(numeric_error EQUAL 0 #framework site is online & reference available.
-			AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
-				set(to_include ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
-			endif()
-		endif()
+    get_Package_Type(${package} PACK_TYPE)
+    set(binaries_address)
+    if(PACK_TYPE STREQUAL "NATIVE")
+      set(binaries_address ${FRAMEWORK_ADDRESS}/packages/${package}/binaries/binary_references.cmake)
+    elseif(PACK_TYPE STREQUAL "EXTERNAL")
+      set(binaries_address ${FRAMEWORK_ADDRESS}/external/${package}/binaries/binary_references.cmake)
+    endif()
+    if(binaries_address)
+      file(DOWNLOAD ${binaries_address} ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res TLS_VERIFY OFF)
+  		list(GET res 0 numeric_error)
+  		if(numeric_error EQUAL 0 #framework site is online & reference available.
+  		AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
+        set(to_include ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
+  		else() #it may be an external package, try this
+        if(ADDITIONNAL_DEBUG_INFO)
+          message("[PID] INFO: no binary reference found for ${package}")
+        endif()
+      endif()
+    else()
+      if(ADDITIONNAL_DEBUG_INFO)
+        message("[PID] WARNING: cannot load binary references for unknown package ${package}")
+      endif()
+    endif()
+  else()
+    if(ADDITIONNAL_DEBUG_INFO)
+      message("[PID] WARNING: no reference for framework ${${package}_FRAMEWORK}")
+    endif()
 	endif()
 elseif(${package}_SITE_GIT_ADDRESS)  #references are deployed in a lone static site
 	#when package has a lone static site, the reference file can be directly downloaded
-	file(DOWNLOAD ${${package}_SITE_ROOT_PAGE}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
+	file(DOWNLOAD ${${package}_SITE_ROOT_PAGE}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res TLS_VERIFY OFF)
 	list(GET res 0 numeric_error)
 	if(numeric_error EQUAL 0 #static site online & reference available.
 	AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
 		set(to_include ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
+  else() #it may be an external package, try this
+    if(ADDITIONNAL_DEBUG_INFO)
+      message("[PID] INFO: no binary reference found for ${package}")
+    endif()
 	endif()
 endif()
+
 if(to_include)#there is a file to include but if static site is private it may have returned an invalid file (HTML connection ERROR response)
   file(STRINGS ${to_include} LINES)
   set(erroneous_file FALSE)

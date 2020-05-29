@@ -2872,7 +2872,7 @@ function(get_Package_Type package PACK_TYPE)
     return()
   endif()
   # From here they are unknown in the local filesystem, finaly try to find references of this package
-  # if not in source tree the packge has been deployed from a reference file => use this information to deduce its type
+  # if not in source tree the package has been deployed from a reference file => use this information to deduce its type
   get_Path_To_External_Reference_File(RESULT_PATH PATH_TO_CS ${package})
   if(RESULT_PATH)
     set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
@@ -2884,7 +2884,7 @@ function(get_Package_Type package PACK_TYPE)
       return()
     endif()
   endif()
-  set(${PACK_TYPE} UNKNOWN PARENT_SCOPE)
+  set(${PACK_TYPE} "UNKNOWN" PARENT_SCOPE)
 endfunction(get_Package_Type)
 
 #.rst:

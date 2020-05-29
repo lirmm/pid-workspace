@@ -871,19 +871,19 @@ endfunction(print_Package_Contact)
 #
 # .. ifmode:: internal
 #
-#  .. |print_Package_Info| replace:: ``print_Package_Info``
-#  .. _print_Package_Info:
+#  .. |print_Native_Package_Info| replace:: ``print_Native_Package_Info``
+#  .. _print_Native_Package_Info:
 #
-#  print_Package_Info
-#  ------------------
+#  print_Native_Package_Info
+#  -------------------------
 #
-#   .. command:: print_Package_Info(package)
+#   .. command:: print_Native_Package_Info(package)
 #
 #   Print to standard output information about a given native package.
 #
 #      :package: the name of the package.
 #
-function(print_Package_Info package)
+function(print_Native_Package_Info package)
 	message("NATIVE PACKAGE: ${package}")
 	fill_String_From_List(${package}_DESCRIPTION descr_string)
 	message("DESCRIPTION: ${descr_string}")
@@ -912,7 +912,7 @@ function(print_Package_Info package)
 		message("BINARY VERSIONS:")
 		print_Package_Binaries(${package})
 	endif()
-endfunction(print_Package_Info)
+endfunction(print_Native_Package_Info)
 
 #.rst:
 #

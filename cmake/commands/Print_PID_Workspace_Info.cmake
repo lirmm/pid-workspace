@@ -98,8 +98,10 @@ elseif(TARGET_PACKAGE)
 	else()#searching for categories a package belongs to
 		get_Package_Type(${TARGET_PACKAGE} PACK_TYPE)
 		if(PACK_TYPE STREQUAL "UNKNOWN")#if unknown it means there is no reference or source repository
-			#TODO contrib update references
-			get_Package_Type(${TARGET_PACKAGE} PACK_TYPE)#update the package type
+			update_Contribution_Spaces(UPDATED)
+	    if(UPDATED)
+				get_Package_Type(${TARGET_PACKAGE} PACK_TYPE)#update the package type
+			endif()
 		endif()
 		if(PACK_TYPE STREQUAL "UNKNOWN")#if unknown it means there is no reference or source repository => now an error
 			message("[PID] ERROR : package ${TARGET_PACKAGE} does not refer to any known package in installed contribution spaces")
@@ -115,7 +117,7 @@ elseif(TARGET_PACKAGE)
 			if(EXTERNAL)
 				print_External_Package_Info(${TARGET_PACKAGE})
 			else()
-				print_Package_Info(${TARGET_PACKAGE})
+				print_Native_Package_Info(${TARGET_PACKAGE})
 			endif()
 			find_In_Categories(${TARGET_PACKAGE}) # printing the categories the package belongs to
 		else()
