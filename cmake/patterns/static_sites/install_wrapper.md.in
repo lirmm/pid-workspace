@@ -17,15 +17,15 @@ The external package @PACKAGE_NAME@ resulting from the build of its wrapper will
 The external package @PACKAGE_NAME@ can be installed "by hand" using command provided by the PID workspace:
 
 {% highlight shell %}
-cd <pid-workspace>/pid
-make deploy package=@PACKAGE_NAME@
+cd <pid-workspace>
+./pid deploy package=@PACKAGE_NAME@
 {% endhighlight %}
 
 Or if you want to install a specific binary version of this external package, for instance for the last version:
 
 {% highlight shell %}
-cd <pid-workspace>/pid
-make deploy package=@PACKAGE_NAME@ version=@PACKAGE_LAST_VERSION_WITH_PATCH@
+cd <pid-workspace>
+./pid deploy package=@PACKAGE_NAME@ version=@PACKAGE_LAST_VERSION_WITH_PATCH@
 {% endhighlight %}
 
 ## Manual Installation
@@ -51,5 +51,6 @@ Wrappers require the user to define a given version to build, for instance for t
 
 {% highlight shell %}
 cd <pid-workspace>/wrappers/@PACKAGE_NAME@/build
-cmake .. && make build version=@PACKAGE_LAST_VERSION_WITH_PATCH@
+cmake .. && cd ..
+./pid build version=@PACKAGE_LAST_VERSION_WITH_PATCH@
 {% endhighlight %}
