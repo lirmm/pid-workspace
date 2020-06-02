@@ -33,6 +33,7 @@ include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Wrapper_API_Internal_Functions NO_POLICY_SCOPE)
 include(External_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
 include(Package_Definition NO_POLICY_SCOPE) #to enable the use of get_PID_Platform_Info in find files
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 
 include(CMakeParseArguments)
 
@@ -558,12 +559,13 @@ endmacro(declare_PID_Wrapper_Publishing)
 #        build_PID_Wrapper()
 #
 macro(build_PID_Wrapper)
-if(${ARGC} GREATER 0)
-  finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the build_PID_Wrapper command requires no arguments.")
-	return()
-endif()
-build_Wrapped_Project()
+  create_Shell_Script_Symlinks()
+  if(${ARGC} GREATER 0)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the build_PID_Wrapper command requires no arguments.")
+    return()
+  endif()
+  build_Wrapped_Project()
 endmacro(build_PID_Wrapper)
 
 ########################################################################################

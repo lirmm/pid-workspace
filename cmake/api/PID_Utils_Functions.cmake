@@ -5147,3 +5147,26 @@ function(symlink_DLLs_To_Lib_Folder install_directory)
     endforeach()
   endif()
 endfunction(symlink_DLLs_To_Lib_Folder)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Shell_Script_Symlinks| replace:: ``create_Shell_Script_Symlinks``
+#  .. create_Shell_Script_Symlinks:
+#
+#  create_Shell_Script_Symlinks
+#  ----------------
+#
+#   .. command:: create_Shell_Script_Symlinks()
+#
+#     Creates symlinks in the current source directory for the pid and pid.bat script located in the workspace root
+#
+function(create_Shell_Script_Symlinks)
+	set(scripts "pid;pid.bat")
+	foreach(script IN LISTS scripts)
+		if(NOT EXISTS ${CMAKE_SOURCE_DIR}/${script})
+			create_Symlink(${WORKSPACE_DIR}/${script} ${CMAKE_SOURCE_DIR}/${script})
+		endif()		
+	endforeach()
+endfunction(create_Shell_Script_Symlinks)

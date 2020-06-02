@@ -548,6 +548,7 @@ endmacro(declare_PID_Environment_Solution)
 #        build_PID_Environment()
 #
 macro(build_PID_Environment)
+  create_Shell_Script_Symlinks()
   if(${ARGC} GREATER 0)
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the build_PID_Environment command requires no arguments.")
   	return()

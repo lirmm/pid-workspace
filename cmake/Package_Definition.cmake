@@ -31,6 +31,7 @@ get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
 set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Package_API_Internal_Functions NO_POLICY_SCOPE)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(CMakeParseArguments)
 
 #.rst:
