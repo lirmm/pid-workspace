@@ -15,17 +15,22 @@ if [%1] == [] goto after_loop
         goto loop_start
     ) 
     if [!target!] == [] (
-        if "!command!"=="workspace" (
-            echo "!command! is workspace"
-            set fake_target=!command!
-            shift
-            goto loop_start
-        )
-        if "!command!"=="hard_clean" (
-            echo "!command! is hard_clean"
-            set fake_target=!command!
-            shift
-            goto loop_start
+        if [!fake_target!] == [] (
+            if "!command!"=="workspace" (
+                set fake_target=!command!
+                shift
+                goto loop_start
+            )
+            if "!command!"=="hard_clean" (
+                set fake_target=!command!
+                shift
+                goto loop_start
+            )
+            if "!command!"=="configure" (
+                set fake_target=!command!
+                shift
+                goto loop_start
+            )
         )
         set target=!command!
         shift
@@ -41,17 +46,29 @@ if [%1] == [] goto after_loop
 rem Don't ask me why this line is required
 
 if "!fake_target!"=="workspace" (
+    set cmake_options_backup=!cmake_options!
+    set cmake_options=""
     call :run !source_dir! workspace_path
+    set cmake_options=!cmake_options_backup!
     for /f "delims=" %%a in (!source_dir!\build\ws_path.txt) do ( 
         set ws_dir=%%a
     )
-    echo "Forwarding command to workspace"
-    call :run !ws_dir! , !target!
+    if "!target!"=="configure" (
+        call :configure !ws_dir!
+    ) else (
+        call :run !ws_dir! , !target!
+    )
     goto :eof
 )
 
 if "!fake_target!"=="hard_clean" (
     cmd /C "cd !source_dir!\build && del *.*"
+    goto :eof
+)
+
+if "!fake_target!"=="configure" (
+    echo "Fake target: configure"
+    call :configure !source_dir!
     goto :eof
 )
 

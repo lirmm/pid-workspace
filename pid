@@ -1,62 +1,33 @@
-#!/usr/bin/env sh
+# dont use a shebang otherwise the shell detection won't work
 
 source_dir=`dirname "$0"`
+script_abs_path=$(readlink -m $source_dir/pid)
+ws_dir=$(readlink -m $script_abs_path/..)
 
-# $1: source dir, $2 cmake options
-configure() {
-    cmake -S $1 -B $1/build $2
-}
+# Try to make embedded shell detection (e.g bash in zsh) works in all cases
+shell_exe_name=$(ps -o fname --no-headers $$) # should always give bash on bash
+shell_base_name=$(basename $SHELL) # should always give zsh if the current or parent shell is zsh
 
-# $1: source_dir, uses $cmake_options
-apply_options() {
-    if [ ! -z "$cmake_options" ]; then
-        configure $1 $cmake_options
-    fi
-}
-
-# $1: source_dir, $2: target
-run() {
-    # Configure the project a first time if necessary
-    if [ ! -f $1/build/CMakeCache.txt ]; then
-        cmake -S $1 -B $1/build
-    fi
-
-    apply_options $1
-
-    if [ -z "$2" ]; then
-        cmake --build $1/build
-    else
-        cmake --build $1/build --target $2
-    fi
-}
-
-target=""
-fake_target=""
-cmake_options=""
-
-# Set the arguments as environment variables and store CMake options
-for arg in $@; do
-    if [ "`expr \"$arg\" : \"-D.*\"`" != "0" ]; then
-        cmake_options="$cmake_options $arg"
-    elif [ -z "$target" -a "$arg" = "workspace" ]; then
-        fake_target=$arg
-    elif [ -z "$target" -a "$arg" = "hard_clean" ]; then
-        fake_target=$arg
-    elif [ -z "$target" ]; then
-        target=$arg
-    else
-        export $arg
-    fi  
-done
-
-# Execute the given target or any of the "fake" targets
-# First handle "fake" targets
-if [ "$fake_target" = "workspace" ]; then
-    run $source_dir workspace_path > /dev/null 2>&1
-    ws_dir=$(<$source_dir/build/ws_path.txt)
-    run $ws_dir $target
-elif [ "$fake_target" = "hard_clean" ]; then
-    rm -rf $source_dir/build/*
+if [ "$shell_exe_name" = "bash" ]; then
+    shell="bash"
+elif [ "$shell_base_name" = "zsh" ]; then
+    shell="zsh"
 else
-    run $source_dir $target
+    shell=""
 fi
+
+echo "----------------------------------------------------- WARNING --------------------------------------------------"
+echo "Consider sourcing the share/pid.sh script inside your workspace and use the pid command for better shell support"
+echo ""
+echo "For the current session only run"
+echo "    source $ws_dir/share/pid.sh"
+echo ""
+echo "Then add the above line to your shell setup script"
+if [ ! -z "$shell" ]; then
+    echo "    echo \"source $ws_dir/share/pid.sh\" >> $HOME/.${shell}rc"
+fi
+echo "----------------------------------------------------------------------------------------------------------------"
+
+. $ws_dir/share/pid.sh
+
+pid $@
