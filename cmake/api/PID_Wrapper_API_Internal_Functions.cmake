@@ -2007,7 +2007,7 @@ function(generate_Description_For_External_Component file_for_version package pl
 		foreach(shared_lib_path IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS)
 				shared_Library_Needs_Soname(RESULT_SONAME ${shared_lib_path} ${platform})
 				# if it's not a path then construct it according to the platform
-				if(NOT ${shared_lib_path} MATCHES "/" AND NOT MATCHES "^-l")
+				if(NOT ${shared_lib_path} MATCHES "/" AND NOT ${shared_lib_path} MATCHES "^-l")
 					if(WIN32)
 						set(shared_lib_path lib/${shared_lib_path})
 					elseif(${shared_lib_path} MATCHES "^lib.*")
@@ -2032,7 +2032,7 @@ function(generate_Description_For_External_Component file_for_version package pl
 		foreach(static_lib_path IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS)
 			static_Library_Needs_Extension(NEEDS_EXT ${static_lib_path} ${platform})
 			# if it's not a path then construct it according to the platform
-			if(NOT ${static_lib_path} MATCHES "/" AND NOT MATCHES "^-l")
+			if(NOT ${static_lib_path} MATCHES "/" AND NOT ${static_lib_path} MATCHES "^-l")
 				if(WIN32)
 					set(static_lib_path lib/${static_lib_path})
 				elseif(${static_lib_path} MATCHES "^lib.*")
