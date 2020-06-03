@@ -16,6 +16,7 @@ pid() {
     local fake_target_needs_arg=0
     local fake_target_args=""
     local cmake_options=""
+    local to_unexport=""
 
     # Retreive current project and workspace locations
     _pid_ws_get_project_dir
@@ -61,6 +62,11 @@ pid() {
             target=$arg
         else
             export $arg
+            if [ "$to_unexport" ]; then
+                to_unexport="$to_unexport $arg"
+            else
+                to_unexport=$arg
+            fi
         fi  
     done
 
@@ -124,6 +130,10 @@ pid() {
 
     unset project_dir
     unset ws_dir
+    for var in $to_unexport; do
+        local name=$(echo $var|sed -E "s:(.*)=.*:\1:g")
+        unset $name
+    done
 }
 
 ### pid helper functions
