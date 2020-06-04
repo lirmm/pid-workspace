@@ -1,6 +1,7 @@
 before_script:
-    - ./pid contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONNAL_DEBUG_INFO=ON
-    - ./pid contributions cmd=prio_max space=pid-tests
+    - . share/pid.sh
+    - pid contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONNAL_DEBUG_INFO=ON
+    - pid contributions cmd=prio_max space=pid-tests
 
 stages:
  - create_and_build
@@ -13,18 +14,18 @@ stages:
 .create_and_build_: &create_and_build
    stage: create_and_build
    script: 
-        - ./pid create package=foobar author=CI
-        - ./pid build package=foobar
-        - ./pid rebuild package=foobar
-        - ./pid info package=foobar
+        - pid create package=foobar author=CI
+        - pid build package=foobar
+        - pid rebuild package=foobar
+        - pid info package=foobar
         - sh -c "! ./pid info package=foobar2" # assert failure 
 
 
 .deploy_: &deploy
    stage: deploy
    script:
-        - ./pid deploy package=mytestpackage
-        - ./pid deploy package=open-phri version=1.0.0
+        - pid deploy package=mytestpackage
+        - pid deploy package=open-phri version=1.0.0
 
 
 ############ patterns for platforms selection #############
@@ -61,6 +62,10 @@ stages:
         - pid
         - macos_catalina
 
+.selection_windows10_: &selection_windows10
+   tags:
+        - pid
+        - windows10
 
 ############ jobs description #############
 
@@ -120,3 +125,16 @@ raspbian deploy:
     script: 
         - ~/run.sh ./pid deploy package=mytestpackage
     <<: *selection_raspbian
+
+windows10 deploy:
+    stage: deploy
+    before_script:
+        - source /home/PID/msvc_setup.sh
+        - which cl.exe
+        - ./pid.bat configure -DCMAKE_GENERATOR=Ninja
+        - ./pid.bat contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONNAL_DEBUG_INFO=ON
+        - ./pid.bat contributions cmd=prio_max space=pid-tests
+    script: 
+        - ./pid.bat deploy package=pid-rpath branch=cxx17
+        - ./pid.bat deploy package=open-phri branch=win32_fix
+    <<: *selection_windows10
