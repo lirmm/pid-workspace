@@ -242,6 +242,16 @@ if(DIR_NAME STREQUAL "build")
 			COMMENT "[PID] Serving the static site of the package ..."
 			VERBATIM
 		)
+
+	  add_custom_target(hard_clean
+	  COMMAND ${CMAKE_COMMAND}
+	            -DWORKSPACE_DIR=${WORKSPACE_DIR}
+	            -DTARGET_FRAMEWORK=${PROJECT_NAME}
+	  					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+	  					-P ${WORKSPACE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
+	  	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	  )
+
 	else()
 		message("[PID] ERROR: the jekyll executable cannot be found in the system, please install it and put it in a standard path.")
 	endif()

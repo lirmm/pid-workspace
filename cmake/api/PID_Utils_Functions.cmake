@@ -3944,6 +3944,26 @@ endfunction(hard_Clean_Build_Folder)
 #
 # .. ifmode:: internal
 #
+#  .. |hard_Clean_Environment| replace:: ``hard_Clean_Environment``
+#  .. _hard_Clean_Environment:
+#
+#  hard_Clean_Environment
+#  ----------------------
+#
+#   .. command:: hard_Clean_Environment(environment)
+#
+#    Clean the build folder of a environment in an aggressive and definitive way.
+#
+#     :environment: the name of the target environment.
+#
+function(hard_Clean_Environment environment)
+  hard_Clean_Build_Folder(${WORKSPACE_DIR}/environments/${environment}/build)
+endfunction(hard_Clean_Environment)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |hard_Clean_Package| replace:: ``hard_Clean_Package``
 #  .. _hard_Clean_Package:
 #

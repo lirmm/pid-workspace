@@ -295,6 +295,17 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		VERBATIM
 	)
 
+	# hard clean (remove content of the build tree including cmake generated configuration files)
+  add_custom_target(hard_clean
+  	COMMAND ${CMAKE_COMMAND}
+            -DWORKSPACE_DIR=${WORKSPACE_DIR}
+            -DTARGET_PACKAGE=${PROJECT_NAME}
+  					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+  					-P ${WORKSPACE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
+  	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  )
+
+
 	# reference file generation target
 	add_custom_target(referencing
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} referencing

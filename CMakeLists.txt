@@ -201,10 +201,12 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "             - package=*name of the package* or all: target package to build. If all is used then"
 	COMMAND ${CMAKE_COMMAND} -E echo "             	 all native packages in workspace will be built. all is default value."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
-	COMMAND ${CMAKE_COMMAND} -E echo " hard_clean: deep cleaning of package build folder. May be usefull after compiler changes for instance."
-	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [mandatory] ---"
+	COMMAND ${CMAKE_COMMAND} -E echo " hard_clean: deep cleaning of a build folder. May be usefull after compiler changes for instance."
+	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [choose one of them] ---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - package=*name of the package* or all: clean the target package. If all is used then all"
 	COMMAND ${CMAKE_COMMAND} -E echo "               source packages in workspace are cleaned."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - framework=*name of the framework*: clean the target framework."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - environment=*name of the environment*: clean the target environment."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
 	COMMAND ${CMAKE_COMMAND} -E echo " rebuild:    force the rebuild of target native package. This hard clean the build tree of the package and launch"
  	COMMAND ${CMAKE_COMMAND} -E echo "             its build process"
@@ -400,7 +402,10 @@ COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
 
 ## clearing a package install directory
 add_custom_target(hard_clean
-COMMAND ${CMAKE_COMMAND} 	-DTARGET_PACKAGE=\${package}
+COMMAND ${CMAKE_COMMAND}
+					-DTARGET_PACKAGE=\${package}
+					-DTARGET_FRAMEWORK=\${framework}
+					-DTARGET_ENVIRONMENT=\${environment}
 					-DRECONFIGURE=\${configure}
 					-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}

@@ -248,7 +248,8 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	  ######## create global targets ##################
 	  #################################################
 		add_custom_target(build
-	    ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+	    COMMAND ${CMAKE_COMMAND}
+						 -DWORKSPACE_DIR=${WORKSPACE_DIR}
 	           -DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
 	           -DTARGET_EXTERNAL_VERSION=\${version}
 					 	 -DTARGET_BUILD_MODE=\${mode}
@@ -259,9 +260,20 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	    COMMENT "[PID] Building external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 	  )
 
+		# hard clean (remove content of the build tree including cmake generated configuration files)
+		add_custom_target(hard_clean
+			COMMAND ${CMAKE_COMMAND}
+							-DWORKSPACE_DIR=${WORKSPACE_DIR}
+							-DTARGET_PACKAGE=${PROJECT_NAME}
+							-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+							-P ${WORKSPACE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+		)
+
 		# adding an uninstall command (uninstall the whole installed version currently built)
 		add_custom_target(uninstall
-			${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+			COMMAND ${CMAKE_COMMAND}
+						 -DWORKSPACE_DIR=${WORKSPACE_DIR}
 	           -DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
 	           -DTARGET_EXTERNAL_VERSION=\${version}
 						 -P ${WORKSPACE_DIR}/cmake/commands/Uninstall_PID_Wrapper.cmake

@@ -440,6 +440,15 @@ macro(build_Environment_Project)
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   )
 
+  add_custom_target(hard_clean
+  COMMAND ${CMAKE_COMMAND}
+            -DWORKSPACE_DIR=${WORKSPACE_DIR}
+            -DTARGET_ENVIRONMENT=${PROJECT_NAME}
+  					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+  					-P ${WORKSPACE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
+  	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  )
+
   # update target (update the environment from upstream git repository)
   add_custom_target(update
     COMMAND ${CMAKE_COMMAND}
