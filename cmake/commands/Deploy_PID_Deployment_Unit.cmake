@@ -105,7 +105,7 @@ if(DEPLOYED_FRAMEWORK)# a framework is deployed
 
 elseif(DEPLOYED_ENVIRONMENT)# deployment of an environment is required
 	# checks of the arguments
-	include_Framework_Environment_File(PATH_TO_FILE ${DEPLOYED_ENVIRONMENT})
+	include_Environment_Reference_File(PATH_TO_FILE ${DEPLOYED_ENVIRONMENT})
 	if(NOT PATH_TO_FILE)
 		message("[PID] ERROR : Environment name ${DEPLOYED_ENVIRONMENT} does not refer to any known environment in in contribution spaces of the workspace.")
 		return()
