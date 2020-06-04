@@ -116,7 +116,13 @@ pid() {
                 current_arg=$((current_arg+1))
             done
             if [ "$ZSH_VERSION" ]; then unsetopt shwordsplit; fi
-            (cd $ws_dir/install/$platform/$package/$version/bin && ./$executable)
+            if [ -e $ws_dir/install/$platform/$package/$version/bin/${package}_${executable} ]; then
+                (cd $ws_dir/install/$platform/$package/$version/bin && ./${package}_${executable})
+            elif [ -e $ws_dir/install/$platform/$package/$version/bin/$executable ]; then
+                (cd $ws_dir/install/$platform/$package/$version/bin && ./$executable)
+            else
+                echo "Error, the executable $executable couldn't be found inside $ws_dir/install/$platform/$package/$version/bin"
+            fi
             unset current_arg
             unset platform
             unset package
