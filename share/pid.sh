@@ -140,6 +140,8 @@ pid() {
         local name=$(echo $var|sed -E "s:(.*)=.*:\1:g")
         unset $name
     done
+
+    return $pid_ws_res
 }
 
 ### pid helper functions
@@ -148,6 +150,7 @@ pid() {
 #  $1: project dir, $2 cmake options
 _pid_ws_configure() {
     cmake -S $1 -B $1/build $2
+    pid_ws_res=$?
 }
 
 # Apply CMake options to the given project
@@ -171,8 +174,10 @@ _pid_ws_run() {
 
     if [ -z "$2" ]; then
         cmake --build $1/build
+        pid_ws_res=$?
     else
         cmake --build $1/build --target $2
+        pid_ws_res=$?
     fi
 }
 
