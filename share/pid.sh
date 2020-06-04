@@ -206,6 +206,25 @@ _pid_ws_get_workspace_dir() {
     fi
     ws_dir=$(readlink -m $project_dir/pid)
     ws_dir=$(readlink -m $ws_dir/..)
+    # On Windows pid is a hardlink leading to Bash failing to resolve the original file
+    # In that case we move up until we find Use_PID.cmake
+    if [ ! -e $ws_dir/Use_PID.cmake ]; then
+        while [ "" = "" ]; do
+            if [ -e $ws_dir/Use_PID.cmake ]; then
+                break
+            fi
+            if [ "$ws_dir" = "/" ]; then
+                break
+            fi
+            ws_dir=$(readlink -m $ws_dir/..)
+        done
+        if [ "$ws_dir" = "/" ]; then
+            echo "ERROR: failed to locate the root of the PID workspace"
+            return 1
+        else
+            return 0
+        fi
+    fi
 }
 
 # $1: package/wrapper/framework/environment to search in the workspace
