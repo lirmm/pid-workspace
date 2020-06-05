@@ -21,11 +21,6 @@ if [%1] == [] goto after_loop
                 shift
                 goto loop_start
             )
-            if "!command!"=="hard_clean" (
-                set fake_target=!command!
-                shift
-                goto loop_start
-            )
             if "!command!"=="configure" (
                 set fake_target=!command!
                 shift
@@ -61,13 +56,7 @@ if "!fake_target!"=="workspace" (
     goto :eof
 )
 
-if "!fake_target!"=="hard_clean" (
-    cmd /C "cd !source_dir!\build && del *.*"
-    goto :eof
-)
-
 if "!fake_target!"=="configure" (
-    echo "Fake target: configure"
     call :configure !source_dir!
     goto :eof
 )
@@ -79,14 +68,14 @@ goto :eof
 rem %~1: source dir, %~2 cmake options
 :configure
     cmake -S %~1 -B %~1/build !cmake_options!
-    exit /B 0
+    exit /B %ERRORLEVEL%
 
 rem %~1: source_dir, uses !cmake_options!
 :apply_options
     if not [!cmake_options!] == [] (
         call :configure %~1
     )
-    exit /B 0
+    exit /B %ERRORLEVEL%
 
 rem %~1: source_dir, %~2: target
 :run
@@ -102,4 +91,4 @@ rem %~1: source_dir, %~2: target
     ) else (
         cmake --build %~1\build --target %~2
     )
-    exit /B 0
+    exit /B %ERRORLEVEL%
