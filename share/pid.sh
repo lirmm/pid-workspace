@@ -190,7 +190,7 @@ _pid_ws_get_project_dir() {
         if [ "$project_dir" = "/" ]; then
             break
         fi 
-        project_dir=$(readlink -m $project_dir/..)
+        project_dir=$(_pid_ws_readlink $project_dir/..)
     done
     if [ "$project_dir" = "/" ]; then
         echo "ERROR: you must run this command from somewhere inside a PID workspace"
@@ -205,8 +205,8 @@ _pid_ws_get_workspace_dir() {
     if [ -z "$project_dir" ]; then
         _pid_ws_get_project_dir
     fi
-    ws_dir=$(readlink -m $project_dir/pid)
-    ws_dir=$(readlink -m $ws_dir/..)
+    ws_dir=$(_pid_ws_readlink $project_dir/pid)
+    ws_dir=$(dirname $ws_dir)
     # On Windows pid is a hardlink leading to Bash failing to resolve the original file
     # In that case we move up until we find Use_PID.cmake
     if [ ! -e $ws_dir/Use_PID.cmake ]; then
@@ -217,7 +217,7 @@ _pid_ws_get_workspace_dir() {
             if [ "$ws_dir" = "/" ]; then
                 break
             fi
-            ws_dir=$(readlink -m $ws_dir/..)
+            ws_dir=$(_pid_ws_readlink $ws_dir/..)
         done
         if [ "$ws_dir" = "/" ]; then
             echo "ERROR: failed to locate the root of the PID workspace"
@@ -226,6 +226,19 @@ _pid_ws_get_workspace_dir() {
             return 0
         fi
     fi
+}
+
+_pid_ws_readlink() {
+    local target=$(readlink "$1")
+    if [ "$target" = "" ]; then
+        target=$1
+    fi
+    if [ -d "$target" ]; then
+        local target_dir=$target
+    else    
+        local target_dir=$(dirname $target)
+    fi
+    (cd $target_dir && echo `pwd`/$(basename $1))
 }
 
 # $1: package/wrapper/framework/environment to search in the workspace
