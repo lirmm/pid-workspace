@@ -7,7 +7,7 @@ pid_ws_bash_completions() {
     cmd=${COMP_WORDS[1]}
 
     local opts
-    opts="cd workspace hard_clean exec run"
+    opts="cd workspace exec run"
 
     if [ "$cmd" = "cd" ]; then
         _pid_ws_get_all_folders

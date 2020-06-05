@@ -10,7 +10,7 @@ pid_ws_zsh_completions() {
     cmd=${=${(s: :)words}[2]}
 
     local opts
-    opts="cd workspace hard_clean exec run"
+    opts="cd workspace exec run"
 
     if [ "$cmd" = "cd" ]; then
         folders=""

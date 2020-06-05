@@ -39,8 +39,6 @@ pid() {
             fi
         elif [ -z "$target" -a -z "$fake_target" -a "$arg" = "workspace" ]; then
             fake_target=$arg
-        elif [ -z "$target" -a -z "$fake_target" -a "$arg" = "hard_clean" ]; then
-            fake_target=$arg
         elif [ -z "$target" -a -z "$fake_target" -a "$arg" = "configure" ]; then
             fake_target=$arg
         elif [ -z "$target" -a -z "$fake_target" -a "$arg" = "cd" ]; then
@@ -79,8 +77,6 @@ pid() {
         else
             _pid_ws_run $ws_dir $target $cmake_options
         fi
-    elif [ "$fake_target" = "hard_clean" ]; then
-        rm -rf $project_dir/build/*
     elif [ "$fake_target" = "configure" ]; then
         _pid_ws_configure $project_dir $cmake_options
     elif [ "$fake_target" = "cd" ]; then
@@ -266,7 +262,6 @@ _pid_ws_print_help() {
         echo "  The available fake targets are:"
         echo "    workspace [target] [arguments] [options]         executes a target in the workspace"
         echo "    configure [options]                              (re)configures the project"
-        echo "    hard_clean                                       removes all files in the project build folder"
         echo "    cd [project]                                     changes the current directory to the root of the given project, or workspace if omited"
         echo "    exec <project> [target] [arguments] [options]    executes a target in the given project"
         echo "    run <platform> <package> <version> <executable>  runs the given executable matching the specified platform, package and version"
@@ -286,7 +281,6 @@ _pid_ws_print_help() {
         echo "  pid cd pid-rpath                                                      change directory to pid-rpath"
         echo "  pid build force=true -DBUILD_EXAMPLES=ON                              build pid-rpath examples"
         echo "  pid run x86_64_linux_abi11 pid-rpath 2.0.0 pid-rpath_rpath-example    run pid-rpath example"
-        echo "  pid hard_clean                                                        clean pid-rpath build folder"
         echo "  pid workspace configure -DADDITIONNAL_DEBUG_INFO=ON                   reconfigure the workspace"
 }
 
