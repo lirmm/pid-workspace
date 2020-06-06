@@ -2985,8 +2985,8 @@ foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #check 
 endforeach()
 
 if(external)#external packages may be provided with specific script to use when deploying binaries
+  set(TARGET_INSTALL_DIR ${WORKSPACE_DIR}/install/${platform_base}/${package}/${version})
   if(${package}_SCRIPT_POST_INSTALL)
-    set(TARGET_INSTALL_DIR ${WORKSPACE_DIR}/install/${platform_base}/${package}/${version})
     message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/cmake_script/${${package}_SCRIPT_POST_INSTALL} ...")
     include(${TARGET_INSTALL_DIR}/cmake_script/${${package}_SCRIPT_POST_INSTALL} NO_POLICY_SCOPE)#execute the script
   endif()
