@@ -1,12 +1,12 @@
 # Introduction
 
-PID is a development methodology used to standardize and automate the development process of C/C++ projects. The present repository contains the base implementation of PID, based on CMake scripts.
+PID stands for *Packages integration and development*. It is a development methodology used to standardize and automate the development process of C/C++ projects. The present repository contains the base implementation of PID, based on CMake scripts.
 
 This project defines a **workspace** where users put their C/C++ projects and the workspace repository is used to share references on existing projects. For a deeper understanding and start learning PID, you can refer to [this website](http://pid.lirmm.net/pid-framework).
 
 # What is it useful for ?
 
-The term "methodoloy" is supposed to cover all phases of the development process. My intent when I first wrote this framework is to provide a packaging system where people can easily share and reuse the projects they work(ed) on, either under source or binary format. Indeed, in the context of my laboratory (LIRMM, Montpellier, France), and more precisely for robotic teams, we had no real frame to develop and share our projects which lead to tremendously complex reuse of code.
+The term "methodoloy" is supposed to cover all phases of the development process. The intent is to provide a packaging system where people can easily share and reuse the projects they work(ed) on, either under source or binary format. Indeed, in the context of my laboratory (LIRMM, Montpellier, France), and more precisely for robotic teams, we had no real frame to develop and share our projects which lead to tremendously complex reuse of code.
 
 The basic idea is to use a CMake API to describe all aspects of the project in the most precise and formal way: software they generate ; projects then depends on ; git branches they define; available versions released ; prebuild binaries already available online ; documentation or licensing aspects and so on. This way PID automates everything related to project development in a kind of standard "way of doing".
 
@@ -14,35 +14,34 @@ PID is designed for solving most common (and sometimes difficult) problems we ca
 
 # Key Features
 
-+ **Standardization of C/C++ projects**:
++ **Standardization of C/C++ projects**
    - same basic structure, concepts, commands and options to manage the life cycle of projects.  
    - `CMake` APIs for a clean description of projects.
    - based on `git` and `Gitlab` tools for lifecycle management and continuous integration.
 
-+ **Languages supported**:
++ **Languages supported**
    - C/C++, CUDA, Fortran and ASSEMBLER
    - Python (support of python wrappers and python scripts).
 
 + **Automation of package life cycle management**: CMake generated commands to configure, build/test, release versions, publish online documentation, upload binary archives in repositories, deliver and deploy package on a computer.
 
-+ **Automatic resolution of dependencies and constraints**:
++ **Automatic resolution of dependencies and constraints**
   - resolution of eligible versions of dependencies
   - check for target platform binary compatiblity
   - automatic deployment of required dependencies versions (from source repositories or binary archives).
 
-+ **Automation of Continuous Integration / Delivery process** (based on gitlab-CI):
++ **Automation of Continuous Integration / Delivery process**
   - generation of online documentation (static site, API, check tools reports)
   - management of online repositories for generated binary archives of package versions.
-  - CI/CD process managed for concurrent platforms.
+  - CI/CD process managed for concurrent platforms (only gitlab-CI for now).
 
-+ **Support for managing variability** (mostly based on CMake own capabilities)
-   - change build environements and target binary platforms in use, manage cross-compilation.
-   - wrap projects that are not based on PID (e.g. boost).
-   - provide a **plugin mechanism** to add new functionalities to PID : support of an IDE, like `atom` ; build management tools like `pkg-config`.
++ **Support for customization**
+   - change build environements and target binary platforms in use, manage cross-compilation (based on CMake features).
+   - add new support for new development tools : specific support of an IDE ; dependencies management tools like `pkg-config` ; code generators like `f2c`, etc..
 
-# Known Limitation
-
- + **Operating systems**: PID should work on most of UNIX platforms. It has been tested on Ubuntu, Arch Linux and Raspbian. Many UNIX systems have never or rarely been tested like SolarisOS, FreeBSD, iOS or MACOS as well as many Linux distributions (RedHat, Gentoo) and derivatives (Android). But these OS can be supported with little effort (PID being mostly cross-platform). For now **Windows is not supported**.
++ **Cross platform implementation**
+  - PID should work on most of UNIX platforms. It has been tested on Ubuntu, Debian, Arch Linux, FreeBSD, MACOS and Raspbian. Many UNIX systems have never or rarely been tested like SolarisOS, iOS or MACOS as well as many Linux distributions (RedHat, Gentoo) and derivatives (Android). But these OS can be supported with little effort (PID being mostly cross-platform).
+  - Support for Windows is still experimental.
 
 # Install
 
@@ -73,23 +72,28 @@ Change `<pid-workspace repository>` by the address of this project in the hostin
 + configure **your local repository**
 
 ```bash
-cd pid-workspace/build
-cmake ..
+cd pid-workspace
+./pid configure
 ```
 
 This step initializes the PID system, more precisely:
 + the current host platform you are using is automatically identified
 + official contributions are automatically configured so that you can use some default material already provided by pid.
-+ configure the workspace repository to make it capable of upgrading CMake APIs.  
++ configure the workspace repository to make it capable of upgrading CMake APIs.
 
-You can now start using PID methdology. To test if everything works you can do:
+Furthermore the `pid` script alert you to source a script so that you can easily use the `pid` command. You can now start using PID methdology. To test if everything works you can do:
 
 ```bash
-cd pid-workspace/build
-make deploy package=pid-rpath
+pid deploy package=pid-rpath
 ```
 
-This should end in the deployment of a package named `pid-rpath`.
+This should end in the deployment of the last released version of a package named `pid-rpath`.
+
+To get a manual of available commands:
+
+```bash
+pid man
+```
 
 ## Final steps
 
@@ -103,4 +107,4 @@ CeCILL-C is an open source software license equivalent to and compatible with GN
 
 # Contact
 
-For any question, remark, proposal about PID, please **contact me using the issues** of the project.
+For any question, remark, proposal about PID, please **contact authors using the issues** of the project.
