@@ -43,7 +43,7 @@ include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
 #    Manage actions of activated/deactivated plugins in currently built package.
 #
 macro(manage_Plugins_In_Package folder)
-  set(target_path ${WORKSPACE_DIR}/pid/${CURRENT_PROFILE}/plugins/${folder})
+  set(target_path ${WORKSPACE_DIR}/build/${CURRENT_PROFILE}/plugins/${folder})
   if(EXISTS ${target_path})#check if the folder exists, otherwise simply do nothing
     file(GLOB ALL_SCRIPTS "${target_path}/*")
     if(ALL_SCRIPTS)#check if the folder contains scripts, otherwise simply do nothing

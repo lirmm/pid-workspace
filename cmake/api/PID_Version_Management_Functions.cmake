@@ -45,18 +45,18 @@ set(PID_VERSION_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
 #      :path_to_project: the path to target project repository in local workspace.
 #
 function(init_PID_Version_Variable project_name path_to_project)
-if(NOT EXISTS ${WORKSPACE_DIR}/pid/PID_version.cmake)#if workspace has not been built (or build files deleted), then build it to get the version
-	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+if(NOT EXISTS ${WORKSPACE_DIR}/build/PID_version.cmake)#if workspace has not been built (or build files deleted), then build it to get the version
+	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
 endif()
-include(${WORKSPACE_DIR}/pid/PID_version.cmake) # get the current workspace version
+include(${WORKSPACE_DIR}/build/PID_version.cmake) # get the current workspace version
 
 if(	EXISTS ${path_to_project}/share/cmake/${project_name}_PID_Version.cmake)# get the workspace version with wich the package has been built
 	#The file already resides in package shared files
 	include(${path_to_project}/share/cmake/${project_name}_PID_Version.cmake)
 	if(PID_WORKSPACE_VERSION VERSION_LESS ${project_name}_PID_VERSION)#workspace need to be updated
 		update_Workspace_Repository("official")
-		execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)#reconfigure workspace
-		include(${WORKSPACE_DIR}/pid/PID_version.cmake) # get the current workspace version AGAIN (most up to date version)
+		execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/build)#reconfigure workspace
+		include(${WORKSPACE_DIR}/build/PID_version.cmake) # get the current workspace version AGAIN (most up to date version)
 		if(PID_WORKSPACE_VERSION VERSION_LESS ${project_name}_PID_VERSION)#still less => impossible
 			message(WARNING "[PID] WARNING : PID version ${${project_name}_PID_VERSION} of ${project_name} is corrupted since it is greater than most up to date version of official workspace (${PID_WORKSPACE_VERSION}).")
 			set(${project_name}_PID_VERSION ${PID_WORKSPACE_VERSION} CACHE INTERNAL "")
@@ -98,17 +98,17 @@ endfunction(init_PID_Version_Variable)
 function(update_Workspace_For_Required_PID_Version package path_to_package)
   #first get the global PID_WORKSPACE_VERSION
   if(NOT PID_WORKSPACE_VERSION)#workspace version is unknown for now in current context
-    if(NOT EXISTS ${WORKSPACE_DIR}/pid/PID_version.cmake)#if workspace has not been built (or build files deleted), then build it to get the version
-    	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+    if(NOT EXISTS ${WORKSPACE_DIR}/build/PID_version.cmake)#if workspace has not been built (or build files deleted), then build it to get the version
+    	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
     endif()
-    include(${WORKSPACE_DIR}/pid/PID_version.cmake) # get the current workspace version
+    include(${WORKSPACE_DIR}/build/PID_version.cmake) # get the current workspace version
   endif()
   if(	EXISTS ${path_to_package}/share/cmake/${package}_PID_Version.cmake)# get the workspace version with wich the package has been built
     include(${path_to_package}/share/cmake/${package}_PID_Version.cmake)
     if(PID_WORKSPACE_VERSION VERSION_LESS ${package}_PID_VERSION)#workspace need to be updated
   		update_Workspace_Repository("official")
-  		execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)#reconfigure workspace
-  		include(${WORKSPACE_DIR}/pid/PID_version.cmake) # get the current workspace version AGAIN (most up to date version)
+  		execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR} WORKING_DIRECTORY ${WORKSPACE_DIR}/build)#reconfigure workspace
+  		include(${WORKSPACE_DIR}/build/PID_version.cmake) # get the current workspace version AGAIN (most up to date version)
   		if(PID_WORKSPACE_VERSION VERSION_LESS ${package}_PID_VERSION)#still less => impossible
   			message(WARNING "[PID] WARNING : PID version ${${package}_PID_VERSION} of ${package} is corrupted since it is greater than most up to date version of official workspace (${PID_WORKSPACE_VERSION}).")
   			set(${package}_PID_VERSION ${PID_WORKSPACE_VERSION} CACHE INTERNAL "")

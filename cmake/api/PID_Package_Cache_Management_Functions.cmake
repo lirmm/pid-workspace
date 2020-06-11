@@ -170,6 +170,9 @@ function(set_Mode_Specific_Options_From_Global)
 		foreach(line IN LISTS LINES)
       if(line MATCHES "^([^:]+):([^=]+)=(.*)$")
         if(DEFINED ${CMAKE_MATCH_1})#the target cache variable is defined locally
+          if(${CMAKE_MATCH_2} STREQUAL "PATH")
+            set(${CMAKE_MATCH_1} "\"${${CMAKE_MATCH_1}}\"") #put paths around double quotes to avoid issues with spaces
+          endif()
           set(curr_option "set(${CMAKE_MATCH_1} ${${CMAKE_MATCH_1}} CACHE ${CMAKE_MATCH_2} \"\" FORCE)\n")
         else() #no local definition (strange but OK) => simply recopy the value
           set(curr_option "set(${CMAKE_MATCH_1} ${CMAKE_MATCH_3} CACHE ${CMAKE_MATCH_2} \"\" FORCE)\n")
@@ -552,7 +555,7 @@ endmacro(print_Component_Variables)
 #
 function(init_Standard_Path_Cache_Variables)
 set(${PROJECT_NAME}_INSTALL_PATH ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME} CACHE INTERNAL "")
-set(CMAKE_INSTALL_PREFIX "${${PROJECT_NAME}_INSTALL_PATH}"  CACHE INTERNAL "")
+set(CMAKE_INSTALL_PREFIX ${${PROJECT_NAME}_INSTALL_PATH}  CACHE INTERNAL "" FORCE)
 set(${PROJECT_NAME}_PID_RUNTIME_RESOURCE_PATH ${CMAKE_SOURCE_DIR}/share/resources CACHE INTERNAL "")
 endfunction(init_Standard_Path_Cache_Variables)
 

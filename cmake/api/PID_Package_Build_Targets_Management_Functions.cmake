@@ -542,6 +542,7 @@ endfunction(create_Module_Lib_Target)
 #     :internal_links: list of private linker options to use when building the library.
 #
 function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links internal_links)
+	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 	add_library(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} SHARED ${sources})
 
   if(WIN32)
@@ -744,7 +745,8 @@ function(create_Executable_Target c_name c_standard cxx_standard sources interna
 	elseif(UNIX)
 		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "\$ORIGIN/../.rpath/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the application targets a specific folder that contains symbolic links to used shared libraries
   elseif(WIN32)#need to install a specific run.bat script file
-    install(FILES ${WORKSPACE_DIR}/cmake/patterns/packages/run.bat DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH})
+	install(FILES ${WORKSPACE_DIR}/cmake/patterns/packages/run.bat DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH})
+	file(COPY ${WORKSPACE_DIR}/cmake/patterns/packages/run.bat DESTINATION ${CMAKE_BINARY_DIR}/apps)
 	endif()
 endfunction(create_Executable_Target)
 
@@ -781,6 +783,7 @@ endfunction(create_Executable_Target)
 function(create_TestUnit_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
 	add_executable(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} ${sources})
 	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
+	file(COPY ${WORKSPACE_DIR}/cmake/patterns/packages/run.bat DESTINATION ${CMAKE_BINARY_DIR}/test)
 endfunction(create_TestUnit_Target)
 
 #.rst:
@@ -1215,7 +1218,7 @@ if(type STREQUAL "STATIC")
     		)
       endif()
     else()#path to a static library
-      get_filename_component(LIB_NAME ${link} NAME)
+	  get_filename_component(LIB_NAME ${link} NAME)
       set(target_name ext-${LIB_NAME}${TARGET_SUFFIX})
       if(NOT TARGET ${target_name})#target does not exist
         add_library(${target_name} STATIC IMPORTED GLOBAL)
@@ -1238,11 +1241,16 @@ elseif(type STREQUAL "SHARED")#this is a shared library
     		)
       endif()
     else()#path to a shared library
-      get_filename_component(LIB_NAME ${link} NAME)
+	  get_filename_component(LIB_NAME ${link} NAME)
       set(target_name ext-${LIB_NAME}${TARGET_SUFFIX})
       if(NOT TARGET ${target_name})#target does not exist
-        add_library(${target_name} SHARED IMPORTED GLOBAL)
-        set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}")
+		add_library(${target_name} SHARED IMPORTED GLOBAL)
+		if(WIN32)
+			get_Windows_Link_Interface(INTERFACE ${link})
+			set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}" IMPORTED_IMPLIB "${INTERFACE}")
+		else()
+			set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}")
+		endif()
       endif()
     endif()
     set(${EXT_TARGET_NAME} ${target_name} PARENT_SCOPE)
@@ -1251,15 +1259,20 @@ else()#type is unknown
   if(RES_TYPE STREQUAL OPTION) #for options there is no need to define a target (options also include -l options)
   	set(${EXT_TARGET_NAME} PARENT_SCOPE)
   elseif(RES_TYPE STREQUAL SHARED)
-  	get_filename_component(LIB_NAME ${link} NAME)
+    get_filename_component(LIB_NAME ${link} NAME)
     set(target_name ext-${LIB_NAME}${TARGET_SUFFIX})
-  	if(NOT TARGET ${target_name})#target does not exist
-  		add_library(${target_name} SHARED IMPORTED GLOBAL)
-  		set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}")
+	if(NOT TARGET ${target_name})#target does not exist
+	  	add_library(${target_name} SHARED IMPORTED GLOBAL)
+	  	if(WIN32)
+		  	get_Windows_Link_Interface(INTERFACE ${link})
+			set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}" IMPORTED_IMPLIB "${INTERFACE}")
+		else()
+			set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}")
+		endif()
   	endif()
   	set(${EXT_TARGET_NAME} ${target_name} PARENT_SCOPE)
   else(RES_TYPE STREQUAL STATIC)
-  	get_filename_component(LIB_NAME ${link} NAME)
+	  get_filename_component(LIB_NAME ${link} NAME)
     set(target_name ext-${LIB_NAME}${TARGET_SUFFIX})
   	if(NOT TARGET ${target_name})#target does not exist
   		add_library(${target_name} STATIC IMPORTED GLOBAL)
@@ -1626,11 +1639,7 @@ endfunction(create_Imported_Static_Library_Target)
 #
 function(create_Imported_Shared_Library_Target package component mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
-  if(WIN32)
-    add_library(${package}_${component}${TARGET_SUFFIX} STATIC IMPORTED GLOBAL)#create the target for the imported library (on windiws shared library are provided with a .lib static frontend used to link the dll)
-  else()
   	add_library(${package}_${component}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)#create the target for the imported library
-  endif()
 	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})#find the binary to use depending on build mode
 	get_Imported_Target_Mode(MODE_TO_IMPORT ${package} ${LOCATION_RES} ${mode})#get the adequate mode to use for dependency
 	if(NOT MODE_TO_IMPORT MATCHES mode)
@@ -1639,8 +1648,8 @@ function(create_Imported_Shared_Library_Target package component mode)
   if(WIN32)#in windows a shared librairy is specific because it has two parts : a dll and an interface static library
     #we need to link againts the statis library while the "real" component is the dll
     #so we transform the name of the dll object into a .lib object
-    string(REPLACE ".dll" ".lib" STATIC_LOCATION_RES "${LOCATION_RES}")
-    set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${STATIC_LOCATION_RES}")
+	get_Windows_Link_Interface(STATIC_LOCATION_RES ${LOCATION_RES})
+    set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}" IMPORTED_IMPLIB "${STATIC_LOCATION_RES}")
   else()#for UNIX system everything is automatic
     set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
   endif()
@@ -2182,3 +2191,9 @@ else()# it is a dependency to another package
 	bind_Target(${component} FALSE ${dep_package} ${dep_component} ${mode} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 endif()
 endfunction(fill_Component_Target_With_Dependency)
+
+function(get_Windows_Link_Interface result link)
+	string(REPLACE "/bin/" "/lib/" interface_link_path ${link})
+	string(REPLACE ".dll" ".lib" interface_link_path ${interface_link_path})
+	set(${result} ${interface_link_path} PARENT_SCOPE)
+endfunction(get_Windows_Link_Interface)

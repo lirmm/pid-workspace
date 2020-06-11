@@ -1,0 +1,33 @@
+# dont use a shebang otherwise the shell detection won't work
+
+source_dir=`dirname "$0"`
+script_abs_path=$(readlink -m $source_dir/pid)
+ws_dir=$(readlink -m $script_abs_path/..)
+
+# Try to make embedded shell detection (e.g bash in zsh) works in all cases
+shell_exe_name=$(ps -o fname --no-headers $$) # should always give bash on bash
+shell_base_name=$(basename $SHELL) # should always give zsh if the current or parent shell is zsh
+
+if [ "$shell_exe_name" = "bash" ]; then
+    shell="bash"
+elif [ "$shell_base_name" = "zsh" ]; then
+    shell="zsh"
+else
+    shell=""
+fi
+
+echo "----------------------------------------------------- WARNING --------------------------------------------------"
+echo "Consider sourcing the share/pid.sh script inside your workspace and use the pid command for better shell support"
+echo ""
+echo "For the current session only run"
+echo "    source $ws_dir/share/pid.sh"
+echo ""
+echo "Then add the above line to your shell setup script"
+if [ ! -z "$shell" ]; then
+    echo "    echo \"source $ws_dir/share/pid.sh\" >> $HOME/.${shell}rc"
+fi
+echo "----------------------------------------------------------------------------------------------------------------"
+
+. $ws_dir/share/pid.sh
+
+pid $@

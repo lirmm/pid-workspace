@@ -2,3 +2,5 @@
 CMakeCache.txt
 *.old
 .tags*
+share/cmake
+cmake/system

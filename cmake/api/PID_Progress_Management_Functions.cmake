@@ -54,12 +54,12 @@ set(PID_PROGRESS_MANAGEMENT_INCLUDED TRUE)
 #
 #   .. command:: init_Progress_File(name)
 #
-#    Create (or recreate) the temporary build progress management file in workspace (pid-workspace/pid/pid_progress.cmake). This file contains the user information about the last launched build process or command.
+#    Create (or recreate) the temporary build progress management file in workspace (pid-workspace/build/pid_progress.cmake). This file contains the user information about the last launched build process or command.
 #
 #      :name: the name of the process to initialize.
 #
 function(init_Progress_File name)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 file(WRITE ${thefile} "set(CURRENT_PROCESS_LAUNCHER ${name})\n")
 string(TIMESTAMP TIME_VAR "%Y-%j-%H-%M" UTC)
 file(APPEND ${thefile} "set(CURRENT_PROCESS_LAUNCH_DATE ${TIME_VAR})\n")
@@ -78,10 +78,10 @@ endfunction(init_Progress_File)
 #
 #   .. command:: reset_Progress_File()
 #
-#    Reset the content of the current build progress management file (pid-workspace/pid/pid_progress.cmake) while keeping information about process launcher unchanged.
+#    Reset the content of the current build progress management file (pid-workspace/build/pid_progress.cmake) while keeping information about process launcher unchanged.
 #
 function(reset_Progress_File)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 file(WRITE ${thefile} "set(CURRENT_PROCESS_LAUNCHER ${CURRENT_PROCESS_LAUNCHER})\n")
 file(APPEND ${thefile} "set(CURRENT_PROCESS_LAUNCH_DATE ${CURRENT_PROCESS_LAUNCH_DATE})\n")
 string(TIMESTAMP TIME_VAR "%Y-%j-%H-%M" UTC)
@@ -107,7 +107,7 @@ endfunction(reset_Progress_File)
 #      :CONTEXT: The output variable that contains the context (build process of a package, execution of a script)
 #
 function(check_Progress_File_Last_Modification_Outdated OUTDATED CONTEXT)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 include (${thefile})
 set(${OUTDATED} TRUE PARENT_SCOPE)
 set(${CONTEXT} ${CURRENT_PROCESS_LAUNCHER} PARENT_SCOPE)
@@ -150,7 +150,7 @@ endfunction(check_Progress_File_Last_Modification_Outdated)
 #    Remove the build progress management file from workspace.
 #
 function(remove_Progress_File)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 if(EXISTS ${thefile})
 	file(REMOVE ${thefile})
 endif()
@@ -172,7 +172,7 @@ endfunction(remove_Progress_File)
 #    Update progress file with local content.
 #
 function(update_Progress_File)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 reset_Progress_File()#reset the file but keep its header
 # updating information about managed packages
 file(APPEND ${thefile} "set(MANAGED_PACKAGES_IN_CURRENT_PROCESS ${MANAGED_PACKAGES_IN_CURRENT_PROCESS})\n")
@@ -223,7 +223,7 @@ endfunction(update_Progress_File)
 #      :external: if TRUE the managed package is an external package.
 #
 function(add_Managed_Package_In_Current_Process package version state external)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 if(EXISTS ${thefile})
 	include (${thefile})
 	#updating variables
@@ -273,7 +273,7 @@ endfunction(add_Managed_Package_In_Current_Process)
 #      :external: if TRUE package is an external package.
 #
 function(add_Chosen_Package_Version_In_Current_Process package)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 if(EXISTS ${thefile})
 	include (${thefile})
   set(version ${${package}_VERSION_STRING})
@@ -324,7 +324,7 @@ endfunction(add_Chosen_Package_Version_In_Current_Process)
 #    Mark the current process has having performed an update of contribution spaces.
 #
 function(set_Contribution_Spaces_Updated_In_Current_Process)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 if(EXISTS ${thefile})
 	include (${thefile})
   set(CONTRBUTION_SPACES_UPDATED TRUE)
@@ -354,7 +354,7 @@ endfunction(set_Contribution_Spaces_Updated_In_Current_Process)
 #      :RESULT: the output variable that is TRUE if contribution spaces have been updated false otherwise.
 #
 function(check_Contribution_Spaces_Updated_In_Current_Process RESULT)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 set(${RESULT} FALSE PARENT_SCOPE) #not already managed of no file exists
 if(EXISTS ${thefile})
 	include (${thefile})
@@ -383,7 +383,7 @@ endfunction(check_Contribution_Spaces_Updated_In_Current_Process)
 #      :RESULT: the output variable that is TRUE if the given package version has already been managed in current build process.
 #
 function(check_Package_Version_Managed_In_Current_Process package version RESULT)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 if(EXISTS ${thefile})
 	include (${thefile})
 	list(FIND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
@@ -428,7 +428,7 @@ endfunction(check_Package_Version_Managed_In_Current_Process)
 #      :RESULT: the output variable that contains the string telling what is the build state of the given package. If build has been successful its value is "SUCCESS", if it failed its value is "FAILED", in other situation its value is "UNKNOWN".
 #
 function(check_Package_Version_State_In_Current_Process package version RESULT)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 if(EXISTS ${thefile})
 	include (${thefile})
 	list(FIND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
@@ -471,7 +471,7 @@ endfunction(check_Package_Version_State_In_Current_Process)
 #      :RESULT: the output variable that is TRUE if the given package has already been managed in current build process.
 #
 function(check_Package_Managed_In_Current_Process package RESULT)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 if(EXISTS ${thefile})
 	include (${thefile})
 	list(FIND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
@@ -516,7 +516,7 @@ function(get_Chosen_Version_In_Current_Process VERSION IS_EXACT IS_SYSTEM packag
 set(${VERSION} PARENT_SCOPE)
 set(${IS_EXACT} FALSE PARENT_SCOPE)
 set(${IS_SYSTEM} FALSE PARENT_SCOPE)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 if(EXISTS ${thefile})
 	include (${thefile})
   list(FIND CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${package} FOUND)
@@ -554,7 +554,7 @@ endfunction(get_Chosen_Version_In_Current_Process)
 #      :NEED_REMOVE: the output variable that is TRUE if the build process management file must be removed in current process, FALSE otherwise. It is used to manage recursion in the build process, only the call to begin_Progress in first calling context will return TRUE.
 #
 function(begin_Progress name NEED_REMOVE)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 set(RESET_FILE FALSE)
 if(EXISTS ${thefile})
 	if(name STREQUAL "workspace") #launch from workspace => remove the old file
@@ -595,7 +595,7 @@ endfunction(begin_Progress)
 #      :need_remove: if TRUE then the build process management file will be removed by the current process. Take the value of the variable return by the call to begin_Progress() in the same context.
 #
 function(finish_Progress need_remove)
-if(EXISTS ${WORKSPACE_DIR}/pid/pid_progress.cmake AND need_remove)
+if(EXISTS ${WORKSPACE_DIR}/build/pid_progress.cmake AND need_remove)
 	remove_Progress_File()
 endif()
 endfunction(finish_Progress)
@@ -618,7 +618,7 @@ endfunction(finish_Progress)
 #
 function(some_Packages_Managed_Last_Time DEPLOYED)
 set(${DEPLOYED} FALSE PARENT_SCOPE)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 if(EXISTS ${thefile} AND (MANAGED_PACKAGES_IN_CURRENT_PROCESS OR MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS))
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 endif()
@@ -639,7 +639,7 @@ endfunction(some_Packages_Managed_Last_Time)
 #   Print information about the packages managed in last build process.
 #
 function (print_Managed_Packages)
-set(thefile ${WORKSPACE_DIR}/pid/pid_progress.cmake)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 if(EXISTS ${thefile})
 	include (${thefile})
 	foreach(pack IN LISTS MANAGED_PACKAGES_IN_CURRENT_PROCESS)

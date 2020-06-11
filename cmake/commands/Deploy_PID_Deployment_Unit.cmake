@@ -287,7 +287,7 @@ else()# a package deployment is required
 		deploy_PID_Native_Package(PACK_DEPLOYED ${DEPLOYED_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source} "${branch}" ${run_tests})
 	endif()
 	if(NOT PACK_DEPLOYED)
-		message("[PID] CRITICAL ERROR : there were errors during deployment of ${DEPLOYED_PACKAGE}")
+		message(SEND_ERROR "[PID] CRITICAL ERROR : there were errors during deployment of ${DEPLOYED_PACKAGE}")
 	endif()
 	## global management of the process
 	if(MANAGE_PROGRESS)

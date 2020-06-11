@@ -31,6 +31,7 @@ get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
 set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Package_API_Internal_Functions NO_POLICY_SCOPE)
+include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(CMakeParseArguments)
 
 #.rst:
@@ -951,11 +952,12 @@ endfunction(get_PID_Platform_Info)
 #      build_PID_Package()
 #
 macro(build_PID_Package)
-if(${ARGC} GREATER 0)
-  finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the build_PID_Package command requires no arguments.")
-endif()
-build_Package()
+  create_Shell_Script_Symlinks()
+  if(${ARGC} GREATER 0)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the build_PID_Package command requires no arguments.")
+  endif()
+  build_Package()
 endmacro(build_PID_Package)
 
 #.rst:
@@ -1269,6 +1271,11 @@ if(DECLARE_PID_COMPONENT_LOGGABLE)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : ${comp_name} is declared as loggable, but its containing package ${PROJECT_NAME} depends on a too old version of pid-log package. Please add pid-log version 3.1 or more as a dependency of your package.")
   endif()
+endif()
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  list(APPEND internal_compiler_options "/permissive-") # Force MSVC to be standard compliant
+  list(APPEND internal_defs "_USE_MATH_DEFINES") # Force MSVC to define math constants in math.h/cmath (e.g M_PI)
 endif()
 
 if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
@@ -2049,10 +2056,14 @@ endmacro(declare_PID_Component_Dependency)
 
 
 function(wrap_CTest_Call name command args)
-	if(NOT CMAKE_VERSION VERSION_LESS 3.4)#cannot do if on tests before this version
-		add_test(NAME ${name} COMMAND ${command} ${args})
-	else()
-		add_test(${name} ${command} ${args})
+  if(NOT CMAKE_VERSION VERSION_LESS 3.4)#cannot do if on tests before this version
+    if(WIN32)
+      add_test(NAME ${name} COMMAND run.bat ${command}.exe ${args})
+    else()
+      add_test(NAME ${name} COMMAND ${command} ${args})
+    endif()
+  else()
+    add_test(${name} ${command} ${args})
 	endif()
 endfunction(wrap_CTest_Call)
 

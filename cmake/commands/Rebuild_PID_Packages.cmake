@@ -50,22 +50,29 @@ else()#default is all
 endif()
 
 #clean them first
+set(FAILED_PACKAGES)
 foreach(package IN LISTS LIST_OF_TARGETS)
 	set(path_to_build ${WORKSPACE_DIR}/packages/${package}/build)
 	if(NOT EXISTS ${path_to_build}/CMakeCache.txt)#package not already configured so do it
 			execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR}/packages/${package}
-											WORKING_DIRECTORY ${path_to_build})
+											WORKING_DIRECTORY ${path_to_build} RESULT_VARIABLE RES)
 	else()#otherwise clean it to force the rebuild
-		execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} clean WORKING_DIRECTORY ${path_to_build})
+		execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} clean WORKING_DIRECTORY ${path_to_build} RESULT_VARIABLE RES)
+	endif()
+	if(NOT RES STREQUAL 0)
+		list(APPEND FAILED_PACKAGES ${package})
 	endif()
 	#then build
 	target_Options_Passed_Via_Environment(use_env)
 	if(${use_env})
 		SET(ENV{force} true)
-		execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
+		execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build RESULT_VARIABLE RES)
 	else()
 		#TODO pass the force option as an environment variable to be compatible with any Make program
-		execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build force=true WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
+		execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build force=true WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build RESULT_VARIABLE RES)
+	endif()
+	if(NOT RES STREQUAL 0)
+		list(APPEND FAILED_PACKAGES ${package})
 	endif()
 endforeach()
 
@@ -75,3 +82,7 @@ message("All packages built during this process : ${LIST_OF_TARGETS}")
 message("Packages deployed/updated/checked during this process : ")
 print_Managed_Packages()
 finish_Progress(TRUE) #reset the build progress information
+if(FAILED_PACKAGES)
+	list(REMOVE_DUPLICATES FAILED_PACKAGES)
+	message(FATAL_ERROR "[PID] ERROR : the following packages could not be rebuilt: ${FAILED_PACKAGES}")
+endif()

@@ -795,11 +795,11 @@ if(${package}_FRAMEWORK) #references are deployed in a framework
       set(binaries_address ${FRAMEWORK_ADDRESS}/external/${package}/binaries/binary_references.cmake)
     endif()
     if(binaries_address)
-      file(DOWNLOAD ${binaries_address} ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res TLS_VERIFY OFF)
+      file(DOWNLOAD ${binaries_address} ${WORKSPACE_DIR}/build/${package}_binary_references.cmake STATUS res TLS_VERIFY OFF)
   		list(GET res 0 numeric_error)
   		if(numeric_error EQUAL 0 #framework site is online & reference available.
-  		AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
-        set(to_include ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
+  		AND EXISTS ${WORKSPACE_DIR}/build/${package}_binary_references.cmake)
+        set(to_include ${WORKSPACE_DIR}/build/${package}_binary_references.cmake)
   		else() #it may be an external package, try this
         if(ADDITIONNAL_DEBUG_INFO)
           message("[PID] INFO: no binary reference found for ${package}")
@@ -817,11 +817,11 @@ if(${package}_FRAMEWORK) #references are deployed in a framework
 	endif()
 elseif(${package}_SITE_GIT_ADDRESS)  #references are deployed in a lone static site
 	#when package has a lone static site, the reference file can be directly downloaded
-	file(DOWNLOAD ${${package}_SITE_ROOT_PAGE}/binaries/binary_references.cmake ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake STATUS res TLS_VERIFY OFF)
+	file(DOWNLOAD ${${package}_SITE_ROOT_PAGE}/binaries/binary_references.cmake ${WORKSPACE_DIR}/build/${package}_binary_references.cmake STATUS res TLS_VERIFY OFF)
 	list(GET res 0 numeric_error)
 	if(numeric_error EQUAL 0 #static site online & reference available.
-	AND EXISTS ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
-		set(to_include ${WORKSPACE_DIR}/pid/${package}_binary_references.cmake)
+	AND EXISTS ${WORKSPACE_DIR}/build/${package}_binary_references.cmake)
+		set(to_include ${WORKSPACE_DIR}/build/${package}_binary_references.cmake)
   else() #it may be an external package, try this
     if(ADDITIONNAL_DEBUG_INFO)
       message("[PID] INFO: no binary reference found for ${package}")
@@ -1082,7 +1082,7 @@ if(INDEX EQUAL -1) #not found in installed versions
 else()#already installed !!
 	is_Binary_Package_Version_In_Development(IN_DEV ${package} ${RES_VERSION})
 	if(IN_DEV) # dev version is not generating the same binary as currently installed version
-		message("[PID] WARNING : when installing the package ${package} from source : a possibly conflicting binary package with same version ${RES_VERSION} is already installed. Please uninstall it by hand by using the \"make uninstall\" command from package  build folder or \"make clear package=${package} version=${RES_VERSION} from workspace pid folder.\"")
+		message("[PID] WARNING : when installing the package ${package} from source : a possibly conflicting binary package with same version ${RES_VERSION} is already installed. Please uninstall it by hand by using the \"make uninstall\" command from package  build folder or \"make clear package=${package} version=${RES_VERSION} from workspace build folder.\"")
 	else()	#problem : the installed version is the result of the user build
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : package ${package} is already up to date ...")
@@ -1283,7 +1283,7 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 else()#selected version excluded from current process
 	is_Binary_Package_Version_In_Development(IN_DEV ${package} ${RES_VERSION})
 	if(IN_DEV) # dev version is not generating the same binary as currently installed version
-		message("[PID] WARNING : when installing the package ${package} from source : a possibly conflicting binary package with same version ${RES_VERSION} is already installed. Please uninstall it by hand by using the \"make uninstall\" command from package build folder or \"make clear package=${package} version=${RES_VERSION} from workspace pid folder.\"")
+		message("[PID] WARNING : when installing the package ${package} from source : a possibly conflicting binary package with same version ${RES_VERSION} is already installed. Please uninstall it by hand by using the \"make uninstall\" command from package build folder or \"make clear package=${package} version=${RES_VERSION} from workspace build folder.\"")
 	else()	#problem : the installed version is the result of the user build
 		if(ADDITIONNAL_DEBUG_INFO)
 			message("[PID] INFO : package ${package} is already up to date ...")
@@ -2985,11 +2985,12 @@ foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #check 
 endforeach()
 
 if(external)#external packages may be provided with specific script to use when deploying binaries
+  set(TARGET_INSTALL_DIR ${WORKSPACE_DIR}/install/${platform_base}/${package}/${version})
   if(${package}_SCRIPT_POST_INSTALL)
-    set(TARGET_INSTALL_DIR ${WORKSPACE_DIR}/install/${platform_base}/${package}/${version})
     message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/cmake_script/${${package}_SCRIPT_POST_INSTALL} ...")
     include(${TARGET_INSTALL_DIR}/cmake_script/${${package}_SCRIPT_POST_INSTALL} NO_POLICY_SCOPE)#execute the script
   endif()
+  symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
 else()
   # Manage native package dependencies => need to check direct native dependencies
 	foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX}) #check that version of these dependencies is OK

@@ -44,7 +44,7 @@ include(External_Definition NO_POLICY_SCOPE)
 macro(load_Platform_Info)
   load_Current_Contribution_Spaces()
   load_Profile_Info()
-  include(${WORKSPACE_DIR}/pid/${CURRENT_PROFILE}/Workspace_Platforms_Description.cmake) #loading the workspace description configuration
+  include(${WORKSPACE_DIR}/build/${CURRENT_PROFILE}/Workspace_Platforms_Description.cmake) #loading the workspace description configuration
 endmacro(load_Platform_Info)
 
 #.rst:
@@ -528,14 +528,14 @@ function(manage_Dependent_PID_Package DEPLOYED package version)
     #TODO need to check this
     if(NOT INDEX_IN_DECLARED_OS_DEPS EQUAL -1)#deploying external dependency as os variant
       execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=system
-                      WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+                      WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
     else()
       if(version)
         execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=${version}
-        WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+        WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
       else()
         execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package}
-        WORKING_DIRECTORY ${WORKSPACE_DIR}/pid)
+        WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
       endif()
     endif()
     unset(ENV{manage_progress})

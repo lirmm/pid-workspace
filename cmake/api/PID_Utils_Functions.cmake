@@ -972,11 +972,10 @@ function(create_Symlink path_to_old path_to_new)
         endif()
 
         # check if target is a directory or a file to pass to proper argument to mklink
-        get_filename_component(DIR ${path_to_old} DIRECTORY)
-        if(${path_to_old} STREQUAL ${DIR})
-            set(mklink_option "/D")
-        else()
-            set(mklink_option "")
+        if(IS_DIRECTORY ${path_to_old})
+            set(mklink_option "/J")
+          else()
+            set(mklink_option "/H")
         endif()
     endif()
 
@@ -997,11 +996,13 @@ function(create_Symlink path_to_old path_to_new)
                 COMMAND cmd.exe /c mklink ${mklink_option} ${path_to_new} ${path_to_old}
                 WORKING_DIRECTORY ${OPT_WORKING_DIR}
                 OUTPUT_QUIET
+                ERROR_QUIET
             )
         else()
             execute_process(
                 COMMAND cmd.exe /c mklink ${mklink_option} ${path_to_new} ${path_to_old}
                 OUTPUT_QUIET
+                ERROR_QUIET
             )
         endif()
     else()
@@ -1077,7 +1078,7 @@ function(install_Runtime_Symlink path_to_target path_to_rpath_folder rpath_sub_f
 	install(CODE "
                     list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/api)
                     include(PID_Utils_Functions NO_POLICY_SCOPE)
-                    message(\"-- Installing: ${FULL_RPATH_DIR}/${A_FILE}\")
+                    message(\"-- Installing: ${CMAKE_INSTALL_PREFIX}/${FULL_RPATH_DIR}/${A_FILE}\")
                     create_Symlink(${path_to_target} ${FULL_RPATH_DIR}/${A_FILE} WORKING_DIR ${CMAKE_INSTALL_PREFIX})
 	")# creating links "on the fly" when installing
 endfunction(install_Runtime_Symlink)
@@ -5120,3 +5121,52 @@ function(append_Join_Generator_Expressions inout_expr input_expr)
     set(${inout_expr} "${input_expr}" PARENT_SCOPE)
   endif()
 endfunction(append_Join_Generator_Expressions)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |symlink_DLLs_To_Lib_Folder| replace:: ``symlink_DLLs_To_Lib_Folder``
+#  .. _symlink_DLLs_To_Lib_Folder:
+#
+#  symlink_DLLs_To_Lib_Folder
+#  ---------------------------------
+#
+#   .. command:: symlink_DLLs_To_Lib_Folder(install_directory)
+#
+#    On Windows, symlinks any DLL present in install_directory/bin to install_directory/src for consistency with UNIX platforms
+#
+#     :install_directory: the installation directory containing the bin and src folders
+#
+function(symlink_DLLs_To_Lib_Folder install_directory)
+  if(WIN32)
+    file(GLOB dlls ${install_directory}/bin/*.dll)
+    foreach(dll ${dlls})
+      string(REPLACE "/bin/" "/lib/" dll_in_src ${dll})
+      create_Symlink(${dll} ${dll_in_src})
+    endforeach()
+  endif()
+endfunction(symlink_DLLs_To_Lib_Folder)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Shell_Script_Symlinks| replace:: ``create_Shell_Script_Symlinks``
+#  .. create_Shell_Script_Symlinks:
+#
+#  create_Shell_Script_Symlinks
+#  ----------------
+#
+#   .. command:: create_Shell_Script_Symlinks()
+#
+#     Creates symlinks in the current source directory for the pid and pid.bat script located in the workspace root
+#
+function(create_Shell_Script_Symlinks)
+	set(scripts "pid;pid.bat")
+	foreach(script IN LISTS scripts)
+		if(NOT EXISTS ${CMAKE_SOURCE_DIR}/${script})
+			create_Symlink(${WORKSPACE_DIR}/${script} ${CMAKE_SOURCE_DIR}/${script})
+		endif()		
+	endforeach()
+endfunction(create_Shell_Script_Symlinks)

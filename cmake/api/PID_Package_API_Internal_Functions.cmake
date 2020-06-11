@@ -285,8 +285,8 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		)
 	endif()
 
-	# redefinition of clean target (cleaning the build tree)
-	add_custom_target(clean
+	# cleaning target (cleaning the build tree)
+	add_custom_target(cleaning
 		COMMAND ${CMAKE_COMMAND} -E  touch ${CMAKE_BINARY_DIR}/share/checksources
 		COMMAND ${CMAKE_COMMAND} -E  touch ${CMAKE_BINARY_DIR}/share/rebuilt
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} clean
@@ -294,6 +294,14 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		COMMENT "[PID] Cleaning package ${PROJECT_NAME} (Debug and Release modes) ..."
 		VERBATIM
 	)
+	
+	# redefinition of clean target (cleaning the build tree) only when using Unix Makefiles
+	# most generators don't support multiple targets with the same name
+	if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
+		# TODO check if valid
+		add_custom_target(clean)
+		add_dependencies(clean cleaning)
+	endif()
 
 	# hard clean (remove content of the build tree including cmake generated configuration files)
   add_custom_target(hard_clean
@@ -427,6 +435,12 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			VERBATIM
 		)
 	endif()
+	add_custom_target(
+		workspace_path
+		COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} -P ${WORKSPACE_DIR}/cmake/commands/Print_Workspace_Path.cmake
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	)
+
 	set(PACKAGE_FORMAT_FOLDER ${CMAKE_SOURCE_DIR})
 	set(PACKAGE_FORMAT_FILE ${PACKAGE_FORMAT_FOLDER}/.clang-format)
 	# if a code style is provided, copy the configuration file to the package root folder
