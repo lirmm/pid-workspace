@@ -65,7 +65,7 @@ pid() {
             else
                 to_unexport=$arg
             fi
-        fi  
+        fi
     done
 
     # Execute the given target or any of the "fake" targets
@@ -100,13 +100,13 @@ pid() {
             current_arg=0
             if [ "$ZSH_VERSION" ]; then setopt shwordsplit; fi
             for arg in $fake_target_args; do
-                if [ $current_arg -eq 0 ]; then 
+                if [ $current_arg -eq 0 ]; then
                     platform=$arg
-                elif [ $current_arg -eq 1 ]; then 
+                elif [ $current_arg -eq 1 ]; then
                     package=$arg
-                elif [ $current_arg -eq 2 ]; then 
+                elif [ $current_arg -eq 2 ]; then
                     version=$arg
-                elif [ $current_arg -eq 3 ]; then 
+                elif [ $current_arg -eq 3 ]; then
                     executable=$arg
                 fi
                 current_arg=$((current_arg+1))
@@ -157,7 +157,7 @@ _pid_ws_apply_options() {
     fi
 }
 
-# Run the given target. (Re)configure the project 
+# Run the given target. (Re)configure the project
 #  beforehand if necesarry
 #  $1: project dir, $2: target, $3: cmake options
 _pid_ws_run() {
@@ -189,7 +189,7 @@ _pid_ws_get_project_dir() {
         fi
         if [ "$project_dir" = "/" ]; then
             break
-        fi 
+        fi
         project_dir=$(_pid_ws_readlink $project_dir/..)
     done
     if [ "$project_dir" = "/" ]; then
@@ -235,7 +235,7 @@ _pid_ws_readlink() {
     fi
     if [ -d "$target" ]; then
         local target_dir=$target
-    else    
+    else
         local target_dir=$(dirname $target)
     fi
     (cd $target_dir && echo `pwd`/$(basename $1))
@@ -253,8 +253,8 @@ _pid_ws_get_abs_path() {
         abs_path=$ws_dir/wrappers/$1
     elif [ -d "$ws_dir/sites/frameworks/$1" ]; then
         abs_path=$ws_dir/sites/frameworks/$1
-    elif [ -d "$ws_dir/environment/$1" ]; then
-        abs_path=$ws_dir/environment/$1
+    elif [ -d "$ws_dir/environments/$1" ]; then
+        abs_path=$ws_dir/environments/$1
     else
         abs_path=""
         echo "Failed to find $1 in the available packages, wrappers, frameworks and environments"
@@ -327,7 +327,7 @@ _pid_ws_append_files() {
     done
 }
 
-# Call _pid_ws_append_folders for the workspace's packages, wrappers, 
+# Call _pid_ws_append_folders for the workspace's packages, wrappers,
 #  sites/frameworks and environments folders
 _pid_ws_get_all_folders() {
     _pid_ws_get_workspace_dir
