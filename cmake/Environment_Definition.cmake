@@ -751,6 +751,8 @@ endfunction(get_Configured_Environment_Tool)
 #
 #   .. command:: configure_Environment_Tool(SYSTEM [GENERATOR...] [LINKER ...] [[EXE|MODULE|STATIC|SHARED] FLAGS...])
 #
+#   .. command:: configure_Environment_Tool(EXTRA ... [OPTIONS ...] [PLUGIN ...])
+#
 #     Configure the tools used for the current environment. Support different signatures.
 #
 #     .. rubric:: Required parameters
@@ -776,7 +778,7 @@ endfunction(get_Configured_Environment_Tool)
 #     :GEN_PLATFORM ...: the name of the generator platform to use (for SYSTEM).
 #     :EXE|MODULE|STATIC|SHARED: filters for selecting adequate type of binaries for which to apply link flags (for SYSTEM).
 #     :CURRENT: use the current environment to set all adequate variables of the target language (for LANGUAGE AND SYSTEM).
-#     :PROGRAM: memorize the path to the main extra tool program (for EXTRA).
+#     :PROGRAM ...: memorize the path to the main extra tool program (for EXTRA).
 #     :LIBRARY: path to the target library (for EXTRA, LANGUAGE and SYSTEM).
 #     :PROGRAM_DIRS ...: list of path to library dirs (for EXTRA and SYSTEM).
 #     :INCLUDE_DIRS ...: list of path to include dirs (for LANGUAGE and SYSTEM).
@@ -802,8 +804,8 @@ endfunction(get_Configured_Environment_Tool)
 #
 #        configure_Environment_Tool(SYSTEM LINKER ${CMAKE_LINKER} FLAGS -m32 )
 #
-#        configure_Environment_Tool(EXTRA pkg-config EXE ${PKG_CONFIG_EXECUTABLE}
-#                         VERSION ${PKG_CONFIG_VERSION_STRING} PLUGIN AFTER use_pkg-config.cmake)
+#        configure_Environment_Tool(EXTRA pkg-config PROGRAM ${PKG_CONFIG_EXECUTABLE}
+#                                   PLUGIN AFTER use_pkg-config.cmake)
 #
 function(configure_Environment_Tool)
   set(options SYSTEM EXE MODULE STATIC SHARED CURRENT)

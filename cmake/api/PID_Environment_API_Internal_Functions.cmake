@@ -2455,11 +2455,12 @@ endfunction(print_Language_Toolset)
 #     :tool: the name of extra tool
 #
 function(print_Extra_Tool environment tool)
+  set(tool_str)
   if(${environment}_EXTRA_${tool}_PROGRAM)
-    set(tool_str "    * program: ${${environment}_EXTRA_${tool}_PROGRAM}\n")
+    set(tool_str "${tool_str}    * program: ${${environment}_EXTRA_${tool}_PROGRAM}\n")
   endif()
   if(${environment}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS)
-    set(tool_str "    * platform requirements: ${${environment}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS}\n")
+    set(tool_str "${tool_str}    * platform requirements: ${${environment}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS}\n")
   endif()
   if(${environment}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES
     OR ${environment}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS
