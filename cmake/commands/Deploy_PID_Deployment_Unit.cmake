@@ -112,7 +112,7 @@ elseif(DEPLOYED_ENVIRONMENT)# deployment of an environment is required
 	endif()
 	# deployment of the framework
 	if(EXISTS ${WORKSPACE_DIR}/environments/${DEPLOYED_ENVIRONMENT} AND IS_DIRECTORY ${WORKSPACE_DIR}/environments/${DEPLOYED_ENVIRONMENT})
-		message("[PID] ERROR : Source repository for environment ${DEPLOYED_FRAMEWORK} already resides in the workspace.")
+		message("[PID] INFO : Source repository for environment ${DEPLOYED_FRAMEWORK} already resides in the workspace. Nothing to do...")
 		return()
 	endif()
 	message("[PID] INFO : deploying PID environment ${DEPLOYED_ENVIRONMENT} in the workspace ...")

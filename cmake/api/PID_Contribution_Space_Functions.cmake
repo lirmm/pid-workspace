@@ -1144,29 +1144,29 @@ endfunction(get_All_Matching_Contributions)
 #
 # .. ifmode:: internal
 #
-#  .. |get_Package_All_Non_Official_Contribtion_Spaces_In_Use| replace:: ``get_Package_All_Non_Official_Contribtion_Spaces_In_Use``
-#  .. _get_Package_All_Non_Official_Contribtion_Spaces_In_Use:
+#  .. |get_System_Configuration_All_Non_Official_Contribution_Spaces_In_Use| replace:: ``get_System_Configuration_All_Non_Official_Contribution_Spaces_In_Use``
+#  .. _get_System_Configuration_All_Non_Official_Contribution_Spaces_In_Use:
 #
-#  get_Package_All_Non_Official_Contribtion_Spaces_In_Use
-#  ------------------------------------------------------
+#  get_System_Configuration_All_Non_Official_Contribution_Spaces_In_Use
+#  --------------------------------------------------------------------
 #
-#   .. command:: get_Package_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS package default_cs mode)
+#   .. command:: get_System_Configuration_All_Non_Official_Contribution_Spaces_In_Use(LIST_OF_CS config default_cs)
 #
 #      Get the list of contribution spaces where to find references to configurations used by native or external package.
 #      By default contributions that can be found in official contribution space are not put into this list.
 #      Also the current project default contribution space has always priority over other spaces that may contain references to a dependency.
 #
-#      :package: name of the package.
+#      :config: name of the platform configuration (i.e. name of the corresponding wrapper).
 #
 #      :default_cs: name of the contribution space considered as default for the current project.
 #
 #      :LIST_OF_CS: output variable that contains the list of contribution spaces in use in current package.
 #
-function(get_System_Configuration_All_Non_Official_Contribtion_Spaces_In_Use LIST_OF_CS config default_cs)
+function(get_System_Configuration_All_Non_Official_Contribution_Spaces_In_Use LIST_OF_CS config default_cs)
   set(res_list)
   foreach(check IN LISTS ${config}_CONFIGURATION_DEPENDENCIES)
     parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${check}")
-    get_System_Configuration_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${CONFIG_NAME} "${default_cs}")
+    get_System_Configuration_All_Non_Official_Contribution_Spaces_In_Use(LIST_OF_CS ${CONFIG_NAME} "${default_cs}")
     list(APPEND res_list ${LIST_OF_CS})
   endforeach()
 
@@ -1176,7 +1176,7 @@ function(get_System_Configuration_All_Non_Official_Contribtion_Spaces_In_Use LIS
     list(REMOVE_DUPLICATES res_list)
   endif()
   set(${LIST_OF_CS} ${res_list} PARENT_SCOPE)
-endfunction(get_System_Configuration_All_Non_Official_Contribtion_Spaces_In_Use)
+endfunction(get_System_Configuration_All_Non_Official_Contribution_Spaces_In_Use)
 
 #.rst:
 #
@@ -1209,7 +1209,7 @@ function(get_Package_All_Non_Official_Contribtion_Spaces_In_Use LIST_OF_CS packa
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATION${VAR_SUFFIX})
     #need to recurse to manage depenencies
-    get_System_Configuration_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${config} "${default_cs}")
+    get_System_Configuration_All_Non_Official_Contribution_Spaces_In_Use(LIST_OF_CS ${config} "${default_cs}")
     list(APPEND res_list ${LIST_OF_CS})
   endforeach()
   foreach(dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
@@ -1255,7 +1255,7 @@ function(get_Wrapper_All_Non_Official_Contribtion_Spaces_In_Use LIST_OF_CS wrapp
   foreach(version IN LISTS ${wrapper}_KNOWN_VERSIONS)
   	#reset configurations
   	foreach(config IN LISTS ${wrapper}_KNOWN_VERSION_${version}_CONFIGURATIONS)
-      get_System_Configuration_All_Non_Official_Contribtion_Spaces_In_Use(LIST_OF_CS ${config} "${default_cs}")
+      get_System_Configuration_All_Non_Official_Contribution_Spaces_In_Use(LIST_OF_CS ${config} "${default_cs}")
       list(APPEND res_list ${LIST_OF_CS})
   	endforeach()
   	#reset package dependencies

@@ -442,13 +442,13 @@ macro(reset_Profiles)
     set(full_solution_str "set(PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT} CACHE INTERNAL \"\")")
     # evaluate the main environment of the profile, then all additionnal environments
     if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")#need to reevaluate the main environment if profile is not haost default
-      evaluate_Environment_From_Workspace(SUCCESS ${CURRENT_PROFILE} ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT} TRUE)#evaluate as main env
-      if(SUCCESS)
-        file(	READ ${WORKSPACE_DIR}/environments/${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}/build/PID_Environment_Solution_Info.cmake
+      evaluate_Environment_From_Profile(ENV_NAME ${CURRENT_PROFILE} ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT} TRUE)#evaluate as main env
+      if(ENV_NAME)
+        file(	READ ${WORKSPACE_DIR}/environments/${ENV_NAME}/build/PID_Environment_Solution_Info.cmake
               more_solution)
         set(full_solution_str "${full_solution_str}\n${more_solution}")
-        if(EXISTS ${WORKSPACE_DIR}/environments/${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}/build/PID_Toolchain.cmake)
-          file(	COPY ${WORKSPACE_DIR}/environments/${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}/build/PID_Toolchain.cmake
+        if(EXISTS ${WORKSPACE_DIR}/environments/${ENV_NAME}/build/PID_Toolchain.cmake)
+          file(	COPY ${WORKSPACE_DIR}/environments/${ENV_NAME}/build/PID_Toolchain.cmake
                 DESTINATION ${dir})
         endif()
       elseif(IN_CI_PROCESS)# crash with an error since IN CI contraints on dev env MUST be fulfilled
@@ -461,9 +461,9 @@ macro(reset_Profiles)
     set(full_solution_str "${full_solution_str}\nset(PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS ${RES_STR} CACHE INTERNAL \"\")")
     #whatever the profile all additionnal environments in use must be evaluated
     foreach(env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
-      evaluate_Environment_From_Workspace(SUCCESS ${CURRENT_PROFILE} ${env} FALSE)#evaluate as additionnal
-      if(SUCCESS)
-        file(	READ ${WORKSPACE_DIR}/environments/${env}/build/PID_Environment_Solution_Info.cmake
+      evaluate_Environment_From_Profile(ENV_NAME ${CURRENT_PROFILE} ${env} FALSE)#evaluate as additionnal
+      if(ENV_NAME)
+        file(	READ ${WORKSPACE_DIR}/environments/${ENV_NAME}/build/PID_Environment_Solution_Info.cmake
               temp_str)
         set(full_solution_str "${full_solution_str}\n${temp_str}")
       else()
@@ -482,6 +482,7 @@ macro(reset_Profiles)
   # need to set the definitions used in evalutaion of profile specific configuration
   set(args -DWORKSPACE_DIR=${WORKSPACE_DIR} -DIN_CI_PROCESS=${IN_CI_PROCESS} -DPACKAGE_BINARY_INSTALL_DIR=${PACKAGE_BINARY_INSTALL_DIR})
   include(${dir}/Workspace_Solution_File.cmake)#use the solution file to set global variables
+  #TODO check is OK to use PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT instead of real env name !!
   if(${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_CROSSCOMPILATION)
     list(APPEND args -DPID_CROSSCOMPILATION=TRUE)
   endif()
@@ -543,13 +544,13 @@ endmacro(reset_Profiles)
 #
 # .. ifmode:: internal
 #
-#  .. |evaluate_Environment_From_Workspace| replace:: ``evaluate_Environment_From_Workspace``
-#  .. _evaluate_Environment_From_Workspace:
+#  .. |evaluate_Environment_From_Profile| replace:: ``evaluate_Environment_From_Profile``
+#  .. _evaluate_Environment_From_Profile:
 #
-#  evaluate_Environment_From_Workspace
-#  -----------------------------------
+#  evaluate_Environment_From_Profile
+#  ---------------------------------
 #
-#   .. command:: evaluate_Environment_From_Workspace(RESULT profile environment is_default)
+#   .. command:: evaluate_Environment_From_Profile(RESULT profile environment is_default)
 #
 #      Evaluate an environment used into a profile
 #
@@ -559,14 +560,15 @@ endmacro(reset_Profiles)
 #
 #     :is_default: if TRUE the environment will be evaluated as default environment for the profile, otherwise it will be evaluated as an additionnal environment
 #
-#     :RESULT: The result variable that is TRUE if environment has been correctly evaluated, false otherwise
+#     :RESULT: The result variable that contains the name of the environment if it has been correctly evaluated, and that is FALSE otherwise
 #
-function(evaluate_Environment_From_Workspace RESULT profile environment is_default)
+function(evaluate_Environment_From_Profile RESULT profile environment is_default)
   set(${RESULT} FALSE PARENT_SCOPE)
+  parse_Configuration_Expression(ENV_NAME ENV_ARGS ${environment})
   # 1. load the environment into current context
-	load_Environment(IS_LOADED ${environment})
+	load_Environment(IS_LOADED ${ENV_NAME})
 	if(NOT IS_LOADED)
-		message("[PID] ERROR : environment ${environment} is unknown in workspace, or cannot be installed due to connection problems or permission issues.")
+		message("[PID] ERROR : environment ${ENV_NAME} is unknown in workspace, or cannot be installed due to connection problems or permission issues.")
 		return()
 	endif()
 
@@ -575,7 +577,25 @@ function(evaluate_Environment_From_Workspace RESULT profile environment is_defau
 	# Warning: the sysroot in use may be forced by the user, so the sysroot passed by user has always priority over those defined by environments.
 	# Warning: the staging in use may be forced by the user, so the staging passed by user has always priority over those defined by environments.
 
-  evaluate_Environment_From_Script(EVAL_OK ${environment}
+  set(env_vars_to_reset)
+  if(ENV_ARGS)#there are constraints passed as arguments to the environment check expression
+    #we need to translate these constraints into environment variables
+    set(argument_couples ${ENV_ARGS})
+    while(argument_couples)
+      list(GET argument_couples 0 name)
+      list(GET argument_couples 1 value)
+      list(REMOVE_AT argument_couples 0 1)#update the list of arguments in parent scope
+      if(value AND NOT value STREQUAL \"\")#special case of an empty list (represented with \"\") must be avoided
+        string(REPLACE " " "" VAL_LIST ${value})#remove the spaces in the string if any
+        string(REPLACE "," ";" VAL_LIST ${VAL_LIST})#generate a cmake list (with ";" as delimiter) from an argument list (with "," delimiter)
+      else()
+        set(VAL_LIST)
+      endif()
+      set(ENV{${name}} ${VAL_LIST})#create the corresponding environment variable
+      list(APPEND env_vars_to_reset ${name})
+    endwhile()
+  endif()
+  evaluate_Environment_From_Script(EVAL_OK ${ENV_NAME}
           "${PROFILE_${profile}_TARGET_INSTANCE}"
           "${PROFILE_${profile}_TARGET_SYSROOT}"
           "${PROFILE_${profile}_TARGET_STAGING}"
@@ -585,12 +605,17 @@ function(evaluate_Environment_From_Workspace RESULT profile environment is_defau
           "${PROFILE_${profile}_TARGET_PLATFORM_ABI}"
           "${PROFILE_${profile}_TARGET_DISTRIBUTION}"
           "${PROFILE_${profile}_TARGET_DISTRIBUTION_VERSION}")
+  #reset environment variables
+  foreach(env_var IN LISTS env_vars_to_reset)
+    unset(ENV{${env_var}})
+  endforeach()
+  unset(env_vars_to_reset)
 	if(NOT EVAL_OK)
     message("[PID] ERROR : cannot evaluate environment ${environment} on current host. Aborting workspace configuration.")
 		return()
 	endif()
-  set(${RESULT} TRUE PARENT_SCOPE)
-endfunction(evaluate_Environment_From_Workspace)
+  set(${RESULT} ${ENV_NAME} PARENT_SCOPE)
+endfunction(evaluate_Environment_From_Profile)
 
 
 #.rst:

@@ -54,6 +54,7 @@ if(TARGET_ENVIRONMENT)
 		file(GLOB all_env RELATIVE ${WORKSPACE_DIR}/environments/ "${WORKSPACE_DIR}/environments/*")
 
 		list(REMOVE_ITEM all_env ".gitignore")
+		list(REMOVE_ITEM all_env "profiles_list.cmake")
 		list(APPEND to_list ${all_env})
 		if(to_list)
 			list(REMOVE_DUPLICATES to_list)
