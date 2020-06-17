@@ -5156,7 +5156,7 @@ endfunction(symlink_DLLs_To_Lib_Folder)
 #  .. create_Shell_Script_Symlinks:
 #
 #  create_Shell_Script_Symlinks
-#  ----------------
+#  ----------------------------
 #
 #   .. command:: create_Shell_Script_Symlinks()
 #
@@ -5167,6 +5167,6 @@ function(create_Shell_Script_Symlinks)
 	foreach(script IN LISTS scripts)
 		if(NOT EXISTS ${CMAKE_SOURCE_DIR}/${script})
 			create_Symlink(${WORKSPACE_DIR}/${script} ${CMAKE_SOURCE_DIR}/${script})
-		endif()		
+		endif()
 	endforeach()
 endfunction(create_Shell_Script_Symlinks)

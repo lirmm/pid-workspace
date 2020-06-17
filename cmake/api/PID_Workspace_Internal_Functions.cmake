@@ -3983,7 +3983,7 @@ endfunction(manage_Platforms)
 #  .. create_Backward_Compatibility_Symlinks:
 #
 #  create_Backward_Compatibility_Symlinks
-#  ----------------
+#  --------------------------------------
 #
 #   .. command:: create_Backward_Compatibility_Symlinks()
 #
