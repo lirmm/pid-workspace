@@ -310,10 +310,10 @@ macro(add_PID_Command name script)
 	set(OPTIONS ${name}_options)
 	add_custom_target(
 		${name}
-		COMMAND ${CMAKE_COMMAND} 
+		COMMAND ${CMAKE_COMMAND}
 			${ARGS}
 			${OPTIONS}
-			-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}                                 
+			-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 			-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
 			-P ${CMAKE_SOURCE_DIR}/cmake/commands/${script}
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -430,15 +430,15 @@ set(upgrade_args "\
 add_PID_Command(upgrade Upgrade_PID_Workspace.cmake)
 
 ## upgrading the workspace
-set(system_install_args "\
+set(install_args "\
 	-DINSTALLED_PACKAGE=\${package} \
 	-DTARGET_VERSION=\${version} \
 	-DINSTALL_FOLDER=\${folder} \
 	-DINSTALL_MODE=\${mode} ")
-set(system_install_options "\
+set(install_options "\
 	-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} \
 	-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
-add_PID_Command(system_install Install_PID_Package.cmake)
+add_PID_Command(install Install_PID_Package.cmake)
 
 ## configuring the workspace
 set(profiles_args "\
