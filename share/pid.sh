@@ -340,7 +340,7 @@ _pid_ws_get_all_folders() {
 
 # Sets the targets variable with the list of all available targets for the specified project
 _pid_ws_get_targets() {
-    targets=$(cmake --build build --target help 2> /dev/null|sed -re "s:([. ])*([a-z][a-z\-_]+)(.*):\2:g"|tail -n +2)
+    targets=$(cmake --build build --target help 2> /dev/null|sed -re "s:^[. ]*([a-z][^ ]+).*$:\1:g"|tail -n +2)
 }
 
 # Don't include the completions in this file otherwise a POSIX shell will complain about unsupported syntax
