@@ -133,7 +133,7 @@ pid() {
     unset project_dir
     unset ws_dir
     for var in $to_unexport; do
-        local name=$(echo $var|sed -E "s:(.*)=.*:\1:g")
+        local name=$(echo $var|sed -re "s:([^=]+)=.*:\1:g")
         unset $name
     done
 
