@@ -3902,17 +3902,10 @@ set(${RESULT} FALSE PARENT_SCOPE)
 get_Platform_Variables(BASENAME curr_platform_str)
 set(USE_FILE ${WORKSPACE_DIR}/install/${curr_platform_str}/${package}/${version}/share/Use${package}-${version}.cmake)
 if(EXISTS ${USE_FILE}) #file does not exists means the target version is not in development
-	set(PID_VERSION_FILE ${WORKSPACE_DIR}/install/${curr_platform_str}/${package}/${version}/cmake/${package}_PID_Version.cmake)
-	if(EXISTS ${PID_VERSION_FILE})
-		include(${PID_VERSION_FILE})
-		PID_Package_Is_With_Development_Info_In_Use_Files(RES ${package})
-		if(RES)
-			include(${USE_FILE})#include the definitions
-			if(${package}_DEVELOPMENT_STATE STREQUAL "development") #this binary package has been built from a development branch
-				set(${RESULT} TRUE PARENT_SCOPE)
-			endif()
-		endif()
-	endif()
+  include(${USE_FILE})#include the definitions
+  if(${package}_DEVELOPMENT_STATE STREQUAL "development") #this binary package has been built from a development branch
+    set(${RESULT} TRUE PARENT_SCOPE)
+  endif()
 endif()
 endfunction(is_Binary_Package_Version_In_Development)
 

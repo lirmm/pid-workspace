@@ -1374,15 +1374,6 @@ if(RES_PLATFORM_BASE STREQUAL platfom_str) # OK this binary version is theorical
 	if(${package}_PLATFORM_CONFIGURATIONS)
 		set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS})
     list(REMOVE_DUPLICATES CONFIGS_TO_CHECK)
-	else() # this case may be true if the package binary has been release in old PID v1 style
-		PID_Package_Is_With_V2_Platform_Info_In_Use_Files(RES ${package})
-		if(NOT RES) #this is an old style platform description
-			set(OLD_PLATFORM_NAME ${${package}_PLATFORM})
-			set(OLD_PLATFORM_CONFIG ${${package}_PLATFORM_${OLD_PLATFORM_NAME}_CONFIGURATION})
-			if(OLD_PLATFORM_CONFIG) #there are required configurations in old style
-				set(CONFIGS_TO_CHECK ${OLD_PLATFORM_CONFIG})
-			endif()
-		endif()
 	endif()
 	foreach(config IN LISTS CONFIGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
 	parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
