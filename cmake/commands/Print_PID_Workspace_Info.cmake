@@ -42,6 +42,10 @@ if(NOT TARGET_LICENSE AND DEFINED ENV{license})#to manage the call for non UNIX 
 	set(TARGET_LICENSE $ENV{license} CACHE INTERNAL "" FORCE)
 endif()
 
+if(NOT TARGET_LANGUAGE AND DEFINED ENV{language})#to manage the call for non UNIX makefile generators
+	set(TARGET_LANGUAGE $ENV{language} CACHE INTERNAL "" FORCE)
+endif()
+
 #perfom the command
 if(TARGET_ENVIRONMENT)
 	if(TARGET_ENVIRONMENT STREQUAL "all")#listing all environments
@@ -137,6 +141,13 @@ elseif(TARGET_LICENSE)
 		endif()
 		include(${PATH_TO_FILE})
 		print_License_Info(${TARGET_LICENSE})
+	endif()
+
+elseif(TARGET_LANGUAGE)
+	if(TARGET_LANGUAGE STREQUAL "all")#listing all packages ordered by category
+		print_Available_Languages()
+	else()
+		print_Language_Info(${TARGET_LANGUAGE})
 	endif()
 
 else() #no argument passed, printing general information about the workspace

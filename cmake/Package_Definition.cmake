@@ -696,9 +696,9 @@ endmacro(declare_PID_Component_Documentation)
 #
 #      check_PID_Environment(TOOL f2c)
 #
-#      check_PID_Environment(LANGUAGE C++[std=17])#check that a compiler with full c++17 support is provided
+#      check_PID_Environment(LANGUAGE CXX[std=17])#check that a compiler with full c++17 support is provided
 #
-#      check_PID_Environment(TOOL clang[version=9.0])#check that a clang compiler with version >= 9.0 is available
+#      check_PID_Environment(LANGUAGE CXX TOOLSET clang[version=9.0])#check that a clang compiler with version >= 9.0 is available
 #
 macro(check_PID_Environment)
   if(NOT PLUGIN_EXEC_BEFORE_DEPS)

@@ -3407,6 +3407,7 @@ function(install_Package_In_System IS_INSTALLED package version)
 	install_Package_In_Folder(${package})
 	set(${IS_INSTALLED} TRUE PARENT_SCOPE)
 endfunction(install_Package_In_System)
+
 ########################################################################
 ######################## Licenses management ###########################
 ########################################################################
@@ -3462,6 +3463,62 @@ message("OFFICIAL NAME: ${LICENSE_FULLNAME}")
 message("AUTHORS: ${LICENSE_AUTHORS}")
 endfunction(print_License_Info)
 
+########################################################################
+######################## Languages management ##########################
+########################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Available_Languages| replace:: ``print_Available_Languages``
+#  .. _print_Available_Languages:
+#
+#  print_Available_Languages
+#  -------------------------
+#
+#   .. command:: print_Available_Languages()
+#
+#     Print brief description of all langauges available with current profile.
+#
+function(print_Available_Languages)
+	foreach(lang IN ITEMS C CXX ASM Fortran CUDA Python)
+		print_Language_Info(${lang})
+	endforeach()
+endfunction(print_Available_Languages)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Language_Info| replace:: ``print_Language_Info``
+#  .. _print_Language_Info:
+#
+#  print_Language_Info
+#  -------------------
+#
+#   .. command:: print_Language_Info(lang)
+#
+#     Print information about a given language.
+#
+#      :lang: the Cmake identifier of the language.
+#
+function(print_Language_Info lang)
+if(${lang}_Language_AVAILABLE)
+	import_Language_Parameters(${lang})
+	set(lang_constraints ${LANG_${lang}_OPTIONAL_CONSTRAINTS} ${LANG_${lang}_REQUIRED_CONSTRAINTS} ${LANG_${lang}_IN_BINARY_CONSTRAINTS})
+	if(lang_constraints)
+			message("${lang} available, possible CONSTRAINTS:")
+		foreach(cst IN LISTS lang_constraints)
+			message("+ ${cst}")
+		endforeach()
+	else()
+		message("${lang} available")
+	endif()
+else()
+	message("${lang} not available")
+endif()
+endfunction(print_Language_Info)
 
 ########################################################################
 ######################## Platforms management ##########################

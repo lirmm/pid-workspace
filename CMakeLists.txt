@@ -108,10 +108,12 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "               all is specified then list all available frameworks."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - package=*name of a package* or all: print information about a package. If all is specified"
 	COMMAND ${CMAKE_COMMAND} -E echo "               then list all available packages ordered by categories."
-	COMMAND ${CMAKE_COMMAND} -E echo "             - license=*name of a license* or all: print information on the license. If all is specified"
-	COMMAND ${CMAKE_COMMAND} -E echo "               then list all available licenses"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - environment=*name of an environment* or all : print information on the environment. If all"
 	COMMAND ${CMAKE_COMMAND} -E echo "               is specified then list all available environments."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - license=*name of a license* or all: print information on the license. If all is specified"
+	COMMAND ${CMAKE_COMMAND} -E echo "               then list all available licenses"
+	COMMAND ${CMAKE_COMMAND} -E echo "             - language=*name of a language* or all: print information on the langague. If all is specified"
+	COMMAND ${CMAKE_COMMAND} -E echo "               then list all available languages"
 	COMMAND ${CMAKE_COMMAND} -E echo ""
 	COMMAND ${CMAKE_COMMAND} -E echo " deploy:     deploy a deployment unit into workspace, either a package, a framework or an environment."
 	COMMAND ${CMAKE_COMMAND} -E echo "             For a package, either native or external, it can deploy it either from soure repository or"
@@ -253,14 +255,15 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "               - add: add an additionnal environment to a target available profile."
 	COMMAND ${CMAKE_COMMAND} -E echo "               - rm: remove an additionnal environment from a target available profile."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Argument for mk, del, load [mandatory] and add, rm [optional]---"
-	COMMAND ${CMAKE_COMMAND} -E echo "             - profile=*name*: name of the target profile. If not specified for add and rm commands, the target profile is default."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - profile=*name*: name of the target profile. If not specified (for add and rm), the target profile is default."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments for mk, add, rm [mandatory] ---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - env=*name*: name of the target environment."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Optional arguments ---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - sysroot=*path*: set the sysroot path when environment is used to cross compile."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - staging=*path*: set the staging path when environment is used to cross compile."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - instance=*string*: set the instance name for target platform."
-	COMMAND ${CMAKE_COMMAND} -E echo "             - platform=*platform string*: set a constraint on the target platform - equivalent to specifying proc_type, proc_arch, os and abi."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - platform=*platform string*: set a constraint on the target platform - equivalent to specifying"
+	COMMAND ${CMAKE_COMMAND} -E echo "             proc_type, proc_arch, os and abi."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - proc_type=*os string*: set a constraint on the target processor type - e.g. x86, arm."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - proc_arch=*os string*: set a constraint on the target processor architecture - e.g. 32, 64."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - os=*os string*: set a constraint on the target operating system - e.g. linux, macosx."
@@ -325,6 +328,7 @@ set(info_args "\
 	-DTARGET_PACKAGE=\"\${package}\" \
 	-DTARGET_FRAMEWORK=\${framework} \
 	-DTARGET_ENVIRONMENT=\${environment} \
+	-DTARGET_LANGUAGE=\${language} \
 	-DTARGET_LICENSE=\${license} ")
 add_PID_Command(info Print_PID_Workspace_Info.cmake)
 
