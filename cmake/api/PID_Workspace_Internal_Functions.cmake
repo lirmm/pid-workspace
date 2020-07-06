@@ -2395,6 +2395,7 @@ if(HAS_MODIFS)
 	message("[PID] ERROR : impossible to release package ${package} because there are modifications to commit or stash.")
 	return()
 endif() # from here we can navigate between branches freely
+list_Ignored_Files(IGNORED_ON_DEV_BRANCH ${WORKSPACE_DIR}/packages/${package})
 
 # udpate the master branch from official remote repository
 update_Package_Repository_Versions(UPDATE_OK ${package})
@@ -2404,7 +2405,25 @@ if(NOT UPDATE_OK)
 	return()
 endif() #from here graph of commits and version tags are OK
 
+# here there may have newly untracked files in master that are newly ignored files on dev branch
+# these files should be preserved
+set(list_of_stashed_files)
+if(IGNORED_ON_DEV_BRANCH)
+	list_Untracked_Files(UNTRACKED_ON_MASTER ${WORKSPACE_DIR}/packages/${package})
+	foreach(a_file IN LISTS UNTRACKED_ON_MASTER)
+		list(FIND IGNORED_ON_DEV_BRANCH "${a_file}" INDEX)
+		if(NOT INDEX EQUAL -1)#ignored file on dev branch is untracked on master branch
+			list(APPEND list_of_stashed_files ${a_file})
+		endif()
+	endforeach()
+	if(list_of_stashed_files)
+		save_Untracked_Files(${WORKSPACE_DIR}/packages/${package} list_of_stashed_files)
+	endif()
+endif()
 go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${CURRENT_BRANCH}) #always release from the development branch (integration by default)
+if(list_of_stashed_files)
+	restore_Untracked_Files(${WORKSPACE_DIR}/packages/${package} list_of_stashed_files)
+endif()
 
 # registering current version
 get_Version_Number_And_Repo_From_Package(${package} DIGITS STRING FORMAT METHOD ADDRESS)
@@ -2507,12 +2526,19 @@ if(branch)#if we use a specific branch for patching then do not merge into maste
 else()# check that integration branch is a fast forward of master
 	merge_Into_Master(MERGE_OK ${package} "integration" ${STRING})
 	if(NOT MERGE_OK)
+		if(list_of_stashed_files)#if merge failed then the gitignore has not been committed so wee need to save/restore again untracked files
+			save_Untracked_Files(${WORKSPACE_DIR}/packages/${package} list_of_stashed_files)
+		endif()
 		message("[PID] ERROR : cannot release package ${package}, because there are potential merge conflicts between master and integration branches. Please update ${CURRENT_BRANCH} branch of package ${package} first, then launch again the release process.")
 		go_To_Integration(${package})#always go back to original branch (here integration by construction)
+		if(list_of_stashed_files)
+			restore_Untracked_Files(${WORKSPACE_DIR}/packages/${package} list_of_stashed_files)
+		endif()
 		return()
 	endif()
 	tag_Version(${package} ${STRING} TRUE)#create the version tag
 	publish_Repository_Master(RESULT_OK ${package})
+	#TODO before everything testing if user has rights to push
 	if(RESULT_OK)
 		publish_Repository_Version(RESULT_OK ${package} ${STRING})
 	endif()

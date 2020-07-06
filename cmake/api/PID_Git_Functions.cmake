@@ -118,7 +118,7 @@ endfunction(git_Provides_GETURL)
 function(prepare_Repository_Context_Switch path)
 execute_process(
     COMMAND git reset --hard # remove any change applied to the previous repository state
-		COMMAND git clean -ff -d # remove unstracked files
+		COMMAND git clean -ff -d # remove untracked files
     WORKING_DIRECTORY ${path}
     OUTPUT_QUIET ERROR_QUIET)#this is a mandatory step due to the generation of versionned files in source dir when build takes place (this should let the repository in same state as initially)
 endfunction(prepare_Repository_Context_Switch)
@@ -169,6 +169,134 @@ function(go_To_Commit path commit_or_branch)
   prepare_Repository_Context_Switch(${path})
   checkout_To_Commit(${path} ${commit_or_branch})
 endfunction(go_To_Commit)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_Ignored_Files| replace:: ``list_Ignored_Files``
+#  .. list_Ignored_Files:
+#
+#  list_Ignored_Files
+#  ------------------
+#
+#   .. command:: list_Ignored_Files(LIST_OF_FILES path)
+#
+#     Listing currently ignored files.
+#
+#     :path: path to the target repository
+#
+#     :LIST_OF_FILES: output variable listing ignored files
+#
+function(list_Ignored_Files LIST_OF_FILES path)
+  set(res)
+  execute_process(COMMAND git status --ignored --porcelain
+                  OUTPUT_VARIABLE all_ignored_files
+                  WORKING_DIRECTORY ${path})
+  string(REPLACE "\n" ";" all_ignored_files "${all_ignored_files}")
+
+  foreach(a_file IN LISTS all_ignored_files)
+    if(a_file MATCHES "^!![ \t]+(.+)$")
+      set(filename ${CMAKE_MATCH_1})
+      if(NOT filename MATCHES "^(build|pid).*$")
+        list(APPEND res ${filename})
+      endif()
+    endif()
+  endforeach()
+  set(${LIST_OF_FILES} ${res} PARENT_SCOPE)
+endfunction(list_Ignored_Files)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |list_Untracked_Files| replace:: ``list_Untracked_Files``
+#  .. _list_Untracked_Files:
+#
+#  list_Untracked_Files
+#  --------------------
+#
+#   .. command:: list_Untracked_Files(LIST_OF_FILES path)
+#
+#     Listing currently untracked files.
+#
+#     :path: path to the target repository
+#
+#     :LIST_OF_FILES: output variable listing untracked files
+#
+function(list_Untracked_Files LIST_OF_FILES path)
+  set(res)
+  execute_process(COMMAND git status --untracked-files --porcelain
+                  OUTPUT_VARIABLE all_untracked_files
+                  WORKING_DIRECTORY ${path})
+  string(REPLACE "\n" ";" all_untracked_files "${all_untracked_files}")
+
+  foreach(a_file IN LISTS all_untracked_files)
+    if(a_file MATCHES "^\\?\\?[ \t]+(.+)$")
+      set(filename ${CMAKE_MATCH_1})
+      if(NOT filename MATCHES "^build.*$")
+        list(APPEND res ${filename})
+      endif()
+    endif()
+  endforeach()
+  set(${LIST_OF_FILES} ${res} PARENT_SCOPE)
+endfunction(list_Untracked_Files)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |save_Untracked_Files| replace:: ``save_Untracked_Files``
+#  .. _save_Untracked_Files:
+#
+#  save_Untracked_Files
+#  --------------------
+#
+#   .. command:: save_Untracked_Files(path list_of_files)
+#
+#     Saving unstracked files to be able to restore them later.
+#
+#     :path: path to the target repository
+#
+#     :list_of_files: input variable that contains the list of unstracked files
+#
+function(save_Untracked_Files path var_list_of_files)
+  execute_process(COMMAND git reset WORKING_DIRECTORY ${path})#clean the index
+  foreach(a_file IN LISTS ${var_list_of_files})
+    if(EXISTS ${path}/${a_file})
+      execute_process(COMMAND git add ${a_file} WORKING_DIRECTORY ${path})# add untracked file to the index
+    endif()
+  endforeach()
+  execute_process(COMMAND git stash save WORKING_DIRECTORY ${path})# save index in the stash
+endfunction(save_Untracked_Files)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |restore_Untracked_Files| replace:: ``restore_Untracked_Files``
+#  .. _restore_Untracked_Files:
+#
+#  restore_Untracked_Files
+#  -----------------------
+#
+#   .. command:: restore_Untracked_Files(path)
+#
+#     Restore unstracked files that have been previously saved.
+#
+#     :path: path to the target repository
+#
+#     :list_of_files: input variable that contains the list of unstracked files to restore
+#
+function(restore_Untracked_Files path var_list_of_files)
+  execute_process(COMMAND git stash pop WORKING_DIRECTORY ${path})
+  foreach(a_file IN LISTS ${var_list_of_files})
+    if(NOT EXISTS ${path}/${a_file})
+      message("[PID] ERROR : cannot restore file ${a_file}")
+    endif()
+  endforeach()
+    execute_process(COMMAND git reset WORKING_DIRECTORY ${path})
+endfunction(restore_Untracked_Files)
 
 #.rst:
 #
