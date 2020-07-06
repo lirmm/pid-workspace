@@ -258,81 +258,41 @@ endfunction(create_Global_Build_Command)
 #
 # .. ifmode:: internal
 #
-#  .. |initialize_Build_System| replace:: ``initialize_Build_System``
-#  .. _initialize_Build_System:
+#  .. |resolve_Component_Language_Support| replace:: ``resolve_Component_Language_Support``
+#  .. _resolve_Component_Language_Support:
 #
-#  initialize_Build_System
-#  -----------------------
-#
-#   .. command:: initialize_Build_System()
-#
-#     Initialize current package with specific PID properties used to manage language standards.
-#
-function(initialize_Build_System)
-
-	## create a property to deal with language standard in targets (created for compatibility with CMake 3.0.2 and CMake version < 3.8 when c++17 is used)
-	define_property(TARGET PROPERTY PID_CXX_STANDARD
-	                BRIEF_DOCS "Determine the C++ Language standard version to use"
-								 	FULL_DOCS "Determine the C++ Language standard version to use")
-	#standard for C
-	define_property(TARGET PROPERTY PID_C_STANDARD
-              BRIEF_DOCS "Determine the C Language standard version to use"
-						 	FULL_DOCS "Determine the C Language standard version to use")
-
-endfunction(initialize_Build_System)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |resolve_Component_Language| replace:: ``resolve_Component_Language``
-#  .. _resolve_Component_Language:
-#
-#  resolve_Component_Language
+#  resolve_Component_Language_Support
 #  --------------------------
 #
-#   .. command:: resolve_Component_Language(component_target)
+#   .. command:: resolve_Component_Language_Support(component_target)
 #
 #     Set adequate language standard properties or compilation flags for a component, depending on CMake version.
 #
 #     :component_target: name of the target used for a given component.
 #
-function(resolve_Component_Language component_target)
-	if(CMAKE_VERSION VERSION_LESS 3.1)#this is only usefll if CMake does not automatically deal with standard related properties
-		get_target_property(STD_C ${component_target} PID_C_STANDARD)
-		get_target_property(STD_CXX ${component_target} PID_CXX_STANDARD)
-		translate_Standard_Into_Option(RES_C_STD_OPT RES_CXX_STD_OPT "${STD_C}" "${STD_CXX}")
-		#direclty setting the option, without using CMake mechanism as it is not available for these versions
-		target_compile_options(${component_target} PUBLIC "${RES_CXX_STD_OPT}")
-    if(RES_C_STD_OPT)#the std C is let optional as using a standard may cause error with posix includes
-		    target_compile_options(${component_target} PUBLIC "${RES_C_STD_OPT}")
-    endif()
-    return()
-	elseif(CMAKE_VERSION VERSION_LESS 3.8)#if cmake version is less than 3.8 than the c++ 17 language is unknown
-		get_target_property(STD_CXX ${component_target} PID_CXX_STANDARD)
-		is_CXX_Version_Less(IS_LESS ${STD_CXX} 17)
-		if(NOT IS_LESS)#cxx standard 17 or more
-			target_compile_options(${component_target} PUBLIC "-std=c++17")
-			return()
-		endif()
-	endif()
+function(resolve_Component_Language_Support component_target)
+  get_target_property(STD_CXX ${component_target} CXX_STANDARD) #get component target
+  get_Required_CMake_Version_For_Standard(RES_MIN_CMAKE_VERSION ${STD_CXX})
 
-	#default case that can be managed directly by CMake
-	get_target_property(STD_C ${component_target} PID_C_STANDARD)
-	get_target_property(STD_CXX ${component_target} PID_CXX_STANDARD)
-  if(STD_C)#the std C is let optional as using a standard may cause error with posix includes
-  	set_target_properties(${component_target} PROPERTIES
-  			C_STANDARD ${STD_C}
-  			C_STANDARD_REQUIRED YES
-  			C_EXTENSIONS NO
-  	)#setting the standard in use locally
+  if(CMAKE_VERSION VERSION_LESS RES_MIN_CMAKE_VERSION)#if cmake version is less than the version required to managed the standard in use
+    target_compile_options(${component_target} PUBLIC "-std=c++${STD_CXX}")
+    return()
   endif()
-	set_target_properties(${component_target} PROPERTIES
-			CXX_STANDARD ${STD_CXX}
-			CXX_STANDARD_REQUIRED YES
-			CXX_EXTENSIONS NO
-	)#setting the standard in use locally
-endfunction(resolve_Component_Language)
+
+  	# #default case that can be managed directly by CMake
+    # if(STD_C)#the std C is let optional as using a standard may cause error with posix includes
+    # 	set_target_properties(${component_target} PROPERTIES
+    # 			C_STANDARD ${STD_C}
+    # 			C_STANDARD_REQUIRED YES
+    # 			C_EXTENSIONS NO
+    # 	)#setting the standard in use locally
+    # endif()
+  	# set_target_properties(${component_target} PROPERTIES
+  	# 		CXX_STANDARD ${STD_CXX}
+  	# 		CXX_STANDARD_REQUIRED YES
+  	# 		CXX_EXTENSIONS NO
+  	# )#setting the standard in use locally
+endfunction(resolve_Component_Language_Support)
 
 #.rst:
 #
@@ -355,52 +315,10 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})#no need to resolve alias since list of components contains only base name in current package
 	if(IS_BUILT_COMP)
-		resolve_Component_Language(${PROJECT_NAME}_${component}${TARGET_SUFFIX})
+		resolve_Component_Language_Support(${PROJECT_NAME}_${component}${TARGET_SUFFIX})
 	endif()
 endforeach()
 endfunction(resolve_Compile_Options_For_Targets)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |filter_Compiler_Options| replace:: ``filter_Compiler_Options``
-#  .. _filter_Compiler_Options:
-#
-#  filter_Compiler_Options
-#  -----------------------
-#
-#   .. command:: filter_Compiler_Options(STD_C_OPT STD_CXX_OPT FILTERED_OPTS opts)
-#
-#     Filter the options to get those related to language standard used.
-#
-#     :opts: the list of compilation options.
-#
-#     :STD_C_OPT: the output variable containg the C language standard used, if any.
-#
-#     :STD_CXX_OPT: the output variable containg the C++ language standard used, if any.
-#
-#     :FILTERED_OPTS: the output variable containg the options fromopts not related to language standard, if any.
-#
-function(filter_Compiler_Options STD_C_OPT STD_CXX_OPT FILTERED_OPTS opts)
-set(RES_FILTERED)
-foreach(opt IN LISTS opts)
-	unset(STANDARD_NUMBER)
-	#checking for CXX_STANDARD
-	is_CXX_Standard_Option(STANDARD_NUMBER ${opt})
-	if(STANDARD_NUMBER)
-		set(${STD_CXX_OPT} ${STANDARD_NUMBER} PARENT_SCOPE)
-	else()#checking for C_STANDARD
-		is_C_Standard_Option(STANDARD_NUMBER ${opt})
-		if(STANDARD_NUMBER)
-			set(${STD_C_OPT} ${STANDARD_NUMBER} PARENT_SCOPE)
-		else()
-			list(APPEND RES_FILTERED ${opt})#keep the option unchanged
-		endif()
-	endif()
-endforeach()
-set(${FILTERED_OPTS} ${RES_FILTERED} PARENT_SCOPE)
-endfunction(filter_Compiler_Options)
 
 ############################################################################
 ############### API functions for internal targets management ##############
@@ -850,11 +768,11 @@ endfunction(manage_Additional_Component_Exported_Flags)
 #  manage_Additional_Component_Internal_Flags
 #  ------------------------------------------
 #
-#   .. command:: manage_Additional_Component_Internal_Flags(component_name c_standard cxx_standard mode_suffix inc_dirs lib_dirs defs options links)
+#   .. command:: manage_Additional_Component_Internal_Flags(component c_standard cxx_standard mode_suffix inc_dirs lib_dirs defs options links)
 #
 #     Configure a component target with internal flags (cflags and ldflags).
 #
-#     :component_name: the name of the component.
+#     :component: the name of the component.
 #
 #     :c_standard: the C language standard to use.
 #
@@ -872,70 +790,46 @@ endfunction(manage_Additional_Component_Exported_Flags)
 #
 #     :links: list of links to use.
 #
-function(manage_Additional_Component_Internal_Flags component_name c_standard cxx_standard mode_suffix inc_dirs lib_dirs defs options links)
+function(manage_Additional_Component_Internal_Flags component c_standard cxx_standard mode_suffix inc_dirs lib_dirs defs options links)
 # managing compile time flags
 foreach(dir IN LISTS inc_dirs)
-	target_include_directories(${PROJECT_NAME}_${component_name}${mode_suffix} PRIVATE "${dir}")
+	target_include_directories(${PROJECT_NAME}_${component}${mode_suffix} PRIVATE "${dir}")
 endforeach()
 
 # managing compile time flags
 foreach(def IN LISTS defs)
-	target_compile_definitions(${PROJECT_NAME}_${component_name}${mode_suffix} PRIVATE "${def}")
+	target_compile_definitions(${PROJECT_NAME}_${component}${mode_suffix} PRIVATE "${def}")
 endforeach()
 
 foreach(opt IN LISTS options)
-	target_compile_options(${PROJECT_NAME}_${component_name}${mode_suffix} PRIVATE "${opt}")
+	target_compile_options(${PROJECT_NAME}_${component}${mode_suffix} PRIVATE "${opt}")
 endforeach()
 
 # managing link time flags
 foreach(dir IN LISTS lib_dirs) #put library dirs flags BEFORE library flags in link libraries !!
-  target_link_libraries(${PROJECT_NAME}_${component_name}${mode_suffix} PRIVATE "-L${dir}")#generate -L linker flags for library dirs
+  target_link_libraries(${PROJECT_NAME}_${component}${mode_suffix} PRIVATE "-L${dir}")#generate -L linker flags for library dirs
 endforeach()
 
 foreach(link IN LISTS links)
-	target_link_libraries(${PROJECT_NAME}_${component_name}${mode_suffix} PRIVATE ${link})
+	target_link_libraries(${PROJECT_NAME}_${component}${mode_suffix} PRIVATE ${link})
 endforeach()
-manage_language_Standard_Flags(${component_name} "${mode_suffix}" "${c_standard}" "${cxx_standard}")
+
+if(c_standard)#the std C is let optional as using a standard may cause error with posix includes
+  set_target_properties(${PROJECT_NAME}_${component}${mode_suffix} PROPERTIES
+  			C_STANDARD ${c_standard}
+  			C_STANDARD_REQUIRED YES
+  			C_EXTENSIONS NO
+  	)#setting the standard in use locally
+endif()
+
+if(cxx_standard)
+  set_target_properties(${PROJECT_NAME}_${component}${mode_suffix} PROPERTIES
+  		CXX_STANDARD ${cxx_standard}
+  		CXX_STANDARD_REQUIRED YES
+  		CXX_EXTENSIONS NO
+  )#setting the standard in use locally
+endif()
 endfunction(manage_Additional_Component_Internal_Flags)
-
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |manage_language_Standard_Flags| replace:: ``manage_language_Standard_Flags``
-#  .. _manage_language_Standard_Flags:
-#
-#  manage_language_Standard_Flags
-#  ------------------------------
-#
-#   .. command:: manage_language_Standard_Flags(component_name c_standard cxx_standard mode_suffix)
-#
-#     Configure a component language standard in use.
-#
-#     :component_name: the name of the component.
-#
-#     :c_standard: the C language standard to use.
-#
-#     :cxx_standard: the C++ language standard to use.
-#
-#     :mode_suffix: the build mode of the target.
-#
-function(manage_language_Standard_Flags component mode_suffix c_standard cxx_standard)
-
-#management of standards (setting minimum standard at beginning)
-get_target_property(STD_C ${PROJECT_NAME}_${component}${mode_suffix} PID_C_STANDARD)
-is_C_Version_Less(IS_LESS "${STD_C}" "${c_standard}")
-if(IS_LESS AND c_standard)#set the C standard only if necessary (otherwise default legacy ANSI C is used)
-	set_target_properties(${PROJECT_NAME}_${component}${mode_suffix} PROPERTIES PID_C_STANDARD ${c_standard})
-endif()
-
-get_target_property(STD_CXX ${PROJECT_NAME}_${component}${mode_suffix} PID_CXX_STANDARD)
-is_CXX_Version_Less(IS_LESS "${STD_CXX}" "${cxx_standard}")
-if(IS_LESS)
-	set_target_properties(${PROJECT_NAME}_${component}${mode_suffix} PROPERTIES PID_CXX_STANDARD ${cxx_standard})
-endif()
-endfunction(manage_language_Standard_Flags)
 
 #.rst:
 #
@@ -1009,9 +903,17 @@ endfunction(fill_Component_Target_With_External_Component_Dependency)
 #
 #     :c_standard: C language standard to use when using these dependencies.
 #
+#     :c_max_standard: max C language standard allowed when using these dependencies.
+#
 #     :cxx_standard: C++ language standard to use when using these dependencies.
 #
-function(fill_Component_Target_With_External_Dependency component export comp_defs comp_exp_defs ext_defs ext_inc_dirs ext_opts ext_lib_dirs ext_links_shared ext_links_static c_standard cxx_standard)
+#     :cxx_max_standard: max C++ language standard allowed when using these dependencies.
+#
+function(fill_Component_Target_With_External_Dependency component export
+                                                        comp_defs comp_exp_defs ext_defs
+                                                        ext_inc_dirs ext_opts ext_lib_dirs
+                                                        ext_links_shared ext_links_static
+                                                        c_standard c_max_standard cxx_standard cxx_max_standard)
 if(ext_links_shared)
   evaluate_Variables_In_List(EVAL_SH_LINKS ext_links_shared) #first evaluate element of the list => if they are variables they are evaluated
 	resolve_External_Libs_Path(COMPLETE_SH_LINKS_PATH "${EVAL_SH_LINKS}" ${CMAKE_BUILD_TYPE})
@@ -1045,25 +947,60 @@ if(ext_links_static)
   list(APPEND EXT_LINKS ${EXT_ST_LINKS})
 endif()
 
-if(ext_inc_dirs)
-  evaluate_Variables_In_List(EVAL_INCS ext_inc_dirs)#first evaluate element of the list => if they are variables they are evaluated
-	resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${EVAL_INCS}" ${CMAKE_BUILD_TYPE})
+evaluate_Variables_In_List(EVAL_INCS ext_inc_dirs)#first evaluate element of the list => if they are variables they are evaluated
+resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${EVAL_INCS}" ${CMAKE_BUILD_TYPE})
+evaluate_Variables_In_List(EVAL_OPTS ext_opts)#first evaluate element of the list => if they are variables they are evaluated
+evaluate_Variables_In_List(EVAL_LDIRS ext_lib_dirs)
+resolve_External_Libs_Path(COMPLETE_LIB_DIRS_PATH "${EVAL_LDIRS}" ${CMAKE_BUILD_TYPE})
+evaluate_Variables_In_List(EVAL_DEFS ext_defs)#first evaluate element of the list => if they are variables they are evaluated
+evaluate_Variables_In_List(EVAL_CSTD c_standard)
+evaluate_Variables_In_List(EVAL_MAX_CSTD c_max_standard)
+evaluate_Variables_In_List(EVAL_CXXSTD cxx_standard)
+evaluate_Variables_In_List(EVAL_MAX_CXXSTD cxx_max_standard)
+
+if(EVAL_CSTD OR EVAL_MAX_CSTD)
+  get_target_property(CURR_C_STD ${PROJECT_NAME}_${component}${INSTALL_NAME_SUFFIX} C_STANDARD)
+  #adjust languages standards version, also check adjustment considering max standard, if any
+  check_Imported_C_Standard(ERROR MESSAGE NEW_C_STD NEW_C_MAX_STD
+    "${CURR_C_STD}" "${EVAL_CSTD}"
+    "${${PROJECT_NAME}_${component}_C_MAX_STANDARD${USE_MODE_SUFFIX}}" "${EVAL_MAX_CSTD}")
+  if(ERROR)
+    if(ERROR STREQUAL "CRITICAL")
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: in ${PROJECT_NAME}, when configuring target for component ${component} : ${MESSAGE}")
+    else()#warning
+      message("[PID] WARNING: in ${PROJECT_NAME}, when configuring target for component ${component} : ${MESSAGE}")
+    endif()
+  endif()
+  if(NEW_C_STD)
+    set(EVAL_CSTD ${NEW_C_STD})
+  endif()
+  if(NEW_C_MAX_STD)
+    set(${PROJECT_NAME}_${component}_C_MAX_STANDARD${USE_MODE_SUFFIX} ${NEW_C_MAX_STD} CACHE INTERNAL "")
+  endif()
 endif()
-if(ext_opts)
-  evaluate_Variables_In_List(EVAL_OPTS ext_opts)#first evaluate element of the list => if they are variables they are evaluated
-endif()
-if(ext_lib_dirs)
-  evaluate_Variables_In_List(EVAL_LDIRS ext_lib_dirs)
-	resolve_External_Libs_Path(COMPLETE_LIB_DIRS_PATH "${EVAL_LDIRS}" ${CMAKE_BUILD_TYPE})
-endif()
-if(ext_defs)
-  evaluate_Variables_In_List(EVAL_DEFS ext_defs)#first evaluate element of the list => if they are variables they are evaluated
-endif()
-if(c_standard)
-  evaluate_Variables_In_List(EVAL_CSTD c_standard)
-endif()
-if(cxx_standard)
-  evaluate_Variables_In_List(EVAL_CXXSTD cxx_standard)
+
+
+if(EVAL_CXXSTD OR EVAL_MAX_CXXSTD)
+  get_target_property(CURR_CXX_STD ${PROJECT_NAME}_${component}${INSTALL_NAME_SUFFIX} CXX_STANDARD)
+  #adjust languages standards version, also check adjustment considering max standard, if any
+  check_Imported_CXX_Standard(ERROR MESSAGE NEW_CXX_STD NEW_CXX_MAX_STD
+    "${CURR_CXX_STD}" "${EVAL_CXXSTD}"
+    "${${PROJECT_NAME}_${component}_CXX_MAX_STANDARD${USE_MODE_SUFFIX}}" "${EVAL_MAX_CXXSTD}")
+  if(ERROR)
+    if(ERROR STREQUAL "CRITICAL")
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: in ${PROJECT_NAME}, when configuring target for component ${component} : ${MESSAGE}")
+    else()#warning
+      message("[PID] WARNING: in ${PROJECT_NAME}, when configuring target for component ${component} : ${MESSAGE}")
+    endif()
+  endif()
+  if(NEW_CXX_STD)
+    set(EVAL_CXXSTD ${NEW_CXX_STD})
+  endif()
+  if(NEW_CXX_MAX_STD)
+    set(${PROJECT_NAME}_${component}_CXX_MAX_STANDARD${USE_MODE_SUFFIX} ${NEW_CXX_MAX_STD} CACHE INTERNAL "")
+  endif()
 endif()
 
 # setting compile/linkage definitions for the component target
@@ -1362,8 +1299,7 @@ if(NOT TARGET ${target_name})#check that this target does not exist, otherwise n
   list_Public_Includes(INCLUDES ${dep_package} ${comp_name_to_use} ${mode} FALSE)#external package does not define their own header dir, simply define a set of include dirs
   list_Public_Lib_Dirs(LIBDIRS ${dep_package} ${comp_name_to_use} ${mode})
 	list_Public_Definitions(DEFS ${dep_package} ${comp_name_to_use} ${mode})
-	list_Public_Options(OPTS ${dep_package} ${comp_name_to_use} ${mode})
-  list_External_Links(SHARED_LNKS STATIC_LNKS ${dep_package} ${comp_name_to_use} ${mode})
+	list_External_Links(SHARED_LNKS STATIC_LNKS ${dep_package} ${comp_name_to_use} ${mode})
   # 1) create dependent targets for each binary (also allow same global management of links as for legacy package dependencies)
   #shared first
   foreach(link IN LISTS SHARED_LNKS)
@@ -1386,15 +1322,15 @@ if(NOT TARGET ${target_name})#check that this target does not exist, otherwise n
   endforeach()
 
   # 2) create an imported target for the component AND bind all defined compilation related flags
-
-  #add all properties that are not system like links to explicit libraries (explicit library links will be added as targets)
+  adjust_Languages_Standard_For_Imported_Component(FILTERED_OPTS ${dep_package} ${comp_name_to_use} ${mode})
+	#add all properties that are not system like links to explicit libraries (explicit library links will be added as targets)
   manage_Additional_Imported_Component_Flags(
     "${dep_package}"
     "${comp_name_to_use}"
     "${mode}"
     "${INCLUDES}"
     "${DEFS}"
-    "${OPTS}"
+    "${FILTERED_OPTS}"
     "${EXT_SH_LINKS_OPTIONS}"
     "" #no private links locally
     "${EXT_ST_LINKS_OPTIONS}"
@@ -1448,29 +1384,6 @@ endforeach()
 # managing compile time flags (-D<preprocessor_defs>)
 foreach(def IN LISTS defs)
 	set_property(TARGET ${package}_${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS "${def}")
-endforeach()
-
-foreach(opt IN LISTS options)
-	#checking for CXX_STANDARD
-	is_CXX_Standard_Option(STANDARD_NUMBER ${opt})
-	if(STANDARD_NUMBER)
-		message("[PID] WARNING: directly using option -std=c++${STANDARD_NUMBER} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
-		is_CXX_Version_Less(IS_LESS "${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}}" "${STANDARD_NUMBER}")
-		if(IS_LESS)
-			set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
-		endif()
-	else()#checking for C_STANDARD
-		is_C_Standard_Option(STANDARD_NUMBER ${opt})
-		if(STANDARD_NUMBER)
-			message("[PID] WARNING: directly using option -std=c${STANDARD_NUMBER} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
-			is_C_Version_Less(IS_LESS "${${package}_${component}_C_STANDARD${VAR_SUFFIX}}" "${STANDARD_NUMBER}")
-			if(IS_LESS)
-				set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${STANDARD_NUMBER} CACHE INTERNAL "")
-			endif()
-		else()
-			set_property(TARGET ${package}_${component}${TARGET_SUFFIX} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "${opt}")
-		endif()
-	endif()
 endforeach()
 
 # managing public link time flags (public links are always put in the interface)
@@ -1568,10 +1481,9 @@ function(create_Imported_Header_Library_Target package component mode) #header l
 	list_Public_Links(LINKS SYSTEM_STATIC LIB_DIRS ${package} ${component} ${mode})
   list_Public_Lib_Dirs(LIBDIRS ${package} ${component} ${mode})
 	list_Public_Definitions(DEFS ${package} ${component} ${mode})
-	list_Public_Options(OPTS ${package} ${component} ${mode})
-	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "" "${SYSTEM_STATIC}" "${LIBDIRS}")
-	# check that C/C++ languages are defined or set them to default
-	manage_Language_Standards(${package} ${component} ${mode})
+
+  adjust_Languages_Standard_For_Imported_Component(FILTERED_OPTS ${package} ${component} ${mode})
+  manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${FILTERED_OPTS}" "${LINKS}" "" "${SYSTEM_STATIC}" "${LIBDIRS}")
 endfunction(create_Imported_Header_Library_Target)
 
 #.rst:
@@ -1610,11 +1522,9 @@ function(create_Imported_Static_Library_Target package component mode)
   list_Public_Lib_Dirs(LIBDIRS ${package} ${component} ${MODE_TO_IMPORT})
 	list_Private_Links(PRIVATE_LINKS ${package} ${component} ${MODE_TO_IMPORT})
 	list_Public_Definitions(DEFS ${package} ${component} ${MODE_TO_IMPORT})
-	list_Public_Options(OPTS ${package} ${component} ${MODE_TO_IMPORT})
 
-	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "${PRIVATE_LINKS}" "${SYSTEM_STATIC}" "${LIBDIRS}")
-	# check that C/C++ languages are defined or defult them
-	manage_Language_Standards(${package} ${component} ${mode})
+  adjust_Languages_Standard_For_Imported_Component(FILTERED_OPTS ${package} ${component} ${MODE_TO_IMPORT})
+  manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${FILTERED_OPTS}" "${LINKS}" "${PRIVATE_LINKS}" "${SYSTEM_STATIC}" "${LIBDIRS}")
 endfunction(create_Imported_Static_Library_Target)
 
 #.rst:
@@ -1639,7 +1549,7 @@ endfunction(create_Imported_Static_Library_Target)
 #
 function(create_Imported_Shared_Library_Target package component mode)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
-  	add_library(${package}_${component}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)#create the target for the imported library
+	add_library(${package}_${component}${TARGET_SUFFIX} SHARED IMPORTED GLOBAL)#create the target for the imported library
 	get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})#find the binary to use depending on build mode
 	get_Imported_Target_Mode(MODE_TO_IMPORT ${package} ${LOCATION_RES} ${mode})#get the adequate mode to use for dependency
 	if(NOT MODE_TO_IMPORT MATCHES mode)
@@ -1648,7 +1558,7 @@ function(create_Imported_Shared_Library_Target package component mode)
   if(WIN32)#in windows a shared librairy is specific because it has two parts : a dll and an interface static library
     #we need to link againts the statis library while the "real" component is the dll
     #so we transform the name of the dll object into a .lib object
-	get_Windows_Link_Interface(STATIC_LOCATION_RES ${LOCATION_RES})
+	   get_Windows_Link_Interface(STATIC_LOCATION_RES ${LOCATION_RES})
     set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}" IMPORTED_IMPLIB "${STATIC_LOCATION_RES}")
   else()#for UNIX system everything is automatic
     set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
@@ -1659,11 +1569,9 @@ function(create_Imported_Shared_Library_Target package component mode)
   list_Public_Lib_Dirs(LIBDIRS ${package} ${component} ${MODE_TO_IMPORT})
 	list_Private_Links(PRIVATE_LINKS ${package} ${component} ${MODE_TO_IMPORT})
 	list_Public_Definitions(DEFS ${package} ${component} ${MODE_TO_IMPORT})
-	list_Public_Options(OPTS ${package} ${component} ${MODE_TO_IMPORT})
-	manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${OPTS}" "${LINKS}" "${PRIVATE_LINKS}" "${SYSTEM_STATIC}" "${LIBDIRS}")
 
-	# check that C/C++ languages are defined or default them
-	manage_Language_Standards(${package} ${component} ${mode})
+  adjust_Languages_Standard_For_Imported_Component(FILTERED_OPTS ${package} ${component} ${MODE_TO_IMPORT})
+  manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${FILTERED_OPTS}" "${LINKS}" "${PRIVATE_LINKS}" "${SYSTEM_STATIC}" "${LIBDIRS}")
 endfunction(create_Imported_Shared_Library_Target)
 
 #.rst:
@@ -1738,13 +1646,13 @@ endfunction(create_Imported_Executable_Target)
 #
 # .. ifmode:: internal
 #
-#  .. |resolve_Standard_Before_Linking| replace:: ``resolve_Standard_Before_Linking``
-#  .. _resolve_Standard_Before_Linking:
+#  .. |resolve_Component_Standard_For_Dependency| replace:: ``resolve_Component_Standard_For_Dependency``
+#  .. _resolve_Component_Standard_For_Dependency:
 #
-#  resolve_Standard_Before_Linking
-#  -------------------------------
+#  resolve_Component_Standard_For_Dependency
+#  -----------------------------------------
 #
-#   .. command:: resolve_Standard_Before_Linking(package component dep_package dep_component mode configure_build)
+#   .. command:: resolve_Component_Standard_For_Dependency(package component dep_package dep_component mode configure_build)
 #
 #    Resolve the final language standard to use for a component of the current native package depending on the standard used in one of its dependencies.
 #
@@ -1760,29 +1668,46 @@ endfunction(create_Imported_Executable_Target)
 #
 #     :configure_build: if TRUE then set component's target properties adequately.
 #
-function(resolve_Standard_Before_Linking package component dep_package dep_component mode configure_build)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+function(resolve_Component_Standard_For_Dependency package component dep_package dep_component mode configure_build)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-#get the languages standard in use for both components
-get_Language_Standards(STD_C STD_CXX ${package} ${component} ${mode})
-get_Language_Standards(DEP_STD_C DEP_STD_CXX ${dep_package} ${dep_component} ${mode})
+  resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
+                     "${${package}_${component}_C_STANDARD${VAR_SUFFIX}}" "${${package}_${component}_C_MAX_STANDARD${VAR_SUFFIX}}"
+                     "${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}}" "${${package}_${component}_CXX_MAX_STANDARD${VAR_SUFFIX}}"
+                     "${${dep_package}_${dep_component}_C_STANDARD${VAR_SUFFIX}}" "${${dep_package}_${dep_component}_C_MAX_STANDARD${VAR_SUFFIX}}"
+                     "${${dep_package}_${dep_component}_CXX_STANDARD${VAR_SUFFIX}}" "${${dep_package}_${dep_component}_CXX_MAX_STANDARD${VAR_SUFFIX}}")
 
-is_C_Version_Less(IS_LESS "${STD_C}" "${DEP_STD_C}")
-if( IS_LESS )#dependency has greater or equal level of standard required
-	set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${DEP_STD_C} CACHE INTERNAL "")
-	if(configure_build AND DEP_STD_C)# the build property is set for a target that is built locally (otherwise would produce errors)
-		set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES PID_C_STANDARD ${DEP_STD_C}) #the minimal value in use file is set adequately
-	endif()
-endif()
+  if(ERR)
+   if(ERR STREQUAL "CRITICAL")
+     finish_Progress(${GLOBAL_PROGRESS_VAR})
+     message(FATAL_ERROR "[PID] CRITICAL ERROR: in ${PROJECT_NAME}, when configuring target for component ${component} from package ${package} with dependency ${dep_component} from package ${dep_package} : ${MESS}")
+   else()#warning
+     message("[PID] WARNING: in ${PROJECT_NAME}, when configuring target for component ${component} from package ${package} with dependency ${dep_component} from package ${dep_package} : ${MESS}")
+   endif()
+  endif()
 
-is_CXX_Version_Less(IS_LESS "${STD_CXX}" "${DEP_STD_CXX}")
-if( IS_LESS )#dependency has greater or equal level of standard required
-	set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${DEP_STD_CXX} CACHE INTERNAL "")#the minimal value in use file is set adequately
-	if(configure_build AND DEP_STD_CXX)# the build property is set for a target that is built locally (otherwise would produce errors)
-		set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES PID_CXX_STANDARD ${DEP_STD_CXX})
-	endif()
-endif()
-endfunction(resolve_Standard_Before_Linking)
+  if(NEW_C_STD)#need to modify component due to its dependency
+    set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${NEW_C_STD} CACHE INTERNAL "")
+  	if(configure_build)# the build property is set for a target that is built locally (otherwise would produce errors)
+  		set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES C_STANDARD ${NEW_C_STD}) #the minimal value in use file is set adequately
+  	endif()
+  endif()
+  if(NEW_C_MAX_STD)#need to update the max standard allowed
+    set(${package}_${component}_C_MAX_STANDARD${USE_MODE_SUFFIX} ${NEW_C_MAX_STD} CACHE INTERNAL "")
+  endif()
+
+  if(NEW_CXX_STD)#need to modify component due to its dependency
+    set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${NEW_CXX_STD} CACHE INTERNAL "")
+  	if(configure_build)# the build property is set for a target that is built locally (otherwise would produce errors)
+  		set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES CXX_STANDARD ${NEW_CXX_STD}) #the minimal value in use file is set adequately
+  	endif()
+  endif()
+  if(NEW_CXX_MAX_STD)#need to update the max standard allowed
+    set(${package}_${component}_CXX_MAX_STANDARD${USE_MODE_SUFFIX} ${NEW_CXX_MAX_STD} CACHE INTERNAL "")
+  endif()
+
+endfunction(resolve_Component_Standard_For_Dependency)
+
 
 #.rst:
 #
@@ -1819,7 +1744,6 @@ endfunction(resolve_Standard_Before_Linking)
 function(bind_Target component is_external dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-
 rename_If_Alias(comp_name_to_use ${PROJECT_NAME} FALSE ${component} Release)
 #  the dependency may refer to an ALIAS name of dependent component
 # as it is NOT internal an ALIAS target is NOT defined so we need to resolved alias before
@@ -1852,10 +1776,10 @@ if(COMP_IS_BUILT)
 	endif()
 
 	# set adequately language standard for component depending on the value of dep_component
-	resolve_Standard_Before_Linking(${PROJECT_NAME} ${comp_name_to_use} ${dep_package} ${dep_name_to_use} ${mode} TRUE)
+	resolve_Component_Standard_For_Dependency(${PROJECT_NAME} ${comp_name_to_use} ${dep_package} ${dep_name_to_use} ${mode} TRUE)
 else()#for headers lib do not set the language standard build property (othewise CMake complains on recent versions)
 	# set adequately language standard for component depending on the value of dep_component
-	resolve_Standard_Before_Linking(${PROJECT_NAME} ${comp_name_to_use} ${dep_package} ${dep_name_to_use} ${mode} FALSE)
+	resolve_Component_Standard_For_Dependency(${PROJECT_NAME} ${comp_name_to_use} ${dep_package} ${dep_name_to_use} ${mode} FALSE)
 endif()
 
 if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
@@ -1919,7 +1843,7 @@ is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${comp_name_to_use})#by definit
 #  the dependency may refer to an ALIAS name of another internal component
 # as it is internal an ALIAS target is defined so theretically no need to check for specific cases
 # but all PID properties are defined on real names only so calling functions on components require their alias names to be resolved
-# here needed for is_HeaderFree_Component, resolve_Standard_Before_Linking
+# here needed for is_HeaderFree_Component, resolve_Component_Standard_For_Dependency
 
 
 if(COMP_IS_BUILT)# interface library cannot receive PRIVATE PROPERTIES
@@ -1941,10 +1865,10 @@ if(COMP_IS_BUILT)# interface library cannot receive PRIVATE PROPERTIES
 	endif()
 
 		# set adequately language standard for component depending on the value of dep_component
-		resolve_Standard_Before_Linking(${PROJECT_NAME} ${comp_name_to_use} ${PROJECT_NAME} ${dep_name_to_use} ${mode} TRUE)
+		resolve_Component_Standard_For_Dependency(${PROJECT_NAME} ${comp_name_to_use} ${PROJECT_NAME} ${dep_name_to_use} ${mode} TRUE)
 else() #for header lib do not set the build property to avoid troubles
 		# set adequately language standard for component depending on the value of dep_component
-		resolve_Standard_Before_Linking(${PROJECT_NAME} ${comp_name_to_use} ${PROJECT_NAME} ${dep_name_to_use} ${mode} FALSE)
+		resolve_Component_Standard_For_Dependency(${PROJECT_NAME} ${comp_name_to_use} ${PROJECT_NAME} ${dep_name_to_use} ${mode} FALSE)
 endif()
 
 
@@ -2020,7 +1944,7 @@ function(bind_Imported_External_Component_Target package component dep_package d
   )
 
 	# set adequately language standard for component depending on the value of dep_component
-	resolve_Standard_Before_Linking(${package} ${comp_name_to_use} ${dep_package} ${dep_name_to_use} ${mode} FALSE)
+	resolve_Component_Standard_For_Dependency(${package} ${comp_name_to_use} ${dep_package} ${dep_name_to_use} ${mode} FALSE)
 endfunction(bind_Imported_External_Component_Target)
 
 #.rst:
@@ -2085,7 +2009,7 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it def
 	endif()#exporting the linked libraries in any case
 
 	# set adequately language standard for component depending on the value of dep_component
-	resolve_Standard_Before_Linking(${package} ${comp_name_to_use} ${dep_package} ${dep_name_to_use} ${mode} FALSE)
+	resolve_Component_Standard_For_Dependency(${package} ${comp_name_to_use} ${dep_package} ${dep_name_to_use} ${mode} FALSE)
 
 endif()	#else, it is an application or a module => runtime dependency declaration only (build recursion is stopped)
 endfunction(bind_Imported_Target)
@@ -2148,7 +2072,7 @@ else()
 endif()#exporting the linked libraries in any case
 
 # set adequately language standard for component depending on the value of dep_component
-resolve_Standard_Before_Linking(${package} ${comp_name_to_use} ${dep_package} ${dep_name_to_use} ${mode} FALSE)
+resolve_Component_Standard_For_Dependency(${package} ${comp_name_to_use} ${dep_package} ${dep_name_to_use} ${mode} FALSE)
 endfunction(bind_Imported_External_Target)
 
 #

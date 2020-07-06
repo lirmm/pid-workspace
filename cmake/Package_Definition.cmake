@@ -26,6 +26,8 @@ endif()
 set(PACKAGE_DEFINITION_INCLUDED TRUE)
 ##########################################################################################
 
+cmake_minimum_required(VERSION 3.1.3)
+
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
 get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
 set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)
@@ -97,43 +99,43 @@ macro(PID_Package)
 endmacro(PID_Package)
 
 macro(declare_PID_Package)
-set(oneValueArgs LICENSE ADDRESS MAIL EMAIL PUBLIC_ADDRESS README CODE_STYLE CONTRIBUTION_SPACE)
-set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION VERSION)
-cmake_parse_arguments(DECLARE_PID_PACKAGE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-if(NOT DECLARE_PID_PACKAGE_AUTHOR)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, an author name must be given using AUTHOR keyword.")
-endif()
-if(NOT DECLARE_PID_PACKAGE_YEAR)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a year or year interval must be given using YEAR keyword.")
-endif()
-if(NOT DECLARE_PID_PACKAGE_LICENSE)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a license type must be given using LICENSE keyword.")
-endif()
-if(NOT DECLARE_PID_PACKAGE_DESCRIPTION)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a (short) description of the package must be given using DESCRIPTION keyword.")
-endif()
+  set(oneValueArgs LICENSE ADDRESS MAIL EMAIL PUBLIC_ADDRESS README CODE_STYLE CONTRIBUTION_SPACE)
+  set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION VERSION)
+  cmake_parse_arguments(DECLARE_PID_PACKAGE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+  if(NOT DECLARE_PID_PACKAGE_AUTHOR)
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, an author name must be given using AUTHOR keyword.")
+  endif()
+  if(NOT DECLARE_PID_PACKAGE_YEAR)
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a year or year interval must be given using YEAR keyword.")
+  endif()
+  if(NOT DECLARE_PID_PACKAGE_LICENSE)
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a license type must be given using LICENSE keyword.")
+  endif()
+  if(NOT DECLARE_PID_PACKAGE_DESCRIPTION)
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a (short) description of the package must be given using DESCRIPTION keyword.")
+  endif()
 
-if(DECLARE_PID_PACKAGE_UNPARSED_ARGUMENTS)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown arguments ${DECLARE_PID_PACKAGE_UNPARSED_ARGUMENTS}.")
-endif()
+  if(DECLARE_PID_PACKAGE_UNPARSED_ARGUMENTS)
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, unknown arguments ${DECLARE_PID_PACKAGE_UNPARSED_ARGUMENTS}.")
+  endif()
 
-if(NOT DECLARE_PID_PACKAGE_ADDRESS AND DECLARE_PID_PACKAGE_PUBLIC_ADDRESS)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the package must have an adress if a public access adress is declared.")
-endif()
+  if(NOT DECLARE_PID_PACKAGE_ADDRESS AND DECLARE_PID_PACKAGE_PUBLIC_ADDRESS)
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, the package must have an adress if a public access adress is declared.")
+  endif()
 
-if(DECLARE_PID_PACKAGE_MAIL)
-  set(email ${DECLARE_PID_PACKAGE_MAIL})
-elseif(DECLARE_PID_PACKAGE_EMAIL)
-  set(email ${DECLARE_PID_PACKAGE_EMAIL})
-endif()
-declare_Package(	"${DECLARE_PID_PACKAGE_AUTHOR}" "${DECLARE_PID_PACKAGE_INSTITUTION}" "${email}"
-			"${DECLARE_PID_PACKAGE_YEAR}" "${DECLARE_PID_PACKAGE_LICENSE}"
-			"${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_PUBLIC_ADDRESS}"
-		"${DECLARE_PID_PACKAGE_DESCRIPTION}" "${DECLARE_PID_PACKAGE_README}" "${DECLARE_PID_PACKAGE_CODE_STYLE}" "${DECLARE_PID_PACKAGE_CONTRIBUTION_SPACE}")
-unset(email)
-if(DECLARE_PID_PACKAGE_VERSION) #version directly declared in the declaration (NEW WAY to specify version)
-  set_PID_Package_Version(${DECLARE_PID_PACKAGE_VERSION})#simply pass the list to the "final" function
-endif()
+  if(DECLARE_PID_PACKAGE_MAIL)
+    set(email ${DECLARE_PID_PACKAGE_MAIL})
+  elseif(DECLARE_PID_PACKAGE_EMAIL)
+    set(email ${DECLARE_PID_PACKAGE_EMAIL})
+  endif()
+  declare_Package(	"${DECLARE_PID_PACKAGE_AUTHOR}" "${DECLARE_PID_PACKAGE_INSTITUTION}" "${email}"
+  			"${DECLARE_PID_PACKAGE_YEAR}" "${DECLARE_PID_PACKAGE_LICENSE}"
+  			"${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_PUBLIC_ADDRESS}"
+  		  "${DECLARE_PID_PACKAGE_DESCRIPTION}" "${DECLARE_PID_PACKAGE_README}" "${DECLARE_PID_PACKAGE_CODE_STYLE}" "${DECLARE_PID_PACKAGE_CONTRIBUTION_SPACE}")
+  unset(email)
+  if(DECLARE_PID_PACKAGE_VERSION) #version directly declared in the declaration (NEW WAY to specify version)
+    set_PID_Package_Version(${DECLARE_PID_PACKAGE_VERSION})#simply pass the list to the "final" function
+  endif()
 endmacro(declare_PID_Package)
 
 #.rst:
@@ -994,7 +996,9 @@ endmacro(build_PID_Package)
 #   :USAGE <list of headers to include>: This should be used to list useful includes to put in client code. This is used for documentation purpose.
 #   :DOCUMENTATION: specifies a file (markdown) used to generate an online documentaion for the component.
 #   :C_STANDARD <90|99|11>: C language standard used to build the component. Defaults to ``90`` (i.e. ANSI-C)
-#   :CXX_STANDARD <98|11|14|17>: C++ language standard used to build the component. Defaults to ``98``.
+#   :C_MAX_STANDARD <90|99|11>: Maximum C language standard that can be used when using the component.
+#   :CXX_STANDARD <98|11|14|17|20>: C++ language standard used to build the component. Defaults to ``98``.
+#   :CXX_MAX_STANDARD <98|11|14|17|20>: Maximum C++ language standard that can be used when using the component.
 #   :RUNTIME_RESOURCES <files>: ``<files>`` is a list of files and folders relative to the ``share/resources`` folder. These files will be installed automatically and should be accessed in a PID component using the `pid-rpath <http://pid.lirmm.net/pid-framework/packages/pid-rpath>`_ package.
 #   :INTERNAL: This flag is used to introduce compilation options that are only used by this component.
 #   :EXPORTED: This flag is used to export compilation options. Meaning, components that later refer to this component will be using these options.
@@ -1040,7 +1044,7 @@ endmacro(PID_Component)
 
 macro(declare_PID_Component)
 set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER APPLICATION APP EXAMPLE_APPLICATION EXAMPLE TEST_APPLICATION TEST PYTHON_PACK PYTHON LOGGABLE)
-set(oneValueArgs NAME DIRECTORY C_STANDARD CXX_STANDARD DOCUMENTATION)
+set(oneValueArgs NAME DIRECTORY C_STANDARD C_MAX_STANDARD CXX_STANDARD CXX_MAX_STANDARD DOCUMENTATION)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES DEPEND EXPORT ALIAS)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -1081,29 +1085,6 @@ if(DECLARE_PID_COMPONENT_DIRECTORY)
   set(dir_name ${DECLARE_PID_COMPONENT_DIRECTORY})
 else()
   set(dir_name ${comp_name})#when directory is not specified than we consider that folder name is same as component name
-endif()
-
-if(DECLARE_PID_COMPONENT_C_STANDARD)
-	set(c_language_standard ${DECLARE_PID_COMPONENT_C_STANDARD})
-	if(	NOT c_language_standard EQUAL 90
-	AND NOT c_language_standard EQUAL 99
-	AND NOT c_language_standard EQUAL 11)
-  finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad C_STANDARD argument, the value used must be 90, 99 or 11.")
-	endif()
-endif()
-
-if(DECLARE_PID_COMPONENT_CXX_STANDARD)
-	set(cxx_language_standard ${DECLARE_PID_COMPONENT_CXX_STANDARD})
-	if(	NOT cxx_language_standard EQUAL 98
-    	AND NOT cxx_language_standard EQUAL 11
-    	AND NOT cxx_language_standard EQUAL 14
-    	AND NOT cxx_language_standard EQUAL 17 )
-  finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad CXX_STANDARD argument, the value used must be 98, 11, 14 or 17.")
-	endif()
-else() #default language standard is first standard
-	set(cxx_language_standard 98)
 endif()
 
 set(nb_options 0)
@@ -1199,7 +1180,6 @@ if(NOT type STREQUAL "HEADER")#header libraries can define no folder (simple int
   endif()
 endif()
 
-
 set(internal_defs "")
 set(internal_inc_dirs "")
 set(internal_link_flags "")
@@ -1229,7 +1209,10 @@ if(DECLARE_PID_COMPONENT_INTERNAL)
 	endif()
 endif()
 
-set(exported_defs "")
+set(exported_defs)
+set(exported_link_flags)
+set(exported_compiler_options)
+
 if(DECLARE_PID_COMPONENT_EXPORTED)
 	if(type MATCHES APP OR type MATCHES EXAMPLE OR type MATCHES TEST)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -1290,20 +1273,38 @@ if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 			add_Sanitizer_Flags_If_Available(UNDEFINED internal_compiler_options internal_link_flags)
 		endif()
 	endif()
+  # manage options and eventually adjust language standard in use
+  adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
+                                        internal_compiler_options exported_compiler_options
+                                        "${DECLARE_PID_COMPONENT_C_STANDARD}"
+                                        "${DECLARE_PID_COMPONENT_C_MAX_STANDARD}"
+                                        "${DECLARE_PID_COMPONENT_CXX_STANDARD}"
+                                        "${DECLARE_PID_COMPONENT_CXX_MAX_STANDARD}")
+  if(ERR)
+    if(ERR STREQUAL "CRITICAL")
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: when declaring application ${comp_name} in package ${PROJECT_NAME}, ${MESS}")
+    else()
+      message("[PID] WARNING: when declaring application ${comp_name} in package ${PROJECT_NAME}, ${MESS}")
+    endif()
+  endif()
 
 	declare_Application_Component(	${comp_name}
 					${dir_name}
 					${type}
-					"${c_language_standard}"
-					"${cxx_language_standard}"
+					"${C_STD_USED}"
+          "${DECLARE_PID_COMPONENT_C_MAX_STANDARD}"
+					"${CXX_STD_USED}"
+					"${DECLARE_PID_COMPONENT_CXX_MAX_STANDARD}"
 					"${internal_inc_dirs}"
 					"${internal_defs}"
-					"${internal_compiler_options}"
+					"${INTERN_OPTS}"
 					"${internal_link_flags}"
 					"${runtime_resources}"
           "${DECLARE_PID_COMPONENT_AUXILIARY_SOURCES}"
           "${DECLARE_PID_COMPONENT_LOGGABLE}"
           "${DECLARE_PID_COMPONENT_ALIAS}")
+
 elseif(type MATCHES "PYTHON")#declare a python package
 	declare_Python_Component(${comp_name} ${dir_name})
 else() #it is a library
@@ -1318,17 +1319,32 @@ else() #it is a library
 			add_Sanitizer_Flags_If_Available(UNDEFINED internal_compiler_options exported_link_flags)
 		endif()
 	endif()
-
-	declare_Library_Component(	${comp_name}
+  adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
+                                        internal_compiler_options exported_compiler_options
+                                        "${DECLARE_PID_COMPONENT_C_STANDARD}"
+                                        "${DECLARE_PID_COMPONENT_C_MAX_STANDARD}"
+                                        "${DECLARE_PID_COMPONENT_CXX_STANDARD}"
+                                        "${DECLARE_PID_COMPONENT_CXX_MAX_STANDARD}")
+  if(ERR)
+    if(ERR STREQUAL "CRITICAL")
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: when declaring library ${comp_name} in package ${PROJECT_NAME}, ${MESS}")
+    else()
+      message("[PID] WARNING: when declaring library ${comp_name} in package ${PROJECT_NAME}, ${MESS}")
+    endif()
+  endif()
+	declare_Library_Component(${comp_name}
 					"${dir_name}"
 					${type}
-					"${c_language_standard}"
-					"${cxx_language_standard}"
+					"${C_STD_USED}"
+          "${DECLARE_PID_COMPONENT_C_MAX_STANDARD}"
+					"${CXX_STD_USED}"
+					"${DECLARE_PID_COMPONENT_CXX_MAX_STANDARD}"
 					"${internal_inc_dirs}"
 					"${internal_defs}"
-					"${internal_compiler_options}"
+					"${INTERN_OPTS}"
 					"${exported_defs}"
-					"${exported_compiler_options}"
+					"${EXPORT_OPTS}"
 					"${internal_link_flags}"
 					"${exported_link_flags}"
 					"${runtime_resources}"
@@ -1759,12 +1775,12 @@ endmacro(PID_Component_Dependency)
 
 macro(declare_PID_Component_Dependency)
 set(options EXPORT DEPEND)
-set(oneValueArgs COMPONENT NATIVE PACKAGE EXTERNAL FRAMEWORK C_STANDARD CXX_STANDARD CONFIGURATION)
+set(oneValueArgs COMPONENT NATIVE PACKAGE EXTERNAL FRAMEWORK C_STANDARD C_MAX_STANDARD CXX_STANDARD CXX_MAX_STANDARD CONFIGURATION)
 set(multiValueArgs INCLUDE_DIRS LIBRARY_DIRS LINKS COMPILER_OPTIONS INTERNAL_DEFINITIONS IMPORTED_DEFINITIONS EXPORTED_DEFINITIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
 if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT)
-  if(${ARGC} LESS 1 OR ${ARGV0} MATCHES "^EXPORT|DEPEND|NATIVE|PACKAGE|EXTERNAL|C_STANDARD|CXX_STANDARD|INCLUDE_DIRS LINKS|COMPILER_OPTIONS|INTERNAL_DEFINITIONS|IMPORTED_DEFINITIONS|EXPORTED_DEFINITIONS|RUNTIME_RESOURCES$")
+  if(${ARGC} LESS 1 OR ${ARGV0} MATCHES "^EXPORT|DEPEND|NATIVE|PACKAGE|EXTERNAL|C_STANDARD|CXX_STANDARD|C_MAX_STANDARD|CXX_MAX_STANDARD|INCLUDE_DIRS LINKS|COMPILER_OPTIONS|INTERNAL_DEFINITIONS|IMPORTED_DEFINITIONS|EXPORTED_DEFINITIONS|RUNTIME_RESOURCES$")
     finish_Progress(${GLOBAL_PROGRESS_VAR})
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when declaring dependency for a component, a name must be given to the component that declare the dependency using COMPONENT keyword or simply by using first argument.")
   else()
@@ -2005,6 +2021,22 @@ if(target_package)#a package name where to find the component is known
 					"${comp_exp_defs}"
 					"${dep_defs}")
   else()#package_type is "EXTERNAL" AND a NO component is specified (direct references to external package content)
+    set(fake_intern)
+    adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
+                                          fake_intern compiler_options
+                                          "${DECLARE_PID_COMPONENT_DEPENDENCY_C_STANDARD}"
+                                          "${DECLARE_PID_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+                                          "${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+                                          "${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
+    if(ERR)
+      if(ERR STREQUAL "CRITICAL")
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
+        message(FATAL_ERROR "[PID] CRITICAL ERROR: when declaring direct dependency to package ${target_package} for component ${component_name} in package ${PROJECT_NAME}, ${MESS}")
+      else()
+        message("[PID] WARNING: when declaring direct dependency to package ${target_package} for component ${component_name} in package ${PROJECT_NAME}, ${MESS}")
+      endif()
+    endif()
+
     declare_External_Package_Component_Dependency(
 					${component_name}
 					${target_package}
@@ -2013,11 +2045,13 @@ if(target_package)#a package name where to find the component is known
 					"${comp_defs}"
 					"${comp_exp_defs}"
 					"${dep_defs}"
-					"${compiler_options}"
+					"${INTERN_OPTS}"
 					"${static_links}"
 					"${shared_links}"
-					"${DECLARE_PID_COMPONENT_DEPENDENCY_C_STANDARD}"
-					"${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+					"${C_STD_USED}"
+					"${DECLARE_PID_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+					"${CXX_STD_USED}"
+					"${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}"
 					"${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
   endif()
 else()#no target package => 2 cases OS dependency OR ERROR
@@ -2035,6 +2069,21 @@ else()#no target package => 2 cases OS dependency OR ERROR
         "${dep_defs}"
       )
     else()
+      set(fake_intern)
+      adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
+                                            fake_intern compiler_options
+                                      			"${DECLARE_PID_COMPONENT_DEPENDENCY_C_STANDARD}"
+                                      			"${DECLARE_PID_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+                                      			"${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+                                      			"${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
+      if(ERR)
+        if(ERR STREQUAL "CRITICAL")
+          finish_Progress(${GLOBAL_PROGRESS_VAR})
+          message(FATAL_ERROR "[PID] CRITICAL ERROR: when declaring direct system dependency for component ${component_name} in package ${PROJECT_NAME}, ${MESS}")
+        else()
+          message("[PID] WARNING: when declaring direct system dependency for component ${component_name} in package ${PROJECT_NAME}, ${MESS}")
+        endif()
+      endif()
       declare_System_Component_Dependency(
     			${component_name}
     			${export}
@@ -2043,11 +2092,13 @@ else()#no target package => 2 cases OS dependency OR ERROR
     			"${comp_defs}"
     			"${comp_exp_defs}"
     			"${dep_defs}"
-    			"${compiler_options}"
+    			"${INTERN_OPTS}"
     			"${static_links}"
     			"${shared_links}"
-    			"${DECLARE_PID_COMPONENT_DEPENDENCY_C_STANDARD}"
-    			"${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+    			"${C_STD_USED}"
+    			"${DECLARE_PID_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+    			"${CXX_STD_USED}"
+    			"${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}"
     			"${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
     endif()
   endif()
@@ -2136,7 +2187,8 @@ if(NOT RUN_PID_TEST_NAME)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments for the test ${RUN_PID_TEST_NAME}, a name must be given to the test (using NAME <name> syntax) !")
 else()
-	if(NOT CMAKE_VERSION VERSION_LESS 3.4)#cannot do call if(TEST) before this version, the default behavior (without using NAME and COMMAND will overwrite the rprevious test with same name)
+  cmake_policy(GET CMP0064 CAN_TEST_TEST_NAME)
+	if(CAN_TEST_TEST_NAME STREQUAL "NEW")
 		if(TEST ${RUN_PID_TEST_NAME})
 			message("[PID] WARNING : bad arguments for the test ${RUN_PID_TEST_NAME}, this test unit is already defined. Skipping new definition !")
 			return()

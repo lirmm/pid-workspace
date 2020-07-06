@@ -795,18 +795,24 @@ endfunction(extract_All_Words_From_Path)
 #  fill_String_From_List
 #  ---------------------
 #
-#   .. command:: fill_String_From_List(input_list RES_STRING)
+#   .. command:: fill_String_From_List(RES_STRING input_list separator)
 #
-#    Create a string with space separators from a list.
+#    Create a string from a list using a separator string.
 #
 #     :input_list: the variable containing the list of words.
 #
+#     :separator: the string used as a delimiter between words.
+#
 #     :RES_STRING: the output variable containg the resulting string
 #
-function(fill_String_From_List input_list RES_STRING)
+function(fill_String_From_List RES_STRING input_list separator)
 set(res "")
 foreach(element IN LISTS ${input_list})
-	set(res "${res} ${element}")
+  if(res STREQUAL "")
+    set (res "${element}")
+  else()
+   set(res "${res}${separator}${element}")
+ endif()
 endforeach()
 string(STRIP "${res}" res_finished)
 set(${RES_STRING} ${res_finished} PARENT_SCOPE)
@@ -1412,7 +1418,7 @@ function(parse_Package_Dependency_All_Version_Arguments package all_args LIST_OF
         list(APPEND all_versions ${RES_VERSION})
 			endif()
 		elseif(ADDITIONNAL_CONSTRAINT)#additionnal constraint without VERSION => error !
-      message("[PID] ERROR : you cannot use EXACT, FROM or TO keywords without using the VERSION keyword (e.g. EXACT VERSION 3.0.2).")
+      message("[PID] ERROR : you cannot use EXACT, FROM or TO keywords without using the VERSION keyword (e.g. EXACT VERSION 3.1.3).")
       set(${PARSE_RESULT} FALSE PARENT_SCOPE)
       return()
     endif()
@@ -1748,8 +1754,8 @@ else()
 endif()
 extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
 extract_All_Words("${INSTITUTION_NAME}" "_" INSTITUTION_ALL_WORDS)
-fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
-fill_String_From_List(INSTITUTION_ALL_WORDS INSTITUTION_STRING)
+fill_String_From_List(AUTHOR_STRING AUTHOR_ALL_WORDS " ")
+fill_String_From_List(INSTITUTION_STRING INSTITUTION_ALL_WORDS " ")
 if(NOT INSTITUTION_STRING STREQUAL "")
 	set(${RES_STRING} "${AUTHOR_STRING} (${INSTITUTION_STRING})" PARENT_SCOPE)
 else()
@@ -1779,7 +1785,7 @@ endfunction(generate_Full_Author_String)
 #
 function(generate_Contact_String author mail RES_STRING)
 extract_All_Words("${author}" "_" AUTHOR_ALL_WORDS)
-fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
+fill_String_From_List(AUTHOR_STRING AUTHOR_ALL_WORDS " ")
 if(mail AND NOT mail STREQUAL "")
 	set(${RES_STRING} "${AUTHOR_STRING} (${mail})" PARENT_SCOPE)
 else()
@@ -1808,8 +1814,8 @@ endfunction(generate_Contact_String)
 function(get_Formatted_Framework_Contact_String framework RES_STRING)
 extract_All_Words("${${framework}_MAIN_AUTHOR}" "_" AUTHOR_ALL_WORDS)
 extract_All_Words("${${framework}_MAIN_INSTITUTION}" "_" INSTITUTION_ALL_WORDS)
-fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
-fill_String_From_List(INSTITUTION_ALL_WORDS INSTITUTION_STRING)
+fill_String_From_List(AUTHOR_STRING AUTHOR_ALL_WORDS " ")
+fill_String_From_List(INSTITUTION_STRING INSTITUTION_ALL_WORDS " ")
 if(NOT INSTITUTION_STRING STREQUAL "")
 	if(${framework}_CONTACT_MAIL)
 		set(${RES_STRING} "${AUTHOR_STRING} (${${framework}_CONTACT_MAIL}) - ${INSTITUTION_STRING}" PARENT_SCOPE)
@@ -1845,7 +1851,7 @@ endfunction(get_Formatted_Framework_Contact_String)
 #
 function(generate_Formatted_String input RES_STRING)
 extract_All_Words("${input}" "_" INPUT_ALL_WORDS)
-fill_String_From_List(INPUT_ALL_WORDS INPUT_STRING)
+fill_String_From_List(INPUT_STRING INPUT_ALL_WORDS " ")
 set(${RES_STRING} "${INPUT_STRING}" PARENT_SCOPE)
 endfunction(generate_Formatted_String)
 
@@ -1875,12 +1881,12 @@ if(SIZE EQUAL 2)
   list(GET author_institution 1 INSTITUTION_NAME)
   extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
   extract_All_Words("${INSTITUTION_NAME}" "_" INSTITUTION_ALL_WORDS)
-  fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
-  fill_String_From_List(INSTITUTION_ALL_WORDS INSTITUTION_STRING)
+  fill_String_From_List(AUTHOR_STRING AUTHOR_ALL_WORDS " ")
+  fill_String_From_List(INSTITUTION_STRING INSTITUTION_ALL_WORDS " ")
 elseif(SIZE EQUAL 1)
   list(GET author_institution 0 AUTHOR_NAME)
   extract_All_Words("${AUTHOR_NAME}" "_" AUTHOR_ALL_WORDS)
-  fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
+  fill_String_From_List(AUTHOR_STRING AUTHOR_ALL_WORDS " ")
   set(INSTITUTION_STRING "")
 endif()
 if(NOT INSTITUTION_STRING STREQUAL "")
@@ -1911,8 +1917,8 @@ endfunction(get_Formatted_Author_String)
 function(get_Formatted_Package_Contact_String package RES_STRING)
 extract_All_Words("${${package}_MAIN_AUTHOR}" "_" AUTHOR_ALL_WORDS)
 extract_All_Words("${${package}_MAIN_INSTITUTION}" "_" INSTITUTION_ALL_WORDS)
-fill_String_From_List(AUTHOR_ALL_WORDS AUTHOR_STRING)
-fill_String_From_List(INSTITUTION_ALL_WORDS INSTITUTION_STRING)
+fill_String_From_List(AUTHOR_STRING AUTHOR_ALL_WORDS " ")
+fill_String_From_List(INSTITUTION_STRING INSTITUTION_ALL_WORDS " ")
 if(NOT INSTITUTION_STRING STREQUAL "")
 	if(${package}_CONTACT_MAIL)
 		set(${RES_STRING} "${AUTHOR_STRING} (${${package}_CONTACT_MAIL}) - ${INSTITUTION_STRING}" PARENT_SCOPE)
@@ -4646,6 +4652,46 @@ endfunction(test_Same_Directory_Content)
 #
 # .. ifmode:: internal
 #
+#  .. |get_C_Existing_Standards| replace:: ``get_C_Existing_Standards``
+#  .. _get_C_Existing_Standards:
+#
+#  get_C_Existing_Standards
+#  ------------------------
+#
+#   .. command:: get_C_Existing_Standards(ALL_C_STDS)
+#
+#    Gives the ordered list of available C language standards, from older to newer. Used as an auxiliary function the centralizes information on available standards.
+#
+#     :ALL_C_STDS: the output variable that contains the list of available standards.
+#
+function(get_C_Existing_Standards ALL_C_STDS)
+  set(${ALL_C_STDS} 90 99 11 PARENT_SCOPE)
+endfunction(get_C_Existing_Standards)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_CXX_Existing_Standards| replace:: ``get_CXX_Existing_Standards``
+#  .. _get_CXX_Existing_Standards:
+#
+#  get_CXX_Existing_Standards
+#  --------------------------
+#
+#   .. command:: get_CXX_Existing_Standards(ALL_CXX_STDS)
+#
+#    Gives the ordered list of available C++ language standards, from older to newer. Used as an auxiliary function the centralizes information on available standards.
+#
+#     :ALL_CXX_STDS: the output variable that contains the list of available standards.
+#
+function(get_CXX_Existing_Standards ALL_CXX_STDS)
+  set(${ALL_CXX_STDS} 98 11 14 17 20 PARENT_SCOPE)
+endfunction(get_CXX_Existing_Standards)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |translate_Standard_Into_Option| replace:: ``translate_Standard_Into_Option``
 #  .. _translate_Standard_Into_Option:
 #
@@ -4666,26 +4712,20 @@ endfunction(test_Same_Directory_Content)
 #
 function(translate_Standard_Into_Option RES_C_STD_OPT RES_CXX_STD_OPT c_std_number cxx_std_number)
 	#managing c++
-	if(cxx_std_number EQUAL 98)
-		set(${RES_CXX_STD_OPT} "-std=c++98" PARENT_SCOPE)
-	elseif(cxx_std_number EQUAL 11)
-		set(${RES_CXX_STD_OPT} "-std=c++11" PARENT_SCOPE)
-	elseif(cxx_std_number EQUAL 14)
-		set(${RES_CXX_STD_OPT} "-std=c++14" PARENT_SCOPE)
-	elseif(cxx_std_number EQUAL 17)
-		set(${RES_CXX_STD_OPT} "-std=c++17" PARENT_SCOPE)
-	endif()
+  is_A_CXX_Language_Standard(IS_CXX_STD ${cxx_std_number})
+  if(IS_CXX_STD)
+    set(${RES_CXX_STD_OPT} "-std=c++${cxx_std_number}" PARENT_SCOPE)
+  else()
+    set(${RES_CXX_STD_OPT} PARENT_SCOPE)
+  endif()
 
 	#managing c
-	if(c_std_number EQUAL 90)
-		set(${RES_C_STD_OPT} "-std=c90" PARENT_SCOPE)
-	elseif(c_std_number EQUAL 99)
-		set(${RES_C_STD_OPT} "-std=c99" PARENT_SCOPE)
-	elseif(c_std_number EQUAL 11)
-		set(${RES_C_STD_OPT} "-std=c11" PARENT_SCOPE)
+  is_A_C_Language_Standard(IS_C_STD ${c_std_number})
+  if(IS_C_STD)
+    set(${RES_C_STD_OPT} "-std=c${c_std_number}" PARENT_SCOPE)
   else()
-    set(${RES_C_STD_OPT} PARENT_SCOPE)#the c standard may be let optional
-	endif()
+    set(${RES_C_STD_OPT} PARENT_SCOPE)
+  endif()
 endfunction(translate_Standard_Into_Option)
 
 #.rst:
@@ -4700,7 +4740,7 @@ endfunction(translate_Standard_Into_Option)
 #
 #   .. command:: is_CXX_Version_Less(IS_LESS first second)
 #
-#    Compare two C++ language standard versions.
+#    Compare two C++ language standard versions. Suppose that standards are valid values or empty.
 #
 #     :first: the first language standard version to compare.
 #
@@ -4709,30 +4749,21 @@ endfunction(translate_Standard_Into_Option)
 #     :IS_LESS: the output variable that is TRUE if first is an older standard than second.
 #
 function(is_CXX_Version_Less IS_LESS first second)
+if(NOT second)#second is not set so false anytime
+  set(${IS_LESS} FALSE PARENT_SCOPE)
+  return()
+endif()
 if(NOT first) #first is not set so true anytime
   set(${IS_LESS} TRUE PARENT_SCOPE)
   return()
 endif()
-if(NOT second)#second is not set so false anytime
-	set(${IS_LESS} FALSE PARENT_SCOPE)
-	return()
-endif()
-if(first EQUAL 98)
-	if(second EQUAL 98)
-		set(${IS_LESS} FALSE PARENT_SCOPE)
-	else()
-		set(${IS_LESS} TRUE PARENT_SCOPE)
-	endif()
+get_CXX_Existing_Standards(ALL_CXX_STDS)
+list(FIND ALL_CXX_STDS ${first} INDEX_FIRST)
+list(FIND ALL_CXX_STDS ${second} INDEX_SECOND)
+if(INDEX_FIRST LESS INDEX_SECOND)
+  set(${IS_LESS} TRUE PARENT_SCOPE)
 else()
-	if(second EQUAL 98)
-		set(${IS_LESS} FALSE PARENT_SCOPE)
-	else()# both number are comparable
-		if(first LESS second)
-			set(${IS_LESS} TRUE PARENT_SCOPE)
-		else()
-			set(${IS_LESS} FALSE PARENT_SCOPE)
-		endif()
-	endif()
+  set(${IS_LESS} FALSE PARENT_SCOPE)
 endif()
 endfunction(is_CXX_Version_Less)
 
@@ -4748,7 +4779,7 @@ endfunction(is_CXX_Version_Less)
 #
 #   .. command:: is_C_Version_Less(IS_LESS first second)
 #
-#    Compare two C language standard versions.
+#    Compare two C language standard versions. Suppose that standards are valid values or empty
 #
 #     :first: the first language standard version to compare.
 #
@@ -4757,26 +4788,21 @@ endfunction(is_CXX_Version_Less)
 #     :IS_LESS: the output variable that is TRUE if first is an older standard than second.
 #
 function(is_C_Version_Less IS_LESS first second)
-if(NOT first) #first is not set so true anytime
-	set(${IS_LESS} TRUE PARENT_SCOPE)
-	return()
-endif()
 if(NOT second) #second is not set so false anytime
 	set(${IS_LESS} FALSE PARENT_SCOPE)
 	return()
 endif()
-if(first EQUAL 11)#last version is 11 so never less
-	set(${IS_LESS} FALSE PARENT_SCOPE)
+if(NOT first) #first is not set so true anytime
+	set(${IS_LESS} TRUE PARENT_SCOPE)
+	return()
+endif()
+get_CXX_Existing_Standards(ALL_C_STDS)
+list(FIND ALL_C_STDS ${first} INDEX_FIRST)
+list(FIND ALL_C_STDS ${second} INDEX_SECOND)
+if(INDEX_FIRST LESS INDEX_SECOND)
+  set(${IS_LESS} TRUE PARENT_SCOPE)
 else()
-	if(second EQUAL 11)
-		set(${IS_LESS} TRUE PARENT_SCOPE)
-	else()# both number are comparable (90 or 99)
-		if(first LESS second)
-			set(${IS_LESS} TRUE PARENT_SCOPE)
-		else()
-			set(${IS_LESS} FALSE PARENT_SCOPE)
-		endif()
-	endif()
+  set(${IS_LESS} FALSE PARENT_SCOPE)
 endif()
 endfunction(is_C_Version_Less)
 
@@ -4799,10 +4825,11 @@ endfunction(is_C_Version_Less)
 #     :STANDARD_NUMBER: the output variable that contains the C language standard version, or empty if the option is not used to set language standard.
 #
 function(is_C_Standard_Option STANDARD_NUMBER opt)
-string(REGEX REPLACE "^[ \t]*-std=(c|gnu)(90|99|11)[ \t]*$" "\\2" OUTPUT_VAR_C ${opt})
-if(NOT OUTPUT_VAR_C STREQUAL opt)#it matches
-	set(${STANDARD_NUMBER} ${OUTPUT_VAR_C} PARENT_SCOPE)
-endif()
+  get_C_Existing_Standards(ALL_C_STDS)
+  fill_String_From_List(RES_PATTERN ALL_C_STDS "|")
+  if(opt MATCHES "^[ \t]*-std=(c|gnu)(${RES_PATTERN})[ \t]*$")#it matches
+  	set(${STANDARD_NUMBER} ${CMAKE_MATCH_2} PARENT_SCOPE)
+  endif()
 endfunction(is_C_Standard_Option)
 
 #.rst:
@@ -4824,61 +4851,12 @@ endfunction(is_C_Standard_Option)
 #     :STANDARD_NUMBER: the output variable that contains the C++ language standard version, or empty if the option is not used to set language standard.
 #
 function(is_CXX_Standard_Option STANDARD_NUMBER opt)
-string(REGEX REPLACE "^[ \t]*-std=(c|gnu)\\+\\+(98|11|14|17)[ \t]*$" "\\2" OUTPUT_VAR_CXX ${opt})
-if(NOT OUTPUT_VAR_CXX STREQUAL opt)#it matches
-	set(${STANDARD_NUMBER} ${OUTPUT_VAR_CXX} PARENT_SCOPE)
-endif()
+  get_CXX_Existing_Standards(ALL_CXX_STDS)
+  fill_String_From_List(RES_PATTERN ALL_CXX_STDS "|")
+  if(opt MATCHES "^[ \t]*-std=(c|gnu)\\+\\+(${RES_PATTERN})[ \t]*$")#it is a standard setting option
+  	set(${STANDARD_NUMBER} ${CMAKE_MATCH_2} PARENT_SCOPE)
+  endif()
 endfunction(is_CXX_Standard_Option)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |take_Greater_C_Standard_Version| replace:: ``take_Greater_C_Standard_Version``
-#  .. _take_Greater_C_Standard_Version:
-#
-#  take_Greater_C_Standard_Version
-#  -------------------------------
-#
-#   .. command:: take_Greater_C_Standard_Version(greater_c_var to_compare_c_var)
-#
-#    Set the greater C language to the greatest version passed as parameter.
-#
-#     :greater_c_var: the input/output variable that is called with any C language standard before call and is the greater C language standard after call.
-#
-#     :to_compare_c_var: the input variable that contains the C language standard to compare with.
-#
-function(take_Greater_C_Standard_Version greater_c_var to_compare_c_var)
-	is_C_Version_Less(IS_LESS "${${greater_c_var}}" "${${to_compare_c_var}}")
-	if(IS_LESS)
-		set(${greater_c_var} ${${to_compare_c_var}} PARENT_SCOPE)
-	endif()
-endfunction(take_Greater_C_Standard_Version)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |take_Greater_CXX_Standard_Version| replace:: ``take_Greater_CXX_Standard_Version``
-#  .. _take_Greater_CXX_Standard_Version:
-#
-#  take_Greater_CXX_Standard_Version
-#  ---------------------------------
-#
-#   .. command:: take_Greater_CXX_Standard_Version(greater_cxx_var to_compare_cxx_var)
-#
-#    Set the greater C++ language to the greatest version passed as parameter.
-#
-#     :greater_cxx_var: the input/output variable that is called with any C++ language standard before call and is the greater C language standard after call.
-#
-#     :to_compare_cxx_var: the input variable that contains the C++ language standard to compare with.
-#
-function(take_Greater_CXX_Standard_Version greater_cxx_var to_compare_cxx_var)
-	is_CXX_Version_Less(IS_LESS "${${greater_cxx_var}}" "${${to_compare_cxx_var}}")
-	if(IS_LESS)
-		set(${greater_cxx_var} ${${to_compare_cxx_var}} PARENT_SCOPE)
-	endif()
-endfunction(take_Greater_CXX_Standard_Version)
 
 #.rst:
 #
@@ -4921,6 +4899,551 @@ function(compare_ABIs ARE_EQUAL abi1 abi2)
     set(${ARE_EQUAL} FALSE PARENT_SCOPE)
   endif()
 endfunction(compare_ABIs)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_A_C_Language_Standard| replace:: ``is_A_C_Language_Standard``
+#  .. _is_A_C_Language_Standard:
+#
+#  is_A_C_Language_Standard
+#  ------------------------
+#
+#   .. command:: is_A_C_Language_Standard(IS_STD number)
+#
+#    Tells wether a number matches a C language standard number .
+#
+#     :IS_STD: the output variable that is TRUE if number is a standard.
+#
+#     :number: the number to test.
+#
+function(is_A_C_Language_Standard IS_STD number)
+  get_C_Existing_Standards(ALL_STDS)
+  list(FIND ALL_STDS ${number} INDEX)
+  if(INDEX EQUAL -1)
+    set(${IS_STD} FALSE PARENT_SCOPE)
+  else()
+    set(${IS_STD} TRUE PARENT_SCOPE)
+  endif()
+endfunction(is_A_C_Language_Standard)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_A_CXX_Language_Standard| replace:: ``is_A_CXX_Language_Standard``
+#  .. _is_A_CXX_Language_Standard:
+#
+#  is_A_CXX_Language_Standard
+#  --------------------------
+#
+#   .. command:: is_A_CXX_Language_Standard(IS_STD number)
+#
+#    Tells wether a number matches a C++ language standard number .
+#
+#     :IS_STD: the output variable that is TRUE if number is a standard.
+#
+#     :number: the number to test.
+#
+function(is_A_CXX_Language_Standard IS_STD number)
+  get_CXX_Existing_Standards(ALL_STDS)
+  list(FIND ALL_STDS ${number} INDEX)
+  if(INDEX EQUAL -1)
+    set(${IS_STD} FALSE PARENT_SCOPE)
+  else()
+    set(${IS_STD} TRUE PARENT_SCOPE)
+  endif()
+endfunction(is_A_CXX_Language_Standard)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |filter_Compiler_Options| replace:: ``filter_Compiler_Options``
+#  .. _filter_Compiler_Options:
+#
+#  filter_Compiler_Options
+#  -----------------------
+#
+#   .. command:: filter_Compiler_Options(STD_C_OPT STD_CXX_OPT FILTERED_OPTS opts)
+#
+#     Filter the options to get those related to language standard used.
+#
+#     :opts: the list of compilation options.
+#
+#     :STD_C_OPT: the output variable containg the C language standard used, if any.
+#
+#     :STD_CXX_OPT: the output variable containg the C++ language standard used, if any.
+#
+#     :FILTERED_OPTS: the output variable containing the list of options not related to language standard, if any.
+#
+function(filter_Compiler_Options STD_C_OPT STD_CXX_OPT FILTERED_OPTS opts)
+set(RES_FILTERED)
+set(${STD_CXX_OPT} PARENT_SCOPE)
+set(${STD_C_OPT} PARENT_SCOPE)
+foreach(opt IN LISTS opts)
+	unset(STANDARD_NUMBER)
+	#checking for CXX_STANDARD
+	is_CXX_Standard_Option(STANDARD_NUMBER ${opt})
+	if(STANDARD_NUMBER)
+		set(${STD_CXX_OPT} ${STANDARD_NUMBER} PARENT_SCOPE)
+	else()#checking for C_STANDARD
+		is_C_Standard_Option(STANDARD_NUMBER ${opt})
+		if(STANDARD_NUMBER)
+			set(${STD_C_OPT} ${STANDARD_NUMBER} PARENT_SCOPE)
+		else()
+			list(APPEND RES_FILTERED ${opt})#keep the option unchanged
+		endif()
+	endif()
+endforeach()
+set(${FILTERED_OPTS} ${RES_FILTERED} PARENT_SCOPE)
+endfunction(filter_Compiler_Options)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Languages_Standards_In_Options| replace:: ``check_Languages_Standards_In_Options``
+#  .. _check_Languages_Standards_In_Options:
+#
+#  check_Languages_Standards_In_Options
+#  ------------------------------------
+#
+#   .. command:: check_Languages_Standards_In_Options(RES_C_STD RES_CXX_STD RES_OPTS c_std cxx_std list_of_options)
+#
+#     Check whether a list of options specify a target language standard and compare it with the corresponding standard in use.
+#
+#     :c_std: the current C language standard.
+#
+#     :cxx_std: the current C++ language standard.
+#
+#     :list_of_options: the INPUT variable that contains a list of compilation options.
+#
+#     :RES_C_STD: the output variable containg the C language standard coming from options, if it is newer than current one, empty otherwise.
+#
+#     :RES_CXX_STD: the output variable containg the C++ language standard coming from options, if it is newer than current one, empty otherwise.
+#
+#     :RES_OPTS: the output variable containing the list of all options not related to language standard built from list_of_options.
+#
+function(check_Languages_Standards_In_Options RES_C_STD RES_CXX_STD RES_OPTS c_std cxx_std list_of_options)
+  set(RES_C_STD PARENT_SCOPE)
+  set(RES_CXX_STD PARENT_SCOPE)
+  filter_Compiler_Options(STD_C_OPT STD_CXX_OPT FILTERED_OPTS "${${list_of_options}}")
+  set(${RES_OPTS} ${FILTERED_OPTS} PARENT_SCOPE)
+  if(STD_C_OPT)
+  	is_C_Version_Less(IS_LESS "${c_std}" "${STD_C_OPT}")
+  	if(IS_LESS)
+  		set(RES_C_STD ${STD_C_OPT} PARENT_SCOPE)
+  	endif()
+  endif()
+  if(STD_CXX_OPT)
+  	is_CXX_Version_Less(IS_LESS "${cxx_std}" "${STD_CXX_OPT}")
+  	if(IS_LESS)
+      set(RES_CXX_STD ${STD_CXX_OPT} PARENT_SCOPE)
+  	endif()
+  endif()
+endfunction(check_Languages_Standards_In_Options)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |adjust_Languages_Standards_Description| replace:: ``adjust_Languages_Standards_Description``
+#  .. _adjust_Languages_Standards_Description:
+#
+#  adjust_Languages_Standards_Description
+#  ---------------------------------------
+#
+#   .. command:: adjust_Languages_Standards_Description(ERROR MESSAGE
+#                                                C_STD_USED CXX_STD_USED INTERNAL_OPTS_USED EXPORTED_OPTS_USED
+#                                                internal_opts_var exported_opts_var
+#                                                c_standard c_max_standard cxx_standard cxx_max_standard)
+#
+#     Auxiliary function of the API used to check if given description of languages standard is correct and the automate adjustment of the description if possible.
+#
+#     :internal_opts_var: the INPUT variable that contains a list of compilation options used internaly.
+#     :exported_opts_var: the INPUT variable that contains a list of compilation options that are exported.
+#     :c_standard: the C language standard used.
+#     :c_max_standard: the max C language standard allowed when using the component.
+#     :cxx_standard: the C++ language standard used.
+#     :cxx_max_standard: the max C++ language standard allowed when using the component.
+#
+#     :ERROR: the output variable containing the error type (WARNING or CRITICAL) if any error appears in description.
+#     :MESSAGE: the output variable containing the error message if an error is generated.
+#     :C_STD_USED: the output variable containg the C language standard to be finally used.
+#     :CXX_STD_USED: the output variable containg the C++ language standard to be finally used.
+#     :INTERNAL_OPTS_USED: the output variable containing the list of all internal compiler options without language related options.
+#     :EXPORTED_OPTS_USED: the output variable containing the list of all exported compiler options without language related options.
+#
+function(adjust_Languages_Standards_Description ERROR MESSAGE
+                                                C_STD_USED CXX_STD_USED INTERNAL_OPTS_USED EXPORTED_OPTS_USED
+                                                internal_opts_var exported_opts_var
+                                                c_standard c_max_standard cxx_standard cxx_max_standard)
+
+  #set local temporary variables that are returned in the end
+  set(ret_error)
+  set(ret_message)
+  #preliminary checks on inputs
+  if(c_standard)
+    is_A_C_Language_Standard(IS_STD ${c_standard})
+  	if(NOT IS_STD)
+      get_C_Existing_Standards(ALL_C_STDS)
+      fill_String_From_List(POSSIBLE_STDS_STR ALL_C_STDS ", ")
+      set(ret_message "${ret_message}bad C_STANDARD argument, its value must be one of: ${POSSIBLE_STDS_STR}. ")
+      set(ret_error "CRITICAL")
+  	endif()
+  else() #default language standard is first standard
+    set(c_standard_used 90)
+  endif()
+  set(c_standard_used ${c_standard})
+  if(c_max_standard)
+    is_A_C_Language_Standard(IS_STD ${c_max_standard})
+    if(NOT IS_STD)
+      get_C_Existing_Standards(ALL_C_STDS)
+      fill_String_From_List(POSSIBLE_STDS_STR ALL_C_STDS ", ")
+      set(ret_message "${ret_message}bad C_MAX_STANDARD argument, the value must be one of: ${POSSIBLE_STDS_STR}. ")
+      set(ret_error "CRITICAL")
+    endif()
+  endif()
+  if(cxx_standard)
+    set(cxx_standard_used ${cxx_standard})
+    is_A_CXX_Language_Standard(IS_STD ${cxx_standard})
+  	if(NOT IS_STD)
+      get_CXX_Existing_Standards(ALL_CXX_STDS)
+      fill_String_From_List(POSSIBLE_STDS_STR ALL_CXX_STDS ", ")
+    	set(ret_message "${ret_message}bad CXX_STANDARD argument, the value must be one of: ${POSSIBLE_STDS_STR}. ")
+      set(ret_error "CRITICAL")
+  	endif()
+  else() #default language standard is first standard
+  	set(cxx_standard_used 98)
+  endif()
+  if(cxx_max_standard)
+    is_A_CXX_Language_Standard(IS_STD ${cxx_max_standard})
+    if(NOT IS_STD)
+      get_CXX_Existing_Standards(ALL_CXX_STDS)
+      fill_String_From_List(POSSIBLE_STDS_STR ALL_CXX_STDS ", ")
+      set(ret_message "${ret_message}bad CXX_MAX_STANDARD argument, the value must be one of: ${POSSIBLE_STDS_STR}. ")
+      set(ret_error "CRITICAL")
+    endif()
+  endif()
+
+  if(NOT ret_error)#if an error is already generted at this stage, no need to continue
+    check_Languages_Standards_In_Options(STD_C_OPT STD_CXX_OPT FILTERED_INTERNAL_OPTS "${c_standard_used}" "${cxx_standard_used}" ${internal_opts_var})
+    if(STD_C_OPT)#standard has been modified due to options
+    	set(c_standard_used ${STD_C_OPT})
+    	set(ret_message "directly using option -std=c${STD_C_OPT} or -std=gnu${STD_C_OPT} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
+      set(ret_error "WARNING")
+    endif()
+    if(STD_CXX_OPT)#standard has been modified due to options
+    	set(cxx_standard_used ${STD_CXX_OPT})
+    	set(ret_message "directly using option -std=c++${STD_CXX_OPT} or -std=gnu++${STD_CXX_OPT} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
+      set(ret_error "WARNING")
+    endif()
+    check_Languages_Standards_In_Options(STD_C_OPT STD_CXX_OPT FILTERED_EXPORTED_OPTS "${c_standard_used}" "${cxx_standard_used}" ${exported_opts_var})
+    if(STD_C_OPT)
+    	set(c_standard_used ${STD_C_OPT})
+    	set(ret_message "directly using option -std=c${STD_C_OPT} or -std=gnu${STD_C_OPT} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
+      set(ret_error "WARNING")
+    endif()
+    if(STD_CXX_OPT)
+    	set(cxx_standard_used ${STD_CXX_OPT})
+    	set(ret_message "directly using option -std=c++${STD_CXX_OPT} or -std=gnu++${STD_CXX_OPT} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
+      set(ret_error "WARNING")
+    endif()
+    #now basically check standards set VS max standards (to verify that description is not stupid !)
+    if(c_max_standard)
+    	is_C_Version_Less(IS_LESS "${c_max_standard}" "${c_standard_used}")
+    	if(IS_LESS)
+        if(ret_message)
+    	   set(ret_message "${ret_message}. Now the max C language standard (${c_max_standard}) is older than the standard used (${c_standard_used}) !!")
+        else()
+         set(ret_message "the max C language standard (${c_max_standard}) is older than the standard used (${c_standard_used}) !!")
+        endif()
+       set(ret_error "CRITICAL")
+      endif()
+    endif()
+    if(cxx_max_standard)
+    	is_CXX_Version_Less(IS_LESS "${cxx_max_standard}" "${cxx_standard_used}")
+    	if(IS_LESS)
+        if(ret_message)
+         set(ret_message "${ret_message}. Now the max C++ language standard (${cxx_max_standard}) is older than the standard used (${cxx_standard_used}) !!")
+        else()
+         set(ret_message "the max C++ language standard (${cxx_max_standard}) is older than the standard used (${cxx_standard_used}) !!")
+        endif()
+        set(ret_error "CRITICAL")
+    	endif()
+    endif()
+  endif()
+  #returning variables
+  set(${C_STD_USED} ${c_standard_used} PARENT_SCOPE)
+  set(${CXX_STD_USED} ${cxx_standard_used} PARENT_SCOPE)
+  set(${INTERNAL_OPTS_USED} ${FILTERED_INTERNAL_OPTS} PARENT_SCOPE)
+  set(${EXPORTED_OPTS_USED} ${FILTERED_EXPORTED_OPTS} PARENT_SCOPE)
+  set(${MESSAGE} ${ret_message} PARENT_SCOPE)
+  set(${ERROR} ${ret_error} PARENT_SCOPE)
+endfunction(adjust_Languages_Standards_Description)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Required_CMake_Version_For_Standard| replace:: ``get_Required_CMake_Version_For_Standard``
+#  .. _get_Required_CMake_Version_For_Standard:
+#
+#  get_Required_CMake_Version_For_Standard
+#  ---------------------------------------
+#
+#   .. command:: get_Required_CMake_Version_For_Standard(RES_MIN_CMAKE_VERSION cxx_std)
+#
+#     Returns the minimum required CMake version when using given C++ standard
+#
+#     :cxx_std: the target C++ language standard.
+#
+#     :RES_MIN_CMAKE_VERSION: the output variable containing the minimum required version of CMake.
+#
+function(get_Required_CMake_Version_For_Standard RES_MIN_CMAKE_VERSION cxx_std)
+  set(min_cmake_version_for_std_property 3.1.3)
+  if(cxx_std EQUAL 17)
+    set(min_cmake_version_for_std_property 3.8.2)
+  elseif(cxx_std EQUAL 20)
+    set(min_cmake_version_for_std_property 3.11.4)
+  else()#unknown so no result
+    set(min_cmake_version_for_std_property)
+  endif()
+  set(${RES_MIN_CMAKE_VERSION} ${min_cmake_version_for_std_property} PARENT_SCOPE)#CXX standard property
+endfunction(get_Required_CMake_Version_For_Standard)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Imported_C_Standard| replace:: ``check_Imported_C_Standard``
+#  .. _check_Imported_C_Standard:
+#
+#  check_Imported_C_Standard
+#  -------------------------
+#
+#   .. command:: check_Imported_C_Standard(ERROR MESSAGE NEW_C_STD NEW_C_MAX_STD c_std imported_c_std c_max_std imported_c_max_std)
+#
+#     Check whether C standard specification coming from a dependency must/can be adpated depending on current scpecifications.
+#
+#     :c_std: the current C language standard.
+#
+#     :imported_c_std: the C language standard specified by a dependency.
+#
+#     :c_max_std: the current max C language allowed (may be empty with no constraint).
+#
+#     :imported_c_max_std: the max C language standard allowed by a dependency.
+#
+#     :ERROR: the output variable containing the error type (CRITICAL or WARNING) if any, empty otherwise.
+#
+#     :MESSAGE: the output variable containing the message to print when an error is detected.
+#
+#     :NEW_C_STD: the output variable containing the modified C standard if modification required, empty otherwise.
+#
+#     :NEW_C_MAX_STD: the output variable containing the modified C MAX standard if modification required, empty otherwise.
+#
+function(check_Imported_C_Standard ERROR MESSAGE NEW_C_STD NEW_C_MAX_STD c_std imported_c_std c_max_std imported_c_max_std)
+  set(${ERROR} PARENT_SCOPE)
+  set(${MESSAGE} PARENT_SCOPE)
+  set(${NEW_C_STD} PARENT_SCOPE)
+  set(${NEW_C_MAX_STD} PARENT_SCOPE)
+  set(ret_mess)
+  set(ret_err)
+  is_C_Version_Less(IS_LESS "${c_std}" "${imported_c_std}")
+  if(IS_LESS)#need to use the system/external dependency standard, otherwise this information would disappear
+    if(c_max_std)
+      is_C_Version_Less(IS_LESS "${c_max_std}" "${imported_c_std}")
+      if(IS_LESS)
+        set(${ERROR} "CRITICAL" PARENT_SCOPE)
+        set(${MESSAGE} "need to change declared C standard (${c_std}) to ${imported_c_std}, but this standard is greater than max allowed (${c_max_std})" PARENT_SCOPE)
+        return()
+      endif()
+    endif()
+    set(${NEW_C_STD} ${imported_c_std} PARENT_SCOPE)
+    set(ret_err "WARNING")
+    set(ret_mess "need to change declared C standard (${c_std}) to ${imported_c_std}")
+  endif()
+  is_C_Version_Less(IS_LESS "${imported_c_max_std}" "${c_max_std}")
+  if(IS_LESS)#need to ajust max standard to the lowest max standard in use
+    set(ret_err "WARNING")
+    set(${NEW_C_MAX_STD} ${imported_c_max_std} PARENT_SCOPE)
+    if(ret_mess)#already a warning
+      set(ret_mess "${ret_mess}. Also need to change declared C max standard (${c_max_std}) to ${imported_c_max_std}")
+    else()
+      set(ret_mess "need to change declared C max standard (${c_max_std}) to ${imported_c_max_std}")
+    endif()
+  endif()
+  set(${ERROR} "${ret_err}" PARENT_SCOPE)
+  set(${MESSAGE} "${ret_mess}" PARENT_SCOPE)
+endfunction(check_Imported_C_Standard)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Imported_CXX_Standard| replace:: ``check_Imported_CXX_Standard``
+#  .. _check_Imported_CXX_Standard:
+#
+#  check_Imported_CXX_Standard
+#  ---------------------------
+#
+#   .. command:: check_Imported_CXX_Standard(ERROR MESSAGE NEW_CXX_STD NEW_CXX_MAX_STD cxx_std imported_cxx_std cxx_max_std imported_cxx_max_std)
+#
+#     Check whether C++ standard specification coming from a dependency must/can be adpated depending on current scpecifications.
+#
+#     :cxx_std: the current C++ language standard.
+#
+#     :imported_cxx_std: the C++ language standard specified by a dependency.
+#
+#     :cxx_max_std: the current max C++ language allowed (may be empty with no constraint).
+#
+#     :imported_cxx_max_std: the max C++ language standard allowed by a dependency.
+#
+#     :ERROR: the output variable containing the error type (CRITICAL or WARNING) if any, empty otherwise.
+#
+#     :MESSAGE: the output variable containing the message to print when an error is detected.
+#
+#     :NEW_CXX_STD: the output variable containing the modified C++ standard if modification required, empty otherwise.
+#
+#     :NEW_CXX_MAX_STD: the output variable containing the modified C++ MAX standard if modification required, empty otherwise.
+#
+function(check_Imported_CXX_Standard ERROR MESSAGE NEW_CXX_STD NEW_CXX_MAX_STD cxx_std imported_cxx_std cxx_max_std imported_cxx_max_std)
+  set(${ERROR} PARENT_SCOPE)
+  set(${MESSAGE} PARENT_SCOPE)
+  set(${NEW_CXX_STD} PARENT_SCOPE)
+  set(${NEW_CXX_MAX_STD} PARENT_SCOPE)
+  set(ret_mess)
+  set(ret_err)
+  is_CXX_Version_Less(IS_LESS "${cxx_std}" "${imported_cxx_std}")
+  if(IS_LESS)#need to use the system/external dependency standard, otherwise this information would disappear
+    if(cxx_max_std)
+      is_CXX_Version_Less(IS_LESS "${cxx_max_std}" "${imported_cxx_std}")
+      if(IS_LESS)
+        set(${ERROR} "CRITICAL" PARENT_SCOPE)
+        set(${MESSAGE} "need to change declared C++ standard (${cxx_std}) to ${imported_cxx_std}, but this standard is greater than max allowed (${cxx_max_std})" PARENT_SCOPE)
+        return()
+      endif()
+    endif()
+    set(${NEW_CXX_STD} ${imported_cxx_std} PARENT_SCOPE)
+    set(ret_err "WARNING")
+    set(ret_mess "need to change declared C++ standard (${cxx_std}) to ${imported_cxx_std}")
+  endif()
+  is_CXX_Version_Less(IS_LESS "${imported_cxx_max_std}" "${cxx_max_std}")
+  if(IS_LESS)#need to ajust max standard to the lowest max standard in use
+    set(ret_err "WARNING")
+    set(${NEW_CXX_MAX_STD} ${imported_cxx_max_std} PARENT_SCOPE)
+    if(ret_mess)#already a warning
+      set(ret_mess "${ret_mess}. Also need to change declared C++ max standard (${cxx_max_std}) to ${imported_cxx_max_std}")
+    else()
+      set(ret_mess "need to change declared C++ max standard (${cxx_max_std}) to ${imported_cxx_max_std}")
+    endif()
+  endif()
+  set(${ERROR} "${ret_err}" PARENT_SCOPE)
+  set(${MESSAGE} "${ret_mess}" PARENT_SCOPE)
+endfunction(check_Imported_CXX_Standard)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_Imported_Standards| replace:: ``resolve_Imported_Standards``
+#  .. _resolve_Standards:
+#
+#  resolve_Imported_Standards
+#  --------------------------
+#
+#   .. command:: resolve_Imported_Standards(RES_NEW_C_STD RES_NEW_C_MAX_STD RES_NEW_CXX_STD RES_NEW_CXX_MAX_STD
+#                                  curr_c_std curr_c_max_std curr_cxx_std curr_cxx_max_std
+#                                  dep_c_std dep_c_max_std dep_cxx_std dep_cxx_max_std)
+#
+#     Resolve constraints on C and C++ standards. Generates errors when constraints are not compatible.
+#
+#     :curr_c_std: the current C language standard.
+#     :curr_c_max_std: the current max C language allowed (may be empty with no constraint).
+#     :curr_cxx_std: the current C++ language standard.
+#     :curr_cxx_max_std: the current max C++ language allowed (may be empty with no constraint).
+#
+#     :dep_c_std: the C language standard specified by a dependency.
+#     :dep_c_max_std: the max C language standard allowed by a dependency.
+#     :dep_cxx_std: the C++ language standard specified by a dependency.
+#     :dep_cxx_max_std: the max C++ language standard allowed by a dependency.
+#
+#     :ERROR: the output variable containing the error type (CRITICAL or WARNING) if any, empty otherwise.
+#     :MESSAGE: the output variable containing the message to print when an error is detected.
+#
+#     :RES_NEW_C_STD: the output variable containing the modified C standard if modification required, empty otherwise.
+#     :RES_NEW_C_MAX_STD: the output variable containing the modified C MAX standard if modification required, empty otherwise.
+#     :RES_NEW_CXX_STD: the output variable containing the modified C++ standard if modification required, empty otherwise.
+#     :RES_NEW_CXX_MAX_STD: the output variable containing the modified C++ MAX standard if modification required, empty otherwise.
+#
+function(resolve_Imported_Standards ERROR MESSAGE RES_NEW_C_STD RES_NEW_C_MAX_STD RES_NEW_CXX_STD RES_NEW_CXX_MAX_STD
+                           curr_c_std curr_c_max_std curr_cxx_std curr_cxx_max_std
+                           dep_c_std dep_c_max_std dep_cxx_std dep_cxx_max_std)
+   set(${ERROR} PARENT_SCOPE)
+   set(${MESSAGE} PARENT_SCOPE)
+   set(curr_mess)
+   set(curr_err)
+   set(${RES_NEW_C_STD} PARENT_SCOPE)
+   set(${RES_NEW_C_MAX_STD} PARENT_SCOPE)
+   set(${RES_NEW_CXX_STD} PARENT_SCOPE)
+   set(${RES_NEW_CXX_MAX_STD} PARENT_SCOPE)
+   check_Imported_C_Standard(ERR MESS
+                             NEW_C_STD NEW_C_MAX_STD
+                             "${curr_c_std}" "${dep_c_std}"
+                             "${curr_c_max_std}" "${dep_c_max_std}")
+
+   if(ERR)
+     if(ERR STREQUAL "CRITICAL")
+       set(${ERROR} "${ERR}" PARENT_SCOPE)
+       set(${MESSAGE} "${MESS}" PARENT_SCOPE)
+       return()
+     else()#warning
+       set(curr_mess "${MESS}")
+       set(curr_err "${ERR}")
+     endif()
+   endif()
+
+   if(NEW_C_STD)#need to modify component due to its dependency
+    set(${RES_NEW_C_STD} ${NEW_C_STD} PARENT_SCOPE)
+   endif()
+   if(NEW_C_MAX_STD)#need to update the max standard allowed
+    set(${RES_NEW_C_MAX_STD} ${NEW_C_MAX_STD} PARENT_SCOPE)
+   endif()
+
+   #second check C++ language standard
+   check_Imported_CXX_Standard(ERROR MESSAGE
+                               NEW_CXX_STD NEW_CXX_MAX_STD
+                               "${curr_cxx_std}" "${dep_cxx_std}"
+                               "${curr_cxx_max_std}" "${dep_cxx_max_std}")
+   if(ERR)
+     if(ERR STREQUAL "CRITICAL")
+       set(${ERROR} "${ERR}" PARENT_SCOPE)
+       set(${MESSAGE} "${MESS}" PARENT_SCOPE)
+       return()
+     else()#warning
+       if(curr_mess)
+         set(curr_mess "${curr_mess}. ${MESS}")
+         set(curr_err "${ERR}")
+       endif()
+     endif()
+   endif()
+
+    if(NEW_CXX_STD)#need to modify component due to its dependency
+     set(${RES_NEW_CXX_STD} ${NEW_CXX_STD} PARENT_SCOPE)
+    endif()
+    if(NEW_CXX_MAX_STD)#need to update the max standard allowed
+     set(${RES_NEW_CXX_MAX_STD} ${NEW_CXX_MAX_STD} PARENT_SCOPE)
+    endif()
+
+    set(${MESSAGE} "${curr_mess}" PARENT_SCOPE)
+    set(${ERROR} "${curr_err}" PARENT_SCOPE)
+endfunction(resolve_Imported_Standards)
+
 
 #################################################################################################
 ################################### pure CMake utilities ########################################

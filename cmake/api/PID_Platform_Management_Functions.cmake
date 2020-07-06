@@ -1276,7 +1276,7 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
 
   check_Platform_Configuration_Arguments(ARGS_TO_SET ${config_name})
   if(ARGS_TO_SET)#there are unset required arguments
-    fill_String_From_List(ARGS_TO_SET RES_STRING)
+    fill_String_From_List(RES_STRING ARGS_TO_SET ", ")
     message("[PID] WARNING : when checking arguments of configuration ${config_name}, there are required arguments that are not set : ${RES_STRING}")
     return()
   endif()
@@ -1392,7 +1392,7 @@ function(is_Allowed_Platform_Configuration ALLOWED config_name config_args)
 
   check_Platform_Configuration_Arguments(ARGS_TO_SET ${config_name})
   if(ARGS_TO_SET)#there are unset required arguments
-    fill_String_From_List(ARGS_TO_SET RES_STRING)
+    fill_String_From_List(RES_STRING ARGS_TO_SET ", ")
     message("[PID] WARNING : when testing arguments of configuration ${config_name}, there are required arguments that are not set : ${RES_STRING}")
     return()
   endif()
@@ -1482,7 +1482,7 @@ macro(evaluate_Platform_Configuration config path_to_config)
       file(REMOVE_RECURSE ${eval_build_files})
     endif()
     get_filename_component(the_path ${WORKSPACE_DIR} ABSOLUTE)
-    file(WRITE ${eval_project_file} "cmake_minimum_required(VERSION 3.0.2)\n")
+    file(WRITE ${eval_project_file} "cmake_minimum_required(VERSION 3.1.3)\n")
     file(APPEND ${eval_project_file} "set(WORKSPACE_DIR ${the_path} CACHE PATH \"root of the PID workspace\")\n")
     file(APPEND ${eval_project_file} "list(APPEND CMAKE_MODULE_PATH \${WORKSPACE_DIR}/cmake)\n")
     file(APPEND ${eval_project_file} "include(Configuration_Definition NO_POLICY_SCOPE)\n")

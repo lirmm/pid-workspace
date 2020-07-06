@@ -395,65 +395,6 @@ set(${PRIVATE_LINKS} "${RES_LINKS}" PARENT_SCOPE)
 endif()
 endfunction(list_Private_Links)
 
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |get_Language_Standards| replace:: ``get_Language_Standards``
-#  .. _get_Language_Standards:
-#
-#  get_Language_Standards
-#  ----------------------
-#
-#   .. command:: get_Language_Standards(STD_C STD_CXX package component mode)
-#
-#   Get C and C++ language standard used for a component.
-#
-#     :package: the name of the package containing the component.
-#
-#     :component: the name of the component.
-#
-#     :mode: the build mode (Release or Debug) for the component.
-#
-#     :STD_C: the output variable that contains the C language standard used.
-#
-#     :STD_CXX: the output variable that contains the C++ language standard used.
-#
-function(get_Language_Standards STD_C STD_CXX package component mode)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(${STD_C} ${${package}_${component}_C_STANDARD${VAR_SUFFIX}} PARENT_SCOPE)
-set(${STD_CXX} ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}} PARENT_SCOPE)
-endfunction(get_Language_Standards)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |manage_Language_Standards| replace:: ``manage_Language_Standards``
-#  .. _manage_Language_Standards:
-#
-#  manage_Language_Standards
-#  -------------------------
-#
-#   .. command:: manage_Language_Standards(package component mode)
-#
-#   Set C and C++ language standard default values if not set for a component.
-#
-#     :package: the name of the package containing the component.
-#
-#     :component: the name of the component.
-#
-#     :mode: the build mode (Release or Debug) for the component.
-#
-function(manage_Language_Standards package component mode)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-if(NOT ${package}_${component}_C_STANDARD${VAR_SUFFIX})
-	set(${package}_${component}_C_STANDARD${VAR_SUFFIX} 90 CACHE INTERNAL "")
-endif()
-if(NOT ${package}_${component}_CXX_STANDARD${VAR_SUFFIX})
-	set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} 98 CACHE INTERNAL "")
-endif()
-endfunction(manage_Language_Standards)
 
 ##################################################################################
 ############### runtime resources dependencies management API ####################

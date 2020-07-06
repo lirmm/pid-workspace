@@ -575,14 +575,14 @@ endfunction(init_Standard_Path_Cache_Variables)
 #
 function(set_Install_Cache_Variables)
 	set(${PROJECT_NAME}_DEPLOY_PATH ${${PROJECT_NAME}_VERSION} CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_LIB_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_AR_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_SHARE_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/share CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_SCRIPT_PATH ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/script CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_INSTALL_RPATH_DIR ${${PROJECT_NAME}_DEPLOY_PATH}/.rpath CACHE INTERNAL "")
-	set ( ${PROJECT_NAME}_ROOT_DIR ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_INSTALL_LIB_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
+	set(${PROJECT_NAME}_INSTALL_AR_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/lib CACHE INTERNAL "")
+	set(${PROJECT_NAME}_INSTALL_HEADERS_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/include CACHE INTERNAL "")
+	set(${PROJECT_NAME}_INSTALL_SHARE_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/share CACHE INTERNAL "")
+	set(${PROJECT_NAME}_INSTALL_SCRIPT_PATH ${${PROJECT_NAME}_INSTALL_SHARE_PATH}/script CACHE INTERNAL "")
+	set(${PROJECT_NAME}_INSTALL_BIN_PATH ${${PROJECT_NAME}_DEPLOY_PATH}/bin CACHE INTERNAL "")
+	set(${PROJECT_NAME}_INSTALL_RPATH_DIR ${${PROJECT_NAME}_DEPLOY_PATH}/.rpath CACHE INTERNAL "")
+	set(${PROJECT_NAME}_ROOT_DIR ${PACKAGE_BINARY_INSTALL_DIR}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH} CACHE INTERNAL "")
 endfunction(set_Install_Cache_Variables)
 
 #.rst:
@@ -606,10 +606,10 @@ endfunction(set_Install_Cache_Variables)
 #     :patch: the patch version number
 #
 function(set_Version_Cache_Variables major minor patch)
-	set (${PROJECT_NAME}_VERSION_MAJOR ${major} CACHE INTERNAL "")
-	set (${PROJECT_NAME}_VERSION_MINOR ${minor} CACHE INTERNAL "")
-	set (${PROJECT_NAME}_VERSION_PATCH ${patch} CACHE INTERNAL "")
-	set (${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}.${${PROJECT_NAME}_VERSION_PATCH} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_VERSION_MAJOR ${major} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_VERSION_MINOR ${minor} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_VERSION_PATCH ${patch} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_VERSION "${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}.${${PROJECT_NAME}_VERSION_PATCH}" CACHE INTERNAL "")
 endfunction(set_Version_Cache_Variables)
 
 #.rst:
@@ -647,13 +647,20 @@ endfunction(add_Required_Extra_Tool)
 #
 #   Reset cache variables values for PID standard variable used for version description in currently defined package. Used for cleaning the project before starting configuration.
 #
-function(reset_Version_Cache_Variables)
+macro(reset_Version_Cache_Variables)
 #resetting general info about the package : only list are reset
-set (${PROJECT_NAME}_VERSION_MAJOR CACHE INTERNAL "" )
-set (${PROJECT_NAME}_VERSION_MINOR CACHE INTERNAL "" )
-set (${PROJECT_NAME}_VERSION_PATCH CACHE INTERNAL "" )
-set (${PROJECT_NAME}_VERSION CACHE INTERNAL "" )
-endfunction(reset_Version_Cache_Variables)
+set(${PROJECT_NAME}_VERSION_MAJOR CACHE INTERNAL "" )
+set(${PROJECT_NAME}_VERSION_MINOR CACHE INTERNAL "" )
+set(${PROJECT_NAME}_VERSION_PATCH CACHE INTERNAL "" )
+set(${PROJECT_NAME}_VERSION CACHE INTERNAL "" )
+
+#unset equivalent CMake generated variables
+unset(${PROJECT_NAME}_VERSION_MAJOR)
+unset(${PROJECT_NAME}_VERSION_MINOR)
+unset(${PROJECT_NAME}_VERSION_PATCH)
+unset(${PROJECT_NAME}_VERSION)
+
+endmacro(reset_Version_Cache_Variables)
 
 
 #############################################################################################
@@ -749,15 +756,15 @@ endfunction(is_Usable_Python_Wrapper_Module)
 #
 # .. ifmode:: internal
 #
-#  .. |configure_Install_Variables| replace:: ``configure_Install_Variables``
-#  .. _configure_Install_Variables:
+#  .. |configure_Install_Variables_From_Dependency| replace:: ``configure_Install_Variables_From_Dependency``
+#  .. _configure_Install_Variables_From_Dependency:
 #
-#  configure_Install_Variables
-#  ---------------------------
+#  configure_Install_Variables_From_Dependency
+#  -------------------------------------------
 #
-#   .. command:: configure_Install_Variables(component export include_dirs dep_defs exported_defs exported_options static_links shared_links c_standard cxx_standard runtime_resources)
+#   .. command:: configure_Install_Variables_From_Dependency(component export include_dirs dep_defs exported_defs exported_options static_links shared_links c_standard c_max_standard cxx_standard cxx_max_standard runtime_resources)
 #
-#   Configure cache variables defining a component of the currenlty defined package. These variables will be used to generate the part of the package cmake use file related to the component.
+#   Configure cache variables defining a component of the currenlty defined package according to specification of a dependency. These variables will be used to generate the part of the package cmake use file related to the component.
 #
 #     :component: the name of the component.
 #
@@ -777,13 +784,22 @@ endfunction(is_Usable_Python_Wrapper_Module)
 #
 #     :shared_links:  the list of path to external shared libraries used by the component.
 #
-#     :c_standard:  the C language standard used by component.
+#     :c_standard:  the C language standard used by the dependency.
 #
-#     :cxx_standard:  the C++ language standard used by component.
+#     :c_max_standard:  the max C language standard allowed by the dependency.
+#
+#     :cxx_standard:  the C++ language standard used by the dependency.
+#
+#     :cxx_max_standard:  the max C++ language standard allowed by the dependency.
 #
 #     :runtime_resources: the list of path to runtime resources used by the component.
 #
-function (configure_Install_Variables component export include_dirs library_dirs dep_defs exported_defs exported_options static_links shared_links c_standard cxx_standard runtime_resources)
+function (configure_Install_Variables_From_Dependency component export include_dirs library_dirs
+                                      dep_defs exported_defs
+                                      exported_options
+                                      static_links shared_links
+                                      c_standard c_max_standard cxx_standard cxx_max_standard
+                                      runtime_resources)
 # configuring the export
 if(export) # if dependancy library is exported then we need to register its dep_defs and include dirs in addition to component interface defs
 	if(dep_defs OR exported_defs)
@@ -837,20 +853,111 @@ else() # otherwise no need to register them since no more useful
 	endif()
 endif()
 
-is_C_Version_Less(IS_LESS "${${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX}}" "${c_standard}")
-if(IS_LESS)
-	set(${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX} ${c_standard} CACHE INTERNAL "")
+if(c_standard)
+  evaluate_Variables_In_List(EVAL_CSTD c_standard)
+  evaluate_Variables_In_List(EVAL_MAX_CSTD c_max_standard)
+
+  #adjust languages standards version, also check adjustment considering max standard, if any
+  check_Imported_C_Standard(ERROR MESSAGE NEW_C_STD NEW_C_MAX_STD
+                            "${${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX}}" "${EVAL_CSTD}"
+                            "${${PROJECT_NAME}_${component}_C_MAX_STANDARD${USE_MODE_SUFFIX}}" "${EVAL_MAX_CSTD}")
+  if(ERROR)
+    if(ERROR STREQUAL "CRITICAL")
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: in ${PROJECT_NAME}, when adding system/external dependency to component ${component} : ${MESSAGE}")
+    else()#warning
+      message("[PID] WARNING: in ${PROJECT_NAME}, when adding system/external dependency to component ${component} : ${MESSAGE}")
+    endif()
+  endif()
+
+  if(NEW_C_STD)
+    set(${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX} ${NEW_C_STD} CACHE INTERNAL "")
+  endif()
+  if(NEW_C_MAX_STD)
+    set(${PROJECT_NAME}_${component}_C_MAX_STANDARD${USE_MODE_SUFFIX} ${NEW_C_MAX_STD} CACHE INTERNAL "")
+  endif()
 endif()
 
-is_CXX_Version_Less(IS_LESS "${${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX}}" "${cxx_standard}")
-if(IS_LESS)
-	set(${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX} ${cxx_standard} CACHE INTERNAL "")
+if(cxx_standard)
+  #need to evaluate standard before checking
+  evaluate_Variables_In_List(EVAL_CXXSTD cxx_standard)
+  evaluate_Variables_In_List(EVAL_MAX_CXXSTD cxx_max_standard)
+  check_Imported_CXX_Standard(ERROR MESSAGE NEW_CXX_STD NEW_CXX_MAX_STD
+                            "${${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX}}" "${EVAL_CXXSTD}"
+                            "${${PROJECT_NAME}_${component}_CXX_MAX_STANDARD${USE_MODE_SUFFIX}}" "${EVAL_MAX_CXXSTD}")
+  if(ERROR)
+    if(ERROR STREQUAL "CRITICAL")
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: in ${PROJECT_NAME}, when adding system/external dependency to component ${component} : ${MESSAGE}")
+    else()#warning
+      message("[PID] WARNING: in ${PROJECT_NAME}, when adding system/external dependency to component ${component} : ${MESSAGE}")
+    endif()
+  endif()
+
+  if(NEW_CXX_STD)
+    set(${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX} ${NEW_CXX_STD} CACHE INTERNAL "")
+  endif()
+  if(NEW_CXX_MAX_STD)
+    set(${PROJECT_NAME}_${component}_CXX_MAX_STANDARD${USE_MODE_SUFFIX} ${NEW_CXX_MAX_STD} CACHE INTERNAL "")
+  endif()
 endif()
 
 if(runtime_resources)#runtime resources are exported in any case
   append_Unique_In_Cache(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} "${runtime_resources}")
 endif()
-endfunction(configure_Install_Variables)
+endfunction(configure_Install_Variables_From_Dependency)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |adjust_Languages_Standard_For_Imported_Component| replace:: ``adjust_Languages_Standard_For_Imported_Component``
+#  .. _adjust_Languages_Standard_For_Imported_Component:
+#
+#  adjust_Languages_Standard_For_Imported_Component
+#  ------------------------------------------------
+#
+#   .. command:: adjust_Languages_Standard_For_Imported_Component(package component mode)
+#
+#   Adjust desription of languages standards in use for a component depending on its options
+#
+#     :package: the name of the package owning the component.
+#
+#     :component: the name of the component.
+#
+#     :mode: the target build mode
+#
+#     :RES_OPTS: the output variable the contains the options without any call to language standard settings
+#
+function(adjust_Languages_Standard_For_Imported_Component RES_OPTS package component mode)
+  set(${RES_OPTS} PARENT_SCOPE)
+  list_Public_Options(OPTS ${package} ${component} ${mode})
+  if(OPTS)
+    get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})#get variables related to the current build mode
+    set(fake_intern_opts)
+    adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED NO_INTERN_OPTS FILTERED_OPTS
+                                          fake_intern_opts OPTS
+                                          "${${package}_${component}_C_STANDARD${VAR_SUFFIX}}"
+                                          "${${package}_${component}_C_MAX_STANDARD${VAR_SUFFIX}}"
+                                          "${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}}"
+                                          "${${package}_${component}_CXX_MAX_STANDARD${VAR_SUFFIX}}")
+    if(ERR)
+      if(ERR STREQUAL "CRITICAL")
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
+        message(FATAL_ERROR "[PID] CRITICAL ERROR: for component ${component} from package ${package} in ${PROJECT_NAME} context, ${MESS}")
+      else()
+        message("[PID] WARNING: for component ${component} from package ${package} in ${PROJECT_NAME} context, ${MESS}")
+      endif()
+    endif()
+    set(${RES_OPTS} ${FILTERED_OPTS} PARENT_SCOPE)
+    if(C_STD_USED)
+      set(${package}_${component}_C_STANDARD${VAR_SUFFIX} ${C_STD_USED})
+    endif()
+    if(CXX_STD_USED)
+      set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${CXX_STD_USED})
+    endif()
+  endif()
+endfunction(adjust_Languages_Standard_For_Imported_Component)
 
 #.rst:
 #
@@ -991,6 +1098,8 @@ set(${package}_${component}_HEADER_DIR_NAME CACHE INTERNAL "")
 set(${package}_${component}_HEADERS CACHE INTERNAL "")
 set(${package}_${component}_C_STANDARD CACHE INTERNAL "")
 set(${package}_${component}_CXX_STANDARD CACHE INTERNAL "")
+set(${package}_${component}_C_MAX_STANDARD CACHE INTERNAL "")
+set(${package}_${component}_CXX_MAX_STANDARD CACHE INTERNAL "")
 set(${package}_${component}_BINARY_NAME${VAR_SUFFIX} CACHE INTERNAL "")
 set(${package}_${component}_DEFS${VAR_SUFFIX} CACHE INTERNAL "")
 set(${package}_${component}_OPTS${VAR_SUFFIX} CACHE INTERNAL "")
@@ -1005,7 +1114,6 @@ set(${package}_${component}_AUX_SOURCE_CODE CACHE INTERNAL "")
 set(${package}_${component}_AUX_MONITORED_PATH CACHE INTERNAL "")
 set(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX} CACHE INTERNAL "")
 set(${package}_${component}_DESCRIPTION CACHE INTERNAL "")
-set(${package}_${component}_USAGE_INCLUDES CACHE INTERNAL "")
 set(${package}_${component}_USAGE_INCLUDES CACHE INTERNAL "")
 endfunction(reset_Component_Cached_Variables)
 
@@ -1027,7 +1135,11 @@ endfunction(reset_Component_Cached_Variables)
 #
 #     :c_standard:  the C language standard used by component.
 #
+#     :c_max_standard:  the maximum C language standard allowed when using the component.
+#
 #     :cxx_standard:  the C++ language standard used by component.
+#
+#     :cxx_max_standard:  the maximum C++ language standard allowed when using the component.
 #
 #     :exported_defs:  the list of preprocessor definitions defined by the component and used in its own interface.
 #
@@ -1037,7 +1149,7 @@ endfunction(reset_Component_Cached_Variables)
 #
 #     :runtime_resources: the list of path to runtime resources used by the component.
 #
-function(init_Component_Cached_Variables_For_Export component c_standard cxx_standard exported_defs exported_options exported_links runtime_resources)
+function(init_Component_Cached_Variables_For_Export component c_standard c_max_standard cxx_standard cxx_max_standard exported_defs exported_options exported_links runtime_resources)
 set(${PROJECT_NAME}_${component}_DEFS${USE_MODE_SUFFIX} "${exported_defs}" CACHE INTERNAL "") #exported defs
 set(${PROJECT_NAME}_${component}_LINKS${USE_MODE_SUFFIX} "${exported_links}" CACHE INTERNAL "") #exported links
 set(${PROJECT_NAME}_${component}_INC_DIRS${USE_MODE_SUFFIX} "" CACHE INTERNAL "") #exported include directories (not useful to set it there since they will be exported "manually")
@@ -1045,6 +1157,8 @@ set(${PROJECT_NAME}_${component}_OPTS${USE_MODE_SUFFIX} "${exported_options}" CA
 set(${PROJECT_NAME}_${component}_RUNTIME_RESOURCES${USE_MODE_SUFFIX} "${runtime_resources}" CACHE INTERNAL "")#runtime resources are exported by default
 set(${PROJECT_NAME}_${component}_C_STANDARD${USE_MODE_SUFFIX} "${c_standard}" CACHE INTERNAL "")#minimum C standard of the component interface
 set(${PROJECT_NAME}_${component}_CXX_STANDARD${USE_MODE_SUFFIX} "${cxx_standard}" CACHE INTERNAL "")#minimum C++ standard of the component interface
+set(${PROJECT_NAME}_${component}_C_MAX_STANDARD${USE_MODE_SUFFIX} "${c_max_standard}" CACHE INTERNAL "")#minimum C standard of the component interface
+set(${PROJECT_NAME}_${component}_CXX_MAX_STANDARD${USE_MODE_SUFFIX} "${cxx_max_standard}" CACHE INTERNAL "")#minimum C++ standard of the component interface
 endfunction(init_Component_Cached_Variables_For_Export)
 
 #.rst:
@@ -1147,7 +1261,6 @@ function(reset_Build_Info_Cached_Variables_From_Use package)#common for external
   foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX})
     set(${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX} CACHE INTERNAL "")
   endforeach()
-
 endfunction(reset_Build_Info_Cached_Variables_From_Use)
 
 #.rst:
@@ -1252,6 +1365,8 @@ function(reset_External_Package_Dependency_Cached_Variables_From_Use package mod
     set(${package}_${comp}_SHARED_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_${comp}_C_STANDARD${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_${comp}_CXX_STANDARD${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_${comp}_C_MAX_STANDARD${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_${comp}_CXX_MAX_STANDARD${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_${comp}_RUNTIME_RESOURCES${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_${comp}_INTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
     foreach(dep_pack IN LISTS ${package}_${comp}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
@@ -2360,6 +2475,8 @@ foreach(a_component IN LISTS ${package}_COMPONENTS)
     file(APPEND ${file} "set(${package}_${a_component}_SYSTEM_STATIC_LINKS${MODE_SUFFIX} ${${package}_${a_component}_SYSTEM_STATIC_LINKS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_C_STANDARD${MODE_SUFFIX} ${${package}_${a_component}_C_STANDARD${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${file} "set(${package}_${a_component}_CXX_STANDARD${MODE_SUFFIX} ${${package}_${a_component}_CXX_STANDARD${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${package}_${a_component}_C_MAX_STANDARD${MODE_SUFFIX} ${${package}_${a_component}_C_MAX_STANDARD${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+		file(APPEND ${file} "set(${package}_${a_component}_CXX_MAX_STANDARD${MODE_SUFFIX} ${${package}_${a_component}_CXX_MAX_STANDARD${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 	endif()
 	file(APPEND ${file} "set(${package}_${a_component}_RUNTIME_RESOURCES${MODE_SUFFIX} ${${package}_${a_component}_RUNTIME_RESOURCES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 

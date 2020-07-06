@@ -100,7 +100,6 @@ if(NOT GIT_CONFIGURED)
 	return()
 endif()
 set(${PROJECT_NAME}_ARCH ${CURRENT_PLATFORM_ARCH} CACHE INTERNAL "")#to keep compatibility with PID v1 released package versions
-initialize_Build_System()#initializing PID specific settings for build
 
 manage_Parrallel_Build_Option()
 #################################################
@@ -202,13 +201,13 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 
 	# checking that the official has not been modified (migration)
 	if(${PROJECT_NAME}_ADDRESS) #only if there is an official address spefified
-	add_custom_target(check-repository
-		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-P ${WORKSPACE_DIR}/cmake/commands/Check_PID_Package_Official_Repository.cmake
-		COMMENT "[PID] Checking official repository consistency..."
-		VERBATIM
-	)
+		add_custom_target(check-repository
+			COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+							-DTARGET_PACKAGE=${PROJECT_NAME}
+							-P ${WORKSPACE_DIR}/cmake/commands/Check_PID_Package_Official_Repository.cmake
+			COMMENT "[PID] Checking official repository consistency..."
+			VERBATIM
+		)
 	endif()
 
 	################################################################################################
@@ -263,7 +262,6 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	  endif()
 	endif()
 
-
 	add_dependencies(build reconfigure) #checking if reconfiguration is necessary before build
 	add_dependencies(build check-branch)#checking if not built on master branch or released tag
 	if(${PROJECT_NAME}_ADDRESS)
@@ -295,14 +293,6 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		VERBATIM
 	)
 	
-	# redefinition of clean target (cleaning the build tree) only when using Unix Makefiles
-	# most generators don't support multiple targets with the same name
-	if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
-		# TODO check if valid
-		add_custom_target(clean)
-		add_dependencies(clean cleaning)
-	endif()
-
 	# hard clean (remove content of the build tree including cmake generated configuration files)
   add_custom_target(hard_clean
   	COMMAND ${CMAKE_COMMAND}
@@ -313,7 +303,6 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
   	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   )
 
-
 	# reference file generation target
 	add_custom_target(referencing
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} referencing
@@ -322,7 +311,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	)
 
 	# redefinition of install target
-	add_custom_target(install
+	add_custom_target(installing
 		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Debug artefacts
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} install
 		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Release artefacts
@@ -1362,7 +1351,13 @@ endmacro(build_Package)
 #  declare_Library_Component
 #  -------------------------
 #
-#   .. command:: declare_Library_Component(c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options exported_defs exported_compiler_options internal_links exported_links runtime_resources)
+#   .. command:: declare_Library_Component(c_name dirname type
+#                                          c_standard c_max_standard cxx_standard cxx_max_standard
+#																				   internal_inc_dirs internal_defs internal_compiler_options
+#																				   exported_defs exported_compiler_options
+#																				   internal_links exported_links
+#																				   runtime_resources more_headers more_sources
+#                                          is_loggable aliases)
 #
 #     Declare a library in the currently defined package.
 #
@@ -1374,7 +1369,11 @@ endmacro(build_Package)
 #
 #     :c_standard: the C language standard used (may be empty).
 #
+#     :c_max_standard: the maximum C language standard allowed when using the component.
+#
 #     :cxx_standard: the C++ language standard used (98, 11, 14, 17).
+#
+#     :cxx_max_standard: the maximum C++ language standard allowed when using the component.
 #
 #     :internal_inc_dirs: additionnal include dirs (internal to package, that contains header files, e.g. like common definition between package components), that don't have to be exported since not in the interface of the library.
 #
@@ -1400,9 +1399,12 @@ endmacro(build_Package)
 #
 #     :aliases: the list of alias for the component.
 #
-function(declare_Library_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs
-                                   internal_compiler_options exported_defs exported_compiler_options
-																   internal_links exported_links runtime_resources more_headers more_sources
+function(declare_Library_Component c_name dirname type
+																	 c_standard c_max_standard cxx_standard cxx_max_standard
+																	 internal_inc_dirs internal_defs internal_compiler_options
+																	 exported_defs exported_compiler_options
+																   internal_links exported_links
+																	 runtime_resources more_headers more_sources
 																 	is_loggable aliases)
 
 #indicating that the component has been declared and need to be completed
@@ -1413,40 +1415,6 @@ else()
 	finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : you must specify a type (HEADER, STATIC, SHARED or MODULE) for library ${c_name}")
 	return()
-endif()
-
-# manage options and eventually adjust language standard in use
-set(c_standard_used ${c_standard})
-set(cxx_standard_used ${cxx_standard})
-filter_Compiler_Options(STD_C_OPT STD_CXX_OPT FILTERED_INTERNAL_OPTS "${internal_compiler_options}")
-if(STD_C_OPT)
-	message("[PID] WARNING:  when declaring library ${c_name},  directly using option -std=c${STD_C_OPT} or -std=gnu${STD_C_OPT} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
-	is_C_Version_Less(IS_LESS "${c_standard_used}" "${STD_C_OPT}")
-	if(IS_LESS)
-		set(c_standard_used ${STD_C_OPT})
-	endif()
-endif()
-if(STD_CXX_OPT)
-	message("[PID] WARNING: when declaring library ${c_name}, directly using option -std=c++${STD_CXX_OPT} or -std=gnu++${STD_CXX_OPT} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
-	is_CXX_Version_Less(IS_LESS "${cxx_standard_used}" "${STD_CXX_OPT}")
-	if(IS_LESS)
-		set(cxx_standard_used ${STD_CXX_OPT})
-	endif()
-endif()
-filter_Compiler_Options(STD_C_OPT STD_CXX_OPT FILTERED_EXPORTED_OPTS "${exported_compiler_options}")
-if(STD_C_OPT)
-	message("[PID] WARNING:  when declaring library ${c_name},  directly using option -std=c${STD_C_OPT} or -std=gnu${STD_C_OPT} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
-	is_C_Version_Less(IS_LESS "${c_standard_used}" "${STD_C_OPT}")
-	if(IS_LESS)
-		set(c_standard_used ${STD_C_OPT})
-	endif()
-endif()
-if(STD_CXX_OPT)
-	message("[PID] WARNING: when declaring library ${c_name}, directly using option -std=c++${STD_CXX_OPT} or -std=gnu++${STD_CXX_OPT} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
-	is_CXX_Version_Less(IS_LESS "${cxx_standard_used}" "${STD_CXX_OPT}")
-	if(IS_LESS)
-		set(cxx_standard_used ${STD_CXX_OPT})
-	endif()
 endif()
 
 #prepare general info
@@ -1543,10 +1511,10 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 	#defining shared and/or static targets for the library and
 	#adding the targets to the list of installed components when make install is called
 	if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "STATIC") #a static library has no internal links (never trully linked)
-		create_Static_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}"  "${use_includes}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}")
+		create_Static_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}"  "${use_includes}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}")
 		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "SHARED")
-		create_Shared_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${use_includes}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}" "${internal_links}")
+		create_Shared_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${use_includes}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}" "${internal_links}")
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") #a static library has no exported links (no interface)
@@ -1558,9 +1526,9 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 			#adding adequate path to pyhton librairies
 			list(APPEND INCLUDE_DIRS_WITH_PYTHON ${use_includes} ${CURRENT_PYTHON_INCLUDE_DIRS})
 			list(APPEND LIBRARIES_WITH_PYTHON ${internal_links} ${CURRENT_PYTHON_LIBRARIES})
-			create_Module_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${INCLUDE_DIRS_WITH_PYTHON}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${LIBRARIES_WITH_PYTHON}")
+			create_Module_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${INCLUDE_DIRS_WITH_PYTHON}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${LIBRARIES_WITH_PYTHON}")
 		else()
-			create_Module_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_links}")
+			create_Module_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_links}")
 		endif()
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 		register_Component_Binary(${c_name})#need to register before calling manage python
@@ -1572,11 +1540,11 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 		endif()
 	endif()
 else()#simply creating a "fake" target for header only library
-	create_Header_Lib_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}")
+	create_Header_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}")
 endif()
 
 # registering exported flags for all kinds of libs
-init_Component_Cached_Variables_For_Export(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}" "${runtime_resources}")
+init_Component_Cached_Variables_For_Export(${c_name} "${c_standard}" "${c_max_standard}" "${cxx_standard}" "${cxx_max_standard}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}" "${runtime_resources}")
 
 #create local "real" CMake ALIAS target
 if(aliases)
@@ -1604,7 +1572,12 @@ endfunction(declare_Library_Component)
 #  declare_Application_Component
 #  -----------------------------
 #
-#   .. command:: declare_Application_Component(c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs internal_compiler_options internal_link_flags runtime_resources more_sources is_loggable)
+#   .. command:: declare_Application_Component(c_name dirname type
+#                                              c_standard c_max_standard cxx_standard cxx_max_standard
+#																						   internal_inc_dirs internal_defs internal_compiler_options
+#																						   internal_link_flags
+#																						   runtime_resources
+#																						   more_sources is_loggable aliases)
 #
 #     Declare an  application (executable) in the currently defined package.
 #
@@ -1616,7 +1589,11 @@ endfunction(declare_Library_Component)
 #
 #     :c_standard: the C language standard used (may be empty).
 #
+#     :c_max_standard: the maximum C language standard allowed when using the component.
+#
 #     :cxx_standard: the C++ language standard used (98, 11, 14, 17).
+#
+#     :cxx_max_standard: the maximum C++ language standard allowed when using the component.
 #
 #     :internal_inc_dirs: additionnal include dirs (internal to package, that contains header files, e.g. like common definition between package components).
 #
@@ -1634,8 +1611,10 @@ endfunction(declare_Library_Component)
 #
 #     :aliases: the list of alias for the component.
 #
-function(declare_Application_Component c_name dirname type c_standard cxx_standard internal_inc_dirs internal_defs
-internal_compiler_options internal_link_flags runtime_resources more_sources is_loggable aliases)
+function(declare_Application_Component c_name dirname type
+	c_standard c_max_standard cxx_standard cxx_max_standard
+	internal_inc_dirs internal_defs internal_compiler_options internal_link_flags
+	runtime_resources more_sources is_loggable aliases)
 
 is_Application_Type(RES "${type}")#double check, for internal use only (purpose: simplify PID code debugging)
 if(RES)
@@ -1644,26 +1623,6 @@ else() #a simple application by default
 	finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : you have to set a type name (TEST, APP, EXAMPLE) for the application component ${c_name}")
 	return()
-endif()
-
-
-# manage options and eventually adjust language standard in use
-set(c_standard_used ${c_standard})
-set(cxx_standard_used ${cxx_standard})
-filter_Compiler_Options(STD_C_OPT STD_CXX_OPT FILTERED_INTERNAL_OPTS "${internal_compiler_options}")
-if(STD_C_OPT)
-	message("[PID] WARNING:  when declaring library ${c_name},  directly using option -std=c${STD_C_OPT} or -std=gnu${STD_C_OPT} is not recommanded, use the C_STANDARD keywork in component description instead. PID performs corrective action.")
-	is_C_Version_Less(IS_LESS ${c_standard_used} ${STD_C_OPT})
-	if(IS_LESS)
-		set(c_standard_used ${STD_C_OPT})
-	endif()
-endif()
-if(STD_CXX_OPT)
-	message("[PID] WARNING: when declaring library ${c_name}, directly using option -std=c++${STD_CXX_OPT} or -std=gnu++${STD_CXX_OPT} is not recommanded, use the CXX_STANDARD keywork in component description instead. PID performs corrective action.")
-	is_CXX_Version_Less(IS_LESS ${cxx_standard_used} ${STD_CXX_OPT})
-	if(IS_LESS)
-		set(cxx_standard_used ${STD_CXX_OPT})
-	endif()
 endif()
 
 #managing sources for the application
@@ -1718,11 +1677,11 @@ endif()
 #defining the target to build the application
 
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")# NB : tests do not need to be relocatable since they are purely local
-	create_Executable_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_link_flags}")
+	create_Executable_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_link_flags}")
 
 	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 else()
-	create_TestUnit_Target(${c_name} "${c_standard_used}" "${cxx_standard_used}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_link_flags}")
+	create_TestUnit_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_link_flags}")
 endif()
 register_Component_Binary(${c_name})# resgistering name of the executable
 
@@ -1739,7 +1698,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 endif()
 
 # registering exported flags for all kinds of apps => empty variables (except runtime resources since applications export no flags)
-init_Component_Cached_Variables_For_Export(${c_name} "${c_standard_used}" "${cxx_standard_used}" "" "" "" "${runtime_resources}" "${aliases}")
+init_Component_Cached_Variables_For_Export(${c_name} "${c_standard}" "${c_max_standard}" "${cxx_standard}" "${cxx_max_standard}" "" "" "" "${runtime_resources}" "${aliases}")
 
 if(aliases)#create alias target on demand
 	add_Alias_To_Cache(${c_name} "${aliases}")
@@ -1845,7 +1804,7 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 	if(NOT list_of_possible_versions) # no version constraint specified
 		set(message_str "Input a valid version of dependency ${dep_package} or use ANY.")
 	else()#there are version specified
-		fill_String_From_List(list_of_possible_versions available_versions) #get available version as a string (used to print them)
+		fill_String_From_List(available_versions list_of_possible_versions ", ") #get available version as a string (used to print them)
 		set(message_str "Input a valid version of dependency ${dep_package} among versions: ${available_versions}.")
 	endif()
 	if(optional) #message for the optional dependency includes the possiiblity to input NONE
@@ -2026,7 +1985,7 @@ set_Dependency_Complete_Description(${dep_package} TRUE list_of_possible_version
 if(NOT list_of_possible_versions) # no version constraint specified
 	set(message_str "Input version of dependency ${dep_package} or use ANY.")
 else()#there are version specified
-	fill_String_From_List(list_of_possible_versions available_versions) #get available version as a string (used to print them)
+	fill_String_From_List(available_versions list_of_possible_versions ", ") #get available version as a string (used to print them)
 	set(message_str "Input version of dependency ${dep_package} among: ${available_versions}.")
 	list(LENGTH list_of_possible_versions SIZE)
 	list(GET list_of_possible_versions 0 default_version) #by defaut this is the first element in the list that is taken
@@ -2263,7 +2222,7 @@ if (IS_HF_COMP)
 		endif()
 elseif(IS_BUILT_COMP)
 	if(IS_HF_DEP)
-		configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables_From_Dependency(${DECLARED_COMP} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "" "" "")
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${PROJECT_NAME} ${DECLARED_DEP} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
 
@@ -2272,20 +2231,20 @@ elseif(IS_BUILT_COMP)
 		if(export)
 			set(${PROJECT_NAME}_${DECLARED_COMP}_INTERNAL_EXPORT_${DECLARED_DEP}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
 		endif()
-		configure_Install_Variables(${DECLARED_COMP} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables_From_Dependency(${DECLARED_COMP} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "" "" "")
 
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${PROJECT_NAME} ${DECLARED_DEP} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
 	endif()
 elseif(	${PROJECT_NAME}_${DECLARED_COMP}_TYPE STREQUAL "HEADER")
 	if(IS_HF_DEP)
-		configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables_From_Dependency(${DECLARED_COMP} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "" "" "")
 		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${PROJECT_NAME} ${DECLARED_DEP} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
 
 	else()
 		#prepare the dependancy export
 		set(${PROJECT_NAME}_${DECLARED_COMP}_INTERNAL_EXPORT_${DECLARED_DEP}${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
-		configure_Install_Variables(${DECLARED_COMP} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables_From_Dependency(${DECLARED_COMP} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "" "" "")
 		# setting compile definitions for configuring the "fake" target
 		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${PROJECT_NAME} ${DECLARED_DEP} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
 
@@ -2356,12 +2315,12 @@ elseif(IS_BUILT_COMP)
 	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "${comp_exp_defs}" "")
-		configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables_From_Dependency(${DECLARED_COMP} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "" "" "")
 	else()	#the dependency has a build interface
 		if(export)#prepare the dependancy export
 			set(${PROJECT_NAME}_${DECLARED_COMP}_EXPORT_${dep_package}_${dep_name_to_use} TRUE CACHE INTERNAL "")
 		endif()
-		configure_Install_Variables(${DECLARED_COMP} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables_From_Dependency(${DECLARED_COMP} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "" "" "")
 
 		# setting compile definitions for configuring the target
 		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}")
@@ -2372,12 +2331,12 @@ elseif(	${PROJECT_NAME}_${DECLARED_COMP}_TYPE STREQUAL "HEADER")
 	if(IS_HF_DEP)#the dependency has no build interface(header free) => it is a runtime dependency => no export possible
 		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE} FALSE "" "${comp_exp_defs}" "")
 
-		configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables_From_Dependency(${DECLARED_COMP} FALSE "" "" "" "${comp_exp_defs}" "" "" "" "" "" "" "" "")
 	else()	#the dependency has a build interface
 
 		#prepare the dependancy export
 		set(${PROJECT_NAME}_${DECLARED_COMP}_EXPORT_${dep_package}_${dep_name_to_use} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
-		configure_Install_Variables(${DECLARED_COMP} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables_From_Dependency(${DECLARED_COMP} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "" "" "")
 		fill_Component_Target_With_Dependency(${DECLARED_COMP} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
 	endif()
 else()
@@ -2462,7 +2421,7 @@ if (IS_HF_COMP) #a component without headers
 	# setting compile definitions for the target
 	fill_Component_Target_With_External_Component_Dependency(${DECLARED_COMP} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE} FALSE "${comp_defs}" "" "${dep_defs}")
 	if(COMP_WILL_BE_INSTALLED)
-		configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "" "" "" "" "" "" "")#standard is not propagated in this situation (no symbols exported in binaries)
+		configure_Install_Variables_From_Dependency(${DECLARED_COMP} FALSE "" "" "" "" "" "" "" "" "" "" "" "")#standard is not propagated in this situation (no symbols exported in binaries)
 	endif()
 elseif(IS_BUILT_COMP) #a component that is built by the build procedure
 	# setting compile definitions for configuring the target
@@ -2470,10 +2429,10 @@ elseif(IS_BUILT_COMP) #a component that is built by the build procedure
 	if(export)#prepare the dependancy export
 		set(${PROJECT_NAME}_${DECLARED_COMP}_EXTERNAL_EXPORT_${dep_package}_${dep_name_to_use} TRUE CACHE INTERNAL "")
 		# for install variables do the same as for native package => external info will be deduced from external component description
-		configure_Install_Variables(${DECLARED_COMP} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables_From_Dependency(${DECLARED_COMP} ${export} "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "" "" "")
 	else()
 		# for install variables do the same as for native package => external info will be deduced from external component description
-		configure_Install_Variables(${DECLARED_COMP} ${export} "" "" "" "${comp_exp_defs}" "" "" "" "" "" "")
+		configure_Install_Variables_From_Dependency(${DECLARED_COMP} ${export} "" "" "" "${comp_exp_defs}" "" "" "" "" "" "" "" "")
 	endif()
 
 elseif(	${PROJECT_NAME}_${DECLARED_COMP}_TYPE STREQUAL "HEADER") #a pure header component
@@ -2482,7 +2441,7 @@ elseif(	${PROJECT_NAME}_${DECLARED_COMP}_TYPE STREQUAL "HEADER") #a pure header 
 	set(${PROJECT_NAME}_${DECLARED_COMP}_EXTERNAL_EXPORT_${dep_package}_${dep_name_to_use} TRUE CACHE INTERNAL "") #export is necessarily true for a pure header library
 	#prepare the dependancy export
 	fill_Component_Target_With_External_Component_Dependency(${DECLARED_COMP} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE} TRUE "" "${comp_exp_defs}" "${dep_defs}")
-	configure_Install_Variables(${DECLARED_COMP} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "")
+	configure_Install_Variables_From_Dependency(${DECLARED_COMP} TRUE "" "" "${dep_defs}" "${comp_exp_defs}" "" "" "" "" "" "" "" "")
 else()
 	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${DECLARED_COMP}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 endif()
@@ -2604,12 +2563,19 @@ endfunction(declare_System_Component_Dependency_Using_Configuration)
 #     :shared_links: list of path to shared libraries or linker options (may be left empty).
 #
 #     :c_standard: the C language standard to use because of the dependency (may be left empty).
+##
+#     :c_max_standard: max C language standard allowed when using the dependency (may be left empty).
 #
 #     :cxx_standard: the C++ language standard to use because of the dependency (may be left empty).
 #
+#     :cxx_max_standard: max C++ language standard allowed when using the dependency (may be left empty).
+#
 #     :runtime_resources: set of path to files or folder used at runtime (may be left empty).
 #
-function(declare_System_Component_Dependency component export inc_dirs lib_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links c_standard cxx_standard runtime_resources)
+function(declare_System_Component_Dependency component export inc_dirs lib_dirs comp_defs comp_exp_defs dep_defs
+                                             compiler_options static_links shared_links
+																					   c_standard c_max_standard cxx_standard cxx_max_standard
+																					 	 runtime_resources)
 set(DECLARED_COMP)
 is_Declared(${component} DECLARED_COMP)
 if(NOT DECLARED_COMP)
@@ -2629,21 +2595,21 @@ is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${DECLARED_COMP})
 
 if (IS_HF_COMP) #no header to the component
 	if(COMP_WILL_BE_INSTALLED)
-		configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "" "" "" "" "" "" "${runtime_resources}")
+		configure_Install_Variables_From_Dependency(${DECLARED_COMP} FALSE "" "" "" "" "" "" "" "" "" "" "" "${runtime_resources}")
 	endif()
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${DECLARED_COMP} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+	fill_Component_Target_With_External_Dependency(${DECLARED_COMP} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${c_max_standard}" "${cxx_standard}" "${cxx_max_standard}")
 elseif(IS_BUILT_COMP)
 	#prepare the dependancy export
-	configure_Install_Variables(${DECLARED_COMP} ${export} "${inc_dirs}" "${lib_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}")
+	configure_Install_Variables_From_Dependency(${DECLARED_COMP} ${export} "${inc_dirs}" "${lib_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${c_max_standard}" "${cxx_standard}" "${cxx_max_standard}" "${runtime_resources}")
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${DECLARED_COMP} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+	fill_Component_Target_With_External_Dependency(${DECLARED_COMP} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${c_max_standard}" "${cxx_standard}" "${cxx_max_standard}")
 
 elseif(	${PROJECT_NAME}_${DECLARED_COMP}_TYPE STREQUAL "HEADER")
 	#prepare the dependancy export
-	configure_Install_Variables(${DECLARED_COMP} TRUE "${inc_dirs}" "${lib_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}") #export is necessarily true for a pure header library
+	configure_Install_Variables_From_Dependency(${DECLARED_COMP} TRUE "${inc_dirs}" "${lib_dirs}" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${c_max_standard}" "${cxx_standard}" "${cxx_max_standard}" "${runtime_resources}") #export is necessarily true for a pure header library
 	# setting compile definitions for the target
-	fill_Component_Target_With_External_Dependency(${DECLARED_COMP} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+	fill_Component_Target_With_External_Dependency(${DECLARED_COMP} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "${lib_dirs}" "${shared_links}" "${static_links}" "${c_standard}" "${c_max_standard}" "${cxx_standard}" "${cxx_max_standard}")
 else()
 	message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${DECLARED_COMP}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 endif()
@@ -2659,7 +2625,9 @@ endfunction(declare_System_Component_Dependency)
 #  declare_External_Package_Component_Dependency
 #  ---------------------------------------------
 #
-#   .. command:: declare_External_Package_Component_Dependency(component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links c_standard cxx_standard runtime_resources)
+#   .. command:: declare_External_Package_Component_Dependency(component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs
+#                                                              compiler_options static_links shared_links
+#																														   c_standard c_max_standard cxx_standard cxx_max_standard runtime_resources)
 #
 #     Specify a dependency between a component of the currently defined native package and the content of an external package.
 #     details: declare an external dependancy that does not create new targets, but directly configures the component with adequate flags coming from dep_package.
@@ -2687,11 +2655,17 @@ endfunction(declare_System_Component_Dependency)
 #
 #     :c_standard: the C language standard to use because of the dependency (may be let empty).
 #
+#     :c_max_standard: max C language standard allowed when using the dependency (may be let empty).
+#
 #     :cxx_standard: the C++ language standard to use because of the dependency (may be let empty).
+#
+#     :cxx_max_standard: max C++ language standard allowed when using the dependency (may be let empty).
 #
 #     :runtime_resources: st of path to files or folder used at runtime relative to dep_package root dir (may be let empty).
 #
-function(declare_External_Package_Component_Dependency component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs compiler_options static_links shared_links c_standard cxx_standard runtime_resources)
+function(declare_External_Package_Component_Dependency component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs
+																											compiler_options static_links shared_links
+																										  c_standard c_max_standard cxx_standard cxx_max_standard runtime_resources)
 set(DECLARED_COMP)
 is_Declared(${component} DECLARED_COMP)
 if(NOT DECLARED_COMP)
@@ -2714,20 +2688,20 @@ else()
 
 	if (IS_HF_COMP)
 		if(COMP_WILL_BE_INSTALLED)
-			configure_Install_Variables(${DECLARED_COMP} FALSE "" "" "" "" "" "" "${shared_links}" "" "" "${runtime_resources}")
+			configure_Install_Variables_From_Dependency(${DECLARED_COMP} FALSE "" "" "" "" "" "" "${shared_links}" "" "" "" "" "${runtime_resources}")
 		endif()
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${DECLARED_COMP} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+		fill_Component_Target_With_External_Dependency(${DECLARED_COMP} FALSE "${comp_defs}" "" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "" "${shared_links}" "${static_links}" "${c_standard}" "${c_max_standard}" "${cxx_standard}" "${cxx_max_standard}")
 	elseif(IS_BUILT_COMP)
 		#prepare the dependancy export
-		configure_Install_Variables(${DECLARED_COMP} ${export} "${inc_dirs}" "" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}")
+		configure_Install_Variables_From_Dependency(${DECLARED_COMP} ${export} "${inc_dirs}" "" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${c_max_standard}" "${cxx_standard}" "${cxx_max_standard}" "${runtime_resources}")
 		# setting compile definitions for the target
-		fill_Component_Target_With_External_Dependency(${DECLARED_COMP} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+		fill_Component_Target_With_External_Dependency(${DECLARED_COMP} ${export} "${comp_defs}" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "" "${shared_links}" "${static_links}" "${c_standard}" "${c_max_standard}" "${cxx_standard}" "${cxx_max_standard}")
 	elseif(	${PROJECT_NAME}_${DECLARED_COMP}_TYPE STREQUAL "HEADER")
 		#prepare the dependancy export
-		configure_Install_Variables(${DECLARED_COMP} TRUE "${inc_dirs}" "" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${cxx_standard}" "${runtime_resources}") #export is necessarily true for a pure header library
+		configure_Install_Variables_From_Dependency(${DECLARED_COMP} TRUE "${inc_dirs}" "" "${dep_defs}" "${comp_exp_defs}" "${compiler_options}" "${static_links}" "${shared_links}" "${c_standard}" "${c_max_standard}" "${cxx_standard}" "${cxx_max_standard}" "${runtime_resources}") #export is necessarily true for a pure header library
 		# setting compile definitions for the "fake" target
-		fill_Component_Target_With_External_Dependency(${DECLARED_COMP} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "" "${shared_links}" "${static_links}" "${c_standard}" "${cxx_standard}")
+		fill_Component_Target_With_External_Dependency(${DECLARED_COMP} TRUE "" "${comp_exp_defs}" "${dep_defs}" "${inc_dirs}" "${compiler_options}" "" "${shared_links}" "${static_links}" "${c_standard}" "${c_max_standard}" "${cxx_standard}" "${cxx_max_standard}")
 	else()
 		message (FATAL_ERROR "[PID] CRITICAL ERROR when building ${component} in ${PROJECT_NAME} : unknown type (${${PROJECT_NAME}_${DECLARED_COMP}_TYPE}) for component ${component} in package ${PROJECT_NAME}.")
 	endif()

@@ -591,7 +591,9 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEFINITIONS \"${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEFINITIONS}\" CACHE INTERNAL \"\")\n")
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_OPTIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_OPTIONS} CACHE INTERNAL \"\")\n")
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_C_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_C_STANDARD} CACHE INTERNAL \"\")\n")
+		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_C_MAX_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_C_MAX_STANDARD} CACHE INTERNAL \"\")\n")
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_STANDARD} CACHE INTERNAL \"\")\n")
+		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_MAX_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_MAX_STANDARD} CACHE INTERNAL \"\")\n")
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_RUNTIME_RESOURCES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
 
 		#manage information related to system dependencies
@@ -601,7 +603,9 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_OPTIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_OPTIONS} CACHE INTERNAL \"\")\n")
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_LINKS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_LINKS} CACHE INTERNAL \"\")\n")
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_C_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_C_STANDARD} CACHE INTERNAL \"\")\n")
+		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_C_MAX_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_C_MAX_STANDARD} CACHE INTERNAL \"\")\n")
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_CXX_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_CXX_STANDARD} CACHE INTERNAL \"\")\n")
+		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_CXX_MAX_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_CXX_MAX_STANDARD} CACHE INTERNAL \"\")\n")
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_RUNTIME_RESOURCES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
 
 		#manage information related to internal dependencies
@@ -628,7 +632,9 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_DEFINITIONS \"${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_DEFINITIONS}\" CACHE INTERNAL \"\")\n")
 			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_OPTIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_OPTIONS} CACHE INTERNAL \"\")\n")
 			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_STANDARD} CACHE INTERNAL \"\")\n")
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_MAX_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_MAX_STANDARD} CACHE INTERNAL \"\")\n")
 			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_STANDARD} CACHE INTERNAL \"\")\n")
+			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_MAX_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_MAX_STANDARD} CACHE INTERNAL \"\")\n")
 			file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_RUNTIME_RESOURCES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
 		endforeach()
 	endforeach()
@@ -1177,7 +1183,7 @@ add_External_Package_Dependency_To_Wrapper(${CURRENT_MANAGED_VERSION} ${dep_pack
 if(NOT list_of_versions) # no version constraint specified
 	set(message_str "Select version of dependency ${dep_package} to be used by entering either keyword ANY or a valid version number.")
 else()#there are version specified
-	fill_String_From_List(list_of_versions available_versions) #get available version as a string (used to print them)
+	fill_String_From_List(available_versions list_of_versions ", ") #get available version as a string (used to print them)
 	set(message_str "Select the version of dependency ${dep_package} to be used among versions: ${available_versions}.")
 	list(LENGTH list_of_versions SIZE)
 	list(GET list_of_versions 0 default_version) #by defaut this is the first element in the list that is taken
@@ -1323,15 +1329,19 @@ endfunction(declare_Wrapped_External_Dependency)
 #
 #      :options: the list of compiler options that must be used when using the component.
 #
-#      :c_standard: the C language standard in use (may be empty).
+#      :c_standard: the C language standard used by the component (may be empty).
 #
-#      :cxx_standard: the C++ language standard that is mandatory when using the component.
+#      :c_max_standard: max C language standard allowed when using the component.
+#
+#      :cxx_standard: the C++ language standard used by the component.
+#
+#      :cxx_max_standard: max C++ language standard allowd when using the component.
 #
 #      :runtime_resources: the list of path to file and folder used at runtime by the component, relative to external package root install folder.
 #
 #      :aliases: the list of alias of the component.
 #
-function(declare_Wrapped_Component component shared_links soname static_links includes definitions options c_standard cxx_standard runtime_resources aliases)
+function(declare_Wrapped_Component component shared_links soname static_links includes definitions options c_standard c_max_standard cxx_standard cxx_max_standard runtime_resources aliases)
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENTS ${component})
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SHARED_LINKS ${shared_links} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SONAME ${soname} CACHE INTERNAL "")
@@ -1342,6 +1352,8 @@ set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${compone
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_OPTIONS ${options} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_C_STANDARD ${c_standard} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_CXX_STANDARD ${cxx_standard} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_C_MAX_STANDARD ${c_max_standard} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_CXX_MAX_STANDARD ${cxx_max_standard} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_RUNTIME_RESOURCES ${runtime_resources} CACHE INTERNAL "")
 if(aliases)
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_ALIASES "${aliases}")
@@ -1382,7 +1394,7 @@ escape_Guillemet_From_String(definitions)#special case, definition may contain c
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_${dependency_component}_DEFINITIONS "${definitions}")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_${dependency_component}_EXPORTED ${exported} CACHE INTERNAL "")
 endfunction(declare_Wrapped_Component_Dependency_To_Explicit_Component)
-
+###MARK 1
 #.rst:
 #
 # .. ifmode:: internal
@@ -1413,11 +1425,15 @@ endfunction(declare_Wrapped_Component_Dependency_To_Explicit_Component)
 #
 #      :c_standard: the C language standard in use (may be empty).
 #
+#      :c_max_standard: max C language standard allowed when using the component.
+#
 #      :cxx_standard: the C++ language standard that is mandatory when using the component.
+#
+#      :cxx_max_standard: max C++ language standard allowed when using the component.
 #
 #      :runtime_resources: the list of path to file and folder used at runtime by the component, relative to external package dependency root install folder.
 #
-function(declare_Wrapped_Component_Dependency_To_Implicit_Components component package includes shared static definitions options c_standard cxx_standard runtime_resources)
+function(declare_Wrapped_Component_Dependency_To_Implicit_Components component package includes shared static definitions options c_standard c_max_standard cxx_standard cxx_max_standard runtime_resources)
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCIES ${package})
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_INCLUDES "${includes}")
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_SHARED "${shared}")
@@ -1425,10 +1441,48 @@ append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_
 escape_Guillemet_From_String(definitions)#special case, definition may contain complex string exprtession that we may want to escape using \". We generally want to preserve these espaces
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_DEFINITIONS "${definitions}")
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_OPTIONS "${options}")
-set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_STANDARD "${c_standard}" CACHE INTERNAL "")
-set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_STANDARD "${cxx_standard}" CACHE INTERNAL "")
+#Note: no need to resolve standards here as it is purelely descriptive => will be resolved during at begiinning of build process
+if(c_standard OR cxx_standard)#C or C++ standard is set
+	if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_STANDARD
+		OR ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_STANDARD)
+
+		resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
+											 "${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_STANDARD}" "${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_MAX_STANDARD}"
+											 "${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_STANDARD}" "${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_MAX_STANDARD}"
+											 "${c_standard}" "${c_max_standard}"
+											 "${cxx_standard}" "${cxx_max_standard}")
+
+		if(ERR)
+		 if(ERR STREQUAL "CRITICAL")
+			 finish_Progress(${GLOBAL_PROGRESS_VAR})
+			 message(FATAL_ERROR "[PID] CRITICAL ERROR: in ${PROJECT_NAME} when declaring direct dependency to package ${package} for component ${component}: ${MESS}")
+		 else()#warning
+			 message("[PID] WARNING: in ${PROJECT_NAME} when declaring direct dependency to package ${package} for component ${component}: ${MESS}")
+		 endif()
+		endif()
+		if(NEW_C_STD)
+			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_STANDARD ${NEW_C_STD} CACHE INTERNAL "")
+		endif()
+		if(NEW_C_MAX_STD)
+			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_MAX_STANDARD ${NEW_C_MAX_STD} CACHE INTERNAL "")
+		endif()
+		if(NEW_CXX_STD)
+			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_STANDARD ${NEW_CXX_STD} CACHE INTERNAL "")
+		endif()
+		if(NEW_CXX_MAX_STD)
+			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_MAX_STANDARD ${NEW_CXX_MAX_STD} CACHE INTERNAL "")
+		endif()
+	else()
+		#sumply directly write the standards
+		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_STANDARD "${c_standard}" CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_STANDARD "${cxx_standard}" CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_C_MAX_STANDARD "${c_max_standard}" CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_CXX_MAX_STANDARD "${cxx_max_standard}" CACHE INTERNAL "")
+	endif()
+endif()
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEPENDENCY_${package}_CONTENT_RUNTIME_RESOURCES "${runtime_resources}" CACHE INTERNAL "")
 endfunction(declare_Wrapped_Component_Dependency_To_Implicit_Components)
+###MARK 2
 
 #.rst:
 #
@@ -1489,24 +1543,62 @@ endfunction(declare_Wrapped_Component_Internal_Dependency)
 #
 #      :c_std: the C language standard in use (may be empty).May be defined as a configuration variable.
 #
+#      :c_max_std: max C language standard allowed when using the component.
+#
 #      :cxx_std: the C++ language standard that is mandatory when using the component. May be defined as a configuration variable.
+#
+#      :cxx_max_std: max C++ language standard allowed when using the component.
 #
 #      :resources: the list of absolute path to file and folder used at runtime by the component. May be defined as a configuration variable.
 #
-function(declare_Wrapped_Component_System_Dependency component includes lib_dirs links defs opts c_std cxx_std resources)
+function(declare_Wrapped_Component_System_Dependency component includes lib_dirs links defs opts c_std c_max_std cxx_std cxx_max_std resources)
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_INCLUDES "${includes}")
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_LIB_DIRS "${lib_dirs}")
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_LINKS "${links}")
 	escape_Guillemet_From_String(defs)#special case, definition may contain complex string exprtession that we may want to escape using \". We generally want to preserve these espaces
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_DEFINITIONS "${defs}")
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_OPTIONS "${opts}")
-	set(curr_std_c ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_C_STANDARD})
-	take_Greater_C_Standard_Version(curr_std_c c_std)
-	set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_C_STANDARD ${curr_std_c} CACHE INTERNAL "")
 
-	set(curr_std_cxx ${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_CXX_STANDARD})
-	take_Greater_CXX_Standard_Version(curr_std_cxx cxx_std)
-	set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_CXX_STANDARD ${curr_std_cxx} CACHE INTERNAL "")
+	#Note: for system dependencies we need to resolve since there may have many dependencies each having their own constraints on standards (even if obviously very rare)
+	if(c_std OR cxx_std)#C or C++ standard is set
+		if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_C_STANDARD
+			 OR ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_CXX_STANDARD)
+
+			resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
+												 "${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_C_STANDARD}" "${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_C_MAX_STANDARD}"
+												 "${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_CXX_STANDARD}" "${${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_CXX_MAX_STANDARD}"
+												 "${c_std}" "${c_max_std}"
+												 "${cxx_std}" "${cxx_max_std}")
+
+
+		  if(ERR)
+		   if(ERR STREQUAL "CRITICAL")
+		     finish_Progress(${GLOBAL_PROGRESS_VAR})
+		     message(FATAL_ERROR "[PID] CRITICAL ERROR: in ${PROJECT_NAME} when declaring system dependency for component ${component}: ${MESS}")
+		   else()#warning
+		     message("[PID] WARNING: when declaring system dependency for component ${component}: ${MESS}")
+		   endif()
+		  endif()
+			if(NEW_C_STD)
+				set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_C_STANDARD ${NEW_C_STD} CACHE INTERNAL "")
+			endif()
+			if(NEW_C_MAX_STD)
+				set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_C_MAX_STANDARD ${NEW_C_MAX_STD} CACHE INTERNAL "")
+			endif()
+			if(NEW_CXX_STD)
+				set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_CXX_STANDARD ${NEW_CXX_STD} CACHE INTERNAL "")
+			endif()
+			if(NEW_CXX_MAX_STD)
+				set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_CXX_MAX_STANDARD ${NEW_CXX_MAX_STD} CACHE INTERNAL "")
+			endif()
+		else()
+			#sumply directly write the standards
+			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_C_STANDARD ${c_std} CACHE INTERNAL "")
+			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_C_MAX_STANDARD ${c_max_std} CACHE INTERNAL "")
+			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_CXX_STANDARD ${cxx_std} CACHE INTERNAL "")
+			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_CXX_MAX_STANDARD ${cxx_max_std} CACHE INTERNAL "")
+		endif()
+	endif()
 
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_RUNTIME_RESOURCES "${resources}")
 endfunction(declare_Wrapped_Component_System_Dependency)
@@ -1644,7 +1736,7 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 	endforeach()
 	if(list_of_lang_checks)
 		file(APPEND ${file_for_version} "#description of external package ${package} version ${version} required language configurations\n")
-		fill_String_From_List(list_of_lang_checks RES_CONFIG)
+		fill_String_From_List(RES_CONFIG list_of_lang_checks " ")
 		file(APPEND ${file_for_version} "check_PID_External_Package_Language(PACKAGE ${package} CONFIGURATION ${RES_CONFIG})\n")
 	endif()
 
@@ -1662,7 +1754,7 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 	endforeach()
 	if(list_of_platform_checks)
 		file(APPEND ${file_for_version} "#description of external package ${package} version ${version} required platform configurations\n")
-		fill_String_From_List(list_of_platform_checks RES_CONFIG)
+		fill_String_From_List(RES_CONFIG list_of_platform_checks " ")
 		file(APPEND ${file_for_version} "check_PID_External_Package_Platform(PACKAGE ${package} PLATFORM ${platform} CONFIGURATION ${RES_CONFIG})\n")
 	endif()
 
@@ -1720,7 +1812,7 @@ endfunction(generate_External_Use_File_For_Version)
 #
 function(generate_Description_For_External_Component_Internal_Dependency file_for_version package version component dependency)
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency}_DEFINITIONS)
-	fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency}_DEFINITIONS RES_STR)
+	fill_String_From_List(RES_STR ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INTERNAL_DEPENDENCY_${dependency}_DEFINITIONS " ")
 	set(defs " DEFINITIONS ${RES_STR}")
 else()
 	set(defs "")
@@ -1763,7 +1855,7 @@ if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${exter
 		#managing each component individually
 		set(defs "")
 		if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_${dep_component}_DEFINITIONS)
-			fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_${dep_component}_DEFINITIONS RES_STR)
+			fill_String_From_List(RES_STR ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_${dep_component}_DEFINITIONS " ")
 			set(defs "DEFINITIONS ${RES_STR}")
 		endif()
 		if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_${dep_component}_EXPORTED)
@@ -1778,35 +1870,35 @@ endif()
 #direct package relationship described (without using explicit components for instance because they are not described)
 set(package_rel_to_write FALSE)
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_INCLUDES)
-	fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_INCLUDES RES_INC)
+	fill_String_From_List(RES_INC ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_INCLUDES " ")
 	set(includes " INCLUDES ${RES_INC}")
 	set(package_rel_to_write TRUE)
 else()
 	set(includes "")
 endif()
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_SHARED)
-	fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_SHARED RES_SHARED)
+	fill_String_From_List(RES_SHARED ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_SHARED " ")
 	set(shared " SHARED_LINKS ${RES_SHARED}")
 	set(package_rel_to_write TRUE)
 else()
 	set(shared "")
 endif()
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_STATIC)
-	fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_STATIC RES_STATIC)
+	fill_String_From_List(RES_STATIC ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_STATIC " ")
 	set(static " STATIC_LINKS ${RES_STATIC}")
 	set(package_rel_to_write TRUE)
 else()
 	set(static "")
 endif()
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_DEFINITIONS)
-	fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_DEFINITIONS RES_DEFS)
+	fill_String_From_List(RES_DEFS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_DEFINITIONS " ")
 	set(defs " DEFINITIONS ${RES_DEFS}")
 	set(package_rel_to_write TRUE)
 else()
 	set(defs "")
 endif()
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_OPTIONS)
-	fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_OPTIONS RES_OPTS)
+	fill_String_From_List(RES_OPTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_OPTIONS " ")
 	set(opts " COMPILER_OPTIONS ${RES_OPTS}")
 	set(package_rel_to_write TRUE)
 else()
@@ -1818,21 +1910,33 @@ if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${exter
 else()
 	set(c_std "")
 endif()
+if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_C_MAX_STANDARD)
+	set(c_max_std " C_MAX_STANDARD ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_C_MAX_STANDARD}")
+	set(package_rel_to_write TRUE)
+else()
+	set(c_max_std "")
+endif()
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_CXX_STANDARD)
 	set(cxx_std " CXX_STANDARD ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_CXX_STANDARD}")
 	set(package_rel_to_write TRUE)
 else()
 	set(cxx_std "")
 endif()
+if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_CXX_MAX_STANDARD)
+	set(cxx_max_std " CXX_MAX_STANDARD ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_CXX_MAX_STANDARD}")
+	set(package_rel_to_write TRUE)
+else()
+	set(cxx_max_std "")
+endif()
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_RUNTIME_RESOURCES)
-	fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_RUNTIME_RESOURCES RES_RESOURCES)
+	fill_String_From_List(RES_RESOURCES ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEPENDENCY_${external_package_dependency}_CONTENT_RUNTIME_RESOURCES " ")
 	set(resources " RUNTIME_RESOURCES ${RES_RESOURCES}")
 	set(package_rel_to_write TRUE)
 else()
 	set(resources "")
 endif()
 if(package_rel_to_write)#write all the imported stuff from another external package in one call
-file(APPEND ${file_for_version} "declare_PID_External_Component_Dependency(PACKAGE ${package} COMPONENT ${component} EXTERNAL ${external_package_dependency}${includes}${lib_dirs}${shared}${static}${defs}${opts}${c_std}${cxx_std}${resources})\n")
+	file(APPEND ${file_for_version} "declare_PID_External_Component_Dependency(PACKAGE ${package} COMPONENT ${component} EXTERNAL ${external_package_dependency}${includes}${lib_dirs}${shared}${static}${defs}${opts}${c_std}${c_max_std}${cxx_std}${cxx_max_std}${resources})\n")
 endif()
 endfunction(generate_Description_For_External_Component_Dependency)
 
@@ -1863,7 +1967,7 @@ function(generate_Description_For_External_Component_System_Dependency file_for_
 #direct system dependencies
 set(package_rel_to_write FALSE)
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_INCLUDES)
-	fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_INCLUDES RES_INCS)
+	fill_String_From_List(RES_INCS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_INCLUDES " ")
 	set(includes " INCLUDES ${RES_INCS}")
 	set(package_rel_to_write TRUE)
 else()
@@ -1871,7 +1975,7 @@ else()
 endif()
 
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_LIB_DIRS)
-	fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_LIB_DIRS RES_DIRS)
+	fill_String_From_List(RES_DIRS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_LIB_DIRS " ")
 	set(lib_dirs " LIBRARY_DIRS ${RES_DIRS}")
 	set(package_rel_to_write TRUE)
 else()
@@ -1879,7 +1983,7 @@ else()
 endif()
 
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_LINKS)
-	fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_LINKS RES_LINKS)
+	fill_String_From_List(RES_LINKS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_LINKS " ")
 	set(shared " SHARED_LINKS ${RES_LINKS}")#by default all system links are considered as shared links
 	set(package_rel_to_write TRUE)
 else()
@@ -1887,14 +1991,14 @@ else()
 endif()
 
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_DEFINITIONS)
-	fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_DEFINITIONS RES_DEFS)
+	fill_String_From_List(RES_DEFS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_DEFINITIONS " ")
 	set(defs " DEFINITIONS ${RES_DEFS}")
 	set(package_rel_to_write TRUE)
 else()
 	set(defs "")
 endif()
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_OPTIONS)
-	fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_OPTIONS RES_OPTS)
+	fill_String_From_List(RES_OPTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_OPTIONS " ")
 	set(opts " COMPILER_OPTIONS ${RES_OPTS}")
 	set(package_rel_to_write TRUE)
 else()
@@ -1906,21 +2010,33 @@ if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_C_STANDARD)
 else()
 	set(c_std "")
 endif()
+if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_C_MAX_STANDARD)
+	set(c_max_std " C_MAX_STANDARD ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_C_MAX_STANDARD}")
+	set(package_rel_to_write TRUE)
+else()
+	set(c_max_std "")
+endif()
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_CXX_STANDARD)
 	set(cxx_std " CXX_STANDARD ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_CXX_STANDARD}")
 	set(package_rel_to_write TRUE)
 else()
 	set(cxx_std "")
 endif()
+if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_CXX_MAX_STANDARD)
+	set(cxx_max_std " CXX_MAX_STANDARD ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_CXX_MAX_STANDARD}")
+	set(package_rel_to_write TRUE)
+else()
+	set(cxx_max_std "")
+endif()
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_RUNTIME_RESOURCES)
-	fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_RUNTIME_RESOURCES RES_RESOURCES)
+	fill_String_From_List(RES_RESOURCES ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_RUNTIME_RESOURCES " ")
 	set(resources " RUNTIME_RESOURCES ${RES_RESOURCES}")
 	set(package_rel_to_write TRUE)
 else()
 	set(resources "")
 endif()
 if(package_rel_to_write)#write all the imported stuff from another external package in one call
-	file(APPEND ${file_for_version} "declare_PID_External_Component_Dependency(PACKAGE ${package} COMPONENT ${component} ${dependency}${includes}${lib_dirs}${shared}${static}${defs}${opts}${c_std}${cxx_std}${resources})\n")
+	file(APPEND ${file_for_version} "declare_PID_External_Component_Dependency(PACKAGE ${package} COMPONENT ${component} ${dependency}${includes}${lib_dirs}${shared}${static}${defs}${opts}${c_std}${c_max_std}${cxx_std}${cxx_max_std}${resources})\n")
 endif()
 endfunction(generate_Description_For_External_Component_System_Dependency)
 
@@ -2023,7 +2139,7 @@ function(generate_Description_For_External_Component file_for_version package pl
 				endif()
 		endforeach()
 
-		fill_String_From_List(final_list_of_shared RES_SHARED)
+		fill_String_From_List(RES_SHARED final_list_of_shared " ")
 		set(options_str " SHARED_LINKS ${RES_SHARED}")
 	endif()
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS)
@@ -2047,31 +2163,39 @@ function(generate_Description_For_External_Component file_for_version package pl
 				list(APPEND final_list_of_static "${static_lib_path}")
 			endif()
 		endforeach()
-		fill_String_From_List(final_list_of_static RES_STR)
+		fill_String_From_List(RES_STR final_list_of_static " ")
 		set(options_str "${options_str} STATIC_LINKS ${RES_STR}")
 	endif()
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INCLUDES)
-		fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INCLUDES RES_STR)
+		fill_String_From_List(RES_STR ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INCLUDES " ")
 		set(options_str "${options_str} INCLUDES ${RES_STR}")
 	endif()
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEFINITIONS)
-		fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEFINITIONS RES_STR)
+		fill_String_From_List(RES_STR ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEFINITIONS " ")
 		set(options_str "${options_str} DEFINITIONS ${RES_STR}")
 	endif()
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_OPTIONS)
-		fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_OPTIONS RES_STR)
+		fill_String_From_List(RES_STR ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_OPTIONS " ")
 		set(options_str "${options_str} OPTIONS ${RES_STR}")
 	endif()
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_C_STANDARD)
-		fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_C_STANDARD RES_STR)
+		fill_String_From_List(RES_STR ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_C_STANDARD " ")
 		set(options_str "${options_str} C_STANDARD ${RES_STR}")
 	endif()
+	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_C_MAX_STANDARD)
+		fill_String_From_List(RES_STR ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_C_MAX_STANDARD " ")
+		set(options_str "${options_str} C_MAX_STANDARD ${RES_STR}")
+	endif()
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_STANDARD)
-		fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_STANDARD RES_STR)
+		fill_String_From_List(RES_STR ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_STANDARD " ")
 		set(options_str "${options_str} CXX_STANDARD ${RES_STR}")
 	endif()
+	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_MAX_STANDARD)
+		fill_String_From_List(RES_STR ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_MAX_STANDARD " ")
+		set(options_str "${options_str} CXX_MAX_STANDARD ${RES_STR}")
+	endif()
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_RUNTIME_RESOURCES)
-		fill_String_From_List(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_RUNTIME_RESOURCES RES_STR)
+		fill_String_From_List(RES_STR ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_RUNTIME_RESOURCES " ")
 		set(options_str "${options_str} RUNTIME_RESOURCES ${RES_STR}")
 	endif()
 	#management of aliases
@@ -2082,7 +2206,7 @@ function(generate_Description_For_External_Component file_for_version package pl
 		endif()
 	endforeach()
 	if(alias_list)#there are aliases
-		fill_String_From_List(alias_list RES_ALIAS)
+		fill_String_From_List(RES_ALIAS alias_list " ")
 		set(options_str "${options_str} ALIAS ${RES_ALIAS}")
 	endif()
 	file(APPEND ${file_for_version} "declare_PID_External_Component(PACKAGE ${package} COMPONENT ${component}${options_str})\n")
@@ -2288,7 +2412,8 @@ endmacro(define_Wrapper_Framework_Contribution)
 #  agregate_All_Build_Info_For_Component
 #  -------------------------------------
 #
-#   .. command:: agregate_All_Build_Info_For_Component(package component mode RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_STD_C RES_STD_CXX RES_LINKS RES_RESOURCES)
+#   .. command:: agregate_All_Build_Info_For_Component(package component mode RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS
+#                                                       RES_STD_C RES_STD_MAX_C RES_STD_CXX RES_STD_MAX_CXX RES_LINKS RES_RESOURCES)
 #
 #    Agregate and get all information necessary to use the given component of the given external package, in a specific build mode (Debug or Release).
 #    Deduce the options than can be used when building an external package that depends on the target package based on the description provided by external package use file
@@ -2317,15 +2442,18 @@ endmacro(define_Wrapper_Framework_Contribution)
 #
 #      :RES_STD_C: the output variable containing the C language standard to set when using the component.
 #
+#      :RES_STD_MAX_C: the output variable containing the maximum C language standard allowed when using the component.
+#
 #      :RES_STD_CXX: the output variable containing the C++ language standard to set when using the component.
+#
+#      :RES_STD_MAX_CXX: the output variable containing the maximum C++ language standard allowed when using the component.
 #
 #      :RES_LINKS: the output variable containing all links to set when using the component.
 #
 #      :RES_RESOURCES: the output variable containing all runtime resources used by the component.
 #
-function(agregate_All_Build_Info_For_Component package component mode RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_STD_C RES_STD_CXX RES_LINKS RES_RESOURCES)
+function(agregate_All_Build_Info_For_Component package component mode RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_STD_C RES_STD_MAX_C RES_STD_CXX RES_STD_MAX_CXX RES_LINKS RES_RESOURCES)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-
 #the variables containing the adequate values are located in the use file of the package containing the component
 set(all_links ${${package}_${component}_STATIC_LINKS${VAR_SUFFIX}} ${${package}_${component}_SHARED_LINKS${VAR_SUFFIX}})
 set(all_definitions ${${package}_${component}_DEFS${VAR_SUFFIX}})
@@ -2334,11 +2462,18 @@ get_Library_Dirs_For_Links(all_lib_dirs ${package} all_links)
 list(APPEND all_lib_dirs ${${package}_${component}_LIB_DIRS${VAR_SUFFIX}})
 set(all_compiler_options ${${package}_${component}_OPTS${VAR_SUFFIX}})
 set(all_resources ${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}})
+
+#set the standard defined at component level
 set(c_std ${${package}_${component}_C_STANDARD${VAR_SUFFIX}})
+set(c_max_std ${${package}_${component}_C_MAX_STANDARD${VAR_SUFFIX}})
 set(cxx_std ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}})
+set(cxx_max_std ${${package}_${component}_CXX_MAX_STANDARD${VAR_SUFFIX}})
+
 foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	agregate_All_Build_Info_For_Component(${package} ${dep_component} ${mode}
-	INTERN_INCS INTERN_LIB_DIRS INTERN_DEFS INTERN_OPTS INTERN_STD_C INTERN_STD_CXX INTERN_LINKS INTERN_RESOURCES)
+	                                      INTERN_INCS INTERN_LIB_DIRS INTERN_DEFS INTERN_OPTS
+																				INTERN_STD_C INTERN_STD_MAX_C INTERN_STD_CXX INTERN_STD_MAX_CXX
+																				INTERN_LINKS INTERN_RESOURCES)
 
 	list(APPEND all_links ${INTERN_LINKS})
 	list(APPEND all_definitions ${INTERN_DEFS})
@@ -2346,15 +2481,45 @@ foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VA
 	list(APPEND all_lib_dirs ${INTERN_LIB_DIRS})
 	list(APPEND all_compiler_options ${INTERN_OPTS})
 	list(APPEND all_resources ${INTERN_RESOURCES})
-	list(APPEND c_std ${INTERN_STD_C})
-	list(APPEND cxx_std ${INTERN_STD_CXX})
+
+	#resolve the standard defined at dependent component level
+	if(INTERN_STD_C OR INTERN_STD_CXX)
+		resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
+											 "${c_std}" "${c_max_std}"
+											 "${cxx_std}" "${cxx_max_std}"
+											 "${INTERN_STD_C}" "${INTERN_STD_MAX_C}"
+											 "${INTERN_STD_CXX}" "${INTERN_STD_MAX_CXX}"
+										 )
+		if(ERR)
+		 if(ERR STREQUAL "CRITICAL")
+			 finish_Progress(${GLOBAL_PROGRESS_VAR})
+			 message(FATAL_ERROR "[PID] CRITICAL ERROR: when resolving standard to use for external component ${component} from package ${package} due to internal dependency to component (${dep_component}): ${MESS}")
+		 else()#warning
+			 message("[PID] WARNING: when resolving standard to use for external component ${component} from package ${package} due to internal dependency to component (${dep_component}): ${MESS}")
+		 endif()
+		endif()
+		if(NEW_C_STD)
+			set(c_std ${NEW_C_STD})
+		endif()
+		if(NEW_C_MAX_STD)
+			set(c_max_std ${NEW_C_MAX_STD})
+		endif()
+		if(NEW_CXX_STD)
+			set(cxx_std ${NEW_CXX_STD})
+		endif()
+		if(NEW_CXX_MAX_STD)
+			set(cxx_max_std ${NEW_CXX_MAX_STD})
+		endif()
+	endif()
 endforeach()
 
 #dealing with dependent package (do the recursion)
 foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
 		agregate_All_Build_Info_For_Component(${dep_package} ${dep_component} ${mode}
-			INTERN_INCS INTERN_LIB_DIRS INTERN_DEFS INTERN_OPTS INTERN_STD_C INTERN_STD_CXX INTERN_LINKS INTERN_RESOURCES)
+		                                      INTERN_INCS INTERN_LIB_DIRS INTERN_DEFS INTERN_OPTS
+		                                      INTERN_STD_C INTERN_STD_MAX_C INTERN_STD_CXX INTERN_STD_MAX_CXX
+		                                      INTERN_LINKS INTERN_RESOURCES)
 
 		list(APPEND all_links ${INTERN_LINKS})
 		list(APPEND all_definitions ${INTERN_DEFS})
@@ -2362,8 +2527,36 @@ foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_
 		list(APPEND all_lib_dirs ${INTERN_LIB_DIRS})
 		list(APPEND all_compiler_options ${INTERN_OPTS})
 		list(APPEND all_resources ${INTERN_RESOURCES})
-		list(APPEND c_std ${INTERN_STD_C})
-		list(APPEND cxx_std ${INTERN_STD_CXX})
+
+		#resolve the standard defined at dependent component level
+		if(INTERN_STD_C OR INTERN_STD_CXX)
+			resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
+												 "${c_std}" "${c_max_std}"
+												 "${cxx_std}" "${cxx_max_std}"
+												 "${INTERN_STD_C}" "${INTERN_STD_MAX_C}"
+												 "${INTERN_STD_CXX}" "${INTERN_STD_MAX_CXX}"
+											 )
+			if(ERR)
+			 if(ERR STREQUAL "CRITICAL")
+				 finish_Progress(${GLOBAL_PROGRESS_VAR})
+				 message(FATAL_ERROR "[PID] CRITICAL ERROR: when resolving standard to use for external component ${component} from package ${package} due to dependency ${dep_package}: ${MESS}")
+			 else()#warning
+				 message("[PID] WARNING: when resolving standard to use for external component ${component} from package ${package} due to dependency ${dep_package}: ${MESS}")
+			 endif()
+			endif()
+			if(NEW_C_STD)
+				set(c_std ${NEW_C_STD})
+			endif()
+			if(NEW_C_MAX_STD)
+				set(c_max_std ${NEW_C_MAX_STD})
+			endif()
+			if(NEW_CXX_STD)
+				set(cxx_std ${NEW_CXX_STD})
+			endif()
+			if(NEW_CXX_MAX_STD)
+				set(cxx_max_std ${NEW_CXX_MAX_STD})
+			endif()
+		endif()
 	endforeach()
 endforeach()
 
@@ -2373,18 +2566,18 @@ remove_Duplicates_From_List(all_lib_dirs)
 remove_Duplicates_From_List(all_definitions)
 remove_Duplicates_From_List(all_compiler_options)
 remove_Duplicates_From_List(all_links)
-remove_Duplicates_From_List(c_std)
-remove_Duplicates_From_List(cxx_std)
 remove_Duplicates_From_List(all_resources)
 
 set(${RES_INCS} ${all_includes} PARENT_SCOPE)
 set(${RES_LIB_DIRS} ${all_lib_dirs} PARENT_SCOPE)
 set(${RES_DEFS} ${all_definitions} PARENT_SCOPE)
 set(${RES_OPTS} ${all_compiler_options} PARENT_SCOPE)
-set(${RES_STD_C} ${c_std} PARENT_SCOPE)
-set(${RES_STD_CXX} ${cxx_std} PARENT_SCOPE)
 set(${RES_LINKS} ${all_links} PARENT_SCOPE)
 set(${RES_RESOURCES} ${all_resources} PARENT_SCOPE)
+set(${RES_STD_C} ${c_std} PARENT_SCOPE)
+set(${RES_STD_CXX} ${cxx_std} PARENT_SCOPE)
+set(${RES_STD_MAX_C} ${c_max_std} PARENT_SCOPE)
+set(${RES_STD_MAX_CXX} ${cxx_max_std} PARENT_SCOPE)
 endfunction(agregate_All_Build_Info_For_Component)
 
 
@@ -2420,8 +2613,39 @@ function(set_Build_Info_For_Dependency prefix dep_package component)
 	set(opts ${${prefix}_DEPENDENCY_${dep_package}_BUILD_COMPILER_OPTIONS})
 	set(rres ${${prefix}_DEPENDENCY_${dep_package}_BUILD_RUNTIME_RESOURCES})
 	set(c_std ${${prefix}_DEPENDENCY_${dep_package}_BUILD_C_STANDARD})
+	set(c_max_std ${${prefix}_DEPENDENCY_${dep_package}_BUILD_C_MAX_STANDARD})
 	set(cxx_std ${${prefix}_DEPENDENCY_${dep_package}_BUILD_CXX_STANDARD})
+	set(cxx_max_std ${${prefix}_DEPENDENCY_${dep_package}_BUILD_CXX_MAX_STANDARD})
 
+	if(${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_C_STANDARD
+	   OR ${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_CXX_STANDARD)# a constraint on standard is specified
+		resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
+											 "${c_std}" "${c_max_std}"
+											 "${cxx_std}" "${cxx_max_std}"
+											 "${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_C_STANDARD}" "${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_C_MAX_STANDARD}"
+											 "${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_CXX_STANDARD}" "${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_CXX_MAX_STANDARD}"
+										 )
+		if(ERR)
+		 if(ERR STREQUAL "CRITICAL")
+			 finish_Progress(${GLOBAL_PROGRESS_VAR})
+			 message(FATAL_ERROR "[PID] CRITICAL ERROR: when resolving standard to use for component ${component} from wrapper ${package} due to dependency ${dep_package}: ${MESS}")
+		 else()#warning
+			 message("[PID] WARNING: when resolving standard to use for component ${component} from wrapper ${package} due to dependency ${dep_package}: ${MESS}")
+		 endif()
+		endif()
+		if(NEW_C_STD)
+			set(c_std ${NEW_C_STD})
+		endif()
+		if(NEW_C_MAX_STD)
+			set(c_max_std ${NEW_C_MAX_STD})
+		endif()
+		if(NEW_CXX_STD)
+			set(cxx_std ${NEW_CXX_STD})
+		endif()
+		if(NEW_CXX_MAX_STD)
+			set(cxx_max_std ${NEW_CXX_MAX_STD})
+		endif()
+	endif()
 	# add the flags coming from direct dependencies to an external package content
 	list(APPEND links ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_SHARED} ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_STATIC})
 	list(APPEND includes ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_INCLUDES})
@@ -2429,21 +2653,45 @@ function(set_Build_Info_For_Dependency prefix dep_package component)
 	list(APPEND defs ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_DEFINITIONS})
 	list(APPEND opts ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_OPTIONS})
 	list(APPEND rres ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_RUNTIME_RESOURCES})
-	list(APPEND c_std ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_C_STANDARD})
-	list(APPEND cxx_std ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_CXX_STANDARD})
 
 	#add info comming from dependency between explicit components
 	foreach(dep_component IN LISTS ${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package})
 		agregate_All_Build_Info_For_Component(${dep_package} ${dep_component} Release
-		RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_STD_C RES_STD_CXX RES_LINKS RES_RESOURCES)
+		RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_STD_C RES_STD_MAX_C RES_STD_CXX RES_STD_MAX_CXX RES_LINKS RES_RESOURCES)
 		list(APPEND links ${RES_LINKS})
 		list(APPEND includes ${RES_INCS})
 		list(APPEND lib_dirs ${RES_LIB_DIRS})
 		list(APPEND defs ${RES_DEFS})
 		list(APPEND opts ${RES_OPTS})
 		list(APPEND rres ${RES_RESOURCES})
-		list(APPEND c_std ${RES_STD_C})
-		list(APPEND cxx_std ${RES_STD_CXX})
+		if(RES_STD_C OR RES_STD_CXX)
+			resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
+												 "${c_std}" "${c_max_std}"
+												 "${cxx_std}" "${cxx_max_std}"
+												 "${RES_STD_C}" "${RES_STD_MAX_C}"
+												 "${RES_STD_CXX}" "${RES_STD_MAX_CXX}"
+											 )
+			if(ERR)
+			 if(ERR STREQUAL "CRITICAL")
+				 finish_Progress(${GLOBAL_PROGRESS_VAR})
+				 message(FATAL_ERROR "[PID] CRITICAL ERROR: when resolving standard to use for component ${component} from wrapper ${package} due to component ${dep_component} of dependency ${dep_package}: ${MESS}")
+			 else()#warning
+				 message("[PID] WARNING: when resolving standard to use for component ${component} from wrapper ${package} due to component ${dep_component} of dependency ${dep_package}: ${MESS}")
+			 endif()
+			endif()
+			if(NEW_C_STD)
+				set(c_std ${NEW_C_STD})
+			endif()
+			if(NEW_C_MAX_STD)
+				set(c_max_std ${NEW_C_MAX_STD})
+			endif()
+			if(NEW_CXX_STD)
+				set(cxx_std ${NEW_CXX_STD})
+			endif()
+			if(NEW_CXX_MAX_STD)
+				set(cxx_max_std ${NEW_CXX_MAX_STD})
+			endif()
+		endif()
 	endforeach()
 
 	# evaluate variables in global variables, if any
@@ -2453,8 +2701,6 @@ function(set_Build_Info_For_Dependency prefix dep_package component)
 	evaluate_Variables_In_List(EVAL_BUILD_DEFS defs)
 	evaluate_Variables_In_List(EVAL_BUILD_OPTS opts)
 	evaluate_Variables_In_List(EVAL_BUILD_RRES rres)
-	evaluate_Variables_In_List(EVAL_BUILD_CSTD c_std)
-	evaluate_Variables_In_List(EVAL_BUILD_CXXSTD cxx_std)
 
 	#clean a bit the result, to avoid unecessary repetitions
 	remove_Duplicates_From_List(EVAL_BUILD_LNKS)
@@ -2463,8 +2709,6 @@ function(set_Build_Info_For_Dependency prefix dep_package component)
 	remove_Duplicates_From_List(EVAL_BUILD_DEFS)
 	remove_Duplicates_From_List(EVAL_BUILD_OPTS)
 	remove_Duplicates_From_List(EVAL_BUILD_RRES)
-	remove_Duplicates_From_List(EVAL_BUILD_CSTD)
-	remove_Duplicates_From_List(EVAL_BUILD_CXXSTD)
 
 	# resolve all path into absolute path if required (path to external package content)
 	resolve_External_Libs_Path(BUILD_COMPLETE_LINKS_PATH "${EVAL_BUILD_LNKS}" Release)
@@ -2481,8 +2725,10 @@ function(set_Build_Info_For_Dependency prefix dep_package component)
 	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_DEFINITIONS ${EVAL_BUILD_DEFS} CACHE INTERNAL "")
 	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_COMPILER_OPTIONS ${EVAL_BUILD_OPTS} CACHE INTERNAL "")
 	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_RUNTIME_RESOURCES ${EVAL_BUILD_RRES} CACHE INTERNAL "")
-	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_C_STANDARD ${EVAL_BUILD_CSTD} CACHE INTERNAL "")
-	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_CXX_STANDARD ${EVAL_BUILD_CXXSTD} CACHE INTERNAL "")
+	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_C_STANDARD ${c_std} CACHE INTERNAL "")
+	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_C_MAX_STANDARD ${c_max_std} CACHE INTERNAL "")
+	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_CXX_STANDARD ${cxx_std} CACHE INTERNAL "")
+	set(${prefix}_DEPENDENCY_${dep_package}_BUILD_CXX_MAX_STANDARD ${cxx_max_std} CACHE INTERNAL "")
 
 endfunction(set_Build_Info_For_Dependency)
 
@@ -2517,14 +2763,42 @@ function(set_Build_Info_For_Component package component version)
 	set(defs ${${prefix}_COMPONENT_${component}_SYSTEM_DEFINITIONS})
 	set(opts ${${prefix}_COMPONENT_${component}_SYSTEM_OPTIONS})
 
+	#build info may be specified on component they are required to enfore tha use of adequate build option
+	set(c_std ${${prefix}_COMPONENT_${component}_C_STANDARD})
+	set(c_max_std ${${prefix}_COMPONENT_${component}_C_MAX_STANDARD})
+	set(cxx_std ${${prefix}_COMPONENT_${component}_CXX_STANDARD})
+	set(cxx_max_std ${${prefix}_COMPONENT_${component}_CXX_MAX_STANDARD})
+
 	#standards need to be resolve for the component (including its own standard constraints) to get a finally usable language standard resolved
-	set(c_std ${${prefix}_COMPONENT_${component}_SYSTEM_C_STANDARD})
-	if(${prefix}_COMPONENT_${component}_C_STANDARD)
-		take_Greater_C_Standard_Version(c_std ${prefix}_COMPONENT_${component}_C_STANDARD)
-	endif()
-	set(cxx_std ${${prefix}_COMPONENT_${component}_SYSTEM_CXX_STANDARD})
-	if(${prefix}_COMPONENT_${component}_CXX_STANDARD)
-		take_Greater_CXX_Standard_Version(cxx_std ${prefix}_COMPONENT_${component}_CXX_STANDARD)
+	if(${prefix}_COMPONENT_${component}_SYSTEM_C_STANDARD
+		OR ${prefix}_COMPONENT_${component}_SYSTEM_CXX_STANDARD)
+
+		resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
+											 "${c_std}" "${c_max_std}"
+											 "${cxx_std}" "${cxx_max_std}"
+											 "${${prefix}_COMPONENT_${component}_SYSTEM_C_STANDARD}" "${${prefix}_COMPONENT_${component}_SYSTEM_C_MAX_STANDARD}"
+											 "${${prefix}_COMPONENT_${component}_SYSTEM_CXX_STANDARD}" "${${prefix}_COMPONENT_${component}_SYSTEM_CXX_MAX_STANDARD}"
+										 )
+		if(ERR)
+		 if(ERR STREQUAL "CRITICAL")
+			 finish_Progress(${GLOBAL_PROGRESS_VAR})
+			 message(FATAL_ERROR "[PID] CRITICAL ERROR: when resolving standard to use for component ${component} from wrapper ${package} due to system dependency: ${MESS}")
+		 else()#warning
+			 message("[PID] WARNING: when resolving standard to use for component ${component} from wrapper ${package} due to system dependency: ${MESS}")
+		 endif()
+		endif()
+		if(NEW_C_STD)
+			set(c_std ${NEW_C_STD})
+		endif()
+		if(NEW_C_MAX_STD)
+			set(c_max_std ${NEW_C_MAX_STD})
+		endif()
+		if(NEW_CXX_STD)
+			set(cxx_std ${NEW_CXX_STD})
+		endif()
+		if(NEW_CXX_MAX_STD)
+			set(cxx_max_std ${NEW_CXX_MAX_STD})
+		endif()
 	endif()
 
 	set(res ${${prefix}_COMPONENT_${component}_SYSTEM_RUNTIME_RESOURCES})
@@ -2542,37 +2816,119 @@ function(set_Build_Info_For_Component package component version)
 		list(APPEND defs ${${prefix}_COMPONENT_${dep_component}_BUILD_DEFINITIONS})
 		list(APPEND opts ${${prefix}_COMPONENT_${dep_component}_BUILD_COMPILER_OPTIONS})
 		list(APPEND res ${${prefix}_COMPONENT_${dep_component}_BUILD_RUNTIME_RESOURCES})
-		list(APPEND c_std ${${prefix}_COMPONENT_${dep_component}_BUILD_C_STANDARD})
-		list(APPEND cxx_std ${${prefix}_COMPONENT_${dep_component}_BUILD_CXX_STANDARD})
+
+		#need to deal with standards
+		resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
+											 "${c_std}" "${c_max_std}"
+											 "${cxx_std}" "${cxx_max_std}"
+											 "${${prefix}_COMPONENT_${dep_component}_BUILD_C_STANDARD}" "${${prefix}_COMPONENT_${dep_component}_BUILD_C_MAX_STANDARD}"
+											 "${${prefix}_COMPONENT_${dep_component}_BUILD_CXX_STANDARD}" "${${prefix}_COMPONENT_${dep_component}_BUILD_CXX_MAX_STANDARD}"
+										 )
+		if(ERR)
+		 if(ERR STREQUAL "CRITICAL")
+			 finish_Progress(${GLOBAL_PROGRESS_VAR})
+			 message(FATAL_ERROR "[PID] CRITICAL ERROR: when resolving standard to use for component ${component} from wrapper ${package} due to internal dependency to component ${dep_component}: ${MESS}")
+		 else()#warning
+			 message("[PID] WARNING: when resolving standard to use for component ${component} from wrapper ${package} due to internal dependency to component ${dep_component}: ${MESS}")
+		 endif()
+		endif()
+		if(NEW_C_STD)
+			set(c_std ${NEW_C_STD})
+		endif()
+		if(NEW_C_MAX_STD)
+			set(c_max_std ${NEW_C_MAX_STD})
+		endif()
+		if(NEW_CXX_STD)
+			set(cxx_std ${NEW_CXX_STD})
+		endif()
+		if(NEW_CXX_MAX_STD)
+			set(cxx_max_std ${NEW_CXX_MAX_STD})
+		endif()
 	endforeach()
 
 	#dealing with dependencies between external packages
 	foreach(dep_package IN LISTS ${prefix}_COMPONENT_${component}_DEPENDENCIES)
 
-		set_Build_Info_For_Dependency(${prefix} ${dep_package} ${component})
+		set_Build_Info_For_Dependency(${prefix} ${dep_package} ${component})#resolve all build variables for dependency
 		######### continue collecting global build variables ##########
-		#add the direct use of package content within component (direct reference to includes defs, etc.)
+		#add the direct use of package content within component (direct reference to includes defs, etc.) when not using component description
 		list(APPEND links ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_SHARED} ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_STATIC})
 		list(APPEND includes ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_INCLUDES})
 		list(APPEND lib_dirs ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_LIB_DIRS})
 		list(APPEND defs ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_DEFINITIONS})
 		list(APPEND opts ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_OPTIONS})
 		list(APPEND res ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_RUNTIME_RESOURCES})
-		list(APPEND c_std ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_C_STANDARD})
-		list(APPEND cxx_std ${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_CXX_STANDARD})
+
+		if(${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_C_STANDARD
+				OR ${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_CXX_STANDARD)
+			#need to deal with standards
+			resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
+												 "${c_std}" "${c_max_std}"
+												 "${cxx_std}" "${cxx_max_std}"
+												 "${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_C_STANDARD}" "${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_C_MAX_STANDARD}"
+												 "${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_CXX_STANDARD}" "${${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package}_CONTENT_CXX_MAX_STANDARD}"
+											 )
+			if(ERR)
+			 if(ERR STREQUAL "CRITICAL")
+				 finish_Progress(${GLOBAL_PROGRESS_VAR})
+				 message(FATAL_ERROR "[PID] CRITICAL ERROR: when resolving standard to use for component ${component} from wrapper ${package} due to direct dependency to package ${dep_package}: ${MESS}")
+			 else()#warning
+				 message("[PID] WARNING: when resolving standard to use for component ${component} from wrapper ${package} due to direct dependency to package ${dep_package}: ${MESS}")
+			 endif()
+			endif()
+			if(NEW_C_STD)
+				set(c_std ${NEW_C_STD})
+			endif()
+			if(NEW_C_MAX_STD)
+				set(c_max_std ${NEW_C_MAX_STD})
+			endif()
+			if(NEW_CXX_STD)
+				set(cxx_std ${NEW_CXX_STD})
+			endif()
+			if(NEW_CXX_MAX_STD)
+				set(cxx_max_std ${NEW_CXX_MAX_STD})
+			endif()
+		endif()
 
 		#add info comming from dependency between explicit components
 		foreach(dep_component IN LISTS ${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package})
 			agregate_All_Build_Info_For_Component(${dep_package} ${dep_component} Release
-			RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_STD_C RES_STD_CXX RES_LINKS RES_RESOURCES)
+			RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_STD_C RES_STD_MAX_C RES_STD_CXX RES_STD_MAX_CXX RES_LINKS RES_RESOURCES)
 			list(APPEND links ${RES_LINKS})
 			list(APPEND includes ${RES_INCS})
 			list(APPEND lib_dirs ${RES_LIB_DIRS})
 			list(APPEND defs ${RES_DEFS})
 			list(APPEND opts ${RES_OPTS})
 			list(APPEND res ${RES_RESOURCES})
-			list(APPEND c_std ${RES_STD_C})
-			list(APPEND cxx_std ${RES_STD_CXX})
+			if(RES_STD_C OR RES_STD_CXX)
+				#need to deal with standards
+				resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
+													 "${c_std}" "${c_max_std}"
+													 "${cxx_std}" "${cxx_max_std}"
+													 "${RES_STD_C}" "${RES_STD_MAX_C}"
+													 "${RES_STD_CXX}" "${RES_STD_MAX_CXX}"
+												 )
+				if(ERR)
+				 if(ERR STREQUAL "CRITICAL")
+					 finish_Progress(${GLOBAL_PROGRESS_VAR})
+					 message(FATAL_ERROR "[PID] CRITICAL ERROR: when resolving standard to use for component ${component} from wrapper ${package} due to dependency to component ${dep_component} from package ${dep_package}: ${MESS}")
+				 else()#warning
+					 message("[PID] WARNING: when resolving standard to use for component ${component} from wrapper ${package} due to internal dependency to component ${dep_component} from package ${dep_package}: ${MESS}")
+				 endif()
+				endif()
+				if(NEW_C_STD)
+					set(c_std ${NEW_C_STD})
+				endif()
+				if(NEW_C_MAX_STD)
+					set(c_max_std ${NEW_C_MAX_STD})
+				endif()
+				if(NEW_CXX_STD)
+					set(cxx_std ${NEW_CXX_STD})
+				endif()
+				if(NEW_CXX_MAX_STD)
+					set(cxx_max_std ${NEW_CXX_MAX_STD})
+				endif()
+			endif()
 		endforeach()
 	endforeach()
 	#evaluate variables, if any
@@ -2582,8 +2938,6 @@ function(set_Build_Info_For_Component package component version)
 	evaluate_Variables_In_List(EVAL_DEFS defs)
 	evaluate_Variables_In_List(EVAL_OPTS opts)
 	evaluate_Variables_In_List(EVAL_RRES res)
-	evaluate_Variables_In_List(EVAL_CSTD c_std)
-	evaluate_Variables_In_List(EVAL_CXXSTD cxx_std)
 	#clean a bit the result, to avoid unecessary repetitions
 	remove_Duplicates_From_List(EVAL_LNKS)
 	remove_Duplicates_From_List(EVAL_INCS)
@@ -2591,17 +2945,6 @@ function(set_Build_Info_For_Component package component version)
 	remove_Duplicates_From_List(EVAL_DEFS)
 	remove_Duplicates_From_List(EVAL_OPTS)
 	remove_Duplicates_From_List(EVAL_RRES)
-	remove_Duplicates_From_List(EVAL_CSTD)
-	remove_Duplicates_From_List(EVAL_CXXSTD)
-	#deduce the best C and C++ standards to use
-	set(c_std)
-	set(cxx_std)
-	foreach(std IN LISTS EVAL_CSTD)
-		take_Greater_C_Standard_Version(c_std std)
-	endforeach()
-	foreach(std IN LISTS EVAL_CXXSTD)
-		take_Greater_CXX_Standard_Version(cxx_std std)
-	endforeach()
 	#resolbe all path into absolute path if required (path to external package content)
 	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${EVAL_LNKS}" Release)
 	resolve_External_Libs_Path(COMPLETE_LDIRS_PATH "${EVAL_LDIRS}" Release)
@@ -2614,7 +2957,9 @@ function(set_Build_Info_For_Component package component version)
 	set(${prefix}_COMPONENT_${component}_BUILD_DEFINITIONS "${EVAL_DEFS}" CACHE INTERNAL "")#guillemets are required for this
 	set(${prefix}_COMPONENT_${component}_BUILD_COMPILER_OPTIONS ${EVAL_OPTS} CACHE INTERNAL "")
 	set(${prefix}_COMPONENT_${component}_BUILD_C_STANDARD ${c_std} CACHE INTERNAL "")
+	set(${prefix}_COMPONENT_${component}_BUILD_C_MAX_STANDARD ${c_max_std} CACHE INTERNAL "")
 	set(${prefix}_COMPONENT_${component}_BUILD_CXX_STANDARD ${cxx_std} CACHE INTERNAL "")
+	set(${prefix}_COMPONENT_${component}_BUILD_CXX_MAX_STANDARD ${cxx_max_std} CACHE INTERNAL "")
 	set(${prefix}_COMPONENT_${component}_BUILD_LINKS ${COMPLETE_LINKS_PATH} CACHE INTERNAL "")
 	set(${prefix}_COMPONENT_${component}_BUILD_RUNTIME_RESOURCES ${EVAL_RRES} CACHE INTERNAL "")
 endfunction(set_Build_Info_For_Component)
@@ -2647,7 +2992,9 @@ function(configure_Wrapper_Build_Variables package version)
 	set(all_lib_dirs)
 	set(all_compiler_options)
 	set(c_std)
+	set(c_max_std)
 	set(cxx_std)
+	set(cxx_max_std)
 	set(all_resources)
 	##########################################################################################################################
 	#########################Build per component information and put everything in a simple global structure##################
@@ -2657,8 +3004,39 @@ function(configure_Wrapper_Build_Variables package version)
 
 	foreach(component IN LISTS ${prefix}_COMPONENTS)
 		set_Build_Info_For_Component(${package} ${component} ${version})
-		take_Greater_C_Standard_Version(c_std ${prefix}_COMPONENT_${component}_BUILD_C_STANDARD)
-		take_Greater_CXX_Standard_Version(cxx_std ${prefix}_COMPONENT_${component}_BUILD_CXX_STANDARD)
+		if(c_std OR cxx_std)#already set
+			resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
+												 "${c_std}" "${c_max_std}"
+												 "${cxx_std}" "${cxx_max_std}"
+												 "${${prefix}_COMPONENT_${component}_BUILD_C_STANDARD}" "${${prefix}_COMPONENT_${component}_BUILD_C_MAX_STANDARD}"
+												 "${${prefix}_COMPONENT_${component}_BUILD_CXX_STANDARD}" "${${prefix}_COMPONENT_${component}_BUILD_CXX_MAX_STANDARD}"
+											 )
+		  if(ERR)
+		   if(ERR STREQUAL "CRITICAL")
+		     finish_Progress(${GLOBAL_PROGRESS_VAR})
+		     message(FATAL_ERROR "[PID] CRITICAL ERROR: when getting final standard to use for wrapper ${package}, process stopped when getting component ${component} standard constraints: ${MESS}")
+		   else()#warning
+		     message("[PID] WARNING: when getting final standard to use for wrapper ${package}, process stopped when getting component ${component} standard constraints: ${MESS}")
+		   endif()
+		  endif()
+			if(NEW_C_STD)
+				set(${prefix}_COMPONENT_${component}_BUILD_C_STANDARD ${NEW_C_STD} CACHE INTERNAL "")
+			endif()
+			if(NEW_C_MAX_STD)
+				set(${prefix}_COMPONENT_${component}_BUILD_C_MAX_STANDARD ${NEW_C_MAX_STD} CACHE INTERNAL "")
+			endif()
+			if(NEW_CXX_STD)
+				set(${prefix}_COMPONENT_${component}_BUILD_CXX_STANDARD ${NEW_CXX_STD} CACHE INTERNAL "")
+			endif()
+			if(NEW_CXX_MAX_STD)
+				set(${prefix}_COMPONENT_${component}_BUILD_CXX_MAX_STANDARD ${NEW_CXX_MAX_STD} CACHE INTERNAL "")
+			endif()
+		else()#first time they are set
+			set(c_std ${${prefix}_COMPONENT_${component}_BUILD_C_STANDARD})
+			set(c_max_std ${${prefix}_COMPONENT_${component}_BUILD_C_MAX_STANDARD})
+			set(cxx_std ${${prefix}_COMPONENT_${component}_BUILD_CXX_STANDARD})
+			set(cxx_max_std ${${prefix}_COMPONENT_${component}_BUILD_CXX_MAX_STANDARD})
+		endif()
 		list(APPEND all_links ${${prefix}_COMPONENT_${component}_BUILD_LINKS})
 		list(APPEND all_definitions ${${prefix}_COMPONENT_${component}_BUILD_DEFINITIONS})
 		list(APPEND all_compiler_options ${${prefix}_COMPONENT_${component}_BUILD_COMPILER_OPTIONS})
@@ -2682,7 +3060,9 @@ function(configure_Wrapper_Build_Variables package version)
 	set(${prefix}_BUILD_DEFINITIONS "${all_definitions}" CACHE INTERNAL "")
 	set(${prefix}_BUILD_COMPILER_OPTIONS ${all_compiler_options} CACHE INTERNAL "")
 	set(${prefix}_BUILD_C_STANDARD ${c_std} CACHE INTERNAL "")
+	set(${prefix}_BUILD_C_MAX_STANDARD ${c_max_std} CACHE INTERNAL "")
 	set(${prefix}_BUILD_CXX_STANDARD ${cxx_std} CACHE INTERNAL "")
+	set(${prefix}_BUILD_CXX_MAX_STANDARD ${cxx_max_std} CACHE INTERNAL "")
 	set(${prefix}_BUILD_LINKS ${all_links} CACHE INTERNAL "")
 	set(${prefix}_BUILD_RUNTIME_RESOURCES ${all_resources} CACHE INTERNAL "")
 endfunction(configure_Wrapper_Build_Variables)

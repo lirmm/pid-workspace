@@ -621,7 +621,7 @@ foreach(cat IN LISTS ${PROJECT_NAME}_CATEGORIES)
 		foreach(name IN LISTS LIST_OF_NAMES)
 			extract_All_Words(${name} "_" NEW_NAMES)# replace underscores with spaces
 
-			fill_String_From_List(NEW_NAMES RES_STRING)
+			fill_String_From_List(RES_STRING NEW_NAMES " ")
 			set(FINAL_NAME "${FINAL_NAME} ${RES_STRING}")
 			math(EXPR SIZE "${SIZE}-1")
 			if(SIZE GREATER 0) #there is more than on categrization level remaining
@@ -632,7 +632,7 @@ foreach(cat IN LISTS ${PROJECT_NAME}_CATEGORIES)
 		file(APPEND ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "- name: \"${FINAL_NAME}\"\n  index: \"${cat}\"\n\n")
 	else()
 		extract_All_Words(${cat} "_" NEW_NAMES)# replace underscores with spaces
-		fill_String_From_List(NEW_NAMES RES_STRING)
+		fill_String_From_List(RES_STRING NEW_NAMES " ")
 		set(FINAL_NAME "${RES_STRING}")
 		file(APPEND ${CMAKE_BINARY_DIR}/to_generate/_data/categories.yml "- name: \"${FINAL_NAME}\"\n  index: \"${cat}\"\n\n")
 	endif()
@@ -803,11 +803,11 @@ else()
 
 	set(EXTERNAL_PACKAGE_NAME ${package})
 
-	fill_String_From_List(${package}_DESCRIPTION DESCRIPTION_STRING)
+	fill_String_From_List(DESCRIPTION_STRING ${package}_DESCRIPTION " ")
 	set(EXTERNAL_PACKAGE_DESCRIPTION ${DESCRIPTION_STRING})
 
-	fill_String_From_List(${package}_ORIGINAL_PROJECT_AUTHORS EXTERNAL_PACKAGE_AUTHORS)
-	fill_String_From_List(${package}_ORIGINAL_PROJECT_LICENSES EXTERNAL_PACKAGE_LICENSE)
+	fill_String_From_List(EXTERNAL_PACKAGE_AUTHORS ${package}_ORIGINAL_PROJECT_AUTHORS " ")
+	fill_String_From_List(EXTERNAL_PACKAGE_LICENSE ${package}_ORIGINAL_PROJECT_LICENSES " ")
 
 	# managing categories
 	if(NOT ${package}_CATEGORIES)

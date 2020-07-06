@@ -27,6 +27,8 @@ endif()
 set(WRAPPER_DEFINITION_INCLUDED TRUE)
 ##########################################################################################
 
+cmake_minimum_required(VERSION 3.1.3)
+
 get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
 set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
@@ -972,15 +974,17 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #
 #     .. rubric:: Optional parameters
 #
-#     :C_STANDARD <number of standard>: This argument is followed by the version of the C language standard to be used to build this component. The values may be 90, 99 or 11.
-#     :CXX_STANDARD <number of standard>: This argument is followed by the version of the C++ language standard to be used to build this component. The values may be 98, 11, 14 or 17. If not specified the version 98 is used.
-#     :SONAME <version number>: This argument allows to set the SONAME to use for that specific library instead of the default one.
-#     :DEFINITIONS <defs>: These are the preprocessor definitions used in the component’s interface.
-#     :INCLUDES <folders>: These are the include folder to pass to any component using the current component. Path are interpreted relative to the installed external package version root folder.
-#     :SHARED_LINKS <links>: These are shared link flags. Path are interpreted relative to the installed external package version root folder.
-#     :STATIC_LINKS <links>: These are static link flags. Path are interpreted relative to the installed external package version root folder.
-#     :OPTIONS <compile options>: These are compiler options to be used whenever a third party code use this component. This should be used only for options bound to compiler usage, not definitions or include directories.
-#     :RUNTIME_RESOURCES <list of path>: This argument is followed by a list of path relative to the installed external package version root folder.
+#     :C_STANDARD <number of standard>: version of the C language standard to be used to build this component. The values may be 90, 99 or 11.
+#     :C_MAX_STANDARD <number of standard>: max version of the C language standard allowed when using this component.
+#     :CXX_STANDARD <number of standard>: version of the C++ language standard to be used to build this component. The values may be 98, 11, 14 or 17. If not specified the version 98 is used.
+#     :CXX_MAX_STANDARD <number of standard>: max version of the C++ language standard to be used to build this component. If not specified the version 98 is used.
+#     :SONAME <version number>: allows to set the SONAME to use for that specific library instead of the default one.
+#     :DEFINITIONS <defs>: preprocessor definitions used in the component’s interface.
+#     :INCLUDES <folders>: include folders to pass to any component using the current component. Path are interpreted relative to the installed external package version root folder.
+#     :SHARED_LINKS <links>: shared link flags. Path are interpreted relative to the installed external package version root folder.
+#     :STATIC_LINKS <links>: static link flags. Path are interpreted relative to the installed external package version root folder.
+#     :OPTIONS <compile options>: compiler options to be used whenever a third party code use this component. This should be used only for options bound to compiler usage, not definitions or include directories.
+#     :RUNTIME_RESOURCES <list of path>: list of path relative to the installed external package version root folder.
 #     :EXPORT ...: list of components that are exported by the declared component. Each element has the pattern [<package name>/]<component_name>.
 #     :DEPEND ...: list of components that the declared component depends on. Each element has the pattern [<package name>/]<component_name>.
 #
@@ -1005,11 +1009,11 @@ macro(PID_Wrapper_Component)
 endmacro(PID_Wrapper_Component)
 
 macro(declare_PID_Wrapper_Component)
-set(oneValueArgs COMPONENT C_STANDARD CXX_STANDARD SONAME)
+set(oneValueArgs COMPONENT C_STANDARD C_MAX_STANDARD CXX_STANDARD CXX_MAX_STANDARD STANDARD SONAME)
 set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES EXPORT DEPEND ALIAS) #known versions of the external package that can be used to build/run it
 cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_COMPONENT)
-  if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^CXX_STANDARD|C_STANDARD|SONAME|INCLUDES|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS|RUNTIME_RESOURCES$")
+  if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^CXX_STANDARD|CXX_MAX_STANDARD|C_STANDARD|C_MAX_STANDARD|SONAME|INCLUDES|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS|RUNTIME_RESOURCES$")
     finish_Progress(${GLOBAL_PROGRESS_VAR})
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Component requires to define the name of the component by using COMPONENT keyword.")
   	return()
@@ -1018,6 +1022,21 @@ if(NOT DECLARE_PID_WRAPPER_COMPONENT_COMPONENT)
 else()
   set(component_name ${DECLARE_PID_WRAPPER_COMPONENT_COMPONENT})
 endif()
+set(fake_intern_opts)
+adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
+                                      fake_intern_opts DECLARE_PID_WRAPPER_COMPONENT_OPTIONS
+                                      "${DECLARE_PID_WRAPPER_COMPONENT_C_STANDARD}"
+                                      "${DECLARE_PID_WRAPPER_COMPONENT_C_MAX_STANDARD}"
+                                      "${DECLARE_PID_WRAPPER_COMPONENT_CXX_STANDARD}"
+                                      "${DECLARE_PID_WRAPPER_COMPONENT_CXX_MAX_STANDARD}")
+if(ERR)
+  if(ERR STREQUAL "CRITICAL")
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR: when declaring component ${component_name} in wrapper ${PROJECT_NAME}, ${MESS}")
+  else()
+    message("[PID] WARNING: when declaring component ${component_name} in wrapper ${PROJECT_NAME}, ${MESS}")
+  endif()
+endif()
 
 declare_Wrapped_Component(${component_name}
   "${DECLARE_PID_WRAPPER_COMPONENT_SHARED_LINKS}"
@@ -1025,9 +1044,11 @@ declare_Wrapped_Component(${component_name}
 	"${DECLARE_PID_WRAPPER_COMPONENT_STATIC_LINKS}"
 	"${DECLARE_PID_WRAPPER_COMPONENT_INCLUDES}"
 	"${DECLARE_PID_WRAPPER_COMPONENT_DEFINITIONS}"
-	"${DECLARE_PID_WRAPPER_COMPONENT_OPTIONS}"
-	"${DECLARE_PID_WRAPPER_COMPONENT_C_STANDARD}"
-	"${DECLARE_PID_WRAPPER_COMPONENT_CXX_STANDARD}"
+	"${EXPORT_OPTS}"
+	"${C_STD_USED}"
+	"${DECLARE_PID_WRAPPER_COMPONENT_C_MAX_STANDARD}"
+	"${CXX_STD_USED}"
+	"${DECLARE_PID_WRAPPER_COMPONENT_CXX_MAX_STANDARD}"
 	"${DECLARE_PID_WRAPPER_COMPONENT_RUNTIME_RESOURCES}"
 	"${DECLARE_PID_WRAPPER_COMPONENT_ALIAS}")
 
@@ -1135,7 +1156,7 @@ macro(declare_PID_Wrapper_Component_Dependency)
 set(target_component)
 set(component_name)
 set(options EXPORT DEPEND)
-set(oneValueArgs COMPONENT EXTERNAL PACKAGE C_STANDARD CXX_STANDARD CONFIGURATION)
+set(oneValueArgs COMPONENT EXTERNAL PACKAGE C_STANDARD C_MAX_STANDARD CXX_STANDARD CXX_MAX_STANDARD CONFIGURATION)
 set(multiValueArgs INCLUDES LIBRARY_DIRS SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES)
 cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT)
@@ -1191,15 +1212,32 @@ if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE) #this is a dependency to an
   			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
   		)
     else()
+      set(fake_intern_opts)
+      adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
+                                            fake_intern_opts DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_OPTIONS
+                                            "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_C_STANDARD}"
+                                            "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+                                            "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+                                            "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
+      if(ERR)
+        if(ERR STREQUAL "CRITICAL")
+          finish_Progress(${GLOBAL_PROGRESS_VAR})
+          message(FATAL_ERROR "[PID] CRITICAL ERROR: when declaring implicit dependency to package ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE} for component ${component_name} in wrapper ${PROJECT_NAME}, ${MESS}")
+        else()
+          message("[PID] WARNING: when declaring implicit dependency to package ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE} for component ${component_name} in wrapper ${PROJECT_NAME}, ${MESS}")
+        endif()
+      endif()
       declare_Wrapped_Component_Dependency_To_Implicit_Components(${component_name}
         ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_PACKAGE} #everything exported by default
         "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_INCLUDES}"
         "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_SHARED_LINKS}"
         "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_STATIC_LINKS}"
         "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
-        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_OPTIONS}"
-  			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_C_STANDARD}"
-  			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+        "${EXPORT_OPTS}"
+  			"${C_STD_USED}"
+  			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+  			"${CXX_STD_USED}"
+  			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}"
   			"${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}"
       )
     endif()
@@ -1248,27 +1286,64 @@ else()#this is a dependency to another component defined in the same external pa
         set(rpath ${config}_RPATH)
       endif()
 
+      set(fake_intern_opts)
+      adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
+                                            fake_intern_opts ${config}_COMPILER_OPTIONS
+                                            "${${config}_C_STANDARD}"
+                                            "${${config}_C_MAX_STANDARD}"
+                                            "${${config}_CXX_STANDARD}"
+                                            "${${config}_CXX_MAX_STANDARD}")
+      if(ERR)
+        if(ERR STREQUAL "CRITICAL")
+          finish_Progress(${GLOBAL_PROGRESS_VAR})
+          message(FATAL_ERROR "[PID] CRITICAL ERROR: when requiring system configuration ${config} for component ${component_name} in wrapper ${PROJECT_NAME}, ${MESS}")
+        else()
+          message("[PID] WARNING: when requiring system configuration ${config} for component ${component_name} in wrapper ${PROJECT_NAME}, ${MESS}")
+        endif()
+      endif()
+      #need to apply corrrective action in compiler options
+      set(${config}_COMPILER_OPTIONS ${EXPORT_OPTS} CACHE INTERNAL "")#force adaption of the variable at global scope
       declare_Wrapped_Component_System_Dependency(${component_name}
         "${includes}"
         "${lib_dirs}"
         "${${config}_LINK_OPTIONS}"
         "${all_defs}"
         "${opts}"
-        "${${config}_C_STANDARD}"
-        "${${config}_CXX_STANDARD}"
+        "${C_STD_USED}"
+        "${${config}_C_MAX_STANDARD}"
+        "${CXX_STD_USED}"
+        "${${config}_CXX_MAX_STANDARD}"
         "${rpath}"
       )
       set(config)
     else()
+
+      set(fake_intern_opts)
+      adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
+                                            fake_intern_opts DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_OPTIONS
+                                            "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_C_STANDARD}"
+                                            "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+                                            "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+                                            "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
+      if(ERR)
+        if(ERR STREQUAL "CRITICAL")
+          finish_Progress(${GLOBAL_PROGRESS_VAR})
+          message(FATAL_ERROR "[PID] CRITICAL ERROR: when defining direct system requirement for component ${component_name} in wrapper ${PROJECT_NAME}, ${MESS}")
+        else()
+          message("[PID] WARNING: when defining direct system requirement for component ${component_name} in wrapper ${PROJECT_NAME}, ${MESS}")
+        endif()
+      endif()
       list(APPEND ALL_LINKS ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_SHARED_LINKS} ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_STATIC_LINKS})
       declare_Wrapped_Component_System_Dependency(${component_name}
         "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_INCLUDES}"
         "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_LIBRARY_DIRS}"
         "${ALL_LINKS}"
         "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS}"
-        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_OPTIONS}"
-        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_C_STANDARD}"
-        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+        "${INTERN_OPTS}"
+        "${C_STD_USED}"
+        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+        "${CXX_STD_USED}"
+        "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}"
         "${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}"
       )
     endif()
@@ -1949,7 +2024,7 @@ function(get_Environment_Info)
         list(APPEND list_of_flags ${CMAKE_C_FLAGS_DEBUG})
       endif()
     endif()
-    fill_String_From_List(list_of_flags cflags_string)
+    fill_String_From_List(cflags_string list_of_flags " ")
     set(${GET_ENVIRONMENT_INFO_CFLAGS} "${cflags_string}" PARENT_SCOPE)
   endif() #end for c flags
 
@@ -1962,22 +2037,22 @@ function(get_Environment_Info)
     if(GET_ENVIRONMENT_INFO_MODULE)
       set(ldflags_list ${CMAKE_MODULE_LINKER_FLAGS})
       list(APPEND ldflags_list ${CMAKE_MODULE_LINKER_FLAGS${suffix}})
-      fill_String_From_List(ldflags_list ldflags_string)
+      fill_String_From_List(ldflags_string ldflags_list " ")
       set(${GET_ENVIRONMENT_INFO_LDFLAGS} "${ldflags_string}" PARENT_SCOPE)
     elseif(GET_ENVIRONMENT_INFO_SHARED)
       set(ldflags_list ${CMAKE_SHARED_LINKER_FLAGS})
       list(APPEND ldflags_list ${CMAKE_SHARED_LINKER_FLAGS${suffix}})
-      fill_String_From_List(ldflags_list ldflags_string)
+      fill_String_From_List(ldflags_string ldflags_list " ")
       set(${GET_ENVIRONMENT_INFO_LDFLAGS} "${ldflags_string}" PARENT_SCOPE)
     elseif(GET_ENVIRONMENT_INFO_STATIC)
       set(ldflags_list ${CMAKE_STATIC_LINKER_FLAGS})
       list(APPEND ldflags_list ${CMAKE_STATIC_LINKER_FLAGS${suffix}})
-      fill_String_From_List(ldflags_list ldflags_string)
+      fill_String_From_List(ldflags_string ldflags_list " ")
       set(${GET_ENVIRONMENT_INFO_LDFLAGS} "${ldflags_string}" PARENT_SCOPE)
     elseif(GET_ENVIRONMENT_INFO_EXE)
       set(ldflags_list ${CMAKE_EXE_LINKER_FLAGS})
       list(APPEND ldflags_list ${CMAKE_EXE_LINKER_FLAGS${suffix}})
-      fill_String_From_List(ldflags_list ldflags_string)
+      fill_String_From_List(ldflags_string ldflags_list " ")
       set(${GET_ENVIRONMENT_INFO_LDFLAGS} "${ldflags_string}" PARENT_SCOPE)
     else()
       message(FATAL_ERROR "[PID] CRITICAL ERROR : When trying to get LDFLAGS in use you must specify the kind of component you try to build (MODULE, SHARED, STATIC or EXE).")
@@ -2450,7 +2525,7 @@ function(build_B2_External_Project)
   else()
     execute_process(COMMAND ${project_dir}/bootstrap.sh --with-toolset=${install_toolset} WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}  RESULT_VARIABLE result)
   endif()
-  
+
   if(NOT result EQUAL 0)#error at configuration time
     message("[PID] ERROR : cannot configure boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
@@ -2606,22 +2681,22 @@ function(build_Autotools_External_Project)
   endif()
 
   if(C_FLAGS_ENV)
-    fill_String_From_List(C_FLAGS_ENV C_FLAGS_ENV)#transform it back to a flags string
+    fill_String_From_List(C_FLAGS_ENV C_FLAGS_ENV " ")#transform it back to a flags string
     set(TEMP_CFLAGS $ENV{CFLAGS})
     set(ENV{CFLAGS} "${C_FLAGS_ENV}")
   endif()
   if(CXX_FLAGS_ENV)
-    fill_String_From_List(CXX_FLAGS_ENV CXX_FLAGS_ENV)#transform it back to a flags string
+    fill_String_From_List(CXX_FLAGS_ENV CXX_FLAGS_ENV " ")#transform it back to a flags string
     set(TEMP_CXXFLAGS $ENV{CXXFLAGS})
     set(ENV{CXXFLAGS} "${CXX_FLAGS_ENV}")
   endif()
   if(LD_FLAGS_ENV)
-    fill_String_From_List(LD_FLAGS_ENV LD_FLAGS_ENV)
+    fill_String_From_List(LD_FLAGS_ENV LD_FLAGS_ENV " ")
     set(TEMP_LDFLAGS $ENV{LDFLAGS})
     set(ENV{LDFLAGS} "${LD_FLAGS_ENV}")
   endif()
   if(CPP_FLAGS_ENV)
-    fill_String_From_List(CPP_FLAGS_ENV CPP_FLAGS_ENV)
+    fill_String_From_List(CPP_FLAGS_ENV CPP_FLAGS_ENV " ")
     set(TEMP_CPPFLAGS $ENV{CPPFLAGS})
     set(ENV{CPPFLAGS} ${CPP_FLAGS_ENV})
   endif()
@@ -2800,11 +2875,11 @@ function(build_Waf_External_Project)
   set(TEMP_CXX_COMPILER "$ENV{CXX}")
   set(TEMP_LD "$ENV{LD}")
 
-  fill_String_From_List(LD_FLAGS_ENV RES_STRING)
+  fill_String_From_List(RES_STRING LD_FLAGS_ENV " ")
   set(ENV{LDFLAGS} ${RES_STRING})
-  fill_String_From_List(C_FLAGS_ENV RES_STRING)
+  fill_String_From_List(RES_STRING C_FLAGS_ENV " ")
   set(ENV{CFLAGS} ${RES_STRING})
-  fill_String_From_List(CXX_FLAGS_ENV RES_STRING)
+  fill_String_From_List(RES_STRING CXX_FLAGS_ENV " ")
   set(ENV{CXXFLAGS} "${RES_STRING}")
   set(ENV{CC} "${c_compiler}")
   set(ENV{CXX} "${cxx_compiler}")

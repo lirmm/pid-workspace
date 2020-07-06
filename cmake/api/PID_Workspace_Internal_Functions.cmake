@@ -17,6 +17,8 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+cmake_minimum_required(VERSION 3.1.3)
+
 ########################################################################
 ############ inclusion of required macros and functions ################
 ########################################################################
@@ -885,7 +887,7 @@ endfunction(print_Package_Contact)
 #
 function(print_Native_Package_Info package)
 	message("NATIVE PACKAGE: ${package}")
-	fill_String_From_List(${package}_DESCRIPTION descr_string)
+	fill_String_From_List(descr_string ${package}_DESCRIPTION " ")
 	message("DESCRIPTION: ${descr_string}")
 	message("LICENSE: ${${package}_LICENSE}")
 	message("DATES: ${${package}_YEARS}")
@@ -932,7 +934,7 @@ endfunction(print_Native_Package_Info)
 #
 function(print_External_Package_Info package)
 	message("EXTERNAL PACKAGE: ${package}")
-	fill_String_From_List(${package}_DESCRIPTION descr_string)
+	fill_String_From_List(descr_string ${package}_DESCRIPTION " ")
 	message("DESCRIPTION: ${descr_string}")
 	message("OFFICIAL PROJECT LICENSES: ${${package}_ORIGINAL_PROJECT_LICENSES}")
 	print_External_Package_Contact(${package})
@@ -967,8 +969,8 @@ endfunction(print_External_Package_Info)
 #      :package: the name of the external package.
 #
 function(print_External_Package_Contact package)
-	fill_String_From_List(${package}_MAIN_AUTHOR AUTHOR_STRING)
-	fill_String_From_List(${package}_MAIN_INSTITUTION INSTITUTION_STRING)
+	fill_String_From_List(AUTHOR_STRING ${package}_MAIN_AUTHOR " ")
+	fill_String_From_List(INSTITUTION_STRING ${package}_MAIN_INSTITUTION " ")
 	if(NOT INSTITUTION_STRING STREQUAL "")
 		if(${package}_CONTACT_MAIL)
 			message("PID PACKAGE CONTACT: ${AUTHOR_STRING} (${${package}_CONTACT_MAIL}) - ${INSTITUTION_STRING}")
@@ -1153,7 +1155,7 @@ endfunction(print_Platform_Compatible_Binary)
 #
 function(print_Framework_Info framework)
 	message("FRAMEWORK: ${framework}")
-	fill_String_From_List(${framework}_DESCRIPTION descr_string)
+	fill_String_From_List(descr_string ${framework}_DESCRIPTION " ")
 	message("DESCRIPTION: ${descr_string}")
 	message("WEB SITE: ${${framework}_SITE}")
 	message("LICENSE: ${${framework}_LICENSE}")
@@ -1173,9 +1175,30 @@ function(print_Framework_Info framework)
 endfunction(print_Framework_Info)
 
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |print_Environment_Info| replace:: ``print_Environment_Info``
+#  .. _print_Environment_Info:
+#
+#  print_Environment_Info
+#  ----------------------
+#
+#   .. command:: print_Environment_Info(env)
+#
+#   Print brief description of an environment.
+#
+#      :env: the name of the environment.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        The reference file of the given environment must be loaded before this call. No automatic automatic (re)load id performed to improve performance.
+#
 function(print_Environment_Info env)
 	message("ENVIRONMENT: ${env}")
-	fill_String_From_List(${env}_DESCRIPTION descr_string)
+	fill_String_From_List(descr_string ${env}_DESCRIPTION " ")
 	message("DESCRIPTION: ${descr_string}")
 	message("LICENSE: ${${env}_LICENSE}")
 	message("DATES: ${${env}_YEARS}")
@@ -2817,30 +2840,25 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 # => force the use of CMake 3.8 at minimum
 
 if(${package}_${component}_C_STANDARD${VAR_SUFFIX})
-	if(${package}_${component}_C_STANDARD${VAR_SUFFIX} EQUAL 90)
-		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE c_std_90)\n")
-	elseif(${package}_${component}_C_STANDARD${VAR_SUFFIX} EQUAL 99)
-		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE c_std_99)\n")
-	elseif(${package}_${component}_C_STANDARD${VAR_SUFFIX} EQUAL 11)
-		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE c_std_11)\n")
-	#else no known conversion
+	is_A_C_Language_Standard(IS_STD ${${package}_${component}_C_STANDARD${VAR_SUFFIX}})
+	if(IS_STD)
+		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE c_std_${${package}_${component}_C_STANDARD${VAR_SUFFIX}})\n")
 	endif()
 endif()
+
 if(${package}_${component}_CXX_STANDARD${VAR_SUFFIX})
-	if(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} EQUAL 98)
-		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE cxx_std_98)\n")
-	elseif(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} EQUAL 11)
-		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE cxx_std_11)\n")
-	elseif(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} EQUAL 14)
-		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE cxx_std_14)\n")
-	elseif(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} EQUAL 17)
-		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE cxx_std_17)\n")
-	elseif(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} EQUAL 20)
-		file(APPEND ${file_name} "cmake_minimum_required(VERSION 3.11.4)\n")#c++ 20 known from this version
-		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE cxx_std_20)\n")
-	#else no known conversion
+	is_A_CXX_Language_Standard(IS_STD ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}})
+	if(IS_STD)
+		get_Required_CMake_Version_For_Standard(MIN_CMAKE_VERSION ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}})
+		if(MIN_CMAKE_VERSION)
+			file(APPEND ${file_name} "cmake_minimum_required(VERSION ${MIN_CMAKE_VERSION})\n")
+		else()
+			message(FATAL_ERROR "[PID] CRITICAL ERROR: unsupported C++ standard: ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}}")
+		endif()
+		file(APPEND ${file_name} "target_compile_features(${package}::${component} INTERFACE cxx_std_${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}})\n")
 	endif()
 endif()
+
 endfunction(generate_Package_CMake_Find_File_Language_Standard)
 
 #.rst:
@@ -3436,7 +3454,7 @@ function(print_Available_Licenses)
 		endif()
 	endforeach()
 	set(res_licenses_string "")
-	fill_String_From_List(licenses res_licenses_string)
+	fill_String_From_List(res_licenses_string licenses " ")
 	message("AVAILABLE LICENSES: ${res_licenses_string}")
 endfunction(print_Available_Licenses)
 

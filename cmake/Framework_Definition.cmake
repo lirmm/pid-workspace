@@ -26,6 +26,8 @@ endif()
 set(FRAMEWORK_DEFINITION_INCLUDED TRUE)
 ##########################################################################################
 
+cmake_minimum_required(VERSION 3.1.3)
+
 get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
 set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
