@@ -7,7 +7,7 @@ pid_ws_bash_completions() {
     cmd=${COMP_WORDS[1]}
 
     local opts
-    opts="cd workspace exec run"
+    opts="cd workspace exec run configure"
 
     if [ "$cmd" = "cd" ]; then
         _pid_ws_get_all_folders
@@ -65,7 +65,7 @@ pid_ws_bash_completions() {
         opts="$opts $targets"
         COMPREPLY=($(compgen -W "$opts" "${COMP_WORDS[1]}"))
     fi
-    
+
     unset project_dir
     unset ws_dir
     unset targets

@@ -10,7 +10,7 @@ pid_ws_zsh_completions() {
     cmd=${=${(s: :)words}[2]}
 
     local opts
-    opts="cd workspace exec run"
+    opts="cd workspace exec run configure"
 
     if [ "$cmd" = "cd" ]; then
         folders=""
@@ -72,7 +72,7 @@ pid_ws_zsh_completions() {
         opts="$opts $targets"
         reply=( "${=opts}" )
     fi
-    
+
     unset project_dir
     unset ws_dir
     unset targets
