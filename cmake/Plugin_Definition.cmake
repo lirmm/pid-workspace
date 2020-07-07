@@ -1409,17 +1409,13 @@ endfunction(get_Component_Language_Standard)
 #        - This function must be called in AFTER_COMPS scripts.
 #
 function(get_Package_Component_Language_Standard MANAGED_AS_STANDARD RES_C_STD RES_CXX_STD RES_C_OPT RES_CXX_OPT package component)
-
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
   set(ALREADY_IN_COMPILE_OPTIONS FALSE)#to know if the language is already translated into a compilation option
   if(CMAKE_VERSION VERSION_LESS 3.8)# starting from 3.8 language standard is managed automatically by CMake so NOT in compile options
-  	if(CMAKE_VERSION VERSION_LESS 3.1)#starting 3.1 the C and CXX standards are managed the good way by CMake (with target properties)
-  		set(ALREADY_IN_COMPILE_OPTIONS TRUE)# with version < 3.1 the standard properties are already transformed into an equivalent compilation option by PID
-  	else()#starting for 3.8, if standard is 17 or more we use the old way to do (CMake does not know this standard, so it has been translated into a compile option by PID)
-  		is_CXX_Version_Less(IS_LESS ${${package}_${component}_CXX_STANDARD} 17)
-  		if(NOT IS_LESS)#if version of the standard is more or equal than 17 then use the classical way of doing (PID has generate compile options already)
-  				set(ALREADY_IN_COMPILE_OPTIONS TRUE)# do not used information from target in that specific case as it has already been translated
-  		endif()
-  	endif()
+  	is_CXX_Version_Less(IS_LESS ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}} 17)
+		if(NOT IS_LESS)#if version of the standard is more or equal than 17 then use the classical way of doing (PID has generate compile options already)
+				set(ALREADY_IN_COMPILE_OPTIONS TRUE)# do not used information from target in that specific case as it has already been translated
+		endif()
   endif()#not already in compile options for a greater version of cmake
   if(NOT ALREADY_IN_COMPILE_OPTIONS)
     set(${MANAGED_AS_STANDARD} TRUE PARENT_SCOPE)
@@ -1427,11 +1423,11 @@ function(get_Package_Component_Language_Standard MANAGED_AS_STANDARD RES_C_STD R
     set(${MANAGED_AS_STANDARD} FALSE PARENT_SCOPE)
   endif()
   translate_Standard_Into_Option(C_LANGUAGE_OPT CXX_LANGUAGE_OPT
-                                "${${package}_${component}_C_STANDARD}"
-                                "${${package}_${component}_CXX_STANDARD}")
+                                "${${package}_${component}_C_STANDARD${VAR_SUFFIX}}"
+                                "${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}}")
 
-  set(${RES_C_STD} ${${package}_${component}_C_STANDARD} PARENT_SCOPE)
-  set(${RES_CXX_STD} ${${package}_${component}_CXX_STANDARD} PARENT_SCOPE)
+  set(${RES_C_STD} ${${package}_${component}_C_STANDARD${VAR_SUFFIX}} PARENT_SCOPE)
+  set(${RES_CXX_STD} ${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}} PARENT_SCOPE)
   set(${RES_C_OPT} ${C_LANGUAGE_OPT} PARENT_SCOPE)
   set(${RES_CXX_OPT} ${CXX_LANGUAGE_OPT} PARENT_SCOPE)
 endfunction(get_Package_Component_Language_Standard)

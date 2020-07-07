@@ -882,6 +882,7 @@ get_Platform_Constraints_Definitions(PLATFORM_DEFS ${environment} "${instance}" 
 
 execute_process(COMMAND ${CMAKE_COMMAND}
                 -DEVALUATION_RUN=TRUE
+                -DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
                 ${PLATFORM_DEFS}
                 ${list_of_defs}
                 ..

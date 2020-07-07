@@ -5091,6 +5091,7 @@ function(adjust_Languages_Standards_Description ERROR MESSAGE
   if(c_standard)
     is_A_C_Language_Standard(IS_STD ${c_standard})
   	if(NOT IS_STD)
+      set(c_standard_used ${c_standard})
       get_C_Existing_Standards(ALL_C_STDS)
       fill_String_From_List(POSSIBLE_STDS_STR ALL_C_STDS ", ")
       set(ret_message "${ret_message}bad C_STANDARD argument, its value must be one of: ${POSSIBLE_STDS_STR}. ")
@@ -5099,7 +5100,6 @@ function(adjust_Languages_Standards_Description ERROR MESSAGE
   else() #default language standard is first standard
     set(c_standard_used 90)
   endif()
-  set(c_standard_used ${c_standard})
   if(c_max_standard)
     is_A_C_Language_Standard(IS_STD ${c_max_standard})
     if(NOT IS_STD)

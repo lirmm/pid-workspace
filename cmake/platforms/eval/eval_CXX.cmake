@@ -16,7 +16,94 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
+function(check_Standards_Supported_By_Compiler_And_StdLib LIST_OF_STDS)
+  set(${LIST_OF_STDS} PARENT_SCOPE)
+  set(compiler_support_up_to 98)
+  set(stdlib_support_up_to 98)
+  #MOST of information comes from https://en.cppreference.com/w/cpp/compiler_support
+  #first check for compilers
+  if(CURRENT_CXX_COMPILER STREQUAL "gcc")
+    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8.1)#before version 4.8.1 of gcc the c++ 11 standard is not fully supported
+      list(APPEND compiler_support_up_to 11)
+    endif()
+    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5)#before version 5.0 of gcc the c++ 14 standard is not fully supported
+      list(APPEND compiler_support_up_to 14)
+    endif()
+    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7)#before version 9.1 of gcc the c++ 17 standard is not fully supported
+      list(APPEND compiler_support_up_to 17)
+    endif()
+  elseif(CURRENT_CXX_COMPILER STREQUAL "clang")
+    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)#before version 3.3 of clang the c++ 11 standard is not fully supported
+      list(APPEND compiler_support_up_to 11)
+    endif()
+    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.4)#before version 3.4 of clang the c++ 14 standard is not fully supported
+      list(APPEND compiler_support_up_to 14)
+    endif()
+    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 6)#before version 6 of clang the c++ 17 standard is not fully supported
+      list(APPEND compiler_support_up_to 17)
+    endif()
+  elseif(CURRENT_CXX_COMPILER STREQUAL "appleclang")
+    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10.0)#since version 10.0 all features are supported
+      list(APPEND compiler_support_up_to 11 14 17)
+    endif()
+  elseif(CURRENT_CXX_COMPILER STREQUAL "msvc")#MSVC == windows == A specific standard library
+    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.14)#before version 19.14 of MSVC the c++ 11 and 14 standards are not fully supported
+      list(APPEND compiler_support_up_to 11 14)
+      list(APPEND stdlib_support_up_to 11 14)
+    endif()
+    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.24)#before version 19.24 of MSVC the c++ 17 standard is not fully supported
+      list(APPEND compiler_support_up_to 17)
+      list(APPEND stdlib_support_up_to 17)
+    endif()
+  elseif(CURRENT_CXX_COMPILER STREQUAL "icc")#intel compiler
+    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15.0)
+      list(APPEND compiler_support_up_to 11)
+    endif()
+    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 17.0)
+      list(APPEND compiler_support_up_to 14)
+    endif()
+  elseif(CURRENT_CXX_COMPILER STREQUAL "xlc")#IBM AIX compiler
+    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.1.3)
+      list(APPEND compiler_support_up_to 11 14)
+    endif()
+  else()
+    message(WARNING "[PID] unsupported compiler : ${CURRENT_CXX_COMPILER}")
+    return()
+  endif()
+  #then check for standard library
+  if(CXX_STD_LIBRARY_NAME STREQUAL "stdc++")
+    if(NOT CXX_STD_LIBRARY_VERSION VERSION_LESS 6)#before version 4.8.1 of gcc the c++ 11 standard is not fully supported
+      list(APPEND stdlib_support_up_to 11 14)
+    endif()
+    if(NOT CXX_STD_LIBRARY_VERSION VERSION_LESS 9)#before version 9.1 of gcc the c++ 17 standard is not fully supported
+      list(APPEND stdlib_support_up_to 17)
+    endif()
+  elseif(CXX_STD_LIBRARY_NAME STREQUAL "c++")
+    if(NOT CXX_STD_LIBRARY_VERSION VERSION_LESS 3.8)#before version 4.8.1 of gcc the c++ 11 standard is not fully supported
+      list(APPEND stdlib_support_up_to 11 14)
+    endif()
+    #no full support of c++17 right now
+  endif()
+  #now
+  set(support_up_to)
+  foreach(libstd IN LISTS stdlib_support_up_to)
+    list(FIND compiler_support_up_to ${libstd} INDEX)
+    if(NOT INDEX EQUAL -1)# support of standard in library but also in compiler
+      list(APPEND support_up_to ${libstd})
+    endif()
+  endforeach()
+  set(${LIST_OF_STDS} ${support_up_to} PARENT_SCOPE)
+endfunction(check_Standards_Supported_By_Compiler_And_StdLib)
 
+macro(get_Platform_Configurations_To_Check used_std)
+  if(${used_std} EQUAL 17)
+    if(CXX_STD_LIBRARY_NAME STREQUAL "stdc++")#for now support for threading is implemented with tbb
+      set(LANG_CXX_PLATFORM_CONSTRAINTS intel_tbb)
+    endif()
+  endif()
+endmacro(get_Platform_Configurations_To_Check)
+
+set(LANG_CXX_PLATFORM_CONSTRAINTS)
 set(CXX_EVAL_RESULT FALSE)
 if(CMAKE_CXX_COMPILER)
   if(CXX_optimization)
@@ -40,6 +127,18 @@ if(CMAKE_CXX_COMPILER)
       endforeach()
     endforeach()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_FOR_OPTIMS}" CACHE STRING "" FORCE)
+  endif()
+  if(CXX_std)
+    #1) get supported standards
+    check_Standards_Supported_By_Compiler_And_StdLib(POSSIBLE_STDS)
+    #2) check that required standard is supported
+    list(FIND POSSIBLE_STDS ${CXX_std} INDEX)
+    if(INDEX EQUAL -1)
+      return()
+    endif()
+    #3) set options depending on compiler and required support
+    get_Platform_Configurations_To_Check(${CXX_std})
+
   endif()
   set(CXX_soname ${CXX_STANDARD_LIBRARIES})
   set(CXX_symbol ${CXX_STD_SYMBOLS})

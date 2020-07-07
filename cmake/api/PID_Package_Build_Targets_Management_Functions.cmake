@@ -268,43 +268,51 @@ endfunction(create_Global_Build_Command)
 #
 #     Set adequate language standard properties or compilation flags for a component, depending on CMake version.
 #
-#     :component_target: name of the target used for a given component.
+#     :component: name of the component.
 #
-function(resolve_Component_Language_Support component_target)
-  get_target_property(STD_CXX ${component_target} CXX_STANDARD) #get component target
+function(resolve_Component_Language_Support component)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+
+  get_target_property(STD_CXX ${PROJECT_NAME}_${component}${TARGET_SUFFIX} CXX_STANDARD) #get component target
   get_Required_CMake_Version_For_Standard(RES_MIN_CMAKE_VERSION ${STD_CXX})
 
   if(CMAKE_VERSION VERSION_LESS RES_MIN_CMAKE_VERSION)#if cmake version is less than the version required to managed the standard in use
-    target_compile_options(${component_target} PUBLIC "-std=c++${STD_CXX}")
+    target_compile_options(${PROJECT_NAME}_${component}${TARGET_SUFFIX} PUBLIC "-std=c++${STD_CXX}")
     return()
   endif()
+
+  foreach(config IN LISTS ${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${VAR_SUFFIX})
+    declare_System_Component_Dependency_Using_Configuration(
+      ${component}
+      FALSE
+      ${config}
+      "" "" ""
+    )
+  endforeach()
 endfunction(resolve_Component_Language_Support)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |resolve_Compile_Options_For_Targets| replace:: ``resolve_Compile_Options_For_Targets``
-#  .. _resolve_Compile_Options_For_Targets:
+#  .. |resolve_Build_Options_For_Targets| replace:: ``resolve_Build_Options_For_Targets``
+#  .. _resolve_Build_Options_For_Targets:
 #
-#  resolve_Compile_Options_For_Targets
-#  -----------------------------------
+#  resolve_Build_Options_For_Targets
+#  ---------------------------------
 #
-#   .. command:: resolve_Compile_Options_For_Targets(mode)
+#   .. command:: resolve_Build_Options_For_Targets()
 #
 #     Set compile option for all components that are build given some info not directly managed by CMake.
 #
-#     :mode: the given buildmode for components (Release or Debug).
-#
-function(resolve_Compile_Options_For_Targets mode)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
-	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})#no need to resolve alias since list of components contains only base name in current package
-	if(IS_BUILT_COMP)
-		resolve_Component_Language_Support(${PROJECT_NAME}_${component}${TARGET_SUFFIX})
-	endif()
-endforeach()
-endfunction(resolve_Compile_Options_For_Targets)
+function(resolve_Build_Options_For_Targets)
+  foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
+  	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})#no need to resolve alias since list of components contains only base name in current package
+  	if(IS_BUILT_COMP)
+  		resolve_Component_Language_Support(${component} ${CMAKE_BUILD_TYPE})
+  	endif()
+  endforeach()
+endfunction(resolve_Build_Options_For_Targets)
 
 ############################################################################
 ############### API functions for internal targets management ##############

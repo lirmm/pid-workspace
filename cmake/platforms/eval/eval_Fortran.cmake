@@ -17,6 +17,7 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+set(LANG_Fortran_PLATFORM_CONSTRAINTS)
 if(CMAKE_Fortran_COMPILER)
   set(Fortran_soname ${Fortran_STANDARD_LIBRARIES})
   set(Fortran_symbol ${Fortran_STD_SYMBOLS})

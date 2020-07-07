@@ -1,4 +1,5 @@
-#########################################################################################
+
+set(LANG_CXX_PLATFORM_CONSTRAINTS)#########################################################################################
 #       This file is part of the program PID                                            #
 #       Program description : build system supportting the PID methodology              #
 #       Copyright (C) Robin Passama, LIRMM (Laboratoire d'Informatique de Robotique     #
@@ -18,6 +19,7 @@
 #########################################################################################
 
 set(C_EVAL_RESULT FALSE)
+set(LANG_C_PLATFORM_CONSTRAINTS)
 
 if(CMAKE_C_COMPILER)
   if(C_optimization)

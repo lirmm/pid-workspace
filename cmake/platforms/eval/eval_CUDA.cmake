@@ -18,6 +18,7 @@
 #########################################################################################
 
 set(CUDA_EVAL_RESULT FALSE)
+set(LANG_CUDA_PLATFORM_CONSTRAINTS)
 
 if(NOT CUDA_Language_AVAILABLE)#if the CUDA version is NOT available => CUDA not defined
 	return()#if NVCC not found no need to continue

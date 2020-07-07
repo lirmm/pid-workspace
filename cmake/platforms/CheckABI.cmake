@@ -39,8 +39,9 @@ else()#other systems
 endif()
 endfunction(check_Current_Standard_Library_Is_CXX11_ABI_Compatible)
 
-function(get_Current_Standard_Library_Version VERSION)
-set(${VERSION} PARENT_SCOPE)#by default CXX11 is allowed
+function(get_Current_Standard_Library_Version VERSION NAME)
+set(${VERSION} PARENT_SCOPE)
+set(${NAME} PARENT_SCOPE)
 
 if(CURRENT_PLATFORM_OS STREQUAL "windows")
 	#probably need to do some specific things in windows
@@ -52,8 +53,12 @@ else()#other systems
 		SOURCES ${WORKSPACE_DIR}/cmake/platforms/checks/std_lib_version.cpp
 		COPY_FILE std_lib_version
 		OUTPUT_VARIABLE out)
-	execute_process(COMMAND ${CMAKE_BINARY_DIR}/std_lib_version OUTPUT_VARIABLE version)
-	if(version)
+	execute_process(COMMAND ${CMAKE_BINARY_DIR}/std_lib_version OUTPUT_VARIABLE name_version)
+
+	if(name_version)
+		list(GET name_version 0 lib_name)
+		set(${NAME} ${lib_name} PARENT_SCOPE)
+		list(GET name_version 1 version)
 		if(version MATCHES "^([0-9]+)([0-9][0-9][0-9])$")#VERSION + REVISION
 			set(${VERSION} ${CMAKE_MATCH_1}.${CMAKE_MATCH_2} PARENT_SCOPE)
 		else()#only VERSION
@@ -152,7 +157,9 @@ endforeach()
 
 set(CXX_STD_SYMBOLS ${CXX_STD_ABI_SYMBOLS} CACHE INTERNAL "")
 set(CXX_STANDARD_LIBRARIES ${CXX_STD_LIBS} CACHE INTERNAL "")
-
+get_Current_Standard_Library_Version(res_version res_name)
+set(CXX_STD_LIBRARY_VERSION ${res_version} CACHE INTERNAL "")
+set(CXX_STD_LIBRARY_NAME ${res_name} CACHE INTERNAL "")
 #NOW check the C++ compiler ABI used to build the c++ standard library
 
 set(CURRENT_ABI CACHE INTERNAL "")#reset value of current ABI
@@ -182,7 +189,6 @@ set(CMAKE_CXX_FLAGS "${TEMP_FLAGS}" CACHE STRING "" FORCE)#needed for following 
 
 #depending on symbol versions we can detect which compiler was used to build the standard library !!
 if(NOT CURRENT_ABI)#no C++ ABI explictly specified
-
 	if(CXX_STD_SYMBOLS) #there are versionned symbols
 		#use default ABI of the binary version of current std libc++ in use
 		foreach(symb IN LISTS CXX_STD_SYMBOLS) #detect ABI based on standard library symbols
@@ -215,9 +221,8 @@ if(NOT CURRENT_ABI)#no C++ ABI explictly specified
 	else()
 		# adding a generic fake symbol representing the version of the library
 		# make it generic for every standard library in use
-		get_Current_Standard_Library_Version(res_version)
-		if(res_version)
-			set(CXX_STD_SYMBOLS "<VERSION_/${res_version}>" CACHE INTERNAL "")#will be used to checl std lib compatibility
+		if(CXX_STD_LIBRARY_VERSION)
+			set(CXX_STD_SYMBOLS "<VERSION_/${CXX_STD_LIBRARY_VERSION}>" CACHE INTERNAL "")#will be used to checl std lib compatibility
 		endif()
 		if(FORCE_COMPILER_ABI STREQUAL "NEW")
 			set(CURRENT_ABI "CXX11" CACHE INTERNAL "")

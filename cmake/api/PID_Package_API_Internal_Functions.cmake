@@ -292,7 +292,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		COMMENT "[PID] Cleaning package ${PROJECT_NAME} (Debug and Release modes) ..."
 		VERBATIM
 	)
-	
+
 	# hard clean (remove content of the build tree including cmake generated configuration files)
   add_custom_target(hard_clean
   	COMMAND ${CMAKE_COMMAND}
@@ -657,6 +657,7 @@ function(check_Environment_Constraints ERROR language_constraints lang_toolsets 
 set(${ERROR} PARENT_SCOPE)
 set(error_messages)
 set(languages_to_memorize)
+set(config_constraints)
 
 #first checking language constraints (not bound to a specific environment)
 if(language_constraints)
@@ -664,7 +665,7 @@ if(language_constraints)
 		set(index 0)
 	endif()
 	foreach(lang IN LISTS language_constraints) ## all configuration constraints must be satisfied
-		check_Language_Configuration(RESULT_OK LANG_NAME LANG_CONSTRAINTS "${lang}" ${CMAKE_BUILD_TYPE})
+		check_Language_Configuration(RESULT_OK LANG_NAME LANG_CONSTRAINTS PLATFORM_CONSTRAINTS "${lang}" ${CMAKE_BUILD_TYPE})
 		if(NOT RESULT_OK)
 			if(error_messages)
 				set(error_messages "${error_messages}, ${lang}")
@@ -675,6 +676,14 @@ if(language_constraints)
 		if(RESULT_OK OR NOT optional)#if the result if FALSE and the constraint was optional then skip it
 			list(APPEND languages_to_memorize ${LANG_NAME})#memorize name of the configuration
 			set(${LANG_NAME}_constraints_to_memorize ${LANG_CONSTRAINTS})#then memorize all constraints that apply to the configuration
+			if(PLATFORM_CONSTRAINTS)
+				list(APPEND config_constraints ${PLATFORM_CONSTRAINTS})#memorize platform configurations required by the environment
+				# need to memorize the constraint to automatically add it to components
+				foreach(config IN LISTS PLATFORM_CONSTRAINTS)
+					parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS ${config})
+					append_Unique_In_Cache(${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${USE_MODE_SUFFIX} ${CONFIG_NAME})
+				endforeach()
+			endif()
 		endif()
 		if(lang_toolsets)
 			if(RESULT_OK)
@@ -685,14 +694,13 @@ if(language_constraints)
 			endif()
 			math(EXPR index "${index}+1")
 		endif()
+
 	endforeach()
 
 	#exit if errors
 	if(error_messages)
-		if(NOT optional)
-			set(${ERROR} ${error_messages} PARENT_SCOPE)
-			return()
-		endif()
+		set(${ERROR} ${error_messages} PARENT_SCOPE)
+		return()
 	endif()
 
 	#now check toolsets
@@ -711,10 +719,8 @@ if(language_constraints)
 
 	#exit if errors
 	if(error_messages)
-		if(NOT optional)
-			set(${ERROR} ${error_messages} PARENT_SCOPE)
-			return()
-		endif()
+		set(${ERROR} ${error_messages} PARENT_SCOPE)
+		return()
 	endif()
 
 
@@ -730,7 +736,6 @@ endif()
 
 #second checking tool constraints (bound to a specific environment)
 if(tool_constraints)
-	set(config_constraints)
 	foreach(tool IN LISTS tool_constraints) ## all environment constraints must be satisfied
 		check_Extra_Tool_Configuration(RESULT_OK CONFIG_CONSTRAINTS "${tool}" ${CMAKE_BUILD_TYPE})
 		if(NOT RESULT_OK)
@@ -740,25 +745,21 @@ if(tool_constraints)
 				set(error_messages "tool constraints violated: ${tool}")
 			endif()
 		endif()
-		if(RESULT_OK OR NOT optional)#if the result if FALSE and the constraint was optional then skip it
-
+		if(RESULT_OK OR NOT optional)#if the result is FALSE and the constraint was optional then skip it
 			list(APPEND config_constraints ${CONFIG_CONSTRAINTS})#memorize platform configurations required by the environment
 		endif()
 	endforeach()
 
 	#exit if errors
 	if(error_messages)
-		if(NOT optional)
-			set(${ERROR} ${error_messages} PARENT_SCOPE)
-			return()
-		endif()
+		set(${ERROR} ${error_messages} PARENT_SCOPE)
+		return()
 	endif()
-
-	#checking all platform configurations required by the environment
-	foreach(constraint IN LISTS config_constraints)
-		check_Platform_Constraints(RESULT IS_CURRENT "" "" "" "" "${constraint}" FALSE)
-	endforeach()
 endif()
+#checking all platform configurations required by the environment
+foreach(constraint IN LISTS config_constraints)
+	check_Platform_Constraints(RESULT IS_CURRENT "" "" "" "" "${constraint}" FALSE)
+endforeach()
 
 endfunction(check_Environment_Constraints)
 
@@ -1050,9 +1051,9 @@ endif()
 add_subdirectory(share)
 add_subdirectory(test)
 
-# specific case : resolve which compile option to use to enable the adequate language standard (CMake version < 3.1 only)
-# may be use for other general purpose options in future versions of PID
-resolve_Compile_Options_For_Targets(${CMAKE_BUILD_TYPE})
+# specific case : resolve which compile option to use to enable the adequate language standard
+# also used to set adequate dependencies to platform configurations if required by language usage
+resolve_Build_Options_For_Targets()
 
 ##########################################################
 ############ MANAGING non source files ###################

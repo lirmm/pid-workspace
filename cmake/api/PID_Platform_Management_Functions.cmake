@@ -813,6 +813,8 @@ function(reset_Package_Platforms_Variables)
     unset(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${USE_MODE_SUFFIX} CACHE)#reset arguments if any
   endforeach()
 	unset(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} CACHE)
+  #also reset cplatform configruation constraints coming from langauge in use
+  unset(${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${VAR_SUFFIX} CACHE)
 endfunction(reset_Package_Platforms_Variables)
 
 
@@ -1061,10 +1063,9 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
     parse_Configuration_Expression_Arguments(PACKAGE_SPECS ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX})
     #get SONAME and SYMBOLS coming from language configuration
     #WARNING Note: use same arguments as binary (soname and symbol are not used to directly check validaity of the configuration) !!
-    check_Language_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${lang} PACKAGE_SPECS ${mode})
-    get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS PLATFORM_SPECS)
-
+    check_Language_Configuration_With_Arguments(SYSCHECK_RESULT LANG_SPECS TARGET_PLATFORM_SPECS ${lang} PACKAGE_SPECS ${mode})
     #get SONAME and SYMBOLS coming from package configuration
+    get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS LANG_SPECS)
     get_Soname_Symbols_Values(PACKAGE_SONAME PACKAGE_SYMBOLS PACKAGE_SPECS)
 
     #from here we have the value to compare with
@@ -1086,6 +1087,8 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
         return()
       endif()
     endif()
+
+    #Note : no need to check platform config required by package since they will be part of required configurations
   endforeach()
 
   # testing sonames and symbols of libraries coming from platform configurations used by package

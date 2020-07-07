@@ -923,6 +923,7 @@ endfunction(add_Known_Version)
 #      :optional: if TRUE requirements are optional (will not generate errors if checks fail)
 #
 function(declare_Wrapped_Language_Configuration languages lang_toolsets tools optional)
+	set(config_constraints)
 	if(lang_toolsets)
 		set(index 0)
 	endif()
@@ -937,7 +938,8 @@ function(declare_Wrapped_Language_Configuration languages lang_toolsets tools op
 		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_LANGUAGE_CONFIGURATION_${LANG_NAME}_ARGS "${LANG_ARGS}" CACHE INTERNAL "")
 
 		#check that the configuration applies to the current build environment
-		check_Language_Configuration(RESULT_OK LANG_NAME CONSTRAINTS "${lang}" Release)
+		check_Language_Configuration(RESULT_OK LANG_NAME CONSTRAINTS PLATFORM_CONSTRAINTS "${lang}" Release)
+		list(APPEND config_constraints ${PLATFORM_CONSTRAINTS})#memorize platform configurations required by the environment
 		if(NOT RESULT_OK)
 			if(NOT optional)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -965,7 +967,6 @@ function(declare_Wrapped_Language_Configuration languages lang_toolsets tools op
 	endforeach()
 
 	if(tools)
-		set(config_constraints)
 		foreach(tool IN LISTS tools) ## all environment constraints must be satisfied
 			check_Extra_Tool_Configuration(RESULT_OK CONFIG_CONSTRAINTS "${tool}" Release)
 			if(NOT RESULT_OK)
@@ -3097,13 +3098,14 @@ function(resolve_Wrapper_Language_Configuration CONFIGURED package version)
 	set(PACKAGE_SPECIFIC_BUILD_INFO_FILE ${CMAKE_BINARY_DIR}/Package_Build_Info.cmake)
 	file(WRITE "${PACKAGE_SPECIFIC_BUILD_INFO_FILE}" "")#reset the package specific build info (may obverwrite general info)
 	foreach(lang IN LISTS ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS)
-		check_Language_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${lang} ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS Release)
+		check_Language_Configuration_With_Arguments(SYSCHECK_RESULT LANG_SPECS PLATFORM_SPECS ${lang} ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS Release)
+		#TODO STD need to add PLATFORM_SPECS ?
 		if(NOT SYSCHECK_RESULT)
 			set(IS_CONFIGURED FALSE)
 			set(${lang}_Language_AVAILABLE FALSE CACHE INTERNAL "")
 		else()
 			set(${lang}_Language_AVAILABLE TRUE CACHE INTERNAL "")
-			set(${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS ${PLATFORM_SPECS} CACHE INTERNAL "")#reset argument to keep only those required in binary
+			set(${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS ${LANG_SPECS} CACHE INTERNAL "")#reset argument to keep only those required in binary
 			if(${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_TOOLSET)
 				check_Language_Toolset(RESULT_OK ${lang} "${${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_TOOLSET}" Release)
 				if(NOT RESULT_OK)

@@ -17,6 +17,7 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+set(LANG_ASM_PLATFORM_CONSTRAINTS)
 if(CMAKE_ASM_COMPILER)
   set(C_EVAL_RESULT TRUE)
 else()

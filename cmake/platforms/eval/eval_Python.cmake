@@ -17,6 +17,7 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+set(LANG_Python_PLATFORM_CONSTRAINTS)
 if(CURRENT_PYTHON_EXECUTABLE)
   set(Python_EVAL_RESULT TRUE)
 else()

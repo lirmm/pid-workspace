@@ -16,4 +16,4 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-set(LANG_CXX_IN_BINARY_CONSTRAINTS soname symbol optimization)
+set(LANG_CXX_IN_BINARY_CONSTRAINTS soname symbol optimization std)
