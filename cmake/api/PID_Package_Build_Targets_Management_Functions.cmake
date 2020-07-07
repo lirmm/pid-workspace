@@ -262,7 +262,7 @@ endfunction(create_Global_Build_Command)
 #  .. _resolve_Component_Language_Support:
 #
 #  resolve_Component_Language_Support
-#  --------------------------
+#  ----------------------------------
 #
 #   .. command:: resolve_Component_Language_Support(component_target)
 #
@@ -278,20 +278,6 @@ function(resolve_Component_Language_Support component_target)
     target_compile_options(${component_target} PUBLIC "-std=c++${STD_CXX}")
     return()
   endif()
-
-  	# #default case that can be managed directly by CMake
-    # if(STD_C)#the std C is let optional as using a standard may cause error with posix includes
-    # 	set_target_properties(${component_target} PROPERTIES
-    # 			C_STANDARD ${STD_C}
-    # 			C_STANDARD_REQUIRED YES
-    # 			C_EXTENSIONS NO
-    # 	)#setting the standard in use locally
-    # endif()
-  	# set_target_properties(${component_target} PROPERTIES
-  	# 		CXX_STANDARD ${STD_CXX}
-  	# 		CXX_STANDARD_REQUIRED YES
-  	# 		CXX_EXTENSIONS NO
-  	# )#setting the standard in use locally
 endfunction(resolve_Component_Language_Support)
 
 #.rst:
