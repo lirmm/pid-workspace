@@ -7,7 +7,7 @@ pid_ws_bash_completions() {
     cmd=${COMP_WORDS[1]}
 
     local opts
-    opts="cd workspace exec run configure"
+    opts="cd workspace exec run run_build configure"
 
     if [ "$cmd" = "cd" ]; then
         _pid_ws_get_all_folders
@@ -53,13 +53,31 @@ pid_ws_bash_completions() {
             _pid_ws_append_folders $ws_dir/install/$platform/$package
             COMPREPLY=($(compgen -W "$folders" "${COMP_WORDS[4]}"))
             unset folders
-        else
+        elif [ $COMP_CWORD -eq 5 ]; then
             _pid_ws_get_workspace_dir
             files=""
-            _pid_ws_append_files $ws_dir/install/$platform/$package/$version/bin
+            _pid_ws_append_executables $ws_dir/install/$platform/$package/$version/bin
             COMPREPLY=($(compgen -W "$files" "${COMP_WORDS[5]}"))
             unset files
         fi
+      elif [ "$cmd" = "run_build" ]; then
+          local mode
+          local executable
+          mode=${COMP_WORDS[2]}
+          executable=${COMP_WORDS[3]}
+          if [ $COMP_CWORD -eq 2 ]; then
+              _pid_ws_get_project_dir
+              folders="debug release"
+              COMPREPLY=($(compgen -W "$folders" "${COMP_WORDS[2]}"))
+              unset folders
+          elif [ $COMP_CWORD -eq 3 ]; then
+              _pid_ws_get_project_dir
+              files=""
+              _pid_ws_append_executables $project_dir/build/$mode/apps
+              _pid_ws_append_executables $project_dir/build/$mode/test
+              COMPREPLY=($(compgen -W "$files" "${COMP_WORDS[3]}"))
+              unset files
+          fi
     else
         _pid_ws_get_targets $project_dir
         opts="$opts $targets"

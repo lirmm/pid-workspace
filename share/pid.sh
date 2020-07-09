@@ -14,6 +14,7 @@ pid() {
     local target=""
     local fake_target=""
     local fake_target_needs_arg=0
+    local fake_target_more_arg=false
     local fake_target_args=""
     local cmake_options=""
     local to_unexport=""
@@ -26,6 +27,7 @@ pid() {
     if [ ! "$?" = "0" ]; then
         return $res
     fi
+    _pid_ws_get_project_name
 
     # Parses all arguments
     #  handle fake and real targets, sets the arguments as environment variables
@@ -49,13 +51,27 @@ pid() {
         elif [ -z "$target" -a -z "$fake_target" -a "$arg" = "run" ]; then
             fake_target=$arg
             fake_target_needs_arg=4
-        elif [ $fake_target_needs_arg -gt 0 ]; then
+            fake_target_more_arg=true
+        elif [ -z "$target" -a -z "$fake_target" -a "$arg" = "run_build" ]; then
+            fake_target=$arg
+            fake_target_needs_arg=2
+            fake_target_more_arg=true
+        elif [ -n "$fake_target" -a $fake_target_needs_arg -gt 0 ]; then
+            # specific arguments used in fake targets needs to be managed first
             if [ "$fake_target_args" ]; then
                 fake_target_args="$fake_target_args $arg"
             else
                 fake_target_args=$arg
             fi
             fake_target_needs_arg=$((fake_target_needs_arg-1))
+        elif [ -n "$fake_target" -a "$fake_target_more_arg" = true ]; then
+            # if no more specific argument for fake target BUT fake target
+            # allows for program specific arguments
+            if [ "$fake_target_args" ]; then
+                fake_target_args="$fake_target_args $arg"
+            else
+                fake_target_args=$arg
+            fi
         elif [ -z "$target" ]; then
             target=$arg
         else
@@ -73,12 +89,12 @@ pid() {
     if [ "$fake_target" = "workspace" ]; then
         # Special case for the "configure" fake target
         if [ "$target" = "configure" ]; then
-            _pid_ws_configure $ws_dir $cmake_options
+            _pid_ws_configure $ws_dir "$cmake_options"
         else
-            _pid_ws_run $ws_dir $target $cmake_options
+            _pid_ws_run $ws_dir $target "$cmake_options"
         fi
     elif [ "$fake_target" = "configure" ]; then
-        _pid_ws_configure $project_dir $cmake_options
+        _pid_ws_configure $project_dir "$cmake_options"
     elif [ "$fake_target" = "cd" ]; then
         _pid_ws_get_abs_path $target
         if [ "$abs_path" ]; then
@@ -90,14 +106,15 @@ pid() {
         else
             _pid_ws_get_abs_path $fake_target_args
             if [ "$abs_path" ]; then
-                _pid_ws_run $abs_path $target $cmake_options
+                _pid_ws_run $abs_path $target "$cmake_options"
             fi
         fi
     elif [ "$fake_target" = "run" ]; then
-        if [ -z "$fake_target_args" ]; then
+        if [ -z "$fake_target_args" -o $fake_target_needs_arg -gt 0 ]; then
             echo "The run target requires a platform, a package, a version and an executable as parameters"
         else
-            current_arg=0
+            local program_specific_args=""
+            local current_arg=0
             if [ "$ZSH_VERSION" ]; then setopt shwordsplit; fi
             for arg in $fake_target_args; do
                 if [ $current_arg -eq 0 ]; then
@@ -108,14 +125,16 @@ pid() {
                     version=$arg
                 elif [ $current_arg -eq 3 ]; then
                     executable=$arg
+                else
+                  program_specific_args="$program_specific_args $arg"
                 fi
                 current_arg=$((current_arg+1))
             done
             if [ "$ZSH_VERSION" ]; then unsetopt shwordsplit; fi
-            if [ -e $ws_dir/install/$platform/$package/$version/bin/${package}_${executable} ]; then
-                (cd $ws_dir/install/$platform/$package/$version/bin && ./${package}_${executable})
-            elif [ -e $ws_dir/install/$platform/$package/$version/bin/$executable ]; then
-                (cd $ws_dir/install/$platform/$package/$version/bin && ./$executable)
+            if [ -e $ws_dir/install/$platform/$package/$version/bin/$executable ]; then
+                $ws_dir/install/$platform/$package/$version/bin/$executable
+            elif [ -e $ws_dir/install/$platform/$package/$version/bin/${package}_${executable} ]; then
+                $ws_dir/install/$platform/$package/$version/bin/${package}_${executable}
             else
                 echo "Error, the executable $executable couldn't be found inside $ws_dir/install/$platform/$package/$version/bin"
             fi
@@ -125,13 +144,56 @@ pid() {
             unset version
             unset executable
         fi
+    elif [ "$fake_target" = "run_build" ]; then
+        if [ -z "$fake_target_args" -o $fake_target_needs_arg -gt 0 ]; then
+            echo "The run_build target requires mode and executable as parameters"
+        else
+            local program_specific_args=""
+            local current_arg=0
+            if [ "$ZSH_VERSION" ]; then setopt shwordsplit; fi
+            for arg in $fake_target_args; do
+                if [ $current_arg -eq 0 ]; then
+                  mode=$arg
+                elif [ $current_arg -eq 1 ]; then
+                  executable=$arg
+                else
+                  program_specific_args="$program_specific_args $arg"
+                fi
+                current_arg=$((current_arg+1))
+            done
+            if [ "$ZSH_VERSION" ]; then unsetopt shwordsplit; fi
+            if [ -z "$project_name" ]; then
+                echo "The run_build target requires to be launched from a package"
+            fi
+            if [ -z "$mode" ]; then
+              echo "The run_build target requires to specify the mode (first argument)"
+            fi
+            if [ -z "$executable" ]; then
+                echo "The run_build target requires to specify the executable name (second argument)"
+            fi
+            if [ -e $project_dir/build/$mode/apps/$executable ]; then
+              $project_dir/build/$mode/apps/$executable $program_specific_args
+            elif [ -e $project_dir/build/$mode/test/$executable ]; then
+              $project_dir/build/$mode/test/$executable $program_specific_args
+            elif [ -e $project_dir/build/$mode/test/${project_name}_$executable ]; then
+              $project_dir/build/$mode/test/${project_name}_$executable $program_specific_args
+            elif [ -e $project_dir/build/$mode/apps/${project_name}_$executable ]; then
+              $project_dir/build/$mode/apps/${project_name}_$executable $program_specific_args
+            else
+                echo "Error, the executable $executable couldn't be found inside $project_name build folder ($mode mode)"
+            fi
+            unset current_arg
+            unset mode
+            unset executable
+        fi
     # For real targets, simply execute them
     else
-        _pid_ws_run $project_dir $target $cmake_options
+        _pid_ws_run $project_dir $target "$cmake_options"
     fi
 
     unset project_dir
     unset ws_dir
+    unset project_name
     for var in $to_unexport; do
         local name=$(echo $var|sed -re "s:([^=]+)=.*:\1:g")
         unset $name
@@ -152,8 +214,8 @@ _pid_ws_configure() {
 # Apply CMake options to the given project
 #   $1: project dir, $2: cmake options
 _pid_ws_apply_options() {
-    if [ "$2" ]; then
-        _pid_ws_configure $1 $2
+    if [ "$#" -gt 1 ]; then
+        _pid_ws_configure $@
     fi
 }
 
@@ -181,16 +243,29 @@ _pid_ws_run() {
 #  or workspace found
 _pid_ws_get_project_dir() {
     project_dir=$PWD
+    local curr_dir_name=$(basename $project_dir)
+    #if launch from build folder, go into parent dir
+    if [ "$curr_dir_name" = "build" ]; then
+        project_dir=$(dirname $project_dir)
+    fi
+    #if launch from build folder, go into parent dir
     while [ "" = "" ]; do
-        if [ -e $project_dir/pid ]; then
-            if [ -e $project_dir/CMakeLists.txt ]; then
-                break
+        if [ -e "$project_dir/CMakeLists.txt" ]; then
+          if [ -e "$project_dir/pid" ]; then
+            break
+          elif [ -e "$project_dir/build" ]; then
+            #no pid script but a build folder exists
+            #force a first reconfigure to generate the pid script
+            _pid_ws_configure $project_dir
+            if [ -e "$project_dir/pid" ]; then
+              break
             fi
+          fi
         fi
         if [ "$project_dir" = "/" ]; then
             break
         fi
-        project_dir=$(_pid_ws_readlink $project_dir/..)
+        project_dir=$(dirname $project_dir)
     done
     if [ "$project_dir" = "/" ]; then
         echo "ERROR: you must run this command from somewhere inside a PID workspace"
@@ -217,7 +292,7 @@ _pid_ws_get_workspace_dir() {
             if [ "$ws_dir" = "/" ]; then
                 break
             fi
-            ws_dir=$(_pid_ws_readlink $ws_dir/..)
+            ws_dir=$(dirname $ws_dir)
         done
         if [ "$ws_dir" = "/" ]; then
             echo "ERROR: failed to locate the root of the PID workspace"
@@ -227,6 +302,18 @@ _pid_ws_get_workspace_dir() {
         fi
     fi
 }
+
+
+# if in a specific project (other than workspace) set the project_name value
+_pid_ws_get_project_name() {
+    echo
+    if [ "$project_dir" != "$ws_dir" ]; then
+      project_name=$(basename $project_dir)
+    else
+      project_name=""
+    fi
+}
+
 
 _pid_ws_readlink() {
     local target=$(readlink "$1")
@@ -278,6 +365,7 @@ _pid_ws_print_help() {
         echo "    cd [project]                                     changes the current directory to the root of the given project, or workspace if omited"
         echo "    exec <project> [target] [arguments] [options]    executes a target in the given project"
         echo "    run <platform> <package> <version> <executable>  runs the given executable matching the specified platform, package and version"
+        echo "    run_build <mode> <executable>                    runs the given executable contained in current package"
         echo ""
         echo "  If target is omited, the project's default target is invoked"
         echo "  Projects can be packages, wrappers, frameworks or environments"
@@ -294,6 +382,7 @@ _pid_ws_print_help() {
         echo "  pid cd pid-rpath                                                      change directory to pid-rpath"
         echo "  pid build force=true -DBUILD_EXAMPLES=ON                              build pid-rpath examples"
         echo "  pid run x86_64_linux_abi11 pid-rpath 2.0.0 pid-rpath_rpath-example    run pid-rpath example"
+        echo "  pid run_build release pid-rpath_rpath-example                         run pid-rpath example from build tree"
         echo "  pid workspace configure -DADDITIONNAL_DEBUG_INFO=ON                   reconfigure the workspace"
 }
 
@@ -313,17 +402,17 @@ _pid_ws_append_folders() {
     done
 }
 
-# Append all files contained in the given folder to the files variable
+# Append all executable files contained in the given folder to the files variable
 #  $1: folder to search inside
-_pid_ws_append_files() {
+_pid_ws_append_executables() {
     for f in $1/*; do
-        if [ ! -d ${f} ]; then
-            if [ "$files" ]; then
-                files="$files $(basename $f)"
-            else
-                files="$(basename $f)"
-            fi
+      if [ -f ${f} ] && [ -x ${f} ] ; then
+        if [ "$files" ]; then
+            files="$files $(basename $f)"
+        else
+            files="$(basename $f)"
         fi
+      fi
     done
 }
 

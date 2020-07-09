@@ -10,7 +10,7 @@ pid_ws_zsh_completions() {
     cmd=${=${(s: :)words}[2]}
 
     local opts
-    opts="cd workspace exec run configure"
+    opts="cd workspace exec run run_build configure"
 
     if [ "$cmd" = "cd" ]; then
         folders=""
@@ -60,13 +60,31 @@ pid_ws_zsh_completions() {
             _pid_ws_append_folders $ws_dir/install/$platform/$package
             reply=( "${=folders}" )
             unset folders
-        else
+        elif [ $CURRENT -eq 6 ]; then
             _pid_ws_get_workspace_dir
             files=""
-            _pid_ws_append_files $ws_dir/install/$platform/$package/$version/bin
+            _pid_ws_append_executables $ws_dir/install/$platform/$package/$version/bin
             reply=( "${=files}" )
             unset files
         fi
+      elif [ "$cmd" = "run_build" ]; then
+          local mode
+          local executable
+          mode=${=${(s: :)words}[3]}
+          executable=${=${(s: :)words}[4]}
+          if [ $CURRENT -eq 3 ]; then
+              _pid_ws_get_project_dir
+              folders="debug release"
+              reply=( "${=folders}" )
+              unset folders
+          elif [ $CURRENT -eq 4 ]; then
+              _pid_ws_get_project_dir
+              files=""
+              _pid_ws_append_executables $project_dir/build/$mode/apps
+              _pid_ws_append_executables $project_dir/build/$mode/test
+              reply=( "${=files}" )
+              unset files
+          fi
     else
         _pid_ws_get_targets $project_dir
         opts="$opts $targets"

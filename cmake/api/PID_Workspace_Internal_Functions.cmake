@@ -1284,6 +1284,9 @@ function(create_PID_Environment environment author institution license)
 	configure_file(${WORKSPACE_DIR}/cmake/patterns/environments/CMakeLists.txt.in ${WORKSPACE_DIR}/environments/${environment}/CMakeLists.txt @ONLY)
 	#configuring git repository
 	init_Environment_Repository(${environment})
+	#configuring project now
+	execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR}/environments/${environment} -B ${WORKSPACE_DIR}/environments/${environment}/build
+									WORKING_DIRECTORY ${WORKSPACE_DIR}/environments/${environment}/build)
 endfunction(create_PID_Environment)
 
 #.rst:
@@ -1336,9 +1339,12 @@ set(WRAPPER_DESCRIPTION "TODO: input a short description of wrapper ${wrapper} u
 string(TIMESTAMP date "%Y")
 set(WRAPPER_YEARS ${date})
 # generating the root CMakeLists.txt of the package
-configure_file(${WORKSPACE_DIR}/cmake/patterns/wrappers/CMakeLists.txt.in ../wrappers/${wrapper}/CMakeLists.txt @ONLY)
-#confuguring git repository
+configure_file(${WORKSPACE_DIR}/cmake/patterns/wrappers/CMakeLists.txt.in ${WORKSPACE_DIR}/wrappers/${wrapper}/CMakeLists.txt @ONLY)
+#configuring git repository
 init_Wrapper_Repository(${wrapper})
+#configuring project now
+execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR}/wrappers/${wrapper} -B ${WORKSPACE_DIR}/wrappers/${wrapper}/build
+								WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${wrapper}/build)
 endfunction(create_PID_Wrapper)
 
 #.rst:
@@ -1401,6 +1407,9 @@ set(FRAMEWORK_YEARS ${date})
 configure_file(${WORKSPACE_DIR}/cmake/patterns/frameworks/CMakeLists.txt.in ${WORKSPACE_DIR}/sites/frameworks/${framework}/CMakeLists.txt @ONLY)
 #configuring git repository
 init_Framework_Repository(${framework})
+#configuring project now
+execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR}/sites/frameworks/${framework} -B ${WORKSPACE_DIR}/sites/frameworks/${framework}/build
+								WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
 endfunction(create_PID_Framework)
 
 #.rst:
@@ -1457,9 +1466,12 @@ set(PACKAGE_DESCRIPTION "TODO: input a short description of package ${package} u
 string(TIMESTAMP date "%Y")
 set(PACKAGE_YEARS ${date})
 # generating the root CMakeLists.txt of the package
-configure_file(${WORKSPACE_DIR}/cmake/patterns/packages/CMakeLists.txt.in ../packages/${package}/CMakeLists.txt @ONLY)
+configure_file(${WORKSPACE_DIR}/cmake/patterns/packages/CMakeLists.txt.in ${WORKSPACE_DIR}/packages/${package}/CMakeLists.txt @ONLY)
 #confuguring git repository
 init_Repository(${package})
+#configuring project now
+execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR}/packages/${package} -B ${WORKSPACE_DIR}/packages/${package}/build
+								WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
 endfunction(create_PID_Package)
 
 #.rst:
