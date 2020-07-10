@@ -211,7 +211,6 @@ endfunction(reset_Wrapper_Description_Cached_Variables)
 #
 macro(declare_Wrapper author institution mail year license address public_address description readme_file contrib_space)
 set(CMAKE_BUILD_TYPE Release CACHE INTERNAL "")
-set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")#to avoid the use of -isystem that may be not so well managed by some compilers
 set(${PROJECT_NAME}_ROOT_DIR ${WORKSPACE_DIR}/wrappers/${PROJECT_NAME} CACHE INTERNAL "")
 manage_Current_Platform("${CMAKE_BINARY_DIR}" "EXTERNAL") #loading the current platform configuration and perform adequate actions if any changes
 
@@ -694,7 +693,7 @@ endfunction(generate_Wrapper_Build_File)
 #
 function(create_Wrapper_Documentation_Target)
 package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME} TRUE)
-get_Platform_Variables(BASENAME curr_platform_str)
+
 set(INCLUDING_BINARIES FALSE)
 if(NOT CLOSED)#check if project is closed source or not
 	# management of binaries publication
@@ -713,8 +712,7 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done
 						-DIN_CI_PROCESS=${IN_CI_PROCESS}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						"-DKNOWN_VERSIONS=${${PROJECT_NAME}_KNOWN_VERSIONS}"
-						-DTARGET_PLATFORM=${curr_platform_str}
-						-DTARGET_INSTANCE=${CURRENT_PLATFORM_INSTANCE}
+						-DTARGET_PLATFORM=${CURRENT_PLATFORM}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DINCLUDES_INSTALLER=${INCLUDING_BINARIES}
@@ -734,8 +732,7 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 						-DIN_CI_PROCESS=${IN_CI_PROCESS}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						"-DKNOWN_VERSIONS=${${PROJECT_NAME}_KNOWN_VERSIONS}"
-						-DTARGET_PLATFORM=${curr_platform_str}
-						-DTARGET_INSTANCE=${CURRENT_PLATFORM_INSTANCE}
+						-DTARGET_PLATFORM=${CURRENT_PLATFORM}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DTARGET_FRAMEWORK=${${PROJECT_NAME}_FRAMEWORK}
@@ -1021,7 +1018,7 @@ if(platform)# if a platform constraint applies
 		append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")# update the list of required configurations
 		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONFIG_ARGS}" CACHE INTERNAL "")
 
-		if(platform STREQUAL CURRENT_PLATFORM)
+		if(platform STREQUAL CURRENT_PLATFORM_BASE)
 			#check that the configuration applies to the current platform if the current platform is the target of this constraint
 			set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
 			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
@@ -1036,7 +1033,7 @@ if(platform)# if a platform constraint applies
 
 	#now dealing with options
 	foreach(config IN LISTS options)
-		if(platform STREQUAL CURRENT_PLATFORM)
+		if(platform STREQUAL CURRENT_PLATFORM_BASE)
 			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
 			if(RESULT_OK)
 				set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts

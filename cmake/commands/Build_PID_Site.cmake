@@ -128,9 +128,9 @@ endif()
 
 #2) clean generate and copy files according to project documentation
 if(is_native)
-	produce_Package_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${TARGET_VERSION}" ${TARGET_PLATFORM} "${TARGET_INSTANCE}" ${include_api_doc}  ${include_coverage} ${include_staticchecks} ${include_installer} ${forced_update}) # copy everything needed
+	produce_Package_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${TARGET_VERSION}" ${TARGET_PLATFORM} ${include_api_doc}  ${include_coverage} ${include_staticchecks} ${include_installer} ${forced_update}) # copy everything needed
 else()
-	produce_Wrapper_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${KNOWN_VERSIONS}" ${TARGET_PLATFORM} "${TARGET_INSTANCE}" ${include_installer} ${forced_update}) # copy everything needed
+	produce_Wrapper_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${KNOWN_VERSIONS}" ${TARGET_PLATFORM} ${include_installer} ${forced_update}) # copy everything needed
 endif()
 
 #3) build static site

@@ -3854,6 +3854,7 @@ function(write_Platform_Description file)
 
 	# defining properties of the current platform
 	file(APPEND ${file} "set(CURRENT_PLATFORM ${CURRENT_PLATFORM} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_PLATFORM_BASE ${CURRENT_PLATFORM_BASE} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CURRENT_PLATFORM_INSTANCE ${CURRENT_PLATFORM_INSTANCE} CACHE INTERNAL \"\" FORCE)\n")
 
 	file(APPEND ${file} "set(CURRENT_PACKAGE_STRING ${CURRENT_PACKAGE_STRING} CACHE INTERNAL \"\" FORCE)\n")

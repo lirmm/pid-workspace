@@ -1363,30 +1363,41 @@ endfunction(build_And_Install_Package)
 #      :CHECK_OK: the output variable that is TRUE if current platform conforms to package required configurations, FALSE otherwise.
 #
 function(check_Package_Platform_Against_Current package platform CHECK_OK)
-set(${CHECK_OK} TRUE PARENT_SCOPE)
-# the platform may have an instance name so we need first to get the base name of the platform
-extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${platform})
+  set(${CHECK_OK} TRUE PARENT_SCOPE)
+  set(checking_config FALSE)
+  # the platform may have an instance name so we need first to get the base name of the platform
+  extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${platform})
 
-get_Platform_Variables(BASENAME platfom_str)
-if(RES_PLATFORM_BASE STREQUAL platfom_str) # OK this binary version is theorically eligible,
-  # need to check for its platform configuration to be sure it can be used
-	set(CONFIGS_TO_CHECK)
-	if(${package}_PLATFORM_CONFIGURATIONS)
-		set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS})
+  get_Platform_Variables(BASENAME platfom_str INSTANCE instance_str)
+  if(instance_str)#the current platform is an instance (specific target platform)
+    #searching for such specific instance in available binaries
+    if(platform STREQUAL CURRENT_PLATFORM)# OK this binary version is theorically eligible with instance constraint
+      set(checking_config TRUE)
+    endif()
+  else()#current platform is a generic platform => all binaries are theretically eligible as soon as they respect base platform constraints
+    if(RES_PLATFORM_BASE STREQUAL platfom_str)# OK this binary version is theorically eligible with base platform constraint
+      set(checking_config TRUE)
+    endif()
+  endif()
+  if(NOT checking_config)
+    set(${CHECK_OK} FALSE PARENT_SCOPE)
+  	return()
+  endif()
+
+  # need to check for its platform configuration to be sure it can be used locally
+  set(CONFIGS_TO_CHECK)
+  if(${package}_PLATFORM_CONFIGURATIONS)
+  	set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS})
     list(REMOVE_DUPLICATES CONFIGS_TO_CHECK)
-	endif()
-	foreach(config IN LISTS CONFIGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
-	parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+  endif()
+  foreach(config IN LISTS CONFIGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
+    parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
     is_Allowed_Platform_Configuration(ALLOWED ${config} args_as_list)
     if(NOT ALLOWED)
       set(${CHECK_OK} FALSE PARENT_SCOPE)
       return()
     endif()
-	endforeach()
-else()#the binary is not eligible since does not match either familly, os, arch or ABI of the current system
-	set(${CHECK_OK} FALSE PARENT_SCOPE)
-	return()
-endif()
+  endforeach()
 endfunction(check_Package_Platform_Against_Current)
 
 #.rst:

@@ -73,7 +73,6 @@ include(Environment_Definition NO_POLICY_SCOPE) #to be able to interpret descrip
 #     :contrib_space: determines the default contribution space of the package.
 #
 macro(declare_Package author institution mail year license address public_address description readme_file code_style contrib_space)
-set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")#to avoid the use of -isystem that may be not so well managed by some compilers
 manage_Current_Platform("${CMAKE_BINARY_DIR}" "NATIVE") #loading the current platform configuration and perform adequate actions if any changes
 set(PACKAGE_SPECIFIC_BUILD_INFO_FILE ${CMAKE_BINARY_DIR}/Package_Build_Info.cmake)
 # TODO check all of that
