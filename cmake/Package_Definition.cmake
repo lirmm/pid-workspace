@@ -1008,6 +1008,8 @@ endmacro(build_PID_Package)
 #   :C_MAX_STANDARD <90|99|11>: Maximum C language standard that can be used when using the component.
 #   :CXX_STANDARD <98|11|14|17|20>: C++ language standard used to build the component. Defaults to ``98``.
 #   :CXX_MAX_STANDARD <98|11|14|17|20>: Maximum C++ language standard that can be used when using the component.
+#   :WARNING_LEVEL <DEFAULT|ALL>: Level of warning required when building the code, DEFAULT is defaut warnings and ALL maximize the number of warnings.
+#   :WARNINGS_AS_ERRORS: if used then warning will generate errors.
 #   :RUNTIME_RESOURCES <files>: ``<files>`` is a list of files and folders relative to the ``share/resources`` folder. These files will be installed automatically and should be accessed in a PID component using the `pid-rpath <http://pid.lirmm.net/pid-framework/packages/pid-rpath>`_ package.
 #   :INTERNAL: This flag is used to introduce compilation options that are only used by this component.
 #   :EXPORTED: This flag is used to export compilation options. Meaning, components that later refer to this component will be using these options.
@@ -1052,10 +1054,11 @@ macro(PID_Component)
 endmacro(PID_Component)
 
 macro(declare_PID_Component)
-set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER APPLICATION APP EXAMPLE_APPLICATION EXAMPLE TEST_APPLICATION TEST PYTHON_PACK PYTHON LOGGABLE)
-set(oneValueArgs NAME DIRECTORY C_STANDARD C_MAX_STANDARD CXX_STANDARD CXX_MAX_STANDARD DOCUMENTATION)
+set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER APPLICATION APP EXAMPLE_APPLICATION EXAMPLE TEST_APPLICATION TEST PYTHON_PACK PYTHON LOGGABLE WARNINGS_AS_ERRORS)
+set(oneValueArgs NAME DIRECTORY C_STANDARD C_MAX_STANDARD CXX_STANDARD CXX_MAX_STANDARD DOCUMENTATION WARNING_LEVEL)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES DEPEND EXPORT ALIAS)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+
 
 #check for the name argument
 set(comp_name)
@@ -1217,6 +1220,12 @@ if(DECLARE_PID_COMPONENT_INTERNAL)
 		set(internal_link_flags ${DECLARE_PID_COMPONENT_INTERNAL_LINKS})
 	endif()
 endif()
+if(DECLARE_PID_COMPONENT_WARNING_LEVEL STREQUAL "ALL")
+  list(APPEND internal_compiler_options ${CURRENT_CXX_COMPILER_WARN_ALL_OPTIONS})
+endif()
+if(DECLARE_PID_COMPONENT_WARNINGS_AS_ERRORS)
+  list(APPEND internal_compiler_options ${CURRENT_CXX_COMPILER_WARN_AS_ERRORS_OPTIONS})
+endif()
 
 set(exported_defs)
 set(exported_link_flags)
@@ -1297,7 +1306,6 @@ if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
       message("[PID] WARNING: when declaring application ${comp_name} in package ${PROJECT_NAME}, ${MESS}")
     endif()
   endif()
-
 	declare_Application_Component(	${comp_name}
 					${dir_name}
 					${type}

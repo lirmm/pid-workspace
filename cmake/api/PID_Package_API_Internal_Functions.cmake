@@ -1512,10 +1512,10 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 	#defining shared and/or static targets for the library and
 	#adding the targets to the list of installed components when make install is called
 	if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "STATIC") #a static library has no internal links (never trully linked)
-		create_Static_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}"  "${use_includes}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}")
+		create_Static_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}"  "${use_includes}" "${exported_defs}" "${internal_defs}" "${exported_compiler_options}" "${internal_compiler_options}" "${exported_links}")
 		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "SHARED")
-		create_Shared_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${use_includes}" "${exported_defs}" "${internal_defs}" "${FILTERED_EXPORTED_OPTS}" "${FILTERED_INTERNAL_OPTS}" "${exported_links}" "${internal_links}")
+		create_Shared_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${use_includes}" "${exported_defs}" "${internal_defs}" "${exported_compiler_options}" "${internal_compiler_options}" "${exported_links}" "${internal_links}")
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") #a static library has no exported links (no interface)
@@ -1527,9 +1527,9 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 			#adding adequate path to pyhton librairies
 			list(APPEND INCLUDE_DIRS_WITH_PYTHON ${use_includes} ${CURRENT_PYTHON_INCLUDE_DIRS})
 			list(APPEND LIBRARIES_WITH_PYTHON ${internal_links} ${CURRENT_PYTHON_LIBRARIES})
-			create_Module_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${INCLUDE_DIRS_WITH_PYTHON}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${LIBRARIES_WITH_PYTHON}")
+			create_Module_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${INCLUDE_DIRS_WITH_PYTHON}" "${internal_defs}" "${internal_compiler_options}" "${LIBRARIES_WITH_PYTHON}")
 		else()
-			create_Module_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_links}")
+			create_Module_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 		endif()
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 		register_Component_Binary(${c_name})#need to register before calling manage python
@@ -1541,11 +1541,11 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 		endif()
 	endif()
 else()#simply creating a "fake" target for header only library
-	create_Header_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}")
+	create_Header_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
 endif()
 
 # registering exported flags for all kinds of libs
-init_Component_Cached_Variables_For_Export(${c_name} "${c_standard}" "${c_max_standard}" "${cxx_standard}" "${cxx_max_standard}" "${exported_defs}" "${FILTERED_EXPORTED_OPTS}" "${exported_links}" "${runtime_resources}")
+init_Component_Cached_Variables_For_Export(${c_name} "${c_standard}" "${c_max_standard}" "${cxx_standard}" "${cxx_max_standard}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}" "${runtime_resources}")
 
 #create local "real" CMake ALIAS target
 if(aliases)
@@ -1678,11 +1678,11 @@ endif()
 #defining the target to build the application
 
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")# NB : tests do not need to be relocatable since they are purely local
-	create_Executable_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_link_flags}")
+	create_Executable_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${internal_compiler_options}" "${internal_link_flags}")
 
 	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 else()
-	create_TestUnit_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${FILTERED_INTERNAL_OPTS}" "${internal_link_flags}")
+	create_TestUnit_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${internal_compiler_options}" "${internal_link_flags}")
 endif()
 register_Component_Binary(${c_name})# resgistering name of the executable
 
