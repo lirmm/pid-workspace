@@ -97,6 +97,7 @@ function(reset_Environment_Description)
     set(${PROJECT_NAME}_${lang}_TOOLSETS 0 CACHE INTERNAL "")
   endforeach()
   set(${PROJECT_NAME}_LANGUAGES CACHE INTERNAL "")
+  set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION FALSE CACHE INTERNAL "")
 
   foreach(tool IN LISTS ${PROJECT_NAME}_EXTRA_TOOLS)
     set_Extra_Tool(${tool} "" "" "" "" "" "" "" "" "")
@@ -113,7 +114,11 @@ function(reset_Environment_Description)
   set(${PROJECT_NAME}_MODULE_LINKER_FLAGS CACHE INTERNAL "")
   set(${PROJECT_NAME}_SHARED_LINKER_FLAGS CACHE INTERNAL "")
   set(${PROJECT_NAME}_STATIC_LINKER_FLAGS CACHE INTERNAL "")
-
+  set(${PROJECT_NAME}_TARGET_SYSROOT CACHE INTERNAL "")
+  set(${PROJECT_NAME}_TARGET_STAGING CACHE INTERNAL "")
+  set(${PROJECT_NAME}_INCLUDE_DIRS CACHE INTERNAL "")
+  set(${PROJECT_NAME}_LIBRARY_DIRS CACHE INTERNAL "")
+  set(${PROJECT_NAME}_PROGRAM_DIRS CACHE INTERNAL "")
   # variable to manage generator in use
   set(${PROJECT_NAME}_GENERATOR_TOOLSET CACHE INTERNAL "")
   set(${PROJECT_NAME}_GENERATOR_PLATFORM CACHE INTERNAL "")
@@ -1730,19 +1735,6 @@ function(generate_Environment_Toolchain_File)
         file(APPEND ${description_file} "set(CMAKE_STAGING_PREFIX ${${PROJECT_NAME}_TARGET_STAGING} CACHE INTERNAL \"\" FORCE)\n")
       endif()
 
-      if(${PROJECT_NAME}_LIBRARY_DIRS)
-        fill_String_From_List(DIRS ${PROJECT_NAME}_LIBRARY_DIRS " ")
-        file(APPEND ${description_file} "set(CMAKE_SYSTEM_LIBRARY_PATH ${DIRS} CACHE INTERNAL \"\" FORCE)\n")
-      endif()
-      if(${PROJECT_NAME}_INCLUDE_DIRS)
-        fill_String_From_List(DIRS ${PROJECT_NAME}_INCLUDE_DIRS " ")
-        file(APPEND ${description_file} "set(CMAKE_SYSTEM_INCLUDE_PATH ${DIRS} CACHE INTERNAL \"\" FORCE)\n")
-      endif()
-      if(${PROJECT_NAME}_PROGRAM_DIRS)
-        fill_String_From_List(DIRS ${PROJECT_NAME}_PROGRAM_DIRS " ")
-        file(APPEND ${description_file} "set(CMAKE_SYSTEM_PROGRAM_PATH ${DIRS} CACHE INTERNAL \"\" FORCE)\n")
-      endif()
-
     endif()
   endif()
 
@@ -1830,7 +1822,18 @@ function(generate_Environment_Toolchain_File)
     fill_String_From_List(LANG_FLAGS ${PROJECT_NAME}_STATIC_LINKER_FLAGS " ")
     file(APPEND ${description_file} "set(CMAKE_STATIC_LINKER_FLAGS \"${LANG_FLAGS}\" CACHE INTERNAL \"\" FORCE)\n")
   endif()
-
+  if(${PROJECT_NAME}_LIBRARY_DIRS)
+    fill_String_From_List(DIRS ${PROJECT_NAME}_LIBRARY_DIRS " ")
+    file(APPEND ${description_file} "set(CMAKE_SYSTEM_LIBRARY_PATH ${DIRS} CACHE INTERNAL \"\" FORCE)\n")
+  endif()
+  if(${PROJECT_NAME}_INCLUDE_DIRS)
+    fill_String_From_List(DIRS ${PROJECT_NAME}_INCLUDE_DIRS " ")
+    file(APPEND ${description_file} "set(CMAKE_SYSTEM_INCLUDE_PATH ${DIRS} CACHE INTERNAL \"\" FORCE)\n")
+  endif()
+  if(${PROJECT_NAME}_PROGRAM_DIRS)
+    fill_String_From_List(DIRS ${PROJECT_NAME}_PROGRAM_DIRS " ")
+    file(APPEND ${description_file} "set(CMAKE_SYSTEM_PROGRAM_PATH ${DIRS} CACHE INTERNAL \"\" FORCE)\n")
+  endif()
   if(${PROJECT_NAME}_AR)
     file(APPEND ${description_file} "set(CMAKE_AR ${${PROJECT_NAME}_AR} CACHE INTERNAL \"\" FORCE)\n")
   endif()
@@ -2044,6 +2047,110 @@ endfunction(add_Language_Toolset)
 #
 # .. ifmode:: internal
 #
+#  .. |set_System_Wide_Configuration| replace:: ``set_System_Wide_Configuration``
+#  .. _set_System_Wide_Configuration:
+#
+#  set_System_Wide_Configuration
+#  -----------------------------
+#
+#   .. command:: set_System_Wide_Configuration(gen_toolset gen_platform
+#                                       sysroot staging
+#                                       linker ar ranlib nm objdump objcopy
+#                                       inc_dirs lib_dirs prog_dirs
+#                                       exe_flags module_flags static_flags shared_flags)
+#
+#   Set the configuration of the host to adequately manage the target platform
+#
+#     :gen_toolset: generator toolset to use
+#     :gen_platform: generator platform to use
+#     :sysroot: target platform sysroot.
+#     :staging: target platform staging area.
+#     :linker: the path to system wide linker.
+#     :ar: the path to system wide ar tool.
+#     :ranlib: the path to system wide ranlib tool.
+#     :nm: the path to system wide nm tool.
+#     :objdump: the path to system wide objdump tool.
+#     :objcopy: the path to system wide objcopy tool.
+#     :inc_dirs: the list path to system include directories
+#     :lib_dirs: the list path to system libraries directories
+#     :prog_dirs: the list path to system programs directories
+#     :exe_flags: list of flags to add when linking an executable
+#     :module_flags: list of flags to add when linking a module library
+#     :static_flags: list of flags to add when linking a static library
+#     :shared_flags: list of flags to add when linking a shared library
+#
+function(set_System_Wide_Configuration gen_toolset gen_platform
+                                       sysroot staging
+                                       linker ar ranlib nm objdump objcopy
+                                       inc_dirs lib_dirs prog_dirs
+                                       exe_flags module_flags static_flags shared_flags
+                                      )
+
+  #manage generator toolsets
+  if(gen_toolset)
+    set(${PROJECT_NAME}_GENERATOR_TOOLSET ${gen_toolset} CACHE INTERNAL "")
+  endif()
+  if(gen_platform)
+    set(${PROJECT_NAME}_GENERATOR_PLATFORM ${gen_platform} CACHE INTERNAL "")
+  endif()
+  #manage crosscompilation
+  if(sysroot)#warning overwritting previous value if any forced
+    set(${PROJECT_NAME}_TARGET_SYSROOT ${sysroot} CACHE INTERNAL "")
+  endif()
+  if(staging)#warning overwritting previous value if any forced
+    set(${PROJECT_NAME}_TARGET_STAGING ${staging} CACHE INTERNAL "")
+  endif()
+  #manage linker in use
+  if(linker)
+    set(${PROJECT_NAME}_LINKER ${linker} CACHE INTERNAL "")
+  endif()
+  #manage binary inspection/modification tools
+  if(ar)
+    set(${PROJECT_NAME}_AR ${ar} CACHE INTERNAL "")
+  endif()
+  if(ranlib)
+    set(${PROJECT_NAME}_RANLIB ${ranlib} CACHE INTERNAL "")
+  endif()
+  if(nm)
+    set(${PROJECT_NAME}_NM ${nm} CACHE INTERNAL "")
+  endif()
+  if(objdump)
+    set(${PROJECT_NAME}_OBJDUMP ${objdump} CACHE INTERNAL "")
+  endif()
+  if(objcopy)
+    set(${PROJECT_NAME}_OBJCOPY ${objcopy} CACHE INTERNAL "")
+  endif()
+
+  #manage default system path
+  if(inc_dirs)
+    append_Unique_In_Cache(${PROJECT_NAME}_INCLUDE_DIRS "${inc_dirs}")
+  endif()
+  if(lib_dirs)
+    append_Unique_In_Cache(${PROJECT_NAME}_LIBRARY_DIRS "${lib_dirs}")
+  endif()
+  if(prog_dirs)
+    append_Unique_In_Cache(${PROJECT_NAME}_PROGRAM_DIRS "${prog_dirs}")
+  endif()
+
+  if(exe_flags)
+    append_Unique_In_Cache(${PROJECT_NAME}_EXE_LINKER_FLAGS "${exe_flags}")
+  endif()
+  if(module_flags)
+    append_Unique_In_Cache(${PROJECT_NAME}_MODULE_LINKER_FLAGS "${module_flags}")
+  endif()
+  if(static_flags)
+    append_Unique_In_Cache(${PROJECT_NAME}_STATIC_LINKER_FLAGS "${static_flags}")
+  endif()
+  if(shared_flags)
+    append_Unique_In_Cache(${PROJECT_NAME}_SHARED_LINKER_FLAGS "${shared_flags}")
+  endif()
+  set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
+endfunction(set_System_Wide_Configuration)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |set_Extra_Tool| replace:: ``set_Extra_Tool``
 #  .. _set_Extra_Tool:
 #
@@ -2243,9 +2350,6 @@ file(APPEND ${file} "set(${PROJECT_NAME}_CROSSCOMPILATION ${${PROJECT_NAME}_CROS
 if(${PROJECT_NAME}_CROSSCOMPILATION)
   file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_SYSROOT ${${PROJECT_NAME}_TARGET_SYSROOT} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_STAGING ${${PROJECT_NAME}_TARGET_STAGING} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_LIBRARY_DIRS ${${PROJECT_NAME}_LIBRARY_DIRS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_INCLUDE_DIRS ${${PROJECT_NAME}_INCLUDE_DIRS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_PROGRAM_DIRS ${${PROJECT_NAME}_PROGRAM_DIRS} CACHE INTERNAL \"\")\n")
 endif()
 
 file(APPEND ${file} "set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION ${${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION} CACHE INTERNAL \"\")\n")
@@ -2260,6 +2364,9 @@ if(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION)
   file(APPEND ${file} "set(${PROJECT_NAME}_MODULE_LINKER_FLAGS ${${PROJECT_NAME}_MODULE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_SHARED_LINKER_FLAGS ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_STATIC_LINKER_FLAGS ${${PROJECT_NAME}_STATIC_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_LIBRARY_DIRS ${${PROJECT_NAME}_LIBRARY_DIRS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_INCLUDE_DIRS ${${PROJECT_NAME}_INCLUDE_DIRS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_PROGRAM_DIRS ${${PROJECT_NAME}_PROGRAM_DIRS} CACHE INTERNAL \"\")\n")
 endif()
 
 file(APPEND ${file} "set(${PROJECT_NAME}_LANGUAGES ${${PROJECT_NAME}_LANGUAGES} CACHE INTERNAL \"\")\n")
@@ -2420,15 +2527,6 @@ function(print_Evaluated_Environment environment)
     if(${environment}_TARGET_STAGING)
       set(crosscomp_str "${crosscomp_str}  + staging: ${${environment}_TARGET_STAGING}")
     endif()
-    if(${environment}_LIBRARY_DIRS)
-      set(crosscomp_str "${crosscomp_str}  + system libraries directories: ${${environment}_LIBRARY_DIRS}")
-    endif()
-    if(${environment}_INCLUDE_DIRS)
-      set(crosscomp_str "${crosscomp_str}  + system include directories: ${${environment}_INCLUDE_DIRS}")
-    endif()
-    if(${environment}_PROGRAM_DIRS)
-      set(crosscomp_str "${crosscomp_str}  + system program directories: ${${environment}_PROGRAM_DIRS}")
-    endif()
   endif()
   if(crosscomp_str)
     message("${crosscomp_str}")
@@ -2465,6 +2563,15 @@ function(print_Evaluated_Environment environment)
     endif()
     if(${environment}_STATIC_LINKER_FLAGS)
       message("- linker flags for static libraries: ${${environment}_STATIC_LINKER_FLAGS}")
+    endif()
+    if(${environment}_LIBRARY_DIRS)
+      message("- system libraries directories: ${${environment}_LIBRARY_DIRS}")
+    endif()
+    if(${environment}_INCLUDE_DIRS)
+      message("- system include directories: ${${environment}_INCLUDE_DIRS}")
+    endif()
+    if(${environment}_PROGRAM_DIRS)
+      message("- system program directories: ${${environment}_PROGRAM_DIRS}")
     endif()
   endif()
 

@@ -4756,6 +4756,35 @@ function(is_CXX_Standard_Option STANDARD_NUMBER opt)
   endif()
 endfunction(is_CXX_Standard_Option)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |abi_Version| replace:: ``abi_Version``
+#  .. _abi_Version:
+#
+#  abi_Version
+#  ------------
+#
+#   .. command:: abi_Version(RES_VERSION abi)
+#
+#    Returns the version of the C++ ABI with an internal representation.
+#
+#     :abi: the ABI to get identifier for.
+#
+#     :RES_VERSION: the output variable that containts the version number or that is empty is abi is not a valid string for ABI representation.
+#
+function(abi_Version RES_VERSION abi)
+  if(abi MATCHES "CXX11|11|abi11")
+    set(${RES_VERSION} 2 PARENT_SCOPE)
+  elseif(abi MATCHES "abi98|CXX|98")
+    set(${RES_VERSION} 1 PARENT_SCOPE)
+  else()
+    set(${RES_VERSION} 0 PARENT_SCOPE)#unknown ABI
+  endif()
+endfunction(abi_Version)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -4776,21 +4805,9 @@ endfunction(is_CXX_Standard_Option)
 #     :ARE_EQUAL: the output variable that is TRUE is both abi are the same.
 #
 function(compare_ABIs ARE_EQUAL abi1 abi2)
-  if(abi1 MATCHES "CXX11|11|abi11")
-    set(abi1_number 2)
-  elseif(abi1 MATCHES "abi98|CXX|98")
-    set(abi1_number 1)
-  else()
-    set(abi1_number 0)#unknown ABI
-  endif()
-  if(abi2 MATCHES "CXX11|11|abi11")
-    set(abi2_number 2)
-  elseif(abi1 MATCHES "abi98|CXX|98")
-    set(abi2_number 1)
-  else()
-    set(abi2_number 0)
-  endif()
-  if(abi1_number EQUAL abi2_number)
+  abi_Version(abi1_number ${abi1})
+  abi_Version(abi2_number ${abi2})
+  if(abi1_number AND abi2_number AND abi1_number EQUAL abi2_number)
     set(${ARE_EQUAL} TRUE PARENT_SCOPE)
   else()
     set(${ARE_EQUAL} FALSE PARENT_SCOPE)

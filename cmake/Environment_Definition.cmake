@@ -810,7 +810,6 @@ endfunction(get_Configured_Environment_Tool)
 #
 function(configure_Environment_Tool)
   set(options SYSTEM EXE MODULE STATIC SHARED CURRENT)
-
   set(monoValueArgs EXTRA PROGRAM CONFIGURATION SYSROOT STAGING LANGUAGE COMPILER HOST_COMPILER TOOLCHAIN_ID INTERPRETER NM OBJDUMP OBJCOPY LIBRARY AR RANLIB LINKER GEN_TOOLSET GEN_PLATFORM )
   set(multiValueArgs PLUGIN FLAGS PROGRAM_DIRS LIBRARY_DIRS INCLUDE_DIRS)
   cmake_parse_arguments(CONF_ENV_TOOL "${options}" "${monoValueArgs}" "${multiValueArgs}" ${ARGN})
@@ -835,29 +834,44 @@ function(configure_Environment_Tool)
     endif()
   endif()
   if(CONF_ENV_TOOL_LANGUAGE)
-    if(CONF_ENV_TOOL_CURRENT)#using current detected compiler settings
-      add_Language_Toolset(${CONF_ENV_TOOL_LANGUAGE} TRUE
-                           "" "" #Note: for local toolset, not possible to resolve the expression immediately, need the environment to be completely evaluated, and same for check script
-                           "${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_COMPILER}"
-                           "${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_COMPILER_ID}"
-                           "${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_COMPILER_AR}"
-                           "${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_COMPILER_RANLIB}"
-                           "${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_FLAGS}"
-                           "" "" ""
-                           "${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_HOST_COMPILER}")
-    else()
-      add_Language_Toolset(${CONF_ENV_TOOL_LANGUAGE} TRUE
-                           "" "" #Note: for local toolset, not possible to resolve the expression immediately, need the environment to be completely evaluated, and same for check script
-                           "${CONF_ENV_TOOL_COMPILER}"
-                           "${CONF_ENV_TOOL_TOOLCHAIN_ID}"
-                           "${CONF_ENV_TOOL_AR}"
-                           "${CONF_ENV_TOOL_RANLIB}"
-                           "${CONF_ENV_TOOL_FLAGS}"
-                           "${CONF_ENV_TOOL_INTERPRETER}"
-                           "${CONF_ENV_TOOL_INCLUDE_DIRS}"
-                           "${CONF_ENV_TOOL_LIBRARY}"
-                          "${CONF_ENV_TOOL_HOST_COMPILER}")
+    if(CONF_ENV_TOOL_CURRENT)#using current detected compiler settings by default
+      set(use_compiler ${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_COMPILER})
+      set(use_compiler_id ${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_COMPILER_ID})
+      set(use_compiler_ar ${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_COMPILER_AR})
+      set(use_compiler_ranlib ${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_COMPILER_RANLIB})
+      set(use_host_compiler ${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_HOST_COMPILER})
+      set(use_compiler_flags ${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_FLAGS})
     endif()
+    if(CONF_ENV_TOOL_COMPILER)
+      set(use_compiler ${CONF_ENV_TOOL_COMPILER})
+    endif()
+    if(CONF_ENV_TOOL_TOOLCHAIN_ID)
+      set(use_compiler_id ${CONF_ENV_TOOL_TOOLCHAIN_ID})
+    endif()
+    if(CONF_ENV_TOOL_AR)
+      set(use_compiler_ar ${CONF_ENV_TOOL_AR})
+    endif()
+    if(CONF_ENV_TOOL_RANLIB)
+      set(use_compiler_ranlib ${CONF_ENV_TOOL_RANLIB})
+    endif()
+    if(CONF_ENV_TOOL_HOST_COMPILER)
+      set(use_host_compiler ${CONF_ENV_TOOL_HOST_COMPILER})
+    endif()
+    if(CONF_ENV_TOOL_FLAGS)
+      set(use_compiler_flags ${CONF_ENV_TOOL_FLAGS})
+    endif()
+
+    add_Language_Toolset(${CONF_ENV_TOOL_LANGUAGE} TRUE
+                         "" "" #Note: for local toolset, not possible to resolve the expression immediately, need the environment to be completely evaluated, and same for check script
+                         "${use_compiler}"
+                         "${use_compiler_id}"
+                         "${use_compiler_ar}"
+                         "${use_compiler_ranlib}"
+                         "${use_compiler_flags}"
+                         "${CONF_ENV_TOOL_INTERPRETER}"
+                         "${CONF_ENV_TOOL_INCLUDE_DIRS}"
+                         "${CONF_ENV_TOOL_LIBRARY}"
+                         "${use_host_compiler}")
 
   elseif(CONF_ENV_TOOL_SYSTEM)
 
@@ -881,79 +895,45 @@ function(configure_Environment_Tool)
       set(${PROJECT_NAME}_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS}" CACHE INTERNAL "")
     endif()
 
-    #NOW apply specific values
-    if(CONF_ENV_TOOL_GEN_TOOLSET)
-      set(${PROJECT_NAME}_GENERATOR_TOOLSET ${CONF_ENV_TOOL_GEN_TOOLSET} CACHE INTERNAL "")
-    endif()
-    if(CONF_ENV_TOOL_GEN_PLATFORM)
-      set(${PROJECT_NAME}_GENERATOR_PLATFORM ${CONF_ENV_TOOL_GEN_PLATFORM} CACHE INTERNAL "")
-    endif()
-    #manage crosscompilation
-    if(CONF_ENV_TOOL_SYSROOT)#warning overwritting previosu value if any forced
-      set(${PROJECT_NAME}_TARGET_SYSROOT ${CONF_ENV_TOOL_SYSROOT} CACHE INTERNAL "")
-    endif()
-    if(CONF_ENV_TOOL_STAGING)#warning overwritting previosu value if any forced
-      set(${PROJECT_NAME}_TARGET_STAGING ${CONF_ENV_TOOL_STAGING} CACHE INTERNAL "")
-    endif()
-
-    #manage linker in use
-    if(CONF_ENV_TOOL_LINKER)
-      set(${PROJECT_NAME}_LINKER ${CONF_ENV_TOOL_LINKER} CACHE INTERNAL "")
-    endif()
-    #manage binary inspection/modification tools
-    if(CONF_ENV_TOOL_AR)
-      set(${PROJECT_NAME}_AR ${CONF_ENV_TOOL_AR} CACHE INTERNAL "")
-    endif()
-    if(CONF_ENV_TOOL_RANLIB)
-      set(${PROJECT_NAME}_RANLIB ${CONF_ENV_TOOL_RANLIB} CACHE INTERNAL "")
-    endif()
-    if(CONF_ENV_TOOL_NM)
-      set(${PROJECT_NAME}_NM ${CONF_ENV_TOOL_NM} CACHE INTERNAL "")
-    endif()
-    if(CONF_ENV_TOOL_OBJDUMP)
-      set(${PROJECT_NAME}_OBJDUMP ${CONF_ENV_TOOL_OBJDUMP} CACHE INTERNAL "")
-    endif()
-    if(CONF_ENV_TOOL_OBJCOPY)
-      set(${PROJECT_NAME}_OBJCOPY ${CONF_ENV_TOOL_OBJCOPY} CACHE INTERNAL "")
-    endif()
-
-    #manage default system path
-    if(CONF_ENV_TOOL_INCLUDE_DIRS)
-      append_Unique_In_Cache(${PROJECT_NAME}_INCLUDE_DIRS "${CONF_ENV_TOOL_INCLUDE_DIRS}")
-    endif()
-    if(CONF_ENV_TOOL_LIBRARY_DIRS)
-      append_Unique_In_Cache(${PROJECT_NAME}_LIBRARY_DIRS "${CONF_ENV_TOOL_LIBRARY_DIRS}")
-    endif()
-    if(CONF_ENV_TOOL_PROGRAM_DIRS)
-      append_Unique_In_Cache(${PROJECT_NAME}_PROGRAM_DIRS "${CONF_ENV_TOOL_PROGRAM_DIRS}")
-    endif()
-
+    set(exe_flags)
+    set(module_flags)
+    set(static_flags)
+    set(shared_flags)
     if(CONF_ENV_TOOL_FLAGS)
       #checking filters for flags
       set(filter_found FALSE)
       if(CONF_ENV_TOOL_EXE)
         set(filter_found TRUE)
-        append_Unique_In_Cache(${PROJECT_NAME}_EXE_LINKER_FLAGS "${CONF_ENV_TOOL_FLAGS}")
+        set(exe_flags "${CONF_ENV_TOOL_FLAGS}")
       endif()
       if(CONF_ENV_TOOL_MODULE)
         set(filter_found TRUE)
-        append_Unique_In_Cache(${PROJECT_NAME}_MODULE_LINKER_FLAGS "${CONF_ENV_TOOL_FLAGS}")
+        set(module_flags "${CONF_ENV_TOOL_FLAGS}")
       endif()
       if(CONF_ENV_TOOL_STATIC)
         set(filter_found TRUE)
-        append_Unique_In_Cache(${PROJECT_NAME}_STATIC_LINKER_FLAGS "${CONF_ENV_TOOL_FLAGS}")
+        set(static_flags "${CONF_ENV_TOOL_FLAGS}")
       endif()
       if(CONF_ENV_TOOL_SHARED)
         set(filter_found TRUE)
-        append_Unique_In_Cache(${PROJECT_NAME}_SHARED_LINKER_FLAGS "${CONF_ENV_TOOL_FLAGS}")
+        set(shared_flags "${CONF_ENV_TOOL_FLAGS}")
       endif()
       if(NOT filter_found)#apply flags to all types
-        append_Unique_In_Cache(${PROJECT_NAME}_EXE_LINKER_FLAGS "${CONF_ENV_TOOL_FLAGS}")
-        append_Unique_In_Cache(${PROJECT_NAME}_MODULE_LINKER_FLAGS "${CONF_ENV_TOOL_FLAGS}")
-        append_Unique_In_Cache(${PROJECT_NAME}_SHARED_LINKER_FLAGS "${CONF_ENV_TOOL_FLAGS}")
-        append_Unique_In_Cache(${PROJECT_NAME}_STATIC_LINKER_FLAGS "${CONF_ENV_TOOL_FLAGS}")
+        set(exe_flags "${CONF_ENV_TOOL_FLAGS}")
+        set(module_flags "${CONF_ENV_TOOL_FLAGS}")
+        set(static_flags "${CONF_ENV_TOOL_FLAGS}")
+        set(shared_flags "${CONF_ENV_TOOL_FLAGS}")
       endif()
     endif()
+
+    set_System_Wide_Configuration("${CONF_ENV_TOOL_GEN_TOOLSET}" "${CONF_ENV_TOOL_GEN_PLATFORM}"
+      "${CONF_ENV_TOOL_SYSROOT}" "${CONF_ENV_TOOL_STAGING}"
+        "${CONF_ENV_TOOL_LINKER}" "${CONF_ENV_TOOL_AR}"   "${CONF_ENV_TOOL_RANLIB}"
+        "${CONF_ENV_TOOL_NM}"   "${CONF_ENV_TOOL_OBJDUMP}" "${CONF_ENV_TOOL_OBJCOPY}"
+        "${CONF_ENV_TOOL_INCLUDE_DIRS}"   "${CONF_ENV_TOOL_LIBRARY_DIRS}" "${CONF_ENV_TOOL_PROGRAM_DIRS}"
+        "${exe_flags}" "${module_flags}" "${static_flags}" "${shared_flags}"
+    )
+
   elseif(CONF_ENV_TOOL_EXTRA)#extra tool defined
     if(CONF_ENV_TOOL_PLUGIN)
       set(monoValueArgs BEFORE_DEPS BEFORE_COMPS DURING_COMPS AFTER_COMPS)
@@ -1251,7 +1231,7 @@ function(get_Environment_Host_Platform)
     set(${GET_ENV_HOST_PLATFORM_OS} ${CURRENT_PLATFORM_OS} PARENT_SCOPE)
   endif()
   if(GET_ENV_HOST_PLATFORM_ABI)
-    set(${GET_ENV_HOST_PLATFORM_ABI} ${CURRENT_ABI} PARENT_SCOPE)
+    set(${GET_ENV_HOST_PLATFORM_ABI} ${CURRENT_PLATFORM_ABI} PARENT_SCOPE)
   endif()
 
 endfunction(get_Environment_Host_Platform)
