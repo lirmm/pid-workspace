@@ -33,7 +33,7 @@ if(DIR_NAME STREQUAL "build")
 	### set global workspace variables ###
 	set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR} CACHE INTERNAL "")
 	option(IN_CI_PROCESS "Determine wether the build takes place in a CI environment (ON) or not (default to OFF)." OFF)
-	option(ADDITIONNAL_DEBUG_INFO "Get debug infi from configuration" OFF)
+	option(ADDITIONAL_DEBUG_INFO "Get debug infi from configuration" OFF)
 	mark_as_advanced(IN_CI_PROCESS)
 	set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
 
@@ -317,7 +317,7 @@ macro(add_PID_Command name script)
 			${ARGS}
 			${OPTIONS}
 			-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
-			-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+			-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
 			-P ${CMAKE_SOURCE_DIR}/cmake/commands/${script}
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)

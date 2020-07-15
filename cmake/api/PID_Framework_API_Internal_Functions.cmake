@@ -247,7 +247,7 @@ if(DIR_NAME STREQUAL "build")
 	  COMMAND ${CMAKE_COMMAND}
 	            -DWORKSPACE_DIR=${WORKSPACE_DIR}
 	            -DTARGET_FRAMEWORK=${PROJECT_NAME}
-	  					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+	  					-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
 	  					-P ${WORKSPACE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
 	  	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	  )
@@ -319,7 +319,7 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${git_address}" "${public_address}" "" "${site}" "${repo_site}" "${welcome}")
 	set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
 	declare_Framework_Global_Cache_Options()
-	check_For_Remote_Respositories("${ADDITIONNAL_DEBUG_INFO}")#configuring git remotes
+	check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")#configuring git remotes
 
 	#searching for jekyll (static site generator)
 	if(JEKYLL_EXECUTABLE)
@@ -382,7 +382,7 @@ endmacro(declare_Framework)
 #     Declare configurable options for the currently built framework.
 #
 macro(declare_Framework_Global_Cache_Options)
-option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
+option(ADDITIONAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
 endmacro(declare_Framework_Global_Cache_Options)
 
 

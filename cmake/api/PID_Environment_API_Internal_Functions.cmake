@@ -167,7 +167,7 @@ macro(declare_Environment author institution mail year license address public_ad
   set(action_info ${info})
   fill_String_From_List(RES_INFO action_info " ")
   set(${PROJECT_NAME}_ACTION_INFO "${RES_INFO}" CACHE INTERNAL "")
-  check_For_Remote_Respositories("${ADDITIONNAL_DEBUG_INFO}")#configuring git remotes
+  check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")#configuring git remotes
 endmacro(declare_Environment)
 
 #.rst:
@@ -185,7 +185,7 @@ endmacro(declare_Environment)
 #     Declare configurable options for the currently built environment.
 #
 macro(declare_Environment_Global_Cache_Options)
-option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
+option(ADDITIONAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
 endmacro(declare_Environment_Global_Cache_Options)
 
 #.rst:
@@ -444,7 +444,7 @@ macro(build_Environment_Project)
   COMMAND ${CMAKE_COMMAND}
             -DWORKSPACE_DIR=${WORKSPACE_DIR}
             -DTARGET_ENVIRONMENT=${PROJECT_NAME}
-  					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+  					-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
   					-P ${WORKSPACE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
   	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   )
@@ -617,7 +617,7 @@ include_Environment_Reference_File(REF_EXIST ${environment})
 
 environment_Project_Exists(FOLDER_EXISTS PATH_TO_SITE ${environment})
 if(FOLDER_EXISTS)
-  if(ADDITIONNAL_DEBUG_INFO)
+  if(ADDITIONAL_DEBUG_INFO)
 	   message("[PID] INFO: updating environment ${environment} (this may take a long time)")
   endif()
   update_Environment_Repository(${environment}) #update the repository to be sure to work on last version
@@ -688,13 +688,13 @@ function(generate_Environment_Inputs_File RESULT environment)
     set(toolchain)
   endif()
   reset_Profile_Info()#need to reset profile info to its initial value (avoid troubles when changing profile)
-  if(NOT ADDITIONNAL_DEBUG_INFO)
+  if(NOT ADDITIONAL_DEBUG_INFO)
     set(execute_args OUTPUT_QUIET ERROR_QUIET)
   endif()
   execute_process(COMMAND ${CMAKE_COMMAND}
                   -G "${generator_used}"
                   ${toolchain}
-                  -DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+                  -DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
                   -D IN_CI_PROCESS=${IN_CI_PROCESS} ..
                   WORKING_DIRECTORY ${environment_build_folder}
                   ${execute_args}
@@ -882,7 +882,7 @@ get_Platform_Constraints_Definitions(PLATFORM_DEFS ${environment} "${instance}" 
 
 execute_process(COMMAND ${CMAKE_COMMAND}
                 -DEVALUATION_RUN=TRUE
-                -DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+                -DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
                 ${PLATFORM_DEFS}
                 ${list_of_defs}
                 ..
@@ -1543,7 +1543,7 @@ macro(evaluate_Environment_Solution index)
     set(ENVIRONMENT_CONFIG_RESULT TRUE CACHE INTERNAL "")
     include(src/${${PROJECT_NAME}_SOLUTION_${index}_CONFIGURE})# we need to configure host with adequate tools
     if(NOT ENVIRONMENT_CONFIG_RESULT)# toolsets configuration OK (may mean crosscompiling)
-      if(ADDITIONNAL_DEBUG_INFO)
+      if(ADDITIONAL_DEBUG_INFO)
         message("[PID] INFO : evaluation of solution ${index} defined in ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_SOLUTION_${index}_CONFIGURE} failed")
       endif()
     else()

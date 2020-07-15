@@ -236,7 +236,7 @@ reset_CI_Variables()
 reset_Packages_Finding_Variables()
 init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
 init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "")
-check_For_Remote_Respositories("${ADDITIONNAL_DEBUG_INFO}")#configuring git remotes
+check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")#configuring git remotes
 
 #############################################################
 ############ Managing build process #########################
@@ -264,7 +264,7 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			COMMAND ${CMAKE_COMMAND}
 							-DWORKSPACE_DIR=${WORKSPACE_DIR}
 							-DTARGET_PACKAGE=${PROJECT_NAME}
-							-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+							-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
 							-P ${WORKSPACE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 		)
@@ -336,7 +336,7 @@ endmacro(declare_Wrapper)
 #     Declare configurable options for the currently built wrapper.
 #
 macro(declare_Wrapper_Global_Cache_Options)
-option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
+option(ADDITIONAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
 option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
 endmacro(declare_Wrapper_Global_Cache_Options)
 
@@ -666,7 +666,7 @@ if(${PROJECT_NAME}_SYSTEM_CONFIGURATION_DEFINED)
 endif()
 #writing options that can be useful to control the build process
 file(APPEND ${path_to_file} "set(ENABLE_PARALLEL_BUILD ${ENABLE_PARALLEL_BUILD} CACHE INTERNAL \"\")\n")
-file(APPEND ${path_to_file} "set(ADDITIONNAL_DEBUG_INFO ${ADDITIONNAL_DEBUG_INFO} CACHE INTERNAL \"\")\n")
+file(APPEND ${path_to_file} "set(ADDITIONAL_DEBUG_INFO ${ADDITIONAL_DEBUG_INFO} CACHE INTERNAL \"\")\n")
 
 #write version about user options
 file(APPEND ${path_to_file} "set(${PROJECT_NAME}_USER_OPTIONS ${${PROJECT_NAME}_USER_OPTIONS} CACHE INTERNAL \"\")\n")
@@ -791,7 +791,7 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/src/system)
 						-DIN_CI_PROCESS=${IN_CI_PROCESS}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
-						-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+						-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
 						-DTARGET_SOURCE_DIR=${CMAKE_SOURCE_DIR}/system
 			 -P ${WORKSPACE_DIR}/cmake/commands/Eval_PID_System_Configuration.cmake
 			 VERBATIM

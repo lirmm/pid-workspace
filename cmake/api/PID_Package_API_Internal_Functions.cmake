@@ -297,7 +297,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
   	COMMAND ${CMAKE_COMMAND}
             -DWORKSPACE_DIR=${WORKSPACE_DIR}
             -DTARGET_PACKAGE=${PROJECT_NAME}
-  					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+  					-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
   					-P ${WORKSPACE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
   	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   )
@@ -409,7 +409,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		add_custom_target(license)
 		add_dependencies(license licensing)
 	endif()
-	if(ADDITIONNAL_DEBUG_INFO)
+	if(ADDITIONAL_DEBUG_INFO)
 		add_custom_target(list_dependencies
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} list_dependencies
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} list_dependencies
@@ -469,7 +469,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	endif()
 	unset(no_format)
 
-	if(BUILD_DEPENDENT_PACKAGES AND ADDITIONNAL_DEBUG_INFO)
+	if(BUILD_DEPENDENT_PACKAGES AND ADDITIONAL_DEBUG_INFO)
 		message("[PID] INFO : build process of ${PROJECT_NAME} will be recursive.")
 	endif()
 
@@ -510,7 +510,7 @@ init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
 init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "")
 reset_Version_Cache_Variables()
 reset_Temporary_Optimization_Variables(${CMAKE_BUILD_TYPE}) #resetting temporary variables used in optimization of configruation process
-check_For_Remote_Respositories("${ADDITIONNAL_DEBUG_INFO}")
+check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")
 init_Standard_Path_Cache_Variables()
 begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
 endmacro(declare_Package)
@@ -906,7 +906,7 @@ set(INSTALL_REQUIRED FALSE)
 need_Install_External_Packages(INSTALL_REQUIRED)
 if(INSTALL_REQUIRED)
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)#when automatic download engaged (default) then automatically install
-		if(ADDITIONNAL_DEBUG_INFO)
+		if(ADDITIONAL_DEBUG_INFO)
 			message("[PID] INFO : ${PROJECT_NAME} needs to install requires external packages : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}.")
 		endif()
 	else()
@@ -919,7 +919,7 @@ set(INSTALL_REQUIRED FALSE)
 need_Install_Native_Packages(INSTALL_REQUIRED)
 if(INSTALL_REQUIRED)
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)#when automatic download engaged (default) then automatically install
-		if(ADDITIONNAL_DEBUG_INFO)
+		if(ADDITIONAL_DEBUG_INFO)
 			message("[PID] INFO : ${PROJECT_NAME} needs to install requires native packages : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}.")
 		endif()
 	else()
@@ -1234,7 +1234,7 @@ add_custom_target(list_dependencies
 					-DPROJECT_VERSION=${${PROJECT_NAME}_VERSION}
 					-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
 					-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-					-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+					-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
 					-DFLAT_PRESENTATION=\${flat}
 					-DWRITE_TO_FILE=\${write_file}
 					-P ${WORKSPACE_DIR}/cmake/commands/Listing_PID_Package_Dependencies.cmake

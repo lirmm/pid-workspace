@@ -1,6 +1,6 @@
 before_script:
     - . share/pid.sh
-    - pid contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONNAL_DEBUG_INFO=ON
+    - pid contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONAL_DEBUG_INFO=ON
     - pid contributions cmd=prio_max space=pid-tests
 
 stages:
@@ -120,7 +120,7 @@ raspbian deploy:
         - rsync -avX --rsh="/usr/bin/sshpass -p lirmm ssh -o StrictHostKeyChecking=no -l root -p 2722" /root/.ssh root@127.0.0.1:/root/
         - rsync -avX --rsh="/usr/bin/sshpass -p lirmm ssh -o StrictHostKeyChecking=no -l root -p 2722" `pwd` root@127.0.0.1:/root/
         - ~/run.sh "ssh-keyscan gite.lirmm.fr > /root/.ssh/known_hosts"
-        - ~/run.sh ./pid contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONNAL_DEBUG_INFO=ON
+        - ~/run.sh ./pid contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONAL_DEBUG_INFO=ON
         - ~/run.sh ./pid contributions cmd=prio_max space=pid-tests
     script: 
         - ~/run.sh ./pid deploy package=mytestpackage
@@ -132,7 +132,7 @@ windows10 deploy:
         - source /home/PID/msvc_setup.sh
         - which cl.exe
         - ./pid.bat configure -DCMAKE_GENERATOR=Ninja
-        - ./pid.bat contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONNAL_DEBUG_INFO=ON
+        - ./pid.bat contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONAL_DEBUG_INFO=ON
         - ./pid.bat contributions cmd=prio_max space=pid-tests
     script: 
         - ./pid.bat deploy package=pid-rpath branch=cxx17

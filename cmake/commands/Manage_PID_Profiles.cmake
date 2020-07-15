@@ -272,7 +272,7 @@ write_Profiles_Description_File()
 
 if(need_reconfigure)
 	execute_process(COMMAND ${CMAKE_COMMAND}
-									-DADDITIONNAL_DEBUG_INFO=${ADDITIONNAL_DEBUG_INFO}
+									-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
 									-DFORCE_CURRENT_PROFILE_EVALUATION=TRUE
 									${WORKSPACE_DIR}
 									WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
