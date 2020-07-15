@@ -1,2 +1,8 @@
+*~
+*.old
+CMakeFiles
+cmake_install.cmake
+Makefile
+CMakeCache.txt
 pid
 pid.bat
