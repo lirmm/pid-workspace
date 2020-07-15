@@ -59,6 +59,7 @@ option(BUILD_DEPENDENT_PACKAGES "the build will leads to the rebuild of its depe
 option(ADDITIONNAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
 option(BUILD_STATIC_CODE_CHECKING_REPORT "running static checks on libraries and applications, if tests are run then additionnal static code checking tests are automatically added." OFF)
 option(ENABLE_SANITIZERS "Enable the sanitizers on the package's components" OFF)
+option(WARNINGS_AS_ERRORS "Generating errors when warnings are notified" OFF)
 
 # dependent options
 include(CMakeDependentOption)
