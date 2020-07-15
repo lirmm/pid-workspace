@@ -69,11 +69,9 @@ endmacro(set_Project_Module_Path_From_Workspace)
 #      AUxiliary funciton to find a file or directory in the contribution space with highest priority and returns its path and the path to its contribution space
 #
 #      :file_type: type of the file (licenses, formats, plugins, references, finds)
-#
 #      :file_name: name of file or folder
 #
 #      :RESULT_FILE_PATH: output variable containing path to the file if found, empty otherwise.
-#
 #      :RESULT_CONTRIBUTION_SPACE: output variable containing path to the contribution space containing the file or folder if found, empty otherwise.
 #
 function(find_File_In_Contribution_Spaces RESULT_FILE_PATH RESULT_CONTRIBUTION_SPACE file_type file_name)
@@ -359,7 +357,6 @@ endmacro(include_Find_File)
 #      :package: name of the package.
 #
 #      :RESULT_PATH: output variable containing path to the reference file if found, empty otherwise.
-#
 #      :RESULT_CONTRIB_SPACE: output variable containing path to the contribution space with highest priority that contains the reference file.
 #
 function(get_Path_To_Package_Reference_File RESULT_PATH RESULT_CONTRIB_SPACE package)
@@ -385,7 +382,6 @@ endfunction(get_Path_To_Package_Reference_File)
 #      :package: name of the package.
 #
 #      :RESULT_PATH: output variable containing path to the reference file if found, empty otherwise.
-#
 #      :RESULT_CONTRIB_SPACE: output variable containing path to the contribution space with highest priority that contains the reference file.
 #
 function(get_Path_To_External_Reference_File RESULT_PATH RESULT_CONTRIB_SPACE package)
@@ -411,7 +407,6 @@ endfunction(get_Path_To_External_Reference_File)
 #      :framework: name of the framework.
 #
 #      :RESULT_PATH: output variable containing path to the reference file if found, empty otherwise.
-#
 #      :RESULT_CONTRIB_SPACE: output variable containing path to the contribution space with highest priority that contains the reference file.
 #
 function(get_Path_To_Framework_Reference_File RESULT_PATH RESULT_CONTRIB_SPACE framework)
@@ -437,7 +432,6 @@ endfunction(get_Path_To_Framework_Reference_File)
 #      :environment: name of the environment.
 #
 #      :RESULT_PATH: output variable containing path to the reference file if found, empty otherwise.
-#
 #      :RESULT_CONTRIB_SPACE: output variable containing path to the contribution space with highest priority that contains the reference file.
 #
 function(get_Path_To_Environment_Reference_File RESULT_PATH RESULT_CONTRIB_SPACE environment)
@@ -601,7 +595,6 @@ endfunction(include_Environment_Reference_File)
 #      get all available reference files referenced in a given contribution space
 #
 #      :contribution_space: name of the contribution space
-#
 #      :prefix: prefix for name (depends on type of deployment unit)
 #
 #      :RES_LIST: output variable containing the list of licenses provided by contribution_space.
@@ -835,9 +828,7 @@ endfunction(set_Cache_Entry_For_Default_Contribution_Space)
 #      add to cache the description of a contribution space
 #
 #      :name: name of the contribution space.
-#
 #      :update: URL used to update local content.
-#
 #      :publish: URL used to publish local content.
 #
 function(add_Contribution_Space name update publish)
@@ -865,9 +856,7 @@ endfunction(add_Contribution_Space)
 #      Deploy a contrbution space in local workspace.
 #
 #      :name: name of the contribution space.
-#
 #      :update: URL used to update local content.
-#
 #      :publish: URL used to publish local content.
 #
 function(deploy_Contribution_Space DEPLOYED name update publish)
@@ -975,9 +964,7 @@ endmacro(reset_Contribution_Spaces)
 #      Note: to be used only in contributions description file.
 #
 #      :NAME <string>: name of the contribution space.
-#
 #      :UPDATE <URL>: URL used to update local content.
-#
 #      :PUBLISH <URL>: URL used to publish local content.
 #
 function(PID_Contribution_Space)
@@ -1087,17 +1074,12 @@ endfunction(write_Contribution_Spaces_Description_File)
 #      Get all contributions of a contribution space that match a pattern name
 #
 #      :cs: name of the contribution space.
-#
 #      :name: name of the contribution (license, format, configuration, reference, etc.).
 #
 #      :LICENSE: output variable that contains a license file name if anyone matches, empty otherwise.
-#
 #      :REFERENCE: output variable that contains a reference file name if anyone matches, empty otherwise.
-#
 #      :FIND: output variable that contains a find file name if anyone matches, empty otherwise.
-#
 #      :FORMAT: output variable that contains a format file name if anyone matches, empty otherwise.
-#
 #      :PLUGIN: output variable that contains a plugin folder name if anyone matches, empty otherwise.
 #
 function(get_All_Matching_Contributions LICENSE REFERENCE FIND FORMAT PLUGIN cs name)
@@ -1157,7 +1139,6 @@ endfunction(get_All_Matching_Contributions)
 #      Also the current project default contribution space has always priority over other spaces that may contain references to a dependency.
 #
 #      :config: name of the platform configuration (i.e. name of the corresponding wrapper).
-#
 #      :default_cs: name of the contribution space considered as default for the current project.
 #
 #      :LIST_OF_CS: output variable that contains the list of contribution spaces in use in current package.
@@ -1195,11 +1176,8 @@ endfunction(get_System_Configuration_All_Non_Official_Contribution_Spaces_In_Use
 #      Also the current project default contribution space has always priority over other spaces that may contain references to a dependency.
 #
 #      :package: name of the package.
-#
 #      :type: type of the package.
-#
 #      :default_cs: name of the contribution space considered as default for the current project.
-#
 #      :mode: build mode to consider.
 #
 #      :LIST_OF_CS: output variable that contains the list of contribution spaces in use in current package.
@@ -1245,7 +1223,6 @@ endfunction(get_Package_All_Non_Official_Contribtion_Spaces_In_Use)
 #      Also the current project contribution space has always priority over other spaces that may contain references to a dependency.
 #
 #      :wrapper: name of the external package.
-#
 #      :default_cs: name of the contribution space considered as default for the current project.
 #
 #      :LIST_OF_CS: output variable that contains the list of contribution spaces in use in current package.
@@ -1312,9 +1289,7 @@ endfunction(get_Update_Remote_Of_Contribution_Space)
 #      Also the current project contribution space has always priority over other spaces that may contain references to a dependency.
 #
 #      :content: name of the content (native or external package, configuration).
-#
 #      :type: type of the content (NATIVE,EXTERNAL)
-#
 #      :default_cs: name of the contribution space that is considered as default one.
 #
 #      :PROVIDER_CS: output variable that contains the name of the provider contribution space.

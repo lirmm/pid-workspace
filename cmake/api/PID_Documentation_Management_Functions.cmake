@@ -648,7 +648,6 @@ endfunction(generate_Package_Static_Site_Page_License)
 #      Memorize the documentation file for a given component of current package project.
 #
 #      :component: the name of the component.
-#
 #      :file: the memorized path to documentation file.
 #
 function(define_Component_Documentation_Content component file)
@@ -676,7 +675,6 @@ endfunction(define_Component_Documentation_Content)
 #      Memorize the path to a documentation file with a given unique label.
 #
 #      :label: the label attached to the file.
-#
 #      :file: the memorized path to documentation file.
 #
 function(define_Documentation_Content label file)
@@ -844,7 +842,6 @@ endfunction(generate_Wrapper_Static_Site_Page_Install)
 #      Generate the description (section of md file) for a given component defined in an external package wrapper.
 #
 #      :prefix: prefix to use to target adequate version of external package.
-#
 #      :component: the name of teh component.
 #
 #      :RES_CONTENT: the output variable containing the generated markdown content.
@@ -1281,9 +1278,7 @@ endfunction(generate_Dependency_Site)
 #      Generate section of md file for an external package dependency. This defines markdown links to the static static site of the dependency.
 #
 #      :dependency: the name of the dependency.
-#
 #      :list_of_versions: the variable containing the list of possible versions for the dependency.
-#
 #      :exact_versions: the variable containing the list of exact versions (amon possible) for the dependency.
 #
 #      :RES_CONTENT: output variable containing the markdown content used to target the dependency static site.
@@ -1520,23 +1515,14 @@ endfunction(generate_Component_Site_For_Package)
 #      Copy generated documentation and binaries content to the package static site repository (framework or lone site).
 #
 #      :package: the name of the package.
-#
 #      :only_bin: if TRUE then only produce binaries into static site.
-#
 #      :framework: the name of the framework (or empty string if package belongs to no framework).
-#
 #      :version: the version for wich the documentation is generated.
-#
 #      :platform: the platform for wich the published binaries is generated.
-#
 #      :include_api_doc: TRUE if API documentation must be included in static site.
-#
 #      :include_coverage: TRUE if coverage report must be included in static site.
-#
 #      :include_staticchecks: TRUE if static checks report must be included in static site.
-#
 #      :include_installer: TRUE if generated binaries are published by the static site.
-#
 #      :force: if TRUE the whole content is copied, otherwise only detected modifications are copied.
 #
 function(produce_Package_Static_Site_Content package only_bin framework version platform include_api_doc include_coverage include_staticchecks include_installer force) # copy everything needed
@@ -1947,17 +1933,11 @@ endfunction(configure_Wrapper_Pages)
 #      Copy generated documentation and binaries content to the external package static site repository (framework or lone site).
 #
 #      :package: the name of the external package.
-#
 #      :only_bin: if TRUE then only produce binaries into static site.
-#
 #      :framework: the name of the framework (or empty string if package belongs to no framework).
-#
 #      :versions: the version for wich the documentation is generated.
-#
 #      :platform: the platform for wich the published binaries is generated.
-#
 #      :include_installer: TRUE if generated binaries are published by the static site.
-#
 #      :force: if TRUE the whole content is copied, otherwise only detected modifications are copied.
 #
 function(produce_Wrapper_Static_Site_Content package only_bin framework versions platform include_installer force)

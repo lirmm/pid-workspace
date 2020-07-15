@@ -45,13 +45,9 @@ set(PID_PACKAGE_BUILD_TARGETS_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
 #     Create the global build target for current native package.
 #
 #     :privileges: the OS command to get privileged (root) permissions. Useful to run tests with root privileges if required.
-#
 #     :gen_install: if TRUE the build command launch installation.
-#
 #     :gen_build: if TRUE the build command launch compilation.
-#
 #     :gen_doc: if TRUE the build command generates API documentation.
-#
 #     :gen_test_or_cover: if value is "coverage" the build command generates coverage report after launching tests, if value is "test" the build command launch tests.
 #
 function(create_Global_Build_Command privileges gen_install gen_build gen_package gen_doc gen_test_or_cover)
@@ -333,7 +329,6 @@ endfunction(resolve_Build_Options_For_Targets)
 #     Create a target for intalling python code.
 #
 #     :c_name: the name of component that provide python code (MODULE or SCRIPT).
-#
 #     :dirname: the nameof the folder that contains python code.
 #
 function(manage_Python_Scripts c_name dirname)
@@ -386,19 +381,12 @@ endfunction(manage_Python_Scripts)
 #     Create a target for a module library (shared object without a specific header and supposed to be used only at runtime to implement plugin like mechanism). Modules export nothing as they do not have public headers.
 #
 #     :c_name: the name of the library.
-#
 #     :c_standard: the C language standard used for that library.
-#
 #     :cxx_standard: the C++ language standard used for that library.
-#
 #     :sources: the source files of the library.
-#
 #     :internal_inc_dirs: list of additional include path to use when building the library.
-#
 #     :internal_defs: list of private definitions to use when building the library.
-#
 #     :internal_compiler_options: list of private compiler options to use when building the library.
-#
 #     :internal_links: list of private linker options to use when building the library.
 #
 function(create_Module_Lib_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
@@ -430,27 +418,16 @@ endfunction(create_Module_Lib_Target)
 #     Create a target for a shared library.
 #
 #     :c_name: the name of the library.
-#
 #     :c_standard: the C language standard used for that library.
-#
 #     :cxx_standard: the C++ language standard used for that library.
-#
 #     :sources: the source files of the library.
-#
 #     :exported_inc_dirs: list of include path exported by the library.
-#
 #     :internal_inc_dirs: list of additional include path to use when building the library.
-#
 #     :exported_defs: list of definitions exported by the library.
-#
 #     :internal_defs: list of private definitions to use when building the library.
-#
 #     :exported_compiler_options: list of compiler options exported by the library.
-#
 #     :internal_compiler_options: list of private compiler options to use when building the library.
-#
 #     :exported_links: list of linker options exported by the library.
-#
 #     :internal_links: list of private linker options to use when building the library.
 #
 function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links internal_links)
@@ -492,25 +469,15 @@ endfunction(create_Shared_Lib_Target)
 #     Create a target for a static library (they export all their links by construction)
 #
 #     :c_name: the name of the library.
-#
 #     :c_standard: the C language standard used for that library.
-#
 #     :cxx_standard: the C++ language standard used for that library.
-#
 #     :sources: the source files of the library.
-#
 #     :exported_inc_dirs: list of include path exported by the library.
-#
 #     :internal_inc_dirs: list of additional include path to use when building the library.
-#
 #     :exported_defs: list of definitions exported by the library.
-#
 #     :internal_defs: list of private definitions to use when building the library.
-#
 #     :exported_compiler_options: list of compiler options exported by the library.
-#
 #     :internal_compiler_options: list of private compiler options to use when building the library.
-#
 #     :exported_links: list of linker options exported by the library.
 #
 function(create_Static_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links)
@@ -540,17 +507,11 @@ endfunction(create_Static_Lib_Target)
 #     Create a target for a header only library (they export everything by construction and have no sources).
 #
 #     :c_name: the name of the library.
-#
 #     :c_standard: the C language standard used for that library.
-#
 #     :cxx_standard: the C++ language standard used for that library.
-#
 #     :exported_inc_dirs: list of include path exported by the library.
-#
 #     :exported_defs: list of definitions exported by the library.
-#
 #     :exported_compiler_options: list of compiler options exported by the library.
-#
 #     :exported_links: list of links exported by the library.
 #
 function(create_Header_Lib_Target c_name c_standard cxx_standard exported_inc_dirs exported_defs exported_compiler_options exported_links)
@@ -573,11 +534,8 @@ endfunction(create_Header_Lib_Target)
 #     Create a set of alias targets for a given library.
 #
 #     :package: the name of the package containing library.
-#
 #     :real_name: the name of the library.
-#
 #     :aliases: the list of alias names.
-#
 #     :target_suffix: the suffix to use for target names, depending on build mode.
 #
 function(create_Alias_Lib_Target package real_name aliases target_suffix)
@@ -601,11 +559,8 @@ endfunction(create_Alias_Lib_Target)
 #     Create a set of alias targets for a given executable.
 #
 #     :package: the name of the package containing library.
-#
 #     :real_name: the name of the library.
-#
 #     :aliases: the list of alias names.
-#
 #     :target_suffix: the suffix to use for target names, depending on build mode.
 #
 function(create_Alias_Exe_Target package real_name aliases target_suffix)
@@ -629,19 +584,12 @@ endfunction(create_Alias_Exe_Target)
 #     Create a target for a executable (applications and examples). Applications export nothing as they do not have public headers.
 #
 #     :c_name: the name of executable.
-#
 #     :c_standard: the C language standard used for that executable.
-#
 #     :cxx_standard: the C++ language standard used for that executable.
-#
 #     :sources: the source files of the executable.
-#
 #     :internal_inc_dirs: list of additional include path to use when building the executable.
-#
 #     :internal_defs: list of private definitions to use when building the executable.
-#
 #     :internal_compiler_options: list of private compiler options to use when building the executable.
-#
 #     :internal_links: list of private links to use when building the executable.
 #
 function(create_Executable_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
@@ -677,19 +625,12 @@ endfunction(create_Executable_Target)
 #     Create a target for an executable test unit. Test units export nothing as they do not have public headers. Difference with other applications is that test units are not installed (not useful for end users only for developers).
 #
 #     :c_name: the name of executable.
-#
 #     :c_standard: the C language standard used for that executable.
-#
 #     :cxx_standard: the C++ language standard used for that executable.
-#
 #     :sources: the source files of the executable.
-#
 #     :internal_inc_dirs: list of additional include path to use when building the executable.
-#
 #     :internal_defs: list of private definitions to use when building the executable.
-#
 #     :internal_compiler_options: list of private compiler options to use when building the executable.
-#
 #     :internal_links: list of private links to use when building the executable.
 #
 function(create_TestUnit_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
@@ -713,17 +654,11 @@ endfunction(create_TestUnit_Target)
 #     Configure a component target with exported flags (cflags and ldflags).
 #
 #     :component_name: the name of the component.
-#
 #     :mode_suffix: the build mode of the target.
-#
 #     :inc_dirs: the list of includes to export.
-#
 #     :lib_dirs: the list of library search folders.
-#
 #     :defs: the list of preprocessor definitions to export.
-#
 #     :options: the list of compiler options to export.
-#
 #     :links: list of links to export.
 #
 function(manage_Additional_Component_Exported_Flags component_name mode_suffix inc_dirs lib_dirs defs options links)
@@ -769,19 +704,12 @@ endfunction(manage_Additional_Component_Exported_Flags)
 #     :component: the name of the component.
 #
 #     :c_standard: the C language standard to use.
-#
 #     :cxx_standard: the C++ language standard to use.
-#
 #     :mode_suffix: the build mode of the target.
-#
 #     :inc_dirs: the list of includes to use.
-#
 #     :lib_dirs: the list of library search folders.
-#
 #     :defs: the list of preprocessor definitions to use.
-#
 #     :options: the list of compiler options to use.
-#
 #     :links: list of links to use.
 #
 function(manage_Additional_Component_Internal_Flags component c_standard cxx_standard mode_suffix inc_dirs lib_dirs defs options links)
@@ -840,19 +768,12 @@ endfunction(manage_Additional_Component_Internal_Flags)
 #     Configure a component target to link with a component defined in an external package.
 #
 #     :component: the name of the component to configure.
-#
 #     :dep_package: the name of the external package that contains the dependency.
-#
 #     :dep_component: the name of the external component that IS the dependency.
-#
 #     :mode: the build mode for the targets.
-#
 #     :export: TRUE if component exports the content.
-#
 #     :comp_defs: preprocessor definitions defined in implementation of component.
-#
 #     :comp_exp_defs: preprocessor definitions defined in interface (public headers) of component.
-#
 #     :dep_defs: preprocessor definitions used in interface of dep_component but defined by implementation of component.
 #
 function(fill_Component_Target_With_External_Component_Dependency component dep_package dep_component mode export comp_defs comp_exp_defs ext_defs)
@@ -876,31 +797,18 @@ endfunction(fill_Component_Target_With_External_Component_Dependency)
 #     Configure a component target to link with external content (from external packages or operating system).
 #
 #     :component: the name of the component to configure.
-#
 #     :export: TRUE if component exports the content.
-#
 #     :comp_defs: preprocessor definitions defined in implementation of component.
-#
 #     :comp_exp_defs: preprocessor definitions defined in interface (public headers) of component.
-#
 #     :dep_defs: preprocessor definitions used in interface of dep_component but defined by implementation of component.
-#
 #     :ext_inc_dirs: list of include path, either absolute or relative to external packages.
-#
 #     :ext_opts: list of compiler options.
-#
 #     :ext_lib_dirs: list of path, either absolute or relative to external packages, to folders that contain libraries to use at build time.
-#
 #     :ext_links_shared: list of path to shared libraries, either absolute or relative to external packages, or linker options.
-#
 #     :ext_links_static: list of path to static libraries, either absolute or relative to external packages, or linker options.
-#
 #     :c_standard: C language standard to use when using these dependencies.
-#
 #     :c_max_standard: max C language standard allowed when using these dependencies.
-#
 #     :cxx_standard: C++ language standard to use when using these dependencies.
-#
 #     :cxx_max_standard: max C++ language standard allowed when using these dependencies.
 #
 function(fill_Component_Target_With_External_Dependency component export
@@ -1032,9 +940,7 @@ endfunction(fill_Component_Target_With_External_Dependency)
 #     Create imported targets in current package project for a given external component (belonging to an external package). This may ends up in defining multiple target if this component also has dependencies.
 #
 #     :package: the name of the external package that contains the component.
-#
 #     :component: the name of the external component for which a target has to be created.
-#
 #     :mode: the build mode for the imported target.
 #
 function (create_All_Imported_External_Component_Dependency_Targets package component mode)
@@ -1071,9 +977,7 @@ endfunction(create_All_Imported_External_Component_Dependency_Targets)
 #     Create imported targets in current package project for a given component belonging to another package. This may ends up in defining multiple target if this component also has dependencies.
 #
 #     :package: the name of the package that contains the component.
-#
 #     :component: the name of the component for which a target has to be created.
-#
 #     :mode: the build mode for the imported target.
 #
 function (create_All_Imported_Dependency_Targets package component mode)
@@ -1121,9 +1025,7 @@ endfunction(create_All_Imported_Dependency_Targets)
 #     Create an imported target for an external dependency (external components or OS dependencies).
 #
 #     :link: the name of the link option. If this is a real linker option and not a library then no target is created.
-#
 #     :type: SHARED or STATIC depending on expected type of the link, or empty string if type is unknown.
-#
 #     :mode: the build mode for the imported target.
 #
 #     :EXT_TARGET_NAME: the output variable that contains the created target name.
@@ -1230,9 +1132,7 @@ endfunction(create_External_Dependency_Target)
 #     Create an imported target for a dependency that is a native component belonging to another package than currently built one. This ends up in creating all targets required by this dependency if it has dependencies (recursion).
 #
 #     :dep_package: the name of the package that contains the dependency.
-#
 #     :dep_component: the name of the component that IS the dependency.
-#
 #     :mode: the build mode for the imported target.
 #
 function (create_Dependency_Target dep_package dep_component mode)
@@ -1273,9 +1173,7 @@ endfunction(create_Dependency_Target)
 #     Create an imported target for a dependency that is an external component. This ends up in creating all targets required by this dependency if it has dependencies (recursion).
 #
 #     :dep_package: the name of the external package that contains the dependency.
-#
 #     :dep_component: the name of the external component that IS the dependency.
-#
 #     :mode: the build mode for the imported target.
 #
 function(create_External_Component_Dependency_Target dep_package dep_component mode)
@@ -1349,23 +1247,14 @@ endfunction(create_External_Component_Dependency_Target)
 #     Setting the build properties of an imported target of a component. This may ends up in creating new targets if the component has external dependencies.
 #
 #     :package: the name of the package that contains the component.
-#
 #     :component: the name of the component whose target properties has to be set.
-#
 #     :mode: the build mode for the imported target.
-#
 #     :inc_dirs: the list of path to include folders to set.
-#
 #     :defs: the list of preprocessor definitions to set.
-#
 #     :options: the list of compiler options to set.
-#
 #     :public_links: the list of path to linked libraries that are exported by component, or exported linker options.
-#
 #     :private_links: the list of path to linked libraries that are internal to component, or internal linker options.
-#
 #     :system_static_links: the list of path to linked system libraries that are specified as static.
-#
 #     :public_lib_dirs: the list of path to libraries directories that are exported by component.
 #
 function(manage_Additional_Imported_Component_Flags package component mode inc_dirs defs options public_links private_links system_static_links public_lib_dirs)
@@ -1428,9 +1317,7 @@ endfunction(manage_Additional_Imported_Component_Flags)
 #     Deduce which mode to use depending on the build mode required for the imported target. Release mode implies using Release binary ; Debug mode implies using Debug mode binaries or Release mode binaries if component is Closed source or whenever no Debug binary available.
 #
 #     :imported_package: the name of the package that contains the imported target.
-#
 #     :imported_binary_location: the path to the binary that is imported.
-#
 #     :build_mode: the build mode for the imported target.
 #
 #     :MODE_TO_IMPORT: the output variable that contains the build mode to finally use for the imported target.
@@ -1463,9 +1350,7 @@ endfunction(get_Imported_Target_Mode)
 #     Create the imported target for a header only library belonging to a given native package.
 #
 #     :package: the name of the package that contains the library.
-#
 #     :component: the name of the header library.
-#
 #     :mode: the build mode for the imported target.
 #
 function(create_Imported_Header_Library_Target package component mode) #header libraries are never closed by definition
@@ -1495,9 +1380,7 @@ endfunction(create_Imported_Header_Library_Target)
 #     Create the imported target for a static library belonging to a given native package.
 #
 #     :package: the name of the package that contains the library.
-#
 #     :component: the name of the header library.
-#
 #     :mode: the build mode for the imported target.
 #
 function(create_Imported_Static_Library_Target package component mode)
@@ -1536,9 +1419,7 @@ endfunction(create_Imported_Static_Library_Target)
 #     Create the imported target for a shared library belonging to a given native package.
 #
 #     :package: the name of the package that contains the library.
-#
 #     :component: the name of the header library.
-#
 #     :mode: the build mode for the imported target.
 #
 function(create_Imported_Shared_Library_Target package component mode)
@@ -1583,9 +1464,7 @@ endfunction(create_Imported_Shared_Library_Target)
 #     Create the imported target for a module library belonging to a given native package.
 #
 #     :package: the name of the package that contains the library.
-#
 #     :component: the name of the header library.
-#
 #     :mode: the build mode for the imported target.
 #
 function(create_Imported_Module_Library_Target package component mode)
@@ -1617,9 +1496,7 @@ endfunction(create_Imported_Module_Library_Target)
 #     Create the imported target for an executable belonging to a given native package.
 #
 #     :package: the name of the package that contains the executable.
-#
 #     :component: the name of the executable.
-#
 #     :mode: the build mode for the imported target.
 #
 function(create_Imported_Executable_Target package component mode)
@@ -1651,15 +1528,10 @@ endfunction(create_Imported_Executable_Target)
 #    Resolve the final language standard to use for a component of the current native package depending on the standard used in one of its dependencies.
 #
 #     :package: the name of the package that contains the component that HAS a dependency (package currenlty built).
-#
 #     :component: the name of the component that HAS a dependency.
-#
 #     :dep_package: the name of the package that contains the dependency.
-#
 #     :dep_component: the name of the component that IS the dependency.
-#
 #     :mode: the build mode for the imported target.
-#
 #     :configure_build: if TRUE then set component's target properties adequately.
 #
 function(resolve_Component_Standard_For_Dependency package component dep_package dep_component mode configure_build)
@@ -1718,21 +1590,13 @@ endfunction(resolve_Component_Standard_For_Dependency)
 #   Bind the target of a component build locally to the target of a component belonging to another package.
 #
 #     :component: the name of the component whose target has to be bound to another target.
-#
 #     :is_external: if TRUE the dependent package is an external package.
-#
 #     :dep_package: the name of the package that contains the dependency.
-#
 #     :dep_component: the name of the component that IS the dependency.
-#
 #     :mode: the build mode for the targets.
-#
 #     :export: if TRUE then set component's target export dep_component's target.
-#
 #     :comp_defs: the preprocessor definitions defined in component implementation that conditionate the use of dep_component.
-#
 #     :comp_exp_defs: the preprocessor definitions defined in component interface that conditionate the use of dep_component.
-#
 #     :dep_defs: the preprocessor definitions used in dep_component interface that are defined by dep_component.
 #
 function(bind_Target component is_external dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)
@@ -1812,17 +1676,11 @@ endfunction(bind_Target)
 #   Bind the targets of two components built in current package.
 #
 #     :component: the name of the component whose target has to be bound to another target.
-#
 #     :dep_component: the name of the component that IS the dependency.
-#
 #     :mode: the build mode for the targets.
-#
 #     :export: if TRUE then set component's target export dep_component's target.
-#
 #     :comp_defs: the preprocessor definitions defined in component implementation that conditionate the use of dep_component.
-#
 #     :comp_exp_defs: the preprocessor definitions defined in component interface that conditionate the use of dep_component.
-#
 #     :dep_defs: the preprocessor definitions used in dep_component interface that are defined by dep_component.
 #
 function(bind_Internal_Target component dep_component mode export comp_defs comp_exp_defs dep_defs)
@@ -1904,13 +1762,9 @@ endfunction(bind_Internal_Target)
 #   Bind two imported external component targets.
 #
 #     :package: the name of the external package that contains the component whose target depends on another imported target.
-#
 #     :component: the name of the external component whose target depends on another imported target.
-#
 #     :dep_package: the name of the external package that contains the dependency.
-#
 #     :dep_component: the name of the external component that IS the dependency.
-#
 #     :mode: the build mode for the targets.
 #
 function(bind_Imported_External_Component_Target package component dep_package dep_component mode)
@@ -1956,13 +1810,9 @@ endfunction(bind_Imported_External_Component_Target)
 #   Bind two imported targets.
 #
 #     :package: the name of the package that contains the component whose target depends on another imported target.
-#
 #     :component: the name of the component whose target depends on another imported target.
-#
 #     :dep_package: the name of the package that contains the dependency.
-#
 #     :dep_component: the name of the component that IS the dependency.
-#
 #     :mode: the build mode for the targets.
 #
 function(bind_Imported_Target package component dep_package dep_component mode)
@@ -2024,13 +1874,9 @@ endfunction(bind_Imported_Target)
 #   Bind a native imported target with an external target.
 #
 #     :package: the name of the native package that contains the component whose target depends on another imported external target.
-#
 #     :component: the name of the native component whose target depends on another imported target.
-#
 #     :dep_package: the name of the external package that contains the dependency.
-#
 #     :dep_component: the name of the external component that IS the dependency.
-#
 #     :mode: the build mode for the targets.
 #
 function(bind_Imported_External_Target package component dep_package dep_component mode)
@@ -2086,19 +1932,12 @@ endfunction(bind_Imported_External_Target)
 #   Fill a component's target of the package currently built with information coming from another component (from same or another package). Subsidiary function that perform adeqaute actions depending on the package containing the dependency.
 #
 #     :component: the name of the component whose target depends on another component.
-#
 #     :dep_package: the name of the package that contains the dependency.
-#
 #     :dep_component: the name of the component that IS the dependency.
-#
 #     :mode: the build mode for the targets.
-#
 #     :export: if TRUE then set component's target export dep_component's target.
-#
 #     :comp_defs: the preprocessor definitions defined in component implementation that conditionate the use of dep_component.
-#
 #     :comp_exp_defs: the preprocessor definitions defined in component interface that conditionate the use of dep_component.
-#
 #     :dep_defs: the preprocessor definitions used in dep_component interface that are defined by dep_component.
 #
 function (fill_Component_Target_With_Dependency component dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)

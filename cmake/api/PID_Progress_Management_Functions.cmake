@@ -103,7 +103,6 @@ endfunction(reset_Progress_File)
 #    Check wether the build progress management file in workspace is outdated compared to current context (i.e. current process being run).
 #
 #      :OUTDATED: The output variable that is TRUE if file is outdated, FALSE otherwise.
-#
 #      :CONTEXT: The output variable that contains the context (build process of a package, execution of a script)
 #
 function(check_Progress_File_Last_Modification_Outdated OUTDATED CONTEXT)
@@ -215,11 +214,8 @@ endfunction(update_Progress_File)
 #    Add a managed package in the build progress management file. Add nothing if the package has already been taken into account.
 #
 #      :package: the name of managed package.
-#
 #      :version: the version of the managed package.
-#
 #      :state: the state of managed package (SUCCESS, FAILURE).
-#
 #      :external: if TRUE the managed package is an external package.
 #
 function(add_Managed_Package_In_Current_Process package version state external)
@@ -265,11 +261,8 @@ endfunction(add_Managed_Package_In_Current_Process)
 #    Set the chosen version for a given package in the build progress management file.
 #
 #      :package: the name of package.
-#
 #      :version: the chosen version of package.
-#
 #      :exact: if TRUE package version chosen is exact.
-#
 #      :external: if TRUE package is an external package.
 #
 function(add_Chosen_Package_Version_In_Current_Process package)
@@ -377,7 +370,6 @@ endfunction(check_Contribution_Spaces_Updated_In_Current_Process)
 #    Check whether a given package version has already been managed (i.e. its build procedure has been launched) since beginning of the current build process. This does NOT tell if the package build has been successful or not.
 #
 #      :package: the name of managed package.
-#
 #      :version: the version of the managed package.
 #
 #      :RESULT: the output variable that is TRUE if the given package version has already been managed in current build process.
@@ -422,7 +414,6 @@ endfunction(check_Package_Version_Managed_In_Current_Process)
 #    Check whether a given package version has already been built/installed/deployed since beginning of the current build process. This DOES tell wether the build of this package has been successful or not.
 #
 #      :package: the name of managed package.
-#
 #      :version: the version of the managed package.
 #
 #      :RESULT: the output variable that contains the string telling what is the build state of the given package. If build has been successful its value is "SUCCESS", if it failed its value is "FAILED", in other situation its value is "UNKNOWN".
@@ -507,9 +498,7 @@ endfunction(check_Package_Managed_In_Current_Process)
 #      :package: the name of the given package.
 #
 #      :VERSION: the output variable that contains the chosen version number.
-#
 #      :IS_EXACT: the output variable that is TRUE if the chosen version must be exact.
-#
 #      :IS_SYSTEM: the output variable that is TRUE if the chosen version is the OS installed version.
 #
 function(get_Chosen_Version_In_Current_Process VERSION IS_EXACT IS_SYSTEM package)

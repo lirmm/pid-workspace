@@ -642,11 +642,8 @@ endfunction(set_Current_Version)
 #     Check that the environment constraints provided match the current build profile configuration.
 #
 #     :language_constraints: check on available languages.
-#
 #     :lang_toolsets: list of language toolsets expressed as environment check expressions
-#
 #     :tool_constraints: check on available tools.
-#
 #     :optional: if constraints are optional.
 #
 #     :ERROR: the output variable that is empty if constraints are satisfied, contains the error message if any constraint cannot be satisfied.
@@ -777,19 +774,13 @@ endfunction(check_Environment_Constraints)
 #     Check that the platform constraints provided match the current platform configuration. Constraints are checked only if the current platform matches platform filters provided.
 #
 #     :type: the target processor type used as a filter (may be empty string if no filter).
-#
 #     :arch: the target processor architecture (bits) used as a filter (may be empty string if no filter).
-#
 #     :os: the target kernel used as a filter (may be empty string if no filter).
-#
 #     :abi: the target abi type used as a filter (may be empty string if no filter).
-#
 #     :constraints: configurations checks to perform.
-#
 #     :optional: if configurations are optional.
 #
 #     :RESULT: the output variable that is TRUE if constraints are satisfied or if no constraint appliesdu to filters, FALSE if any constraint cannot be satisfied.
-#
 #     :IS_CURRENT: the output variable that contains the current platform identifier if current platform matches all filters.
 #
 function(check_Platform_Constraints RESULT IS_CURRENT type arch os abi constraints optional)
@@ -1362,41 +1353,23 @@ endmacro(build_Package)
 #     Declare a library in the currently defined package.
 #
 #     :c_name: the name of the library.
-#
 #     :dirname: the name of the folder that contains includes and/or source code of the library.
-#
 #     :type: the type of the library (HEADER, STATIC, SHARED or MODULE).
-#
 #     :c_standard: the C language standard used (may be empty).
-#
 #     :c_max_standard: the maximum C language standard allowed when using the component.
-#
 #     :cxx_standard: the C++ language standard used (98, 11, 14, 17).
-#
 #     :cxx_max_standard: the maximum C++ language standard allowed when using the component.
-#
 #     :internal_inc_dirs: additionnal include dirs (internal to package, that contains header files, e.g. like common definition between package components), that don't have to be exported since not in the interface of the library.
-#
 #     :internal_defs: definitions that affects only the implementation of the library.
-#
 #     :internal_compiler_options: compiler options used for building the library but not exported to component using the library.
-#
 #     :exported_defs: definitions that affects the interface (public headers) of the library.
-#
 #     :exported_compiler_options: compiler options that need to be used whenever a component uses the library.
-#
 #     :internal_links: only for module or shared libs some internal linker flags used to build the component.
-#
 #     :exported_links: only for static and shared libs : some linker flags (not a library inclusion, e.g. -l<li> or full path to a lib) that must be used when linking with the component.
-#
 #     :runtime_resources: list of path to files relative to share/resources folder, supposed to be used at runtime by the library.
-#
 #     :more_headers: list of path to files or globing expressions relative to include/${dirname} folder, targetting additionnal headers to be part of the interface of the library (used to target files with no extension for instance).
-#
 #     :more_sources: list of path to files and folders relative to src folder, containing auxiliary sources to be used for building the library.
-#
 #     :is_loggable: if TRUE the componnet can be uniquely identified by the logging system.
-#
 #     :aliases: the list of alias for the component.
 #
 function(declare_Library_Component c_name dirname type
@@ -1582,33 +1555,19 @@ endfunction(declare_Library_Component)
 #     Declare an  application (executable) in the currently defined package.
 #
 #     :c_name: the name of the application.
-#
 #     :dirname: the name of the folder that contains source code of the application.
-#
 #     :type: the type of the applciation (APPLICATION, EXAMPLE, TEST).
-#
 #     :c_standard: the C language standard used (may be empty).
-#
 #     :c_max_standard: the maximum C language standard allowed when using the component.
-#
 #     :cxx_standard: the C++ language standard used (98, 11, 14, 17).
-#
 #     :cxx_max_standard: the maximum C++ language standard allowed when using the component.
-#
 #     :internal_inc_dirs: additionnal include dirs (internal to package, that contains header files, e.g. like common definition between package components).
-#
 #     :internal_defs: preprocessor definitions used for building the application.
-#
 #     :internal_compiler_options: compiler options used for building the application.
-#
 #     :internal_link_flags: internal linker flags used to build the application.
-#
 #     :runtime_resources: list of path to files relative to share/resources folder, supposed to be used at runtime by the application.
-#
 #     :more_sources: list of path to files and folders relative to app folder, containing auxiliary sources to be used for building the application.
-#
 #     :is_loggable: if TRUE the componnet can be uniquely identified by the logging system.
-#
 #     :aliases: the list of alias for the component.
 #
 function(declare_Application_Component c_name dirname type
@@ -1730,7 +1689,6 @@ endfunction(declare_Application_Component)
 #     Declare a python package.
 #
 #     :c_name: the name of the python package.
-#
 #     :dirname: the name of the folder that contains script of the python package.
 #
 function(declare_Python_Component	c_name dirname)
@@ -1770,13 +1728,9 @@ endfunction(declare_Python_Component)
 #     Specify a dependency between the currently defined package and another native package.
 #
 #     :dep_package: the package that is the dependency.
-#
 #     :optional: if TRUE the dependency is optional.
-#
 #     :all_possible_versions: the list of possible incompatible versions for the dependency.
-#
 #     :all_exact_versions: the list of exact version among possible ones.
-#
 #     :list_of_components: the list of required components that must belong to dependency.
 #
 function(declare_Native_Package_Dependency dep_package optional all_possible_versions all_exact_versions list_of_components)
@@ -1968,13 +1922,9 @@ endfunction(declare_Native_Package_Dependency)
 #     Specify a dependency between the currently defined native package and an external package.
 #
 #     :dep_package: the external package that is the dependency.
-#
 #     :optional: if TRUE the dependency is optional.
-#
 #     :list_of_possible_versions: the list of possible incompatible versions for the dependency.
-#
 #     :list_of_exact_versions: the list of exact version among possible ones.
-#
 #     :list_of_components: the list of required components that must belong to dependency.
 #
 function(declare_External_Package_Dependency dep_package optional list_of_possible_versions list_of_exact_versions list_of_components)
@@ -2178,15 +2128,10 @@ endfunction(declare_External_Package_Dependency)
 #     Specify a dependency between two components of the currently defined native package.
 #
 #     :component: the name of the component that have a dependency.
-#
 #     :dep_component: the name of the component that IS the dependency.
-#
 #     :export: if TRUE component exports dep_component (i.e. public headers of component include public headers of dep_component)
-#
 #     :comp_defs: preprocessor definitions in the implementation of component that conditionnate the use of dep_component (may be an empty string). These definitions are not exported by component.
-#
 #     :comp_exp_defs: preprocessor definitions in the interface (public headers) of component that conditionnate the use of dep_component (may be an empty string). These definitions are exported by component.
-#
 #     :dep_defs: preprocessor definitions used in the interface of dep_component, that are set when component uses dep_component (may be an empty string). These definitions are exported if dep_component is exported by component.
 #
 function(declare_Internal_Component_Dependency component dep_component export comp_defs comp_exp_defs dep_defs)
@@ -2273,17 +2218,11 @@ endfunction(declare_Internal_Component_Dependency)
 #     Specify a dependency between a component of the currently defined native package and a component belonging to another native package.
 #
 #     :component: the name of the component that have a dependency.
-#
 #     :dep_package: the name of the package that contains the dependency.
-#
 #     :dep_component: the name of the component that IS the dependency,which belongs to dep_package.
-#
 #     :export: if TRUE component exports dep_component (i.e. public headers of component include public headers of dep_component)
-#
 #     :comp_defs: preprocessor definitions in the implementation of component that conditionnate the use of dep_component (may be an empty string). These definitions are not exported by component.
-#
 #     :comp_exp_defs: preprocessor definitions in the interface (public headers) of component that conditionnate the use of dep_component (may be an empty string). These definitions are exported by component.
-#
 #     :dep_defs: preprocessor definitions used in the interface of dep_component, that are set when component uses dep_component (may be an empty string). These definitions are exported if dep_component is exported by component.
 #
 function(declare_Package_Component_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
@@ -2364,17 +2303,11 @@ endfunction(declare_Package_Component_Dependency)
 #     Specify a dependency between a component of the currently defined native package and a component belonging to an external package.
 #
 #     :component: the name of the component that have a dependency.
-#
 #     :dep_package: the name of the external package that contains the dependency.
-#
 #     :dep_component: the name of the external component that IS the dependency, which belongs to dep_package.
-#
 #     :export: if TRUE component exports dep_component (i.e. public headers of component include public headers of dep_component)
-#
 #     :comp_defs: preprocessor definitions in the implementation of component that conditionnate the use of dep_component (may be an empty string). These definitions are not exported by component.
-#
 #     :comp_exp_defs: preprocessor definitions in the interface (public headers) of component that conditionnate the use of dep_component (may be an empty string). These definitions are exported by component.
-#
 #     :dep_defs: preprocessor definitions used in the interface of dep_component, that are set when component uses dep_component (may be an empty string). These definitions are exported if dep_component is exported by component.
 #
 function(declare_External_Component_Dependency component dep_package dep_component export comp_defs comp_exp_defs dep_defs)
@@ -2466,15 +2399,10 @@ endfunction(declare_External_Component_Dependency)
 #     Specify a dependency between a component of the currently defined native package and system components defined using a platform configuration.
 	#
 #     :component: the name of the component that have a dependency.
-#
 #     :export: if TRUE component exports the content of the dependency.
-#
 #     :platform_config: the name of the platform configuration to export.
-#
 #     :comp_defs: preprocessor definitions in the implementation of component that conditionnate the use of system dependencies (may be an empty string). These definitions are not exported by component.
-#
 #     :comp_exp_defs: preprocessor definitions in the interface (public headers) of component that conditionnate the use of system dependencies (may be an empty string). These definitions are exported by component.
-#
 #     :dep_defs: preprocessor definitions used in the headers system dependencies, that are defined by component (may be an empty string). These definitions are exported if dep_component is exported by component.
 #
 function(declare_System_Component_Dependency_Using_Configuration component export platform_config comp_defs comp_exp_defs dep_defs)
@@ -2545,33 +2473,19 @@ endfunction(declare_System_Component_Dependency_Using_Configuration)
 #     Should be avoided anytime possible, but useful to configure a component with flags and options coming from a platform configuration.
 #
 #     :component: the name of the component that have a dependency.
-#
 #     :export: if TRUE component exports the content of the dependency.
-#
 #     :inc_dirs: path to include directories required by the component in order to build.
-#
 #     :lib_dirs: additionnal library dirs used to search system libraries (with -l) in.
-#
 #     :comp_defs: preprocessor definitions in the implementation of component that conditionnate the use of system dependencies (may be an empty string). These definitions are not exported by component.
-#
 #     :comp_exp_defs: preprocessor definitions in the interface (public headers) of component that conditionnate the use of system dependencies (may be an empty string). These definitions are exported by component.
-#
 #     :dep_defs: preprocessor definitions used in the headers system dependencies, that are defined by component (may be an empty string). These definitions are exported if dep_component is exported by component.
-#
 #     :compiler_options: compiler options to use for this dependency (may be left empty).
-#
 #     :static_links: list of path to static libraries (may be left empty).
-#
 #     :shared_links: list of path to shared libraries or linker options (may be left empty).
-#
 #     :c_standard: the C language standard to use because of the dependency (may be left empty).
-##
 #     :c_max_standard: max C language standard allowed when using the dependency (may be left empty).
-#
 #     :cxx_standard: the C++ language standard to use because of the dependency (may be left empty).
-#
 #     :cxx_max_standard: max C++ language standard allowed when using the dependency (may be left empty).
-#
 #     :runtime_resources: set of path to files or folder used at runtime (may be left empty).
 #
 function(declare_System_Component_Dependency component export inc_dirs lib_dirs comp_defs comp_exp_defs dep_defs
@@ -2636,33 +2550,19 @@ endfunction(declare_System_Component_Dependency)
 #     Should be used prior to system dependencies for all dependencies that are not true system dependencies but should be avoided everytime the external package provide a content description (use file).
 #
 #     :component: the name of the component that have a dependency.
-#
 #     :dep_package: the name of the external package that contains the dependency.
-#
 #     :export: if TRUE component exports the content of dep_package.
-#
 #     :inc_dirs: include directories to add to component in order to build it. These include dirs are expressed relatively to dep_package root dir using "<dep_package>" expression (e.g. <boost>).
-#
 #     :comp_defs: preprocessor definitions in the implementation of component that conditionnate the use of dep_package (may be an empty string). These definitions are not exported by component.
-#
 #     :comp_exp_defs: preprocessor definitions in the interface (public headers) of component that conditionnate the use of dep_package (may be an empty string). These definitions are exported by component.
-#
 #     :dep_defs: preprocessor definitions used in the headers of dep_package, that are set by component(may be an empty string). These definitions are exported if dep_component is exported by component.
-#
 #     :compiler_options: compiler options to use for this dependency (may be let empty).
-#
 #     :static_links: list of path to static libraries relative to dep_package root dir (may be let empty).
-#
 #     :shared_links: list of path to shared libraries relative to dep_package root dir or linker options (may be let empty).
-#
 #     :c_standard: the C language standard to use because of the dependency (may be let empty).
-#
 #     :c_max_standard: max C language standard allowed when using the dependency (may be let empty).
-#
 #     :cxx_standard: the C++ language standard to use because of the dependency (may be let empty).
-#
 #     :cxx_max_standard: max C++ language standard allowed when using the dependency (may be let empty).
-#
 #     :runtime_resources: st of path to files or folder used at runtime relative to dep_package root dir (may be let empty).
 #
 function(declare_External_Package_Component_Dependency component dep_package export inc_dirs comp_defs comp_exp_defs dep_defs

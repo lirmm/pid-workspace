@@ -101,11 +101,8 @@ endfunction(is_Closed_Source_Dependency_Package)
 #   List all public include path of a component.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
-#
 #     :self: if TRUE the component returns its own header dir (for native only).
 #
 #     :INCLUDES: the output variable that contains the list of public include path.
@@ -141,13 +138,10 @@ endfunction(list_Public_Includes)
 #   List all public links of a component.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :LINKS: the output variable that contains the list of public links.
-#
 #     :STATIC_LINKS: the output variable that contains the list of public system links specified as STATIC.
 #
 function(list_Public_Links LINKS STATIC_LINKS package component mode)
@@ -181,15 +175,11 @@ endfunction(list_Public_Links)
 #   List all public links of a component.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :LINKS: the output variable that contains the list of public links.
-#
 #     :STATIC_LINKS: the output variable that contains the list of links to static libraries.
-#
 #     :STATIC_LINKS: the output variable that contains the list of links to shared libraries.
 #
 function(list_External_Links SHARED_LINKS STATIC_LINKS package component mode)
@@ -224,9 +214,7 @@ endfunction(list_External_Links)
 #   List all public library directories of a component.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :DIRS: the output variable that contains the list of public library directories.
@@ -260,9 +248,7 @@ endfunction(list_Public_Lib_Dirs)
 #   List all public preprocessor definitions of a component.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :DEFS: the output variable that contains the list of public definitions.
@@ -291,9 +277,7 @@ endfunction(list_Public_Definitions)
 #   List all public compiler options of a component.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :OPTS: the output variable that contains the list of public compiler options.
@@ -346,9 +330,7 @@ endfunction(list_Public_Options)
 #   Get the path of a given component's resulting binary in the filesystem.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :LOCATION_RES: the output variable that contains the path to the component's binary.
@@ -379,9 +361,7 @@ endfunction(get_Binary_Location)
 #   List all private links of a component. Symbolf of private links are not exported, but need to be known at executable link time in order to resolve global symbol resolution.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :PRIVATE_LINKS: the output variable that contains the list of private links.
@@ -417,11 +397,8 @@ endfunction(list_Private_Links)
 #   Get list of path to all resources (executables, modules, files and folders) directly used by an external component at runtime.
 #
 #     :package: the name of the external package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
-#
 #     :insystempath: if FALSE the function returns the full path to resources in workspace otherwise it returns the relative path of the resource in its corresponding system install folder (used for system install only).
 #
 #     :RES_RESOURCES: the output variable that contains the list of path to runtime resources.
@@ -464,11 +441,8 @@ endfunction(get_External_Component_Direct_Runtime_Resources)
 #   Note: this function can be used also with external components as native and external component share same description variables for runtime resources.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
-#
 #     :insystempath: if FALSE the function returns the full path to resources in workspace otherwise it returns the relative path of the resource in its corresponding system install folder (used for system install only).
 #
 #     :RES_RESOURCES: the output variable that contains the list of path to runtime resources.
@@ -509,7 +483,6 @@ endfunction(get_Bin_Component_Direct_Runtime_Resources)
 #   Get list of path to all runtime resources (executables, modules, files and folders) directly used by a component (from currenlty defined package) at runtime.
 #
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :RES_RESOURCES: the output variable that contains the list of path to runtime resources.
@@ -547,11 +520,8 @@ endfunction(get_Source_Component_Direct_Runtime_Resources)
 #   Get list of path to all resources (executables, modules, files and folders) directly used by an external component at runtime.
 #
 #     :package: the name of the external package containing the component.
-#
 #     :component: the name of the external component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
-#
 #     :insystempath: if FALSE the function returns the full path to resources in workspace otherwise it returns the relative path of the resource in its corresponding system install folder (used for system install only).
 #
 #     :RES_RESOURCES: the output variable that contains the list of path to runtime resources.
@@ -614,11 +584,8 @@ endfunction(get_External_Component_Runtime_Resources)
 #   Get list of path to all resources (executables, modules, files and folders) directly or undirectly used by a component at runtime.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
-#
 #     :insystempath: if FALSE the function returns the full path to resources in workspace otherwise it returns the relative path of the resource in its corresponding system install folder (used for system install only).
 #
 #     :RES_RESOURCES: the output variable that contains the list of path to runtime resources.
@@ -721,7 +688,6 @@ endfunction(get_Bin_Component_Runtime_Resources)
 #   Get list of path to all resources (executables, modules, files and folders) directly or undirectly used by a component (from currenlty defined package) at runtime.
 #
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :RES_RESOURCES: the output variable that contains the list of path to runtime resources.
@@ -801,13 +767,9 @@ endfunction(get_Source_Component_Runtime_Resources)
 #   Note: This function is necessary only to generate adequate symlinks for python modules.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
-#
 #     :prefix_path: the prefix path to append to names of components targets found.
-#
 #     :suffix_ext: the suffix extension name to append to names of components targets found.
 #
 #     :RES_RESOURCES: the output variable that contains the list of internal runtime dependencies.
@@ -847,9 +809,7 @@ endfunction(get_Bin_Component_Direct_Internal_Runtime_Dependencies)
 #   Get list of all shared links directly used by an external component at runtime.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :RES_LINKS: the output variable that contains the list of shared links used by component at runtime.
@@ -885,9 +845,7 @@ endfunction(get_External_Component_Direct_Runtime_Links)
 #   Get list of all shared links directly used by a component at runtime.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :RES_LINKS: the output variable that contains the list of shared links used by component at runtime.
@@ -940,9 +898,7 @@ endfunction(get_Bin_Component_Direct_Runtime_Links)
 #   Get list of all shared links directly used by an external component at runtime.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :RES_LINKS: the output variable that contains the list of shared links used by component at runtime.
@@ -1001,13 +957,10 @@ endfunction(get_External_Component_Runtime_Links)
 #   Get list of all public runtime dependencies used by a component at runtime. Used to generate PID symlinks to resolve loading of shared libraries used by the component.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :ALL_LOCAL_RUNTIME_LINKS: the output variable that contains the list of all runtime links of the component to be used in local package.
-#
 #     :ALL_USING_RUNTIME_LINKS: the output variable that contains the list of all runtime links of the component to be used in using packages.
 #
 function(get_Bin_Component_Runtime_Links ALL_LOCAL_RUNTIME_LINKS ALL_USING_RUNTIME_LINKS package component mode)
@@ -1100,7 +1053,6 @@ endfunction(get_Bin_Component_Runtime_Links)
 #   Get list of all links used by a component at runtime. Used to generate PID symlinks to resolve loading of shared libraries used by the component.
 #
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :ALL_RUNTIME_LINKS: the output variable that contains the list of all runtime links used by the component.
@@ -1185,7 +1137,6 @@ endfunction(get_Source_Component_Runtime_Links)
 #   Resolve all runtime dependencies for all components of a given package.
 #
 #     :package: the name of the package.
-#
 #     :mode: the build mode (Release or Debug) for the package.
 #
 function(resolve_Package_Runtime_Dependencies package mode)
@@ -1230,9 +1181,7 @@ endfunction(resolve_Package_Runtime_Dependencies)
 #   Resolution consists in creating adequate symlinks for shared libraries used by component.
 #
 #     :package: the name of the package that contains the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 function(resolve_Bin_Component_Runtime_Dependencies package component mode)
@@ -1304,11 +1253,8 @@ endfunction(resolve_Bin_Component_Runtime_Dependencies)
 #   Generating symlinks to a set of runtime resources used by a component contained in a package that is not the currenlty defined one.
 #
 #     :package: the name of the package that contains the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
-#
 #     :resources: the list of path to resources that need to be symlinked.
 #
 function(create_Bin_Component_Symlinks package component mode resources)
@@ -1335,11 +1281,8 @@ endfunction(create_Bin_Component_Symlinks)
 #   Generating symlinks to a set of resources needed by a component contained in a package that is not the currenlty defined one. These symlinks are created in a place where python scripts can find them.
 #
 #     :package: the name of the package that contains the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
-#
 #     :resources: the list of path to runtime resources that need to be symlinked.
 #
 function(create_Bin_Component_Python_Symlinks package component mode resources)
@@ -1366,9 +1309,7 @@ endfunction(create_Bin_Component_Python_Symlinks)
 #   Generating symlinks to python packages defined by a component of a package.
 #
 #     :package: the name of the package that contains the component.
-#
 #     :component: the name of the python package.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 function(create_Python_Install_Symlinks package component mode)
@@ -1418,9 +1359,7 @@ endfunction(create_Python_Install_Symlinks)
 #   Installing symlinks to a set of resources needed by a component of the currenlty defined package. These symlinks are installed in a place where python scripts can find them.
 #
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
-#
 #     :resources: the list of path to runtime resources that need to be symlinked.
 #
 function(create_Source_Component_Python_Symlinks component mode resources)
@@ -1445,9 +1384,7 @@ endfunction(create_Source_Component_Python_Symlinks)
 #   Installing symlinks to a set of resources needed by a component of the currenlty defined package.
 #
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
-#
 #     :resources_var: the variable containing the list of path to runtime resources that need to be symlinked.
 #
 function(create_Source_Component_Symlinks component mode resources_var)
@@ -1472,7 +1409,6 @@ endfunction(create_Source_Component_Symlinks)
 #   Resolve runtime dependencies of a component in the currenlty defined package. Finally create symlinks to these runtime resources in the install tree.
 #
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 function(resolve_Source_Component_Runtime_Dependencies component mode)
@@ -1547,9 +1483,7 @@ endfunction(resolve_Source_Component_Runtime_Dependencies)
 #   In build tree, create symlinks to a set of runtime resources (executables, modules, files, folders) needed by a component of the currenlty defined package.
 #
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
-#
 #     :var_resources: the parent scope variable containing the list of path to runtime resources that need to be symlinked.
 #
 function(create_Source_Component_Symlinks_Build_Tree component mode var_resources)
@@ -1576,7 +1510,6 @@ endfunction(create_Source_Component_Symlinks_Build_Tree)
 #   Resolve runtime dependencies of a component in the currenlty defined package. Finally create symlinks to these runtime resources in the build tree. This differentiation is mandatory to get runtime resource mechanism working in build tree (required for runninf test units using runtime resources for instance).
 #
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 function(resolve_Source_Component_Runtime_Dependencies_Build_Tree component mode)
@@ -1653,11 +1586,8 @@ endfunction(clean_Install_Dir)
 #   Tell whether an external package is used within a given component.
 #
 #     :package: the name of the package.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
-#
 #     :external_package: the name of external package to check.
 #
 #     :USE_PACKAGE: the output variable that is TRUE if the external package is used within component, FALSE otherwise.
@@ -1707,13 +1637,10 @@ endfunction(locate_External_Package_Used_In_Component)
 #   Get all external package that a given BINARY component depends on.
 #
 #     :package: the name of the package.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :external_package: the name of external package to check.
-#
 #     :USED_EXT_PACKAGES: the output variable that contains the list of external dependencies directly or undirectly used by component.
 #
 function(get_External_Packages_Used_In_Component USED_EXT_PACKAGES package component mode)
@@ -1754,13 +1681,10 @@ endfunction(get_External_Packages_Used_In_Component)
 #   Get all packages that a given BINARY component depends on.
 #
 #     :package: the name of the package.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :USED_NATIVE_PACKAGES: the output variable that contains the list of native dependencies directly or undirectly used by component.
-#
 #     :USED_EXT_PACKAGES: the output variable that contains the list of external dependencies directly or undirectly used by component.
 #
 function(get_Packages_Used_In_Component USED_NATIVE_PACKAGES USED_EXT_PACKAGES package component mode)
@@ -1828,11 +1752,9 @@ endfunction(get_Packages_Used_In_Component)
 #   Get all packages that a given BINARY package depends on.
 #
 #     :package: the name of the package.
-#
 #     :mode: the build mode (Release or Debug) for the component.
 #
 #     :NATIVE_DEPS: the output variable that contains the list of native dependencies directly or undirectly used by component.
-#
 #     :EXTERNAL_DEPS: the output variable that contains the list of external dependencies directly or undirectly used by component.
 #
 function(collect_Local_Exported_Dependencies NATIVE_DEPS EXTERNAL_DEPS package mode)

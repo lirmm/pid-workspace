@@ -226,7 +226,6 @@ endfunction(find_Environment_Tool_For_Current_Profile)
 #    Find the prefix to use to get description of configuration for an additional tool
 #
 #     :env_prefix: prefix for CMke variable holding info about environment.
-#
 #     :environment: name of the environment defining tool.
 #
 #     :RES_PREFIX: the prefix for variable holding the value for the given environment

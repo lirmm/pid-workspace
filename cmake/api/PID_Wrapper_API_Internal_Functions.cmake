@@ -192,21 +192,13 @@ endfunction(reset_Wrapper_Description_Cached_Variables)
 #     Declare the current CMake project has a PID external project wrapper. Internal counterpart of declare_PID_Wrapper.
 #
 #      :author: the name of the contact author.
-#
 #      :institution: the name of the contact author institution.
-#
 #      :year: the dates of project lifecyle.
-#
 #      :license: the name of the license applying to the wrapper's content.
-#
 #      :address: the url of the wrapper repository.
-#
 #      :public_address: the public counterpart (http) of address.
-#
 #      :description: description of the wrapper.
-#
 #      :readme_file: user defined  content of wrapper readme file.
-#
 #      :contrib_space: the name of the default contribution space used by the package.
 #
 macro(declare_Wrapper author institution mail year license address public_address description readme_file contrib_space)
@@ -355,11 +347,8 @@ endmacro(declare_Wrapper_Global_Cache_Options)
 #     Declare a user defined option for the currently built wrapper.
 #
 #      :name: the name of the option as it will appear in cmake gui.
-#
 #      :type: the type of the option as it will appear in cmake gui.
-#
 #      :default_value: the default value for the option (depends on type).
-#
 #      :description: the user readable description of the option as it will appear in cmake gui.
 #
 function(set_Wrapper_Option name type default_value description)
@@ -385,9 +374,7 @@ endfunction(set_Wrapper_Option name type default_value)
 #     Define the meta-data related to the wrapped external project, for the currently built wrapper.
 #
 #      :authors_references: the string explaining who are the original authors.
-#
 #      :licenses: the string explaining what licenses are used in original project.
-#
 #      :original_project_url: the url of the original project site.
 #
 function(define_Wrapped_Project authors_references licenses original_project_url)
@@ -441,7 +428,6 @@ endfunction(get_Wrapper_Site_Address)
 #     Check, in the context of currently built external package wrapper, whether a given version of the external package is compatible with (i.e. can be used instead of) another one.
 #
 #      :ref_version: the reference version of the external project.
-#
 #      :version_to_check: the version whose compatibility is checked.
 #
 #      :IS_COMPATIBLE: the output variable that is TRUE if version_to_check is compatible with ref_version.
@@ -863,15 +849,10 @@ endfunction(belongs_To_Known_Versions)
 #    Memorize a new known version of the external package in the context of currently built wrapper (the target version folder that can be found in src folder and contains the script used to build/install the project). Internal counterpart of add_PID_Wrapper_Known_Version.
 #
 #      :version: the given external package version.
-#
 #      :deploy_file_name: the path to the deployment script used to build/install the given version, relative to this version folder.
-#
 #      :compatible_with_version: the immediate previous version defined in the wrapper, with which the given version is compatible with. May be let empty if teh given version is not compatible with a previous one.
-#
 #      :so_name: the soname to use by default for all shared libraries of the version (may be empty of no soname used).
-#
 #      :post_install_script: the path to the post install script that must be executed anytime the given version is deployed, relative to this version folder in source tree.
-#
 #      :pre_use_script: the path to the pre use script that is executed anytime the given version is used by another package to perform additional configuration, relative to this version folder in source tree.
 #
 function(add_Known_Version version deploy_file_name compatible_with_version so_name post_install_script pre_use_script)
@@ -912,11 +893,8 @@ endfunction(add_Known_Version)
 #    Declare a platform constraint for currenlty described version of the external package. Internal counterpart of declare_PID_Wrapper_Platform_Configuration.
 #
 #      :languages: list of language configuration check expressions
-#
 #      :lang_toolsets: list of language toolsets expressed as environment check expressions
-#
 #      :tools: list of additional tools configuration check expressions.
-#
 #      :optional: if TRUE requirements are optional (will not generate errors if checks fail)
 #
 function(declare_Wrapped_Language_Configuration languages lang_toolsets tools optional)
@@ -998,9 +976,7 @@ endfunction(declare_Wrapped_Language_Configuration)
 #    Declare a platform constraint for currenlty described version of the external package. Internal counterpart of declare_PID_Wrapper_Platform_Configuration.
 #
 #      :platform: the identifier of the platform.
-#
 #      :configurations: the list of configurations that must be validated by current platform.
-#
 #      :options: the list of configurations that may be validated or not by current platform.
 #
 function(declare_Wrapped_Platform_Configuration platform configurations options)
@@ -1130,13 +1106,9 @@ endfunction(declare_Wrapped_Platform_Configuration)
 #    Set the cache variables describing a dependency between a version a version of the external package and another external package.
 #
 #      :external_version: the given version of the currently described external package.
-#
 #      :dep_package: the name of external package that is the dependency.
-#
 #      :list_of_versions: the list of possible version for the dependency.
-#
 #      :exact_versions: the list of exact versions among possible ones for the dependency.
-#
 #      :list_of_components: the list of components that must exist in dependency.
 #
 function(add_External_Package_Dependency_To_Wrapper external_version dep_package list_of_versions exact_versions list_of_components)
@@ -1161,11 +1133,8 @@ endfunction(add_External_Package_Dependency_To_Wrapper)
 #    Define a dependency between the currenlty defined version of the external package and another external package. Internal counterpart of declare_PID_Wrapper_External_Dependency.
 #
 #      :dep_package: the name of external package that is the dependency.
-#
 #      :list_of_versions: the list of possible version for the dependency.
-#
 #      :exact_versions: the list of exact versions among possible ones for the dependency.
-#
 #      :list_of_components: the list of components that must exist in dependency.
 #
 function(declare_Wrapped_External_Dependency dep_package list_of_versions exact_versions list_of_components)
@@ -1314,29 +1283,17 @@ endfunction(declare_Wrapped_External_Dependency)
 #    Define a new component for currently described external package version. Internal counterpart of declare_PID_Wrapper_Component.
 #
 #      :component: the name of the component.
-#
 #      :shared_links: the list of path to shared objects that are part of the component, relative to external package root install folder.
-#
 #      :soname: the soname to use for that specific component's shared objects.
-#
 #      :static_links: the list of path to static libraries that are part of the component, relative to external package root install folder.
-#
 #      :includes: the list of includes path that are part of the component, relative to external package root install folder or absolute.
-#
 #      :definitions: the list preprocessor definitions that must be defined when using of the component.
-#
 #      :options: the list of compiler options that must be used when using the component.
-#
 #      :c_standard: the C language standard used by the component (may be empty).
-#
 #      :c_max_standard: max C language standard allowed when using the component.
-#
 #      :cxx_standard: the C++ language standard used by the component.
-#
 #      :cxx_max_standard: max C++ language standard allowd when using the component.
-#
 #      :runtime_resources: the list of path to file and folder used at runtime by the component, relative to external package root install folder.
-#
 #      :aliases: the list of alias of the component.
 #
 function(declare_Wrapped_Component component shared_links soname static_links includes definitions options c_standard c_max_standard cxx_standard cxx_max_standard runtime_resources aliases)
@@ -1376,13 +1333,9 @@ endfunction(declare_Wrapped_Component)
 #    Define a dependency between a local component defined by current version and a component belonging to another external package. Used when this external package provides a description.
 #
 #      :component: the name of the component.
-#
 #      :package: the name of the external package used as a dependency.
-#
 #      :dependency_component: the name of the component used as a dependency, and taht belongs to package.
-#
 #      :exported: TRUE if component exports dependency_component (i.e. if public headers of component include headers of dependency_component).
-#
 #      :definitions: the list preprocessor definitions used in dependency_component headers but set by component.
 #
 function(declare_Wrapped_Component_Dependency_To_Explicit_Component component package dependency_component exported definitions)
@@ -1408,27 +1361,16 @@ endfunction(declare_Wrapped_Component_Dependency_To_Explicit_Component)
 #    Define a dependency between a local component defined by current version and another external package's content. Used when this external package provides no description in use file.
 #
 #      :component: the name of the component.
-#
 #      :package: the name of the external package used as a dependency.
-#
 #      :includes: the list of includes path that are used by the component, relative to external package dependency root install folder.
-#
 #      :shared: the list of path to shared objects that are used by the component, relative to external package dependency root install folder.
-#
 #      :static: the list of path to static libraries that are used by the component, relative to external package dependency root install folder.
-#
 #      :definitions: the list preprocessor definitions that must be defined when using of the component.
-#
 #      :options: the list of compiler options that must be used when using the component.
-#
 #      :c_standard: the C language standard in use (may be empty).
-#
 #      :c_max_standard: max C language standard allowed when using the component.
-#
 #      :cxx_standard: the C++ language standard that is mandatory when using the component.
-#
 #      :cxx_max_standard: max C++ language standard allowed when using the component.
-#
 #      :runtime_resources: the list of path to file and folder used at runtime by the component, relative to external package dependency root install folder.
 #
 function(declare_Wrapped_Component_Dependency_To_Implicit_Components component package includes shared static definitions options c_standard c_max_standard cxx_standard cxx_max_standard runtime_resources)
@@ -1497,11 +1439,8 @@ endfunction(declare_Wrapped_Component_Dependency_To_Implicit_Components)
 #    Define a dependency between two local components defined by current version.
 #
 #      :component: the name of the component that defines a dependency.
-#
 #      :dependency_component: the name of the component that is the dependency.
-#
 #      :exported: TRUE if component exports dependency_component.
-#
 #      :definitions: the list preprocessor definitions used in dependency_component headers but defined by component.
 #
 function(declare_Wrapped_Component_Internal_Dependency component dependency_component exported definitions)
@@ -1528,25 +1467,15 @@ endfunction(declare_Wrapped_Component_Internal_Dependency)
 #    Define a dependency between a local component defined by current version and operating system configuration.
 #
 #      :component: the name of the component.
-#
 #      :includes: the list of absolute includes path that are used by the component. May be defined as a configuration variable.
-#
 #      :lib_dirs: the list of absolute path to folder used to find system libraries. May be defined as a configuration variable.
-#
 #      :links: the list of linker options that are used by the component. May be defined as a configuration variable.
-#
 #      :defs: the list preprocessor definitions that must be defined when using of the component. May be defined as a configuration variable.
-#
 #      :opts: the list of compiler options that must be used when using the component.May be defined as a configuration variable.
-#
 #      :c_std: the C language standard in use (may be empty).May be defined as a configuration variable.
-#
 #      :c_max_std: max C language standard allowed when using the component.
-#
 #      :cxx_std: the C++ language standard that is mandatory when using the component. May be defined as a configuration variable.
-#
 #      :cxx_max_std: max C++ language standard allowed when using the component.
-#
 #      :resources: the list of absolute path to file and folder used at runtime by the component. May be defined as a configuration variable.
 #
 function(declare_Wrapped_Component_System_Dependency component includes lib_dirs links defs opts c_std c_max_std cxx_std cxx_max_std resources)
@@ -1616,9 +1545,7 @@ endfunction(declare_Wrapped_Component_System_Dependency)
 #    Copy the use file of a given version of an external package into install tree of the workspace.
 #
 #      :package: the name of the external package.
-#
 #      :version: the version of the external package for which a use file is installed.
-#
 #      :platform: the identifier of the platform to use in workspace install tree.
 #
 function(install_External_Use_File_For_Version package version platform)
@@ -1663,9 +1590,7 @@ endfunction(install_External_Find_File_For_Version)
 #    Copy the PID_Version file of a given version of an external package into install tree of the workspace.
 #
 #      :package: the name of the external package.
-#
 #      :version: the version of the external package for which a PID version file is installed.
-#
 #      :platform: the identifier of the platform to use in workspace install tree.
 #
 function(install_External_PID_Version_File_For_Version package version platform)
@@ -1692,11 +1617,8 @@ endfunction(install_External_PID_Version_File_For_Version)
 #    Generate the use file of a given version of an external package.
 #
 #      :package: the name of the external package.
-#
 #      :version: the version of the external package for which a use file is installed.
-#
 #      :platform: the identifier of the target platform for the installed version.
-#
 #      :os_variant: if true means that the binary are those found on OS not built within PID.
 #
 function(generate_External_Use_File_For_Version package version platform os_variant)
@@ -1799,13 +1721,9 @@ endfunction(generate_External_Use_File_For_Version)
 #    Append the description of an internal component dependency to a given external package's use file.
 #
 #      :file_for_version: the path to the file to write in..
-#
 #      :package: the name of target external package.
-#
 #      :version: the target version of external package.
-#
 #      :component: the name of the component that declares the dependency.
-#
 #      :dependency: the name of the component that is the dependency.
 #
 function(generate_Description_For_External_Component_Internal_Dependency file_for_version package version component dependency)
@@ -1838,13 +1756,9 @@ endfunction(generate_Description_For_External_Component_Internal_Dependency)
 #    Append the description of a component dependency to another external package to a given external package's use file.
 #
 #      :file_for_version: the path to the file to write in..
-#
 #      :package: the name of target external package.
-#
 #      :version: the target version of external package.
-#
 #      :component: the name of the component that declares the dependency.
-#
 #      :external_package_dependency: the name of the external package that is the dependency.
 #
 function(generate_Description_For_External_Component_Dependency file_for_version package version component external_package_dependency)
@@ -1954,11 +1868,8 @@ endfunction(generate_Description_For_External_Component_Dependency)
 #    Append the description of a component dependency to another external package to a given external package's use file.
 #
 #      :file_for_version: the path to the file to write in..
-#
 #      :package: the name of target external package.
-#
 #      :version: the target version of external package.
-#
 #      :component: the name of the component that declares the dependency.
 #
 function(generate_Description_For_External_Component_System_Dependency file_for_version package version component)
@@ -2054,11 +1965,8 @@ endfunction(generate_Description_For_External_Component_System_Dependency)
 #    Append the description of a component dependencies to a given external package use file.
 #
 #      :file_for_version: the path to the file to write in..
-#
 #      :package: the name of target external package.
-#
 #      :version: the target version of external package.
-#
 #      :component: the name of the component that may have dependencies.
 #
 function(generate_Description_For_External_Component_Dependencies file_for_version package version component)
@@ -2097,13 +2005,9 @@ endfunction(generate_Description_For_External_Component_Dependencies)
 #    Append the description of a component to a given external package use file.
 #
 #      :file_for_version: the path to the file to write in..
-#
 #      :package: the name of target external package.
-#
 #      :platform: the identifier of target platform in workspace install tree.
-#
 #      :version: the target version of external package.
-#
 #      :component: the name of the target component.
 #
 function(generate_Description_For_External_Component file_for_version package platform version component)
@@ -2227,11 +2131,8 @@ endfunction(generate_Description_For_External_Component)
 #    Generate symlinks in an external binary pakage, that points to its OS equivalent content (includes, libraries).
 #
 #      :package: the name of target external package.
-#
 #      :platform: the identifier of target platform in workspace install tree.
-#
 #      :version: the target version of external package.
-#
 #      :install_dir: path to the external package install folder where to put symlinks.
 #
 function(generate_OS_Variant_Symlinks package platform version install_dir)
@@ -2348,9 +2249,7 @@ endfunction(generate_OS_Variant_Symlinks)
 #    Create a symlink that points to an artefact (file, library) outside of the workspace (OS path) with same name.
 #
 #      :path_to_install_dir: the path to the folder containing the symlink.
-#
 #      :relative_path: the path that will be appended to path_to_install_dir that is used to define where to generate the symlink.
-#
 #      :list_of_possible_path: the list of all path in filesystem that may match the symlink to generate.
 #
 function(generate_OS_Variant_Symlink_For_Path path_to_install_dir relative_path list_of_possible_path)
@@ -2379,9 +2278,7 @@ endfunction(generate_OS_Variant_Symlink_For_Path)
 #    Declare that the external project wrapper is contibuting content to a framework generated site.
 #
 #      :framework: the name of target framework.
-#
 #      :url: the url of wrapper project page.
-#
 #      :description: string containing a detailed description of the external package to be used in statoc site.
 #
 macro(define_Wrapper_Framework_Contribution framework url description)
@@ -2425,29 +2322,18 @@ endmacro(define_Wrapper_Framework_Contribution)
 #    - FOR COMPILER OPTIONS: return the list of other compile options used to compile the project version ; option are kept "as is" EXCEPT those setting the C and CXX languages standards to use to build the package
 #
 #      :package: the name of target external package.
-#
 #      :component: the name of the target component.
-#
 #      :mode: the given build mode.
 #
 #      :RES_INCS: the output variable containing all include path to set when using the component.
-#
 #      :RES_LIB_DIRS: the output variable containing all path to folders containing some libraries used by the component.
-#
 #      :RES_DEFS: the output variable containing all definitions to set when using the component.
-#
 #      :RES_OPTS: the output variable containing all compiler options to set when using the component.
-#
 #      :RES_STD_C: the output variable containing the C language standard to set when using the component.
-#
 #      :RES_STD_MAX_C: the output variable containing the maximum C language standard allowed when using the component.
-#
 #      :RES_STD_CXX: the output variable containing the C++ language standard to set when using the component.
-#
 #      :RES_STD_MAX_CXX: the output variable containing the maximum C++ language standard allowed when using the component.
-#
 #      :RES_LINKS: the output variable containing all links to set when using the component.
-#
 #      :RES_RESOURCES: the output variable containing all runtime resources used by the component.
 #
 function(agregate_All_Build_Info_For_Component package component mode RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS RES_STD_C RES_STD_MAX_C RES_STD_CXX RES_STD_MAX_CXX RES_LINKS RES_RESOURCES)
@@ -2595,9 +2481,7 @@ endfunction(agregate_All_Build_Info_For_Component)
 #    Set the cache variable containing Build information for a given dependency.
 #
 #      :prefix: the prefix of cache variables used to .
-#
 #      :component: the name of the target component.
-#
 #      :version: the given version.
 #
 function(set_Build_Info_For_Dependency prefix dep_package component)
@@ -2746,9 +2630,7 @@ endfunction(set_Build_Info_For_Dependency)
 #    Set the cache variable containing Build information for a given component of a given external package version.
 #
 #      :package: the name of target external package.
-#
 #      :component: the name of the target component.
-#
 #      :version: the given version.
 #
 function(set_Build_Info_For_Component package component version)
@@ -2979,7 +2861,6 @@ endfunction(set_Build_Info_For_Component)
 #    Those variables will be usable inside deploy script to help configuring adequately the wrapped project.
 #
 #      :package: the name of target external package.
-#
 #      :version: the given version.
 #
 function(configure_Wrapper_Build_Variables package version)
@@ -3085,7 +2966,6 @@ endfunction(configure_Wrapper_Build_Variables)
 #    Resolve build environment configuration constraints for a given external package version. The constraints will be checked to ensure the external package wrapper description is consistent.
 #
 #      :package: the name of target external package.
-#
 #      :version: the given version.
 #
 #      :CONFIGURED: the output variable that is TRUE if all configuration constraint are satisfied for current build environment.
@@ -3148,7 +3028,6 @@ endfunction(resolve_Wrapper_Language_Configuration)
 #    Resolve platform configuration constraints for a given external package version. The constraints will be checked to ensure the external package wrapper description is consistent.
 #
 #      :package: the name of target external package.
-#
 #      :version: the given version.
 #
 #      :CONFIGURED: the output variable that is TRUE if all configuration constraint are satisfied for current platform.
@@ -3186,11 +3065,8 @@ endfunction(resolve_Wrapper_Platform_Configuration)
 #    Resolve dependency between a given external project version and another external package. Will end up in deploying the dependency if necessery and possible.
 #
 #      :package: the name of target external package.
-#
 #      :version: the given version.
-#
 #      :dep_package: the name of the external package that is a depenency.
-#
 #      :os_variant: if TRUE the os_variant of the dependency will be used.
 #
 function(resolve_Wrapper_Dependency package version dep_package os_variant)
@@ -3276,9 +3152,7 @@ endfunction(resolve_Wrapper_Dependency)
 #    Resolve all dependencies of a given external project version. Will end up in deploying the dependencies that are not satisfied, if they exist.
 #
 #      :package: the name of target external package.
-#
 #      :version: the given version.
-#
 #      :os_variant: if TRUE the OS variant of the dependency version will be resolved.
 #
 function(resolve_Wrapper_Dependencies package version os_variant)
@@ -3347,9 +3221,7 @@ endfunction(resolve_Wrapper_Dependencies)
 #    Generate and copy all the CMake script files used to check system configuration for the given external package.
 #
 #      :package: the name of target external package.
-#
 #      :path_to_sources: path to the wrapper source file containing system configuration check definitions
-#
 #      :path_to_install_dir: path to the local workspace install dir where configuration check scripts are installed.
 #
 function(generate_Wrapper_System_Configuration_Check_Scripts package path_to_sources path_to_install_dir)

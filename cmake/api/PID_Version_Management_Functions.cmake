@@ -41,7 +41,6 @@ set(PID_VERSION_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
 #     Initialize global variable describing the version of PID in use
 #
 #      :project_name: the name of target project.
-#
 #      :path_to_project: the path to target project repository in local workspace.
 #
 function(init_PID_Version_Variable project_name path_to_project)
@@ -92,7 +91,6 @@ endfunction(init_PID_Version_Variable)
 #     Update the workspace if its version is not up to date considering requirements of a binary package
 #
 #      :package: the name of target project.
-#
 #      :path_to_package: the path to target project repository in local workspace.
 #
 function(update_Workspace_For_Required_PID_Version package path_to_package)

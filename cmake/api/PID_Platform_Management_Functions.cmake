@@ -193,7 +193,6 @@ endmacro(detect_Current_Platform)
 #    Get the version from a (supposed to be) versionned symbol.
 #
 #     :symbol: the symbol that is supposed to have a version number. For instance symbol GLIBCXX can be used for libstdc++.so (GNU standard C++ library).
-#
 #     :symbol_version: the input symbol, for instance "GLIBCXX_2.4".
 #
 #     :RES_VERSION: the output variable that contains the version of the target symbol always with major.minor.patch structure. For istance with previous arguùents it returns "2.4.0".
@@ -223,7 +222,6 @@ endfunction(extract_ELF_Symbol_Version)
 #     :inout_list: the input/output variable that contains the list to be updated.
 #
 #     :RES_SYMBOL: the output variable that contains the symbol name
-#
 #     :RES_VERSION: the output variable that contains the symbol version.
 #
 function(pop_ELF_Symbol_Version_From_List RES_SYMBOL RES_VERSION inout_list)
@@ -294,7 +292,6 @@ endfunction(get_Binary_Description)
 #     :library_description: the PARENT SCOPE variable containing the library description.
 #
 #     :SONAME: the output variable that contains the full soname, if any, empty otherwise.
-#
 #     :SOVERSION: the output variable that contains the only the soversion if any, empty otherwise (implies SONAME is not empty).
 #
 function(get_Soname SONAME SOVERSION library_description)
@@ -338,13 +335,10 @@ endfunction(get_Soname)
 #    Get the SONAME from a target library description.
 #
 #     :folder: the absolute path to the folder where the library can lie.
-#
 #     :library_name: the name of the library (without any prefix or postfix specific to system).
 #
 #     :REAL_PATH: the output variable that contains the full path to library with resolved symlinks, empty if no path found.
-#
 #     :LINK_PATH: the output variable that contains the path to library used at link time, empty if no path found.
-#
 #     :LIB_SONAME: the output variable that contains the name of the library if path has been found, empty otherwise.
 #
 function(find_Possible_Library_Path REAL_PATH LINK_PATH LIB_SONAME folder library_name)
@@ -414,7 +408,6 @@ endfunction(find_Possible_Library_Path)
 #    From a file that is supposed to be a linker script extract real path to corresponding library.
 #
 #     :library: the name of the library (without any prefix or postfix specific to system).
-#
 #     :path_to_linker_script: the file that is possibly a linker script.
 #
 #     :LIBRARY_PATH: the output variable that contains the path to the real binary if specified in the linker script, empty otherwise.
@@ -468,9 +461,7 @@ endfunction(extract_Library_Path_From_Linker_Script)
 #     :library_name: the name of the library (without any prefix or postfix specific to system).
 #
 #     :LIBRARY_PATH: the output variable that contains the full path to library, empty if no path found.
-#
 #     :LIB_SONAME: the output variable that contains only the name of the library if path has been found, empty otherwise.
-#
 #     :LIB_SOVERSION: the output variable that contains only the SOVERSION of the library if LIB_SONAME has been found, empty otherwise.
 #
 function(find_Library_In_Implicit_System_Dir LIBRARY_PATH LIB_SONAME LIB_SOVERSION library_name)
@@ -507,13 +498,10 @@ endfunction(find_Library_In_Implicit_System_Dir)
 #    Get link info of a library that is supposed to be located in implicit system folders.
 #
 #     :library_name: the name of the library (without any prefix or suffix specific to system).
-#
 #     :full_path: the full path to the library file (may be a real soobject or link or a linker script).
 #
 #     :LIBRARY_PATH: the output variable that contains the full path to library, empty if no path found.
-#
 #     :LIB_SONAME: the output variable that contains only the name of the library if path has been found, empty otherwise.
-#
 #     :LIB_SOVERSION: the output variable that contains only the SOVERSION of the library if LIB_SONAME has been found, empty otherwise.
 #
 function(get_Soname_Info_From_Library_Path LIBRARY_PATH LIB_SONAME LIB_SOVERSION library_name full_path)
@@ -559,7 +547,6 @@ endfunction(get_Soname_Info_From_Library_Path)
 #    Get the max version for a (supposed to be) versionned symbol of the given library.
 #
 #     :path_to_library: the library to inspect.
-#
 #     :symbol: the symbol that is supposed to have a version number. For instance symbol GLIBCXX can be used for libstdc++.so (GNU standard C++ library).
 #
 #     :MAX_VERSION: the output variable that contains the max version of the target symbol always with major.minor.patch structure.
@@ -597,7 +584,6 @@ endfunction(get_Library_ELF_Symbol_Max_Version)
 #    Get the list of all versions for all given symbols.
 #
 #     :path_to_library: the library to inspect.
-#
 #     :list_of_symbols: the symbols whose version must be found.
 #
 #     :LIST_OF_SYMBOLS_VERSIONS: the output variable that contains the list of pairs (symbol, version).
@@ -839,7 +825,6 @@ endfunction(reset_Package_Platforms_Variables)
 #   Test whether the current platform configruation fulfills SONAMES required by a package configuration.
 #
 #     :package_sonames_var: the variable containing the list of sonames directly required by a configuration.
-#
 #     :platform_sonames_var: the variable that contains sonames provided by the platform.
 #
 #     :COMPATIBLE: the output variable that is TRUE if package configuration is satisfied by current platform.
@@ -878,7 +863,6 @@ endfunction(test_Soname_Compatibility)
 #   Serialize a symbol version into a string..
 #
 #     :symbol: the symbol name.
-#
 #     :version: the symbol version.
 #
 #     :RET_STR: the string output variable that contains the serialized symbol version.
@@ -906,7 +890,6 @@ endfunction(serialize_Symbol)
 #     :symbol_str: the serialized symbol.
 #
 #     :RET_SYMBOL: the output variable that contains the symbol name.
-#
 #     :RET_VERSION: the output variable that contains the symbol version.
 #
 function(deserialize_Symbol RET_SYMBOL RET_VERSION symbol_str)
@@ -934,7 +917,6 @@ endfunction(deserialize_Symbol)
 #   Test whether the current platform configruation provide symbols compatible with those required by a package configuration.
 #
 #     :package_sonames_var: the variable containing the list of symbols directly required by a configuration.
-#
 #     :platform_sonames_var: the variable that contains the list of symbols provided by the platform.
 #
 #     :COMPATIBLE: the output variable that is TRUE if package configuration is satisfied by current platform.
@@ -969,7 +951,6 @@ endfunction(check_Platform_Provides_Compatible_Symbol)
 #   Test whether the current platform configruation provide symbols compatible with those required by a package configuration.
 #
 #     :package_symbols_var: the variable containing the list of symbols directly required by a configuration.
-#
 #     :platform_symbols_var: the variable that contains the list of symbols provided by the platform.
 #
 #     :COMPATIBLE: the output variable that is TRUE if package configuration is satisfied by current platform.
@@ -1002,7 +983,6 @@ endfunction(test_Symbols_Compatibility)
 #     :binary_config_args_var: the variable containing the list if arguments of a configuration.
 #
 #     :SONAME: the output variable that contains sonames required by the configuration.
-#
 #     :SYMBOLS: the output variable that contains symbols required by the configuration.
 #
 function(get_Soname_Symbols_Values SONAME SYMBOLS binary_config_args_var)
@@ -1055,7 +1035,6 @@ endfunction(get_Soname_Symbols_Values)
 #    Chech whether the given package binary in use use a compatible ABI for standard library.
 #
 #     :package: the name of binary package to check.
-#
 #     :mode: the considered build mode.
 #
 #     :COMPATIBLE: the output variable that is TRUE if package's stdlib usage is compatible with current platform ABI, FALSE otherwise.
@@ -1148,7 +1127,6 @@ endfunction(is_Compatible_With_Current_ABI)
 #     :config: the name of the system configuration.
 #
 #     :RESULTING_EXPRESSION: the input/output variable containing the configuration check equivalent expression.
-#
 #     :RESULTING_CONFIG: the input/output variable containing the list of configuration names already managed.
 #
 function(generate_Platform_Configuration_Expression_For_Dependency RESULTING_EXPRESSION RESULTING_CONFIG_LIST config)
@@ -1198,13 +1176,10 @@ endfunction(generate_Platform_Configuration_Expression_For_Dependency)
 #    Check whether the given configuration constraint (= configruation name + arguments) conforms to target platform. This function is used in source scripts.
 #
 #     :config: the configuration expression (may contain arguments).
-#
 #     :mode: the current build mode.
 #
 #     :RESULT: the output variable that is TRUE configuration constraints is satisfied by current platform.
-#
 #     :NAME: the output variable that contains the name of the configuration without arguments.
-#
 #     :CONSTRAINTS: the output variable that contains the constraints that applmy to the configuration once used. It includes arguments (constraints imposed by user) and generated contraints (constraints automatically defined by the configuration itself once used).
 #
 function(check_Platform_Configuration RESULT NAME CONSTRAINTS config mode)
@@ -1239,13 +1214,10 @@ endfunction(check_Platform_Configuration)
 #    Check whether the given configuration constraint (= configruation name + arguments) conforms to target platform.
 #
 #     :config_name: the name of the configuration (without argument).
-#
 #     :config_args: the constraints passed as arguments by the user of the configuration.
-#
 #     :mode: the current build mode.
 #
 #     :CHECK_OK: the output variable that is TRUE configuration constraints is satisfied by current platform.
-#
 #     :BINARY_CONTRAINTS: the output variable that contains the list of all parameter (constraints coming from argument or generated by the configuration itself) to use whenever the configuration is used.
 #
 function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS config_name config_args mode)
@@ -1376,7 +1348,6 @@ endfunction(into_Configuration_Argument_List)
 #    Test if a configuration can be used with current platform.
 #
 #     :config_name: the name of the configuration (without argument).
-#
 #     :config_args: the constraints passed as arguments by the user of the configuration.
 #
 #     :ALLOWED: the output variable that is TRUE if configuration can be used.
@@ -1443,7 +1414,6 @@ endfunction(is_Allowed_Platform_Configuration)
 #   Call the procedure for finding artefacts related to a configuration. Set the ${config}_FOUND variable, that is TRUE is configuration has been found, FALSE otherwise.
 #
 #     :config: the name of the configuration to find.
-#
 #     :path_to_config: the path to configuration folder.
 #
 macro(evaluate_Platform_Configuration config path_to_config)
@@ -1574,7 +1544,6 @@ endmacro(evaluate_Platform_Configuration)
 #   Call the procedure telling if a configuration can be installed.
 #
 #     :config: the name of the configuration to install.
-#
 #     :path_to_config: the path to configuration folder.
 #
 #     :INSTALLABLE: the output variable that is TRUE is configuartion can be installed, FALSE otherwise.
@@ -1611,7 +1580,6 @@ endfunction(is_Platform_Configuration_Installable)
 #   Call the install procedure of a given configuration. Set the ${config}_INSTALLED variable to TRUE if the configuration has been installed on OS.
 #
 #     :config: the name of the configuration to install.
-#
 #     :path_to_config: the path to configuration folder.
 #
 macro(install_Platform_Configuration config path_to_config)

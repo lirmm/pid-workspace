@@ -41,7 +41,6 @@ set(PID_META_INFORMATION_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
 #     Add an author to the list of current project authors.
 #
 #      :author: The name of the author.
-#
 #      :institution: the name of author institution.
 #
 function(add_Author author institution)
@@ -95,11 +94,8 @@ endfunction(add_Category)
 #     Add a direct reference to a binary archive for a given version of the current project.
 #
 #      :version: version of the binary archive content.
-#
 #      :platform: target platform for binary archive content.
-#
 #      :url: url where to find the binary archive for release mode content.
-#
 #      :url-dbg: url where to find the binary archive for debug mode content.
 #
 function(add_Reference version platform url url-dbg)
@@ -158,21 +154,13 @@ endfunction(reset_References_Info)
 #     Resetting meta information variables to be sure package is cleaned before configruation, then initialize variable describing meta information on current project.
 #
 #      :author: name of the contact author.
-#
 #      :institution: name of contact author institution.
-#
 #      :mail: email of the contact author.
-#
 #      :description: description of current project.
-#
 #      :year: current project lifecycle dates
-#
 #      :license: license applying to current project.
-#
 #      :address: private git address (used by project developpers and registered members)
-#
 #      :public_address: public https git address (use to clone project without restriction)
-#
 #      :readme_file: the user defined readme file for the current project.
 #
 function(init_Meta_Info_Cache_Variables author institution mail description year license address public_address readme_file framework_site framework_repo_site framework_welcome_page)
@@ -245,13 +233,9 @@ endfunction(init_Meta_Info_Cache_Variables)
 #     Initialize variables related to current project documentation.
 #
 #      :framework: name of the framework to which the current project belongs.
-#
 #      :project_page: online url where to find the the project page of current project.
-#
 #      :repo: git repository of current project static site.
-#
 #      :home_page: online url where to find the current project lone static site.
-#
 #      :introduction: The introduction text used in current project static site (lone or framework)
 #
 function(init_Documentation_Info_Cache_Variables framework project_page repo home_page introduction)

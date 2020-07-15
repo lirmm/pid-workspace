@@ -48,13 +48,9 @@ include(PID_Git_Functions NO_POLICY_SCOPE)
 #     Create a local repository for the package's lone static site.
 #
 #      :package: the name of target package.
-#
 #      :repo_addr: the address of the git repository for package static site.
-#
 #      :push_site: if TRUE the committed content after creation will be pushed to remote.
-#
 #      :package_url: the URL of the package project page (referenced in static site).
-#
 #      :site_url: the URL of the package statis site.
 #
 #      :SUCCESS: the output variable that is TRUE if creation succeed, FALSE otherwise.
@@ -103,9 +99,7 @@ endfunction(create_Local_Static_Site_Project)
 #     Update the local repository for the package's lone static site.
 #
 #      :package: the name of target package.
-#
 #      :package_url: the URL of the package project page (referenced in static site).
-#
 #      :site_url: the URL of the package statis site.
 #
 function(update_Local_Static_Site_Project package package_url site_url)
@@ -134,7 +128,6 @@ endfunction(update_Local_Static_Site_Project)
 #      :package: the name of target package.
 #
 #      :SITE_EXISTS: the output variable that is TRUE is static site repository exists, FALSE otherwise.
-#
 #      :PATH_TO_SITE: the output variable that contains the path to the static site repository if it exists, empty otherwise.
 #
 function(static_Site_Project_Exists SITE_EXISTS PATH_TO_SITE package)
@@ -162,7 +155,6 @@ endfunction(static_Site_Project_Exists)
 #     Build the lone static site of a package being it a lone static site or part of a framework.
 #
 #      :package: the name of target package.
-#
 #      :framework: the name of the framework package belongs to, or empty string for a lone static site.
 #
 function (build_Package_Static_Site package framework)
@@ -200,7 +192,6 @@ endfunction(build_Package_Static_Site)
 #      :framework: the name of the target framework.
 #
 #      :SITE_EXISTS: the output variable that is TRUE if the framework repository lies in workspace.
-#
 #      :PATH_TO_SITE: the output variable that contains the path to the framework repository.
 #
 function(framework_Project_Exists SITE_EXISTS PATH_TO_SITE framework)

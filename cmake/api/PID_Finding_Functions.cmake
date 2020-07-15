@@ -46,7 +46,6 @@ set(PID_PACKAGE_FINDING_FUNCTIONS_INCLUDED TRUE)
 #    Do a find_package only if the find file is known in workspace. May update contribution spaces if file is unknown.
 #
 #     :deployment_unit: the name of the deployment unit to find.
-#
 #     :...: other arguments to pass to find_package
 #
 macro(find_package_resolved deployment_unit)
@@ -76,11 +75,8 @@ endmacro(find_package_resolved)
 #    Create the cache variables used to manage the version of a package/
 #
 #     :package: the name of the package.
-#
 #     :major: the major version number
-#
 #     :minor: the minor version number
-#
 #     :patch: the patch version number
 #
 function (set_Version_Strings package major minor patch)
@@ -106,7 +102,6 @@ endfunction(set_Version_Strings)
 #    Create the cache variables used to manage the version of an external package
 #
 #     :package: the name of the external package.
-#
 #     :version: the version string for the package.
 #
 function (set_External_Version_Strings package version)
@@ -129,7 +124,6 @@ endfunction(set_External_Version_Strings)
 #    Select the exact compatible version among a list of versions, considering that the policy is native: major and minor number must be respected while patch number can be adapted (max patch available is used).
 #
 #     :minimum_version: the exact version to match.
-#
 #     :available_versions: the list of versions.
 #
 #     :RES_VERSION: the output variable containing the exact version chosen in the list, or empty if none compatible.
@@ -185,7 +179,6 @@ endfunction(select_Exact_Native_Version)
 #    Select the exact compatible version among a list of versions, considering that the policy is external: major minor and patch numbers must be respected. Simply consists in returning the version value if it exists in the list.
 #
 #     :exact_version: the exact version to match.
-#
 #     :available_versions: the list of versions.
 #
 #     :RES_VERSION: the output variable containing the exact version chosen in the list.
@@ -215,7 +208,6 @@ endfunction(select_Exact_External_Version)
 #    Select the best compatible version among a list of versions, considering that the policy is native: major.minor must match, while greatest patch from this minor is used.
 #
 #     :minimum_version: the minimum version to match.
-#
 #     :available_versions: the list of versions.
 #
 #     :RES_VERSION: the output variable containing the best version chosen in the list.
@@ -264,9 +256,7 @@ endfunction(select_Best_Native_Version)
 #    Select the best compatible version among a list of versions, considering that the policy is external: any version explicitly declared as compatible by the external package can be used instead.
 #
 #     :package: the name of target external package.
-#
 #     :minimum_version: the minimum version to match.
-#
 #     :available_versions: the list of versions.
 #
 #     :RES_VERSION: the output variable containing the best version chosen in the list.
@@ -307,7 +297,6 @@ endfunction(select_Best_External_Version)
 #    Select the greatest version among a list of versions.
 #
 #     :available_versions: the list of versions.
-#
 #     :RES_VERSION: the output variable containing the best version chosen in the list.
 #
 function(select_Last_Version RES_VERSION available_versions)
@@ -340,13 +329,9 @@ endfunction(select_Last_Version)
 #    Check whether there is a compatible exact version of the package installed in the workspace, considering the native policy (any  version with greater patch number is valid).
 #
 #     :package: the name of package to check.
-#
 #     :install_dir: the path to package install folder.
-#
 #     :major: the major number of version.
-#
 #     :minor: the minor number of version.
-#
 #     :patch: the patch number of version.
 #
 #     :VERSION_FOUND: the output variable that contains the compatible version if it exists, empty otherwise.
@@ -394,13 +379,9 @@ endfunction(check_Exact_Version)
 #    Check whether there is a compatible version of the package installed in the workspace, considering the native policy: any version with greater minor is valid. The patch argument is used only if =major and =minor is found.
 #
 #     :package: the name of package to check.
-#
 #     :install_dir: the path to package install folder.
-#
 #     :major: the major number of version.
-#
 #     :minor: the minor number of version.
-#
 #     :patch: the patch number of version.
 #
 #     :VERSION_FOUND: the output variable that contains the compatible version if it exists, empty otherwise.
@@ -446,7 +427,6 @@ endfunction(check_Best_Version)
 #    Check whether there is a version of the package installed in the workspace and take the one with greatest number.
 #
 #     :package: the name of package to check.
-#
 #     :install_dir: the path to package install folder.
 #
 #     :VERSION_FOUND: the output variable that contains the version if any, empty otherwise.
@@ -487,9 +467,7 @@ endfunction(check_Last_Version)
 #    Check whether there is a compatible version of the external package installed in the workspace, considering the external policy: any older version declared as compatible with this one is eligible.
 #
 #     :package: the name of package to check.
-#
 #     :search_path: the path to external package install folder.
-#
 #     :version: the version number to check.
 #
 #     :VERSION_FOUND: the output variable that contains the compatible version if it exists, empty otherwise.
@@ -536,7 +514,6 @@ endfunction(check_External_Minimum_Version)
 #    Check whether there is a version of the external package installed in the workspace and take the greatest one.
 #
 #     :package: the name of package to check.
-#
 #     :search_path: the path to external package install folder.
 #
 #     :VERSION_FOUND: the output variable that contains the greatest version if any exists, empty otherwise.
@@ -576,9 +553,7 @@ endfunction(check_External_Last_Version)
 #    Check whether there is an exact version of the external package installed in the workspace (n adaptation of version allowed).
 #
 #     :package: the name of package to check.
-#
 #     :search_path: the path to external package install folder.
-#
 #     :version: the version number to check.
 #
 #     :VERSION_FOUND: the output variable that contains the exact version if it exists, empty otherwise.
@@ -615,9 +590,7 @@ endfunction(check_External_Exact_Version)
 #    Check whether all elements (headers binary, etc.) bound to a given component (belonging to a given package) exist in workspace.
 #
 #     :search_path: the path to external package install folder.
-#
 #     :package: the name of package to check.
-#
 #     :component: the name of the target component.
 #
 #     :COMPONENT_ELEMENT_NOTFOUND: the output variable that is TRUE if an element of the component has not been found, TRUE otherwise.
@@ -701,9 +674,7 @@ endfunction(check_Component_Elements_Exist)
 #    Check all components of a given package, to verify that all their elements (header, binary) exist.
 #
 #     :package: the name of package to check.
-#
 #     :version: version of the package.
-#
 #     :search_path: the path to package install folder.
 #
 #     :FILE_NOTFOUND: the output variable that is TRUE if the use file of package version has not been found.
@@ -740,15 +711,11 @@ endfunction(all_Components)
 #    Check that the given components of a given package. It verifies that all their elements (header, binary) exist.
 #
 #     :package: the name of package to check.
-#
 #     :version: version of the package.
-#
 #     :search_path: the path to package install folder.
-#
 #     :list_of_components: the list of components to specifically check.
 #
 #     :FILE_NOTFOUND: the output variable that is TRUE if the use file of package version has not been found.
-#
 #     :ALL_COMPONENTS_FOUND: the output variable that is TRUE if all required components have been found.
 #
 function (select_Components FILE_NOTFOUND ALL_COMPONENTS_FOUND package version search_path list_of_components)
@@ -803,13 +770,11 @@ endfunction(select_Components)
 #
 #    Check if an exact version is compatible with previous version contrainsts that apply to the current build. This function is used during dependencies version resolutionn process.
 #
-#     :IS_COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
-#
-#     :NEED_FINDING: the output variable that is TRUE if the exact version needs to be find.
-#
 #     :package: the name of package to check.
-#
 #     :version: version of the package.
+#
+#     :IS_COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
+#     :NEED_FINDING: the output variable that is TRUE if the exact version needs to be find.
 #
 function(is_Exact_Version_Compatible_With_Previous_Constraints IS_COMPATIBLE NEED_FINDING package version)
 
@@ -860,13 +825,11 @@ endfunction(is_Exact_Version_Compatible_With_Previous_Constraints)
 #
 #    Check if a version is compatible with previous version contrainsts that apply to the current build. This function is used during dependencies version resolutionn process.
 #
-#     :IS_COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
-#
-#     :VERSION_TO_FIND: the output variable that contains the version that needs to be find.
-#
 #     :package: the name of package to check.
-#
 #     :version: version of the package.
+#
+#     :IS_COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
+#     :VERSION_TO_FIND: the output variable that contains the version that needs to be find.
 #
 function(is_Version_Compatible_With_Previous_Constraints IS_COMPATIBLE VERSION_TO_FIND package version)
 
@@ -927,13 +890,11 @@ endfunction(is_Version_Compatible_With_Previous_Constraints)
 #
 #    Check if a version of the given external package is compatible with a reference version. This compatibility is deduced from explicit declaration of compatibility in external packages.
 #
-#     :IS_COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
-#
 #     :package: the name of package to check.
-#
 #     :reference_version: the reference version of the package.
-#
 #     :version_to_compare: version of the package to compare with reference version to know whether one can use it instead of reference_version.
+#
+#     :IS_COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
 #
 function(is_Compatible_External_Version IS_COMPATIBLE package reference_version version_to_compare)
   set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
@@ -963,23 +924,16 @@ endfunction(is_Compatible_External_Version)
 #
 #    From a version constraint of a given package already used in the build process, test if another version version constraint is compatible with this one.
 #
-#     :RES_VERSION_TO_USE: the output variable that contains the new version to use if both constraints are applied (may be same as previously). May be empty if no version compatibility is possible between between both constraints
-#
 #     :external: if TRUE the package to check is an external package.
-#
 #     :package: the name of package to check.
-#
 #     :version_in_use: the version constraint of package, already used in the current build process.
-#
 #     :version_in_use_is_exact: if TRUE the version constraint already used in the current build process is EXACT.
-#
 #     :version_in_use_is_system: if TRUE the version constraint already used in the current build process is the OS installed version (only for external packages)
-#
 #     :version_to_test: the version constraint of package, that may be used instead of current version.
-#
 #     :version_to_test_is_exact: if TRUE the version constraint that may be used is EXACT.
-#
 #     :version_to_test_is_system: if TRUE the version constraint is the OS installed version (only for external packages)
+#
+#     :RES_VERSION_TO_USE: the output variable that contains the new version to use if both constraints are applied (may be same as previously). May be empty if no version compatibility is possible between between both constraints
 #
 function(get_Compatible_Version RES_VERSION_TO_USE external package version_in_use version_in_use_is_exact version_in_use_is_system version_to_test version_to_test_is_exact version_to_test_is_system)
 set(${RES_VERSION_TO_USE} PARENT_SCOPE)
@@ -1081,21 +1035,15 @@ endfunction(get_Compatible_Version)
 #
 #    From a version constraint of a given package already used in the build process, get the best compatible version from a listr of version constraints (if any).
 #
-#     :BEST_VERSION_IN_LIST: the output variable that contains the new version constraint to use (may be same as previously).
-#
 #     :external: if TRUE the package to check is an external package.
-#
 #     :package: the name of package to check.
-#
 #     :version_in_use: the version constraint of package, already used in the current build process.
-#
 #     :version_in_use_is_exact: if TRUE the version constraint already used in the current build process is EXACT.
-#
 #     :version_in_use_is_system: if TRUE the version constraint already used in the current build process target an OS installed version.
-#
 #     :list_of_versions: the list of alternative version constraints for package.
-#
 #     :exact_versions: the sublist of list_of_versions that contains only exact versions constraints.
+#
+#     :BEST_VERSION_IN_LIST: the output variable that contains the new version constraint to use (may be same as previously).
 #
 function(find_Best_Compatible_Version BEST_VERSION_IN_LIST external package version_in_use version_in_use_exact version_in_use_is_system list_of_versions exact_versions)
   set(${BEST_VERSION_IN_LIST} PARENT_SCOPE)
@@ -1162,13 +1110,11 @@ endfunction(find_Best_Compatible_Version)
 #
 #    Check if an exact version of an external package is compatible with previous version contrainsts that apply to the current build. This function is used during dependencies version resolutionn process.
 #
-#     :IS_COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
-#
-#     :NEED_FINDING: the output variable that is TRUE if the exact version needs to be find.
-#
 #     :package: the name of package to check.
-#
 #     :version: version of the package.
+#
+#     :IS_COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
+#     :NEED_FINDING: the output variable that is TRUE if the exact version needs to be find.
 #
 function(is_Exact_External_Version_Compatible_With_Previous_Constraints IS_COMPATIBLE NEED_FINDING package version)
 set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
@@ -1212,13 +1158,11 @@ endfunction(is_Exact_External_Version_Compatible_With_Previous_Constraints)
 #
 #    Check if a version of an external package is compatible with previous version contrainsts that apply to the current build. This function is used during dependencies version resolutionn process.
 #
-#     :IS_COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
-#
-#     :VERSION_TO_FIND: the output variable that contains the version that needs to be find.
-#
 #     :package: the name of package to check.
-#
 #     :version: version of the package.
+#
+#     :IS_COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
+#     :VERSION_TO_FIND: the output variable that contains the version that needs to be find.
 #
 #   .. todo::
 #     Check VERSION_TO_FIND: is it necessary or why not used ?
@@ -1281,9 +1225,7 @@ endfunction(is_External_Version_Compatible_With_Previous_Constraints)
 #    Mark a given package version as "to be installed".
 #
 #     :package: the name of package to check.
-#
 #     :version: version of the package.
-#
 #     :version_exact: if TRUE then the version constraint is exact.
 #
 function(add_To_Install_Package_Specification package version version_exact)
@@ -1412,11 +1354,8 @@ endfunction(need_Install_Native_Package)
 #    Mark a given external package version as "to be installed".
 #
 #     :package: the name of package to check.
-#
 #     :version: version of the package.
-#
 #     :version_exact: if TRUE then the version constraint is exact.
-#
 #     :os_variant: if TRUE then the version constraint target the OS installed version of the external package.
 #
 function(add_To_Install_External_Package_Specification package version version_exact os_variant)
@@ -1622,13 +1561,10 @@ endfunction(reset_Packages_Finding_Variables)
 #    ${package}_DEPENDENCY_${dependency}_COMPONENTS	# list of components
 #
 #     :package: the name of package that has dependencies.
-#
 #     :dependency: the name of the native package that is a dependency of package
-#
 #     :mode: the build mode to consider.
 #
 #     :VERSION_COMPATIBLE: the output variable that is TRUE if the dependency has a compatible version with those already defined in current build process, false otherwise.
-#
 #     :ABI_COMPATIBLE: the output variable that is TRUE if the dependency use a compatible ABI with the one defined by current platform, false otherwise.
 #
 function(resolve_Native_Package_Dependency VERSION_COMPATIBLE ABI_COMPATIBLE package dependency mode)
@@ -1735,13 +1671,10 @@ endfunction(resolve_Native_Package_Dependency)
 #    Find the best version of an external dependency for a given package. It takes into account the previous constraints that apply to this dependency to find a version that satisfy all constraints (if possible).
 #
 #     :package: the name of package that has dependencies.
-#
 #     :external_dependency: the name of the external package that is a dependency of package.
-#
 #     :mode: the build mode to consider.
 #
 #     :VERSION_COMPATIBLE: the output variable that is TRUE if the dependency has a compatible version with those already defined in current build process, false otherwise.
-#
 #     :ABI_COMPATIBLE: the output variable that is TRUE if the dependency use a compatible ABI with the one defined by current platform, false otherwise.
 #
 function(resolve_External_Package_Dependency VERSION_COMPATIBLE ABI_COMPATIBLE package external_dependency mode)
@@ -1863,7 +1796,6 @@ endfunction(resolve_External_Package_Dependency)
 #    Exitting the find script of a package with a message.
 #
 #     :package: the name of the package.
-#
 #     :message_to_send: message to print when exitting the script.
 #
 macro(exitFindScript package message_to_send)

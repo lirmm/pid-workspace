@@ -140,7 +140,6 @@ endfunction(generate_Coverage)
 #   Add a specific static check target for a component of the currenlty defined package. This target launches a static code check (based on cppcheck) for that component that is added to the test target.
 #
 #     :component: the name of target component to check.
-#
 #     :is_library: if TRUE the component is a library.
 #
 function(add_Static_Check component is_library)

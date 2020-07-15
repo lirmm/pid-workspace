@@ -203,17 +203,11 @@ endmacro(declare_Environment_Global_Cache_Options)
 #   Define platform targetted by the curren environment. It consists in setting adequate internal cache variables.
 #
 #      :instance: constraint on platform instance name
-#
 #      :type_constraint: constraint on processor architecture type constraint (x86 or arm for instance)
-#
 #      :arch_constraint: constraint on processor architecture (16, 32, 64)
-#
 #      :os_constraint: constraint on operating system (linux, freebsd, macos, windows).
-#
 #      :abi_constraint: constraint on abi in use (98 or 11).
-#
 #      :distribution: constraint on operating system distribution in use (e.g. ubuntu, debian).
-#
 #      :distrib_version: constraint on operating system distribution in use (e.g. for ubuntu 16.04).
 #
 function(define_Build_Environment_Platform instance type_constraint arch_constraint os_constraint abi_constraint distribution distrib_version)
@@ -242,17 +236,11 @@ endfunction(define_Build_Environment_Platform)
 #   Auxiliary function to set platform constraints.
 #
 #      :instance: constraint on platform instance name
-#
 #      :type_constraint: constraint on processor architecture type constraint (x86 or arm for instance)
-#
 #      :arch_constraint: constraint on processor architecture (16, 32, 64)
-#
 #      :os_constraint: constraint on operating system (linux, freebsd, macos, windows).
-#
 #      :abi_constraint: constraint on abi in use (98 or 11).
-#
 #      :distribution: constraint on operating system distribution in use (e.g. ubuntu, debian).
-#
 #      :distrib_version: constraint on operating system distribution in use (e.g. for ubuntu 16.04).
 #
 function(set_Build_Environment_Platform instance type_constraint arch_constraint os_constraint abi_constraint distribution distrib_version)
@@ -286,11 +274,8 @@ endfunction(set_Build_Environment_Platform)
 #   Define all constraint that can be used with the current environment, in order to configure it.
 #
 #      :optional_vars: the list of optional variables that specify constraints. Optional means that user do not need to provide a value for these variables.
-#
 #      :required_vars: the list of required variables that specify constraints. Required means that user must provide a value for these variables.
-#
 #      :in_binary_vars: the list of required variables that specify constraints. IN Binary means optional but will be used in in in binary description of the environment.
-#
 #      :check_script: the path (relative to src folder) of the check script used to determine if current CMake configuration matches constraints.
 #
 function(define_Environment_Constraints optional_vars required_vars in_binary_vars check_script)
@@ -316,19 +301,12 @@ endfunction(define_Environment_Constraints)
 #    Auxisialry function to set the value of a solution.
 #
 #      :index: index of the solution to set
-#
 #      :type_constraint: filters processor architecture type (arm, x86)
-#
 #      :arch_constraint: filters processor architecture (32, 64)
-#
 #      :os_constraint: filters operating system
-#
 #      :abi_constraint: filters default c++ abi
-#
 #      :distribution: filters the distribution of the host.
-#
 #      :version: filters the version of the distribution.
-#
 #      :configure_script: path relative to src folder of the script file used to configure host in order to make it conforms to environment settings
 #
 function(set_Environment_Solution index type_constraint arch_constraint os_constraint abi_constraint distribution version configure_script)
@@ -377,17 +355,11 @@ endfunction(add_Environment_Dependency)
 #    Define a new solution for configuring the environment.
 #
 #      :type_constraint: filters processor architecture type (arm, x86)
-#
 #      :arch_constraint: filters processor architecture (32, 64)
-#
 #      :os_constraint: filters operating system
-#
 #      :abi_constraint: filters default c++ abi
-#
 #      :distribution: filters the distribution of the host.
-#
 #      :version: filters the version of the distribution.
-#
 #      :configure_script: path relative to src folder of the script file used to configure host in order to make it conforms to environment settings
 #
 function(add_Environment_Solution_Procedure type_constraint arch_constraint os_constraint abi_constraint distribution version configure_script)
@@ -493,7 +465,7 @@ macro(build_Environment_Project)
 
   evaluate_Environment_Platform(HOST_MATCHES_TARGET)
   if(NOT HOST_MATCHES_TARGET)#if host does not match all constraints -> we need to configure the toochain using available solutions
-    message("[PID] INFO: current host configuration does not satisfy constraints on platform, need to find a solution for cross compiling.")
+    message("[PID] INFO: current host configuration does not satisfy constraints on target platform, need to find a solution...")
   endif()
   evaluate_Environment_Dependencies(EVAL_DEPS)
   if(NOT EVAL_DEPS)
@@ -578,7 +550,6 @@ endfunction(manage_Environment_Dependency)
 #      :environment: the name of the target environment.
 #
 #      :REPO_EXISTS: the output variable that is TRUE if the environment repository lies in workspace.
-#
 #      :PATH_TO_REPO: the output variable that contains the path to the environment repository.
 #
 function(environment_Project_Exists REPO_EXISTS PATH_TO_REPO environment)
@@ -717,33 +688,27 @@ endfunction(generate_Environment_Inputs_File)
 #  get_Platform_Constraints_Definitions
 #  ------------------------------------
 #
-#   .. command:: get_Platform_Constraints_Definitions(RESULT_DEFS environment)
+#   .. command:: get_Platform_Constraints_Definitions(RESULT_DEFS environment
+#                                                    instance sysroot staging
+#                                                    proc_type proc_arch os abi
+#                                                    distrib distrib_version)
 #
 #     Get the list of CMake definitions used to set platform related constraints.
 #
 #     :environment: the name of the environment.
-#
 #     :instance: giving name of the instance.
-#
 #     :sysroot: giving path to the sysroot.
-#
 #     :staging: giving path to the staging area.
-#
 #     :proc_type: constraint on type of processor.
-#
 #     :proc_arch: constraint on architecture of processor.
-#
 #     :os: constraint on operating system.
-#
 #     :abi: constraint on C++ ABI.
-#
 #     :distrib: constraint on operating system's distribution.
-#
 #     :distrib_version: constraint on version of operating system's distribution.
 #
 #     :RESULT_DEFS: the output variable containing the list of CMake definitions to pass to configuration process.
 #
-function(get_Platform_Constraints_Definitions environment instance sysroot staging proc_type proc_arch os abi distrib distrib_version)
+function(get_Platform_Constraints_Definitions RESULT_DEFS environment instance sysroot staging proc_type proc_arch os abi distrib distrib_version)
   set(result_list)
   if(instance)
     list(APPEND list_of_defs -DFORCE_${environment}_TARGET_INSTANCE=${instance})
@@ -791,7 +756,6 @@ endfunction(get_Platform_Constraints_Definitions)
 #     Set the variables corresponding to environment arguments in the parent scope.
 #
 #     :environment: the name of the environment to be checked.
-#
 #     :arguments: the parent scope variable containing the list of arguments generated from parse_Configuration_Expression.
 #
 #     :LIST_OF_DEFS: the output variable containing the list of CMake definitions to pass to configuration process.
@@ -828,23 +792,14 @@ endfunction(prepare_Environment_Arguments)
 #     Configure the target environment with management of environment variables coming from user.
 #
 #      :environment: the name of the target environment.
-#
 #      :instance: the instance name to use.
-#
 #      :sysroot: the path to sysroot.
-#
 #      :staging: the path to staging.
-#
 #      :type: the target type of processor (x86, arm, etc.).
-#
 #      :arch: the target processor architecture (16, 32, 64).
-#
 #      :os: the target operating system (e.g. linux)
-#
 #      :abi: the target c++ ABI (98 or 11).
-#
 #      :distribution: the target OS distribution (e.g. ubuntu)
-#
 #      :distrib_version: the target distribution version (e.g. 16.04).
 #
 #      :EVAL_OK: the output variable that is TRUE if the environment has been evaluated and exitted without errors.
@@ -913,7 +868,6 @@ endfunction(evaluate_Environment_From_Script)
 #     configure the environment with platform variables and arguments coming from current environment (or user).
 #
 #      :environment: the name of the target environment.
-#
 #      :list_of_args: the list of arguments passed to the environment
 #
 #      :EVAL_OK: the output variable that is TRUE if the environment has been evaluated and exitted without errors.
@@ -969,7 +923,6 @@ endfunction(evaluate_Environment_From_Environment)
 #     configure the environment with platform variables and arguments coming from current environment (or user).
 #
 #      :environment: the name of the target environment.
-#
 #      :list_of_args: the list of arguments passed to the environment
 #
 #      :EVAL_OK: the output variable that is TRUE if the environment has been evaluated and exitted without errors.
@@ -1191,7 +1144,6 @@ endfunction(import_Solution_From_Dependency)
 #   Add an author to the current framework project.
 #
 #      :author: the author name
-#
 #      :institution: the author institution.
 #
 function(add_Environment_Author author institution)
@@ -1986,29 +1938,17 @@ endfunction(adjust_Environment_Binary_Variables)
 #   Set the description of a language toolset in cache
 #
 #     :lang: the label of target language
-#
 #     :toolset: the index of language toolset
-#
 #     :expression: the constraint expression corresponding to the use of the given environment.
-#
 #     :script: the path to the check script used to evaluate the environment.
-#
 #     :compiler: the path to language compiler program.
-#
 #     :comp_id: the identifier of compiler
-#
 #     :comp_ar: the archiver tool for compiler
-#
 #     :comp_ranlib: the archiver manager for compiler
-#
 #     :comp_flags: the default flags to use with the comiler
-#
 #     :interp: the interpreter for the language
-#
 #     :includes: the include folder where to find standard library definitions
-#
 #     :library: the path to language standard library
-#
 #     :host_cc: the C or C++ compiler required by the higher level compiler
 #
 function(set_Language_Toolset lang toolset expression script compiler comp_id comp_ar comp_ranlib comp_flags interp includes library host_cc)
@@ -2040,29 +1980,17 @@ endfunction(set_Language_Toolset)
 #   Add definition of a new toolset for language. This toolset becomes default toolset.
 #
 #     :lang: the label of target language
-#
 #     :default: if TRUE the new toolset is supposed to be default and so toolsets will be reordered, otherwise solution is appended to existing ones
-#
 #     :expression: the constraknt expression for the corresponding toolset.
-#
 #     :script: the path to the check script used to evaluate the environment.
-#
 #     :compiler: the path to language compiler program.
-#
 #     :comp_id: the identifier of compiler
-#
 #     :comp_ar: the archiver tool for compiler
-#
 #     :comp_ranlib: the archiver manager for compiler
-#
 #     :comp_flags: the default flags to use with the comiler
-#
 #     :interp: the interpreter for the language
-#
 #     :includes: the include folder where to find standard library definitions
-#
 #     :library: the path to language standard library
-#
 #     :host_cc: the C or C++ compiler required by the higher level compiler
 #
 function(add_Language_Toolset lang default expression script compiler comp_id comp_ar comp_ranlib comp_flags interp includes library host_cc)
@@ -2129,23 +2057,14 @@ endfunction(add_Language_Toolset)
 #   Set definition of an extra tool.
 #
 #     :tool: the name of extra tool.
-#
 #     :expression: the constraint expression provided by the environment defining the extra tool.
-#
 #     :script: the path to the check script used to evaluate the environment.
-#
 #     :tool_program: path to the tool program (may be let empty).
-#
 #     :tool_configs: platform configuration required by the tool.
-#
 #     :tool_program_dirs: runtime path to use for the program executable.
-#
 #     :tool_plugin_before_deps: path to plugin script that is executed before dependencies description.
-#
 #     :tool_plugin_before_comps: path to plugin script that is executed after dependencies description and before components description.
-#
 #     :tool_plugin_during_comps: path to plugin script that is executed after during components description.
-#
 #     :tool_plugin_after_comps: path to plugin script that is executed after components description.
 #
 function(set_Extra_Tool tool expression script tool_program tool_configs tool_program_dirs tool_plugin_before_deps tool_plugin_before_comps tool_plugin_during_comps tool_plugin_after_comps)
@@ -2185,27 +2104,16 @@ endfunction(set_Extra_Tool)
 #   Add definition of an extra tool to the set of extra tools of the environment.
 #
 #     :tool: the name of extra tool.
-#
 #     :expression: the constraint expression of the environment providing the extra tool.
-#
 #     :script: the path to the check script used to evaluate the environment.
-#
 #     :force: if TRUE force the update even if already defined.
-#
 #     :tool_program: path to the program main executable.
-#
 #     :tool_configs: platform configuration required by the tool.
-#
 #     :tool_program_dirs: runtime path to use for the program executable.
-#
 #     :force: if TRUE force the update even if already defined.
-#
 #     :tool_plugin_before_deps: path to plugin script that is executed before dependencies description.
-#
 #     :tool_plugin_before_comps: path to plugin script that is executed after dependencies description and before components description.
-#
 #     :tool_plugin_during_comps: path to plugin script that is executed after during components description.
-#
 #     :tool_plugin_after_comps: path to plugin script that is executed after components description.
 #
 function(add_Extra_Tool tool expression script force tool_program tool_configs tool_program_dirs tool_plugin_before_deps tool_plugin_before_comps tool_plugin_during_comps tool_plugin_after_comps)
@@ -2236,9 +2144,7 @@ endfunction(add_Extra_Tool)
 #   Write description of a language toolset into the project solution file.
 #
 #     :file: the path to target file to write in.
-#
 #     :lang: the label of target language
-#
 #     :toolset: the index of language toolset
 #
 function(write_Language_Toolset file lang toolset)
@@ -2394,9 +2300,7 @@ endfunction(generate_Environment_Solution_File)
 #   Print the solution evaluated by an environment for a given toolset of a given language.
 #
 #     :environment: the name of target environment.
-#
 #     :lang: the label of target language
-#
 #     :toolset: the index of language toolset
 #
 function(print_Language_Toolset environment lang toolset)
@@ -2452,7 +2356,6 @@ endfunction(print_Language_Toolset)
 #   Print the solution evaluated by an environment for a given extra tool.
 #
 #     :environment: the name of target environment.
-#
 #     :tool: the name of extra tool
 #
 function(print_Extra_Tool environment tool)

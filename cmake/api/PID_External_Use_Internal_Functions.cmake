@@ -62,7 +62,6 @@ endmacro(load_Platform_Info)
 #    Reset PID related info for a non PID CMake project
 #
 #     :path: the path to PID workspace build folder
-#
 #     :mode: the build mode for target PID package's components
 #
 function(reset_Local_Components_Info path mode)
@@ -122,7 +121,6 @@ endfunction(reset_Local_Components_Info)
 #    Force to use OS variants of some PID external dependencies.
 #
 #     :list_of_os_deps: the list of external dependencies that must be used as os variants
-#
 #     :NOT_ENFORCED: the output variable that is empty if all dependencies can be enforced as OS variants, and contains the name of the first dependency that cannot be enforced
 #
 function(enforce_System_Dependencies NOT_ENFORCED list_of_os_deps)
@@ -152,7 +150,6 @@ endfunction(enforce_System_Dependencies)
 #    Prepare the local CMake target to be capable of using PID components
 #
 #     :local_target: the local target that is linked with pid components
-#
 #     :target_type: the type of the target (EXE, LIB, etc.)
 #
 function(prepare_Local_Target_Configuration local_target target_type)
@@ -197,11 +194,8 @@ endfunction(prepare_Local_Target_Configuration)
 #    Reset PID related info for a non PID CMake project
 #
 #     :local_target: the local target that isbound with pid components
-#
 #     :target_type: the type of the target (EXE, LIB, etc.)
-#
 #     :components_list: the list of PID components to bind local target with
-#
 #     :mode: the build mode for target's PID components
 #
 function(configure_Local_Target_With_PID_Components local_target target_type components_list mode)
@@ -306,11 +300,8 @@ endfunction(configure_Local_Target_With_PID_Components)
 #    Generate symlinks for runtime resources in the install tree of a non PID defined component dependning on a given PID component.
 #
 #     :local_target_folder_name: the name of the local component's folder containing its runtime resources
-#
 #     :package: the name of package containg dependency component.
-#
 #     :component: the name of the dependency component.
-#
 #     :mode: chosen build mode for the component.
 #
 function(generate_Local_Component_Symlinks local_target_folder_name package component mode)
@@ -385,11 +376,8 @@ endfunction(generate_Local_Component_Symlinks)
 #    Configure a local target that is bound with another local target that is using PID components.
 #
 #     :local_target: the local target that is linked with pid components
-#
 #     :target_type: the type of the target (EXE, LIB, etc.)
-#
 #     :dependency: the local target that is linked with local_target and depends on PID components
-#
 #     :mode: the build mode for pid components
 #
 function(configure_Local_Target_With_Local_Component local_target target_type dependency mode)
@@ -428,13 +416,9 @@ endfunction(configure_Local_Target_With_Local_Component)
 #    Generate symlinks for runtime resources in the install tree of a non PID defined component dependning on a given PID component.
 #
 #     :local_target_folder_name: the name of the local component's folder containing its runtime resources
-#
 #     :package: the name of package containg dependency component.
-#
 #     :component: the name of the dependency component.
-#
 #     :mode: chosen build mode for the component.
-#
 #     :undirect_deps: private shared libraries for local_target_folder_name.
 #
 function(generate_Local_Component_Runtime_Resources_Symlinks local_target_folder_name local_dependency mode)
@@ -461,11 +445,8 @@ endfunction(generate_Local_Component_Runtime_Resources_Symlinks)
 #    Generate symlinks for runtime resources in the install tree of a non PID defined component.
 #
 #     :local_target: the name of the local component (a non PID defined component)
-#
 #     :local_dependency: the name of a local component (a non PID defined component) that is a dependency for local_target.
-#
 #     :mode: build for for PID components.
-#
 #     :undirect_deps: private shared libraries for local_target.
 #
 function(generate_Local_Dependency_Symlinks local_target local_dependency mode undirect_deps)
@@ -499,7 +480,6 @@ endfunction(generate_Local_Dependency_Symlinks)
 #    Deploy a PID package into the PID workspace from a local (non PID) project.
 #
 #     :package: the name of the package
-#
 #     :version: the version of the package (may be left empty)
 #
 #     :DEPLOYED: the output variable that is TRUE if package has been deployed, FALSE otherwise.
@@ -578,9 +558,7 @@ endfunction(manage_Dependent_PID_Package)
 #    Define runtime resources used by the local target. These resources will be doscoverable at runtime using pid-rpath API.
 #
 #     :local_target: the name of the local target defining the resources
-#
 #     :files: list of files
-#
 #     :dirs: list of firectories.
 #
 function(add_Managed_PID_Resources local_target files dirs)

@@ -183,9 +183,7 @@ endfunction(generate_Wrapper_Reference_File)
 #      Resolve dependencies of a given package: each dependency is defined as a path to the adequate package version located in the workspace. This can lead to the install of packages either direct or undirect dependencies of the target package.
 #
 #      :package: The name of given package for which dependencies are resolved.
-#
 #      :mode: The build mode (Debug or Release) of the package.
-#
 #      :first_time: the boolean indicating (if true) that the resolution process has been launch for firt time in build process, FALSE otherwise.
 #
 function(resolve_Package_Dependencies package mode first_time)
@@ -389,15 +387,10 @@ endfunction(resolve_Package_Dependencies)
 #      Update a package to the given version. Function called by find script subfunctions to automatically update a package, if possible.
 #
 #      :package: The name of given package to update.
-#
 #      :major: major number of package version.
-#
 #      :minor: minor number of package version.
-#
 #      :patch: patch number of package version.
-#
 #      :exact: if TRUE the version constraint is exact.
-#
 #      :already_installed: the list of versions of the package already installed in the workspace.
 #
 function(update_Package_Installed_Version package major minor patch exact already_installed)
@@ -480,9 +473,7 @@ endfunction(update_Package_Installed_Version)
 #      :package: The name of the package for which a version must be found.
 #
 #      :RESOLUTION_OK: the output variable that is TRUE if a version of the package has been proposed by teh resolution process, FALSE otherwise.
-#
 #      :MINIMUM_VERSION: the output variable that contains the minimum version to use.
-#
 #      :IS_EXACT: the output variable that is TRUE if MINIMUM_VERSION must be exact, false otherwise.
 #
 function(resolve_Required_Native_Package_Version RESOLUTION_OK MINIMUM_VERSION IS_EXACT package)
@@ -544,7 +535,6 @@ endfunction(resolve_Required_Native_Package_Version)
 #      :package: The name of target package.
 #
 #      :EXIST: the output variable that is TRUE if repository exists, FALSE otherwise.
-#
 #      :RETURNED_PATH: the output variable that contains the path to the package reposotiry on filesystem.
 #
 function(package_Source_Exists_In_Workspace EXIST RETURNED_PATH package)
@@ -571,9 +561,7 @@ endfunction(package_Source_Exists_In_Workspace)
 #     Check wether the repository of a package already lies in the workspace.
 #
 #      :package: The name of target package.
-#
 #      :version: The version of target package.
-#
 #      :platform: The paltform for which the binary package has been built for.
 #
 #      :RETURNED_PATH: the output variable that contains the path to the binary package version on filesystem, or empty of not existing.
@@ -633,7 +621,6 @@ endfunction(package_Reference_Exists_In_Workspace)
 #     Install a given native package in workspace.
 #
 #      :package: The name of the package to install.
-#
 #      :reinstall: a boolean to indicate if version must be reinstalled
 #
 #      :INSTALL_OK: the output variable that is TRUE is package is installed, FALSE otherwise.
@@ -911,11 +898,8 @@ endfunction(deploy_Package_Repository)
 #   Build and install a version of a given package from its source repository. Called by: deploy_Source_Native_Package and deploy_Source_Native_Package_Version.
 #
 #      :package: The name of the package.
-#
 #      :version: The target version to build.
-#
 #      :branch: The target branch to build.
-#
 #      :run_tests: if true the build process will run the tests and tests fail the install is not performed.
 #
 #      :IS_DEPLOYED: the output variable that is TRUE if package source repository is deployed, FALSE otherwise.
@@ -1023,9 +1007,7 @@ endfunction(build_And_Install_Source)
 #   Deploy a native package (last version) from its source repository. Means deploy git repository + configure + build/install the native SOURCE package in the workspace so that it can be used by a third party package.
 #
 #      :package: The name of the package.
-#
 #      :already_installed_versions: The list of versions of the package that are already installed.
-#
 #      :run_tests: if true the build process will run the tests and tests they fail the deployment is aborted.
 #
 #      :DEPLOYED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
@@ -1110,9 +1092,7 @@ endfunction(deploy_Source_Native_Package)
 #   Deploy a native package (last version) from its source repository. Means deploy git repository + configure + build/install the native SOURCE package in the workspace so that it can be used by a third party package.
 #
 #      :package: The name of the package.
-#
 #      :branch: The name of branch or ID of commit to deploy.
-#
 #      :run_tests: if true the build process will run the tests and tests fail the deployment is aborted.
 #
 #      :DEPLOYED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
@@ -1149,11 +1129,8 @@ endfunction(deploy_Source_Native_Package_From_Branch)
 #   Try to deploy a given version of a package from its source repository's integration branch.
 #
 #      :package: The name of the package.
-#
 #      :version_to_check: The version that is required and is maybe installed by integration branch.
-#
 #      :is_exact: if TRUE the version to check must be exact.
-#
 #      :run_tests: if true the build process will run the tests and tests fail the deployment is aborted.
 #
 #      :DEPLOYED_VERSION: the output variable that contains the deployed version, empty if deployment failed.
@@ -1206,13 +1183,9 @@ endfunction(try_In_Development_Version)
 #   Process checkout to the adequate revision corresponding to the best version according to constraints passed as arguments then configure and build it.
 #
 #      :package: The name of the package.
-#
 #      :min_version: The minimum required version.
-#
 #      :is_exact: if TRUE then version_min is an exact required version.
-#
 #      :already_installed_versions: The list of versions of the package that are already installed.
-#
 #      :run_tests: if true the build process will run the tests and tests they fail the deployment is aborted.
 #
 #      :DEPLOYED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
@@ -1311,9 +1284,7 @@ endfunction(deploy_Source_Native_Package_Version)
 #    Build and install a given native package version from its sources. Intermediate internal function that is used to put the source package in an adequate version (using git tags) and then build it. See: build_And_Install_Source.
 #
 #      :package: The name of the package.
-#
 #      :version_or_branch: The version or the name of branch to build.
-#
 #      :run_tests: if true the build process will run the tests and tests fail the install is not performed.
 #
 #      :DEPLOYED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
@@ -1358,7 +1329,6 @@ endfunction(build_And_Install_Package)
 #    Check whether platform configurations defined for binary packages are matching the current platform.
 #
 #      :package: The name of the package.
-#
 #      :platform: The platform string used to filter configuation constraints. If different from current platform then configurations defined for that platorm are not checked.
 #
 #      :CHECK_OK: the output variable that is TRUE if current platform conforms to package required configurations, FALSE otherwise.
@@ -1418,7 +1388,6 @@ endfunction(check_Package_Platform_Against_Current)
 #      :package: The name of the package.
 #
 #      :LIST_OF_VERSIONS: the output variable that contains the list of versions of package that are available with a binary archive.
-#
 #      :LIST_OF_VERSION_PLATFORM: the output variable that contains the list of versions+platform of package that are available with a binary archive.
 #
 function(get_Available_Binary_Package_Versions package LIST_OF_VERSIONS LIST_OF_VERSION_PLATFORM)
@@ -1459,7 +1428,6 @@ endfunction(get_Available_Binary_Package_Versions)
 #    Select the version passed as argument in the list of binary versions of a package and get corresponding platform.
 #
 #      :version: The selected version.
-#
 #      :list_of_bin_with_platform: list of available version+platform for a package (returned from get_Available_Binary_Package_Versions). All these archives are supposed to be binary compatible with current platform.
 #
 #      :RES_FOR_PLATFORM: the output variable that contains the platform to use.
@@ -1504,7 +1472,6 @@ endfunction(select_Platform_Binary_For_Version)
 #    Deploy a package (last version) binary archive. It means that last version is installed and configured in the workspace.  See: download_And_Install_Binary_Native_Package.
 #
 #      :package: The name of package to deploy.
-#
 #      :already_installed_versions: list of already installed versions for that package.
 #
 #      :DEPLOYED: the output variable that contains is TRUE if binary archive has been deployed, FALSE otherwise.
@@ -1582,11 +1549,8 @@ endfunction(deploy_Binary_Native_Package)
 #    Deploy a given version of package from a binary archive. The package version archive is installed and configured in the workspace. See: download_And_Install_Binary_Native_Package.
 #
 #      :package: The name of package to deploy.
-#
 #      :min_version: The minimum allowed version for the binary archive
-#
 #      :is_exact: if TRUE then the exact constraint applies to min_version.
-#
 #      :already_installed_versions: list of already installed versions for that package.
 #
 #      :DEPLOYED: the output variable that contains is TRUE if binary archive has been deployed, FALSE otherwise.
@@ -1682,15 +1646,11 @@ endfunction(deploy_Binary_Native_Package_Version)
 #    Get filesystem names usefull to manage package binary archives built for a given version of a package, for a target platform and in specific build mode.
 #
 #      :package: The name of package.
-#
 #      :version: version of the package.
-#
 #      :platform: target platform for archive binary content.
-#
 #      :mode: build mode  for archive binary content.
 #
 #      :RES_FILE: the output variable that contains the name of the archive (generated by PID)
-#
 #      :RES_FOLDER: the output variable that contains the name of the root folder contained in the archive (generated by CPack)
 #
 function(generate_Binary_Package_Name package version platform mode RES_FILE RES_FOLDER)
@@ -1715,9 +1675,7 @@ endfunction(generate_Binary_Package_Name)
 #    Download the  binary archive of target package version and then intsall it. This call installs Debug and Release mode versions of the package in the same time.
 #
 #      :package: The name of package.
-#
 #      :version: version of the package to install.
-#
 #      :platform: target platform for archive binary content.
 #
 #      :INSTALLED: the output variable that is TRUE if binary package has been installed.
@@ -1969,9 +1927,7 @@ endfunction(get_Wrapper_Known_Versions RES_VERSIONS package)
 #    Build and install a given external package version from its wrapper.
 #
 #      :package: The name of the external package.
-#
 #      :version: The version to install.
-#
 #      :is_system: if TRUE the OS variant of teh given version will be "built" (i.e. symlinked from external package install tree).
 #
 #      :INSTALLED: the output variable that is TRUE if package version is installed in workspace, FALSE otherwise.
@@ -2078,7 +2034,6 @@ endfunction(deploy_Wrapper_Repository)
 #   Deploy an external package (last version) into workspace from its wrapper. Consists in cloning wrapper git repository then configure then build/install the external wrapper SOURCE package in the workspace so that it can be used by a third party package.
 #
 #      :package: The name of the external package.
-#
 #      :already_installed_versions: The list of versions of the external package that are already installed.
 #
 #      :DEPLOYED: the output variable that is TRUE if external package version is installed in workspace, FALSE otherwise.
@@ -2147,13 +2102,9 @@ endfunction(deploy_Source_External_Package)
 #   Process checkout to the adequate revision corresponding to the best version according to constraints passed as arguments then configure and build it.
 #
 #      :package: The name of the external package.
-#
 #      :min_version: The minimum required version.
-#
 #      :is_exact: if TRUE then version_min is an exact required version.
-#
 #      :is_system: if TRUE then version_min is the OS installed version.
-#
 #      :already_installed_versions: The list of versions of the external package that are already installed.
 #
 #      :DEPLOYED: the output variable that is TRUE if external package version is installed in workspace, FALSE otherwise.
@@ -2227,11 +2178,8 @@ endfunction(deploy_Source_External_Package_Version)
 #      :package: The name of the external package for which a version must be found.
 #
 #      :RESOLUTION_OK: the output variable that is TRUE if a version of the package has been proposed by teh resolution process, FALSE otherwise.
-#
 #      :SELECTED_VERSION: the output variable that contains the selected version to use.
-#
 #      :IS_EXACT: the output variable that is TRUE if SELECTED_VERSION must be exact, false otherwise.
-#
 #      :IS_SYSTEM: the output variable that is TRUE if SELECTED_VERSION must be an OS installed version, false otherwise.
 #
 function(resolve_Required_External_Package_Version RESOLUTION_OK SELECTED_VERSION IS_EXACT IS_SYSTEM package)
@@ -2376,9 +2324,7 @@ endfunction(memorize_Binary_References)
 #     Install a given external package in workspace.
 #
 #      :package: The name of the external package to install.
-#
 #      :reinstall: if TRUE force the reinstall of binary version.
-#
 #      :from_sources: if TRUE the external package will be reinstalled from sources if already installed. if value "SYSTEM" is given the OS variant of the version will be installed
 #
 #      :INSTALL_OK: the output variable that is TRUE is external package is installed, FALSE otherwise.
@@ -2579,7 +2525,6 @@ endfunction(install_System_Configuration_Check)
 #    Deploy an external package (last version) binary archive. It means that last version is installed and configured in the workspace.  See: download_And_Install_Binary_External_Package.
 #
 #      :package: The name of the external package to deploy.
-#
 #      :already_installed_versions: list of already installed versions for that package.
 #
 #      :DEPLOYED: the output variable that contains is TRUE if binary archive has been deployed, FALSE otherwise.
@@ -2668,11 +2613,8 @@ endfunction(deploy_Binary_External_Package)
 #    Deploy a given version of an external package from a binary archive. The external package version archive is installed  in the workspace and configured. See: download_And_Install_Binary_External_Package.
 #
 #      :package: The name of external package to deploy.
-#
 #      :min_version: The minimum allowed version for the binary archive
-#
 #      :is_exact: if TRUE then the exact constraint applies to min_version.
-#
 #      :already_installed_versions: list of already installed versions for that external package.
 #
 #      :DEPLOYED: the output variable that contains is TRUE if binary archive has been deployed, FALSE otherwise.
@@ -2749,9 +2691,7 @@ endfunction(deploy_Binary_External_Package_Version)
 #    Download the binary archive of target external package version and then install it. This call install all available build mode versions (Release and/or Debug) of the package in the same time.
 #
 #      :package: The name of the external package.
-#
 #      :version: version of the external package to install.
-#
 #      :platform: target platform for archive binary content.
 #
 #      :INSTALLED: the output variable that is TRUE if binary archive has been installed.
@@ -2887,9 +2827,7 @@ endfunction(download_And_Install_Binary_External_Package)
 #    Remove the given binary package from install tree
 #
 #      :package: The name of the external package.
-#
 #      :version: version of the external package to install.
-#
 #      :platform: target platform for archive binary content (name may contain also instance extension).
 #
 function(uninstall_Binary_Package package version platform)
@@ -2914,13 +2852,9 @@ endfunction(uninstall_Binary_Package)
 #    Configure the external package after it has been installed in workspace. It can lead to the install of OS packages depending of its system configuration.
 #
 #      :package: The name of the external package.
-#
 #      :external: if true teh target package is an external package, otherwise it is a native package.
-#
 #      :version: version of the external package to install.
-#
 #      :platform: target platform for archive binary content (name may contain also instance extension).
-#
 #      :mode: the build mode of the content installed.
 #
 #      :RESULT: the output variable that is TRUE if the binary package has been configured, FALSE if its configuration failed for any reason.

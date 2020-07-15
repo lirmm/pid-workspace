@@ -138,7 +138,6 @@ endfunction(prepare_Repository_Context_Switch)
 #     Checkout to the given commit in the target git repository.
 #
 #     :repo: The filesystem path to the target repository
-#
 #     :commit: the commit to go to
 #
 function(checkout_To_Commit repo commit)
@@ -162,7 +161,6 @@ endfunction(checkout_To_Commit)
 #     Checkout to a target commit of a repository.
 #
 #     :path: path to the target repository
-#
 #     :commit_or_branch: The target commit to go to
 #
 function(go_To_Commit path commit_or_branch)
@@ -257,7 +255,6 @@ endfunction(list_Untracked_Files)
 #     Saving unstracked files to be able to restore them later.
 #
 #     :path: path to the target repository
-#
 #     :list_of_files: input variable that contains the list of unstracked files
 #
 function(save_Untracked_Files path var_list_of_files)
@@ -285,7 +282,6 @@ endfunction(save_Untracked_Files)
 #     Restore unstracked files that have been previously saved.
 #
 #     :path: path to the target repository
-#
 #     :list_of_files: input variable that contains the list of unstracked files to restore
 #
 function(restore_Untracked_Files path var_list_of_files)
@@ -371,7 +367,6 @@ endfunction(go_To_Workspace_Master)
 #     Checkout to the target version commit of a package.
 #
 #     :package: The target source package
-#
 #     :version: the target version
 #
 function(go_To_Version package version)
@@ -521,7 +516,6 @@ endfunction(get_Repository_Current_Commit)
 #     :package: the name of target package  name
 #
 #     :INITIAL_COMMIT: the output variable that contains the current commit id
-#
 #     :SAVED_CONTENT: the output variable that is TRUE if some content has ben stashed, false otherwise
 #
 function(save_Repository_Context INITIAL_COMMIT SAVED_CONTENT package)
@@ -561,9 +555,7 @@ endfunction(save_Repository_Context)
 #     Restore the previous state of a package's repository.
 #
 #     :package:  the name of target package  name
-#
 #     :initial_commit: the id of the commit to checkout to
-#
 #     :saved_content: if TRUE then stashed content will be pop
 #
 function(restore_Repository_Context package initial_commit saved_content)
@@ -592,7 +584,6 @@ endfunction(restore_Repository_Context)
 #     Save and clean the current state of the workspace.
 #
 #     :INITIAL_COMMIT: the output variable that contains the current commit id of the workspace
-#
 #     :SAVED_CONTENT: the output variable that is TRUE if some content in workspace has ben stashed, false otherwise
 #
 function(save_Workspace_Repository_Context INITIAL_COMMIT SAVED_CONTENT)
@@ -632,7 +623,6 @@ endfunction(save_Workspace_Repository_Context)
 #     Restore the previous state of the workspace's repository.
 #
 #     :initial_commit: the id of the commit to checkout to
-#
 #     :saved_content: if TRUE then stashed content will be pop
 #
 function(restore_Workspace_Repository_Context initial_commit saved_content)
@@ -663,9 +653,7 @@ endfunction(restore_Workspace_Repository_Context)
 #     Merge the integration branch of a package into its master branch, then tag the current commit on master with a new version.
 #
 #     :package: the name of target package
-#
 #     :branch: the name of the branch merged
-#
 #     :version_string: the new version to tag
 #
 #     :RESULT: the ouuput variable that is set to TRUE if merge succeeded, FALSE otherwise
@@ -697,9 +685,7 @@ endfunction(merge_Into_Master)
 #     Tag the given package repository with given version..
 #
 #     :package: the name of target package
-#
 #     :version_string: the new version to tag
-#
 #     :add_it: if TRUE the tag is added, removed otherwise
 #
 function(tag_Version package version_string add_it)
@@ -760,7 +746,6 @@ endfunction(merge_Into_Integration)
 #     Merge the target branch of a package into its current branch.
 #
 #     :package: the name of target package
-#
 #     :branch: the branch to merge
 #
 function(integrate_Branch package branch)
@@ -784,7 +769,6 @@ endfunction(integrate_Branch)
 #     Commit all modifications inside a package's repository.
 #
 #     :package: the name of target package
-#
 #     :commit_message: the commit message
 #
 function(commit_Current_Repository_Branch package commit_message)
@@ -1140,7 +1124,6 @@ endfunction(publish_Repository_Integration)
 #     Push a temporary branch of a package.
 #
 #     :package: the name of target package
-#
 #     :branch: the name of branch to push to official repository
 #
 #     :PUBLISH_OK: the output variable that is TRUE is push succeeded, FALSE otherwise
@@ -1172,7 +1155,6 @@ endfunction(publish_Package_Temporary_Branch)
 #     Delete a temporary branch of a package official remote.
 #
 #     :package: the name of target package
-#
 #     :branch: the name of branch to delete from official repository
 #
 function(delete_Package_Temporary_Branch package branch)
@@ -1239,7 +1221,6 @@ endfunction(publish_Repository_Master)
 #     Publish a new version on a package official repository.
 #
 #     :package: the name of target package
-#
 #     :version_string: the version to push
 #
 #     :RESULT: the output variable that is TRUE if official remote has been update with new version tag, FALSE otherwise
@@ -1270,7 +1251,6 @@ endfunction(publish_Repository_Version)
 #     Test if a deployment unit's repository is trully connected to a given remote.
 #
 #     :path_to_repo: the path to deployment unit's repository
-#
 #     :remote: the name of the target remote (origin or official)
 #
 #     :CONNECTED: the output variable that is TRUE if package connected to the target remote, FALSE otherwise
@@ -1342,7 +1322,6 @@ endfunction(update_Package_Repository_Versions)
 #     Check connection to remote VS official remote address specified in deployment unit description. If they differ, performs corrective actions.
 #
 #     :path_to_repo: the path to the deployment unit's repository in local workspace.
-#
 #     :git_url: the url of the deployment unit's official repository.
 #
 function(adjust_Official_Remote_Address OFFICIAL_REMOTE_CONNECTED path_to_repo verbose)
@@ -1625,7 +1604,6 @@ endfunction(check_For_New_Commits_To_Release)
 #     Tell wether a delpoyment unit's repository (native or external package, framework, environment) is connected with a given remote (only fetch address is tested).
 #
 #     :path_to_repo: the path to target deployment_unit's repository
-#
 #     :remote: the name of the remote
 #
 #     :CONNECTED: the output variable that is TRUE if deployment_unit is connected to the remote, FALSE otherwise (including if the remote does not exist)
@@ -1703,7 +1681,6 @@ endfunction(clone_Contribution_Space_Repository)
 #     Cloning the repository of a package.
 #
 #     :package: the name of target package
-#
 #     :url: the git url to clone
 #
 #     :IS_DEPLOYED: the output variable that is TRUE if package has been cloned, FALSE otherwise
@@ -1750,9 +1727,7 @@ endfunction(clone_Package_Repository)
 #     Make the local repository of package track the given branch from given remote.
 #
 #     :package: the name of target package
-#
 #     :remote: the name of remote whose branch will be tracked
-#
 #     :branch: the name of the branch
 #
 function(track_Repository_Branch package remote branch)
@@ -1777,7 +1752,6 @@ endfunction(track_Repository_Branch)
 #     Initialize the push adress of a package's repository.
 #
 #     :package: the name of target package
-#
 #     :url: the git push url
 #
 function(initialize_Git_Repository_Push_Address package url)
@@ -1803,7 +1777,6 @@ endfunction(initialize_Git_Repository_Push_Address)
 #     Test is a remote repository of a package is initialized according to PID standard (basically it has an integration branch).
 #
 #     :package: the name of target package
-#
 #     :url: the git url of teh package repository
 #
 #     :INITIALIZED: the output variable that is TRUE if package's remote is initialized, FALSE otherwise
@@ -1854,7 +1827,6 @@ endfunction(test_Package_Remote_Initialized)
 #     Test is a remote repository is initialized (git initialization).
 #
 #     :repository: the name of the repository
-#
 #     :url: the git url of the repository
 #
 #     :INITIALIZED: the output variable that is TRUE if package's remote is initialized, FALSE otherwise
@@ -1933,7 +1905,6 @@ endfunction(init_Repository)
 #     Connect a package's repository to a remote (this later become origin and official in the same time). Used first time the package is connected after its creation.
 #
 #     :package: the name of the package
-#
 #     :url: the url of the package's remote
 #
 function(connect_Package_Repository package url)
@@ -1966,7 +1937,6 @@ endfunction(connect_Package_Repository)
 #     Reconnect an already connected package's repository to another remote (this later becomes official). Used when official repository has moved.
 #
 #     :package: the name of the package
-#
 #     :url: the url of the package's remote
 #
 function(reconnect_Repository package url)
@@ -1995,11 +1965,8 @@ endfunction(reconnect_Repository)
 #     Add the target remote to a deployment unit's repository.
 #
 #     :path_to_repo: the path to the repository of the deployment unit in local workspace
-#
 #     :url: the new private url of the repository's remote
-#
 #     :public_url: the public counterpart url of the repository's remote
-#
 #     :remote_name: the name of the repository's remote (official or origin)
 #
 function(connect_Repository_Remote path_to_repo url public_url remote_name)
@@ -2030,11 +1997,8 @@ endfunction(connect_Repository_Remote)
 #     Change the target remote of a deployment unit's repository.
 #
 #     :path_to_repo: the path to deployment unit repository in local workspace
-#
 #     :url: the new private url of the package's remote
-#
 #     :public_url: the public counterpart url of the package's remote
-#
 #     :remote_name: the name of the package's remote (official or origin)
 #
 function(reconnect_Repository_Remote path_to_repo url public_url remote_name)
@@ -2067,7 +2031,6 @@ endfunction(reconnect_Repository_Remote)
 #     Disconnect a deployment unit's repository from one of its remote.
 #
 #     :path_to_repo: the path to deployment unit's repository
-#
 #     :remote_name: the name of the package's remote (official or origin)
 #
 function(disconnect_Repository_Remote path_to_repo remote_name)
@@ -2090,7 +2053,6 @@ endfunction(disconnect_Repository_Remote)
 #     Set the origin remote of a package to a completely new address. Used when a fork of a package's official repository is performed.
 #
 #     :package: the name of the package
-#
 #     :url: the url of the package's origin remote
 #
 function(change_Origin_Repository package url)
@@ -2245,11 +2207,8 @@ endfunction(get_Remotes_To_Update)
 #     :path_to_repo: the path to deployment unit's repository in local workspace
 #
 #     :RES_OFFICIAL_FETCH: the output variable containg the address of repository's official remote for fetching.
-#
 #     :RES_OFFICIAL_PUSH: the output variable containg the address of repository's official remote for pushing.
-#
 #     :RES_ORIGIN_FETCH: the output variable containg the address of repository's origin remote for fetching..
-#
 #     :RES_ORIGIN_PUSH: the output variable containg the address of repository's origin remote for pushing.
 #
 function(get_Remotes_Address path_to_repo RES_OFFICIAL_FETCH RES_OFFICIAL_PUSH RES_ORIGIN_FETCH RES_ORIGIN_PUSH)
@@ -2302,11 +2261,8 @@ endfunction(get_Remotes_Address)
 #     Configure push and fetch addresses of a repository for a specific remote
 #
 #     :path: the path to the repository.
-#
 #     :remote_name: the name of the remote to configure (origin or official).
-#
 #     :update: fetch address of the remote.
-#
 #     :publish: push address of the remote.
 #
 function(configure_Remote path remote_name update publish)
@@ -2419,7 +2375,6 @@ endfunction(register_Wrapper_Repository_Address)
 #     Connect a wrapper's repository to a remote. Used first time the wrapper is connected after its creation.
 #
 #     :wrapper: the name of the wrapper
-#
 #     :url: the url of the wrapper's remote
 #
 function(connect_Wrapper_Repository wrapper url)
@@ -2447,7 +2402,6 @@ endfunction(connect_Wrapper_Repository)
 #     Reonnect an already connected wrapper's repository to another remote.
 #
 #     :wrapper: the name of the wrapper
-#
 #     :url: the url of the wrapper's remote
 #
 function(reconnect_Wrapper_Repository wrapper url)
@@ -2473,7 +2427,6 @@ endfunction(reconnect_Wrapper_Repository)
 #     Initialize the push adress of a wrapper's repository.
 #
 #     :wrapper: the name of target wrapper
-#
 #     :url: the git push url
 #
 function(initialize_Wrapper_Git_Repository_Push_Address wrapper url)
@@ -2523,9 +2476,7 @@ endfunction(update_Wrapper_Repository)
 #     Push (or delete) a version tag on the remote wrapper repository.
 #
 #     :package: the name of target package
-#
 #     :version_string: the version tag to push
-#
 #     :add_it: if TRUE the tag is added, if FALSE it is removed
 #
 #     :RESULT: the output variable that is TRUE if operation succeeded, FALSE otherwise
@@ -2569,7 +2520,6 @@ endfunction(publish_Wrapper_Repository_Version)
 #     Clone the repository of a framework in adequate folder of the workspace.
 #
 #     :framework: the name of target framework
-#
 #     :url: the git url to clone
 #
 #     :IS_DEPLOYED: the output variable that is TRUE if framework has been cloned, FALSE otherwise
@@ -2788,7 +2738,6 @@ endfunction(connect_Framework_Repository)
 #     Reonnect an already connected framework's repository to another remote.
 #
 #     :framework: the name of the framework
-#
 #     :url: the url of the framework's remote
 #
 function(reconnect_Framework_Repository framework url)
@@ -2814,7 +2763,6 @@ endfunction(reconnect_Framework_Repository)
 #     Tell wether a framework's repository is connected with a given remote.
 #
 #     :framework: the name of target framework
-#
 #     :remote: the name of the remote
 #
 #     :CONNECTED: the output variable that is TRUE if framework is connected to the remote, FALSE otherwise (including if the remote does not exist)
@@ -2844,7 +2792,6 @@ endfunction(is_Framework_Connected)
 #     Set the origin remote to a completely new address.
 #
 #     :framework: the name of target framework
-#
 #     :url: the new url of the origin remote
 #
 function(change_Origin_Framework_Repository framework url)
@@ -2878,7 +2825,6 @@ endfunction(change_Origin_Framework_Repository)
 #     Clone the repository of an environment in adequate folder of the workspace.
 #
 #     :environment: the name of target environment
-#
 #     :url: the git url to clone
 #
 #     :IS_DEPLOYED: the output variable that is TRUE if environment has been cloned, FALSE otherwise
@@ -3037,7 +2983,6 @@ endfunction(register_Environment_Repository_Address)
 #     Connect a environment's repository to a remote. Used first time the environment is connected after its creation.
 #
 #     :environment: the name of the environment
-#
 #     :url: the url of the environment's remote
 #
 function(connect_Environment_Repository environment url)
@@ -3065,7 +3010,6 @@ endfunction(connect_Environment_Repository)
 #     Reonnect an already connected environment's repository to another remote.
 #
 #     :environment: the name of the environment
-#
 #     :url: the url of the environment's remote
 #
 function(reconnect_Environment_Repository environment url)
@@ -3091,7 +3035,6 @@ endfunction(reconnect_Environment_Repository)
 #     Tell wether a environment's repository is connected with a given remote.
 #
 #     :environment: the name of target environment
-#
 #     :remote: the name of the remote
 #
 #     :CONNECTED: the output variable that is TRUE if environment is connected to the remote, FALSE otherwise (including if the remote does not exist)
@@ -3121,7 +3064,6 @@ endfunction(is_Environment_Connected)
 #     Set the origin remote to a completely new address.
 #
 #     :environment: the name of target environment
-#
 #     :url: the new url of the origin remote
 #
 function(change_Origin_Environment_Repository environment url)
@@ -3154,11 +3096,9 @@ endfunction(change_Origin_Environment_Repository)
 #     Clone the repository of the static site of a package in adequate folder of the workspace.
 #
 #     :package: the name of target package
-#
 #     :url: the git url to clone
 #
 #     :IS_INITIALIZED: the output variable that is TRUE if package's static site resides in workspace, FALSE otherwise
-#
 #     :BAD_URL: the output variable that is TRUE if package's static site URL is correct, FALSE otherwise
 #
 function(clone_Static_Site_Repository IS_INITIALIZED BAD_URL package url)
@@ -3209,9 +3149,7 @@ endfunction(clone_Static_Site_Repository)
 #     Initialize a package's static site folder as a git repository.
 #
 #     :package: the name of the target package
-#
 #     :site_git_url: the git url of the package static site
-#
 #     :push_site: if TRUE the origin remote is updated after local initialization
 #
 #     :CONNECTED: the output variable that is TRUE if package static site is connected to a remote repository

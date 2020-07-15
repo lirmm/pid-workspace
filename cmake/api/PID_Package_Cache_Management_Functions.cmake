@@ -118,11 +118,8 @@ endmacro(manage_Parrallel_Build_Option)
 #   add to a file a line setting the default cache variable if not already managed
 #
 #     :file: file to write in.
-#
 #     :entry: name of the cache entry.
-#
 #     :type: type of the cache entry.
-#
 #     :managed_entries: inpout/output variable containing the list of cache entries already contained in the file.
 #
 function(write_Cache_Option_Line_If_Not_Managed file entry type managed_entries)
@@ -221,11 +218,8 @@ endfunction(set_Mode_Specific_Options_From_Global)
 #     :line: string taht contains a given line from a cache file.
 #
 #     :NAME: output variable that contains the name of the option if any in the line, empty otherwise.
-#
 #     :TYPE: output variable that contains the type of the option if any in the line, empty otherwise.
-#
 #     :VALUE: output variable that contains the value of the option if any in the line, empty otherwise.
-#
 #     :COMMENT: output variable that contains the comment if any in the line, empty otherwise.
 #
 function(get_Option_Line_Info NAME TYPE VALUE COMMENT line)
@@ -264,9 +258,7 @@ endfunction(get_Option_Line_Info)
 #   Finding the given CMake cache option from a list of cache file lines.
 #
 #     :option_name: the name of the cmake cache option to find.
-#
 #     :option_type: the type of the cmake cache option to find (STRING, PATH, INTERNAL, BOOL).
-#
 #     :list_name: the name of the list where finding lines from a cache file.
 #
 #     :INDEX: output variable that contains the index of the line that matches in number of characters, -1 if not found.
@@ -291,9 +283,7 @@ endfunction(find_Option_Into_List)
 #   Getting the value of an option from a list of cache file lines.
 #
 #     :option_name: the name of the cmake cache option to get value from.
-#
 #     :option_type: the type of the cmake cache option to get value from (STRING, PATH, INTERNAL, BOOL).
-#
 #     :list_name: the name of the list where finding lines from a cache file.
 #
 #     :VALUE: output variable that contains the value of the cache option (may be empty if option has no value or does not exist).
@@ -601,9 +591,7 @@ endfunction(set_Install_Cache_Variables)
 #   Set cache variables values for PID standard variable used for version description in currently defined package.
 #
 #     :major: the major version number
-#
 #     :minor: the minor version number
-#
 #     :patch: the patch version number
 #
 function(set_Version_Cache_Variables major minor patch)
@@ -739,7 +727,6 @@ endfunction(package_Has_Nothing_To_Install)
 #   Check whether a component is a python wrapped module and whether it can be used inside current workspace.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component to check.
 #
 #     :IS_PYTHON: the output variable that is TRUE if the package content define nothing to install (depending on options chosen by the user and content of the package).
@@ -768,31 +755,18 @@ endfunction(is_Usable_Python_Wrapper_Module)
 #   Configure cache variables defining a component of the currenlty defined package according to specification of a dependency. These variables will be used to generate the part of the package cmake use file related to the component.
 #
 #     :component: the name of the component.
-#
 #     :export: if TRUE means that the component description is exported by the package (i.e. may be used by other packages).
-#
 #     :include_dirs: the list of external include path known by the component.
-#
 #     :library_dirs: the list of path where to search libraries.
-#
 #     :dep_defs:  the list of preprocessor definitions defined by the component but used in the interface of its external dependencies.
-#
 #     :exported_defs:  the list of preprocessor definitions defined by the component and used in its own interface.
-#
 #     :exported_options:  the list of compiler options exported by the component.
-#
 #     :static_links:  the list of path to external static libraries used by the component.
-#
 #     :shared_links:  the list of path to external shared libraries used by the component.
-#
 #     :c_standard:  the C language standard used by the dependency.
-#
 #     :c_max_standard:  the max C language standard allowed by the dependency.
-#
 #     :cxx_standard:  the C++ language standard used by the dependency.
-#
 #     :cxx_max_standard:  the max C++ language standard allowed by the dependency.
-#
 #     :runtime_resources: the list of path to runtime resources used by the component.
 #
 function (configure_Install_Variables_From_Dependency component export include_dirs library_dirs
@@ -923,9 +897,7 @@ endfunction(configure_Install_Variables_From_Dependency)
 #   Adjust desription of languages standards in use for a component depending on its options
 #
 #     :package: the name of the package owning the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the target build mode
 #
 #     :RES_OPTS: the output variable the contains the options without any call to language standard settings
@@ -1011,11 +983,8 @@ endfunction(is_Package_Dependency)
 #   Set adequate cache variables of currently defined package when defining a native package dependency.
 #
 #     :dep_package: the name of the native package that IS the dependency.
-#
 #     :version: the version constraint on dep_package (may be empty string if no version constraint applies).
-#
 #     :exact: if TRUE the version constraint is exact.
-#
 #     :list_of_components: the list of components that must belong to dep_package.
 #
 function(add_Package_Dependency_To_Cache dep_package version exact list_of_components)
@@ -1040,13 +1009,9 @@ endfunction(add_Package_Dependency_To_Cache)
 #   Set adequate cache variables of currently defined package when defining an external package dependency.
 #
 #     :dep_package: the name of the external package that IS the dependency.
-#
 #     :version: the version constraint on dep_package (may be empty string if no version constraint applies).
-#
 #     :exact: if TRUE the version constraint is exact.
-#
 #     :system: if TRUE the version constraint targets the OS installed version.
-#
 #     :list_of_components: the list of components that must belong to dep_package.
 #
 function(add_External_Package_Dependency_To_Cache dep_package version exact system list_of_components)
@@ -1072,9 +1037,7 @@ endfunction(add_External_Package_Dependency_To_Cache)
 #   Reset all cache internal variables related to a given component contained in a given package. Used to ensure the cache is clean before configuring.
 #
 #     :package: the name of the target package.
-#
 #     :component: the name of the target component.
-#
 #     :mode: the build mode.
 #
 function(reset_Component_Cached_Variables package component mode)
@@ -1133,21 +1096,13 @@ endfunction(reset_Component_Cached_Variables)
 #   Initialize cache internal variables related to a given component.
 #
 #     :component: the name of the target component.
-#
 #     :c_standard:  the C language standard used by component.
-#
 #     :c_max_standard:  the maximum C language standard allowed when using the component.
-#
 #     :cxx_standard:  the C++ language standard used by component.
-#
 #     :cxx_max_standard:  the maximum C++ language standard allowed when using the component.
-#
 #     :exported_defs:  the list of preprocessor definitions defined by the component and used in its own interface.
-#
 #     :exported_options:  the list of compiler options exported by the component.
-#
 #     :exported_links:  the list of links used by the component and exported in its description.
-#
 #     :runtime_resources: the list of path to runtime resources used by the component.
 #
 function(init_Component_Cached_Variables_For_Export component c_standard c_max_standard cxx_standard cxx_max_standard exported_defs exported_options exported_links runtime_resources)
@@ -1177,7 +1132,6 @@ endfunction(init_Component_Cached_Variables_For_Export)
 #   Add an alias to a component of teh current project.
 #
 #     :component: the name of the component.
-#
 #     :alias_list: list of aliases names for the component.
 #
 function(add_Alias_To_Cache component alias_list)
@@ -1211,11 +1165,8 @@ endfunction(add_Alias_To_Cache)
 #     Return the real name of the component from the given input name, this later can be the real name or an alias name.
 #
 #     :package: name of package containing the component.
-#
 #     :external: TRUE if package is an external package.
-#
 #     :component: the name of the component or an alias.
-#
 #     :mode: the current build mode.
 #
 #     :ALIAS_NAME: the output variable that contains the real name of the aliased component if component is an alias, FALSE otherwise.
@@ -1279,7 +1230,6 @@ endfunction(reset_Build_Info_Cached_Variables_From_Use)
 #   Reset all cache internal variables coming from the use file of a native package used as a dependency in the current context.
 #
 #     :package: the name of the native package dependency.
-#
 #     :mode: the build mode.
 #
 function(reset_Native_Package_Dependency_Cached_Variables_From_Use package mode)
@@ -1343,7 +1293,6 @@ endfunction(reset_Native_Package_Dependency_Cached_Variables_From_Use)
 #   Reset all cache internal variables coming from the use file of an external package used as a dependency in the current context.
 #
 #     :package: the name of the external package dependency.
-#
 #     :mode: the build mode.
 #
 function(reset_External_Package_Dependency_Cached_Variables_From_Use package mode)
@@ -1471,11 +1420,8 @@ endfunction(reset_Package_Description_Cached_Variables)
 #   setting internal cache variables used to memorize all possible versions for a given dependency (for documentation purpose only).
 #
 #     :dep_package: the name of the external package dependency.
-#
 #     :external: if TRUE dep_package is an external package, otherwise it is a native package.
-#
 #     :possible_versions: the name of the variable that contains the list of possible version for that dependency.
-#
 #     :possible_versions: the name of the variable that contains the list of exact versions among possible ones for that dependency.
 #
 function(set_Dependency_Complete_Description dep_package external possible_versions exact_versions)
@@ -1511,9 +1457,7 @@ endfunction(set_Dependency_Complete_Description)
 #   Initialize cache internal variables related to the documentation of a given component.
 #
 #     :component: the name of the target component.
-#
 #     :description:  the long description of component utility.
-#
 #     :usage: the list of path to header files to include in order to use the component.
 #
 function(init_Component_Description component description usage)
@@ -1607,13 +1551,9 @@ endfunction(reset_Declared)
 #   Check whether a native or external component exports another external component.
 #
 #     :package: the name of the package containing the exporting component.
-#
 #     :component: the name of the exporting component.
-#
 #     :dep_package: the name of the package containing the exported component.
-#
 #     :dep_component: the name of the exported component.
-#
 #     :mode: the build mode to consider (Debug or Release)
 #
 #     :IS_EXPORTING: the output variable that is TRUE if component export dep_component, FALSE otherwise. It is UNSET if either variable used for declaring export is unset
@@ -1655,17 +1595,11 @@ endfunction(export_External_Component)
 #   Check whether an external component exports another external component. This function returns exact result wether components names are base names or aliases.
 #
 #     :package: the name of the package containing the exporting component.
-#
 #     :component: the name of the exporting component.
-#
 #     :component_alias: the alias of the exporting component or base name if no alias used.
-#
 #     :dep_package: the name of the package containing the exported component.
-#
 #     :dep_component: the name of the exported component.
-#
 #     :dep_component_alias: the alias of the exported component or base name if no alias used.
-#
 #     :mode: the build mode to consider (Debug or Release)
 #
 #     :IS_EXPORTING: the output variable that is TRUE if component export dep_component, FALSE otherwise.
@@ -1724,13 +1658,9 @@ endfunction(export_External_Component_Resolving_Alias)
 #   Check whether a component exports another component.
 #
 #     :package: the name of the package containing the exporting component.
-#
 #     :component: the name of the exporting component.
-#
 #     :dep_package: the name of the package containing the exported component.
-#
 #     :dep_component: the name of the exported component.
-#
 #     :mode: the build mode to consider (Debug or Release)
 #
 #     :IS_EXPORTING: the output variable that is TRUE if component export dep_component, FALSE otherwise. It is UNSET if either variable used for declaring export is not defined.
@@ -1780,17 +1710,11 @@ endfunction(export_Component)
 #   Check whether a component exports another component. This function returns exact result wether components names are base names or aliases.
 #
 #     :package: the name of the package containing the exporting component.
-#
 #     :component: the name of the exporting component.
-#
 #     :component_alias: the alias of the exporting component or base name if no alias used.
-#
 #     :dep_package: the name of the package containing the exported component.
-#
 #     :dep_component: the name of the exported component.
-#
 #     :dep_component_alias: the alias of the exported component or base name if no alias used.
-#
 #     :mode: the build mode to consider (Debug or Release)
 #
 #     :IS_EXPORTING: the output variable that is TRUE if component export dep_component, FALSE otherwise.
@@ -1848,7 +1772,6 @@ endfunction(export_Component_Resolving_Alias)
 #   Check whether a component has a public interface (i.e. a set of public headers).
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
 #
 #     :RESULT: the output variable that is TRUE if component has NO public interface, FALSE otherwise.
@@ -1883,7 +1806,6 @@ endfunction(is_HeaderFree_Component)
 #   Check whether a component exists at runtime or not.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
 #
 #     :RESULT: the output variable that is TRUE if component exists at runtime, FALSE otherwise.
@@ -1916,7 +1838,6 @@ endfunction(is_Runtime_Component)
 #   Check whether a component is an executable.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
 #
 #     :RESULT: the output variable that is TRUE if component is an executable, FALSE otherwise.
@@ -1947,7 +1868,6 @@ endfunction(is_Executable_Component)
 #   Check whether a component is built by the build process or simply installed (e.g. header only libraries and python scripts are not built).
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
 #
 #     :RESULT: the output variable that is TRUE if component is built, FALSE otherwise.
@@ -2147,9 +2067,7 @@ endfunction(register_Component_Binary)
 #   Check whether a component exports other components.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode considered (Release or Debug).
 #
 #     :RESULT: the output variable that is TRUE if the component export other components, FALSE otherwise.
@@ -2209,9 +2127,7 @@ endfunction(is_Component_Exporting_Other_Components)
 #   Find the list of packages that define a given component.
 #
 #     :package: the name of the package from where starting the search.
-#
 #     :is_external: if package is an external package then it is TRUE, FALSE if it is native.
-#
 #     :component: the name of the component.
 #
 #     :CONTAINER_PACKAGES: the output variable that contains the list of packages that define a component with same name.
@@ -2279,13 +2195,9 @@ endfunction(find_Packages_Containing_Component)
 #   Write in the use file the variable containing arguments used for a dependent configuration check.
 #
 #     :file: the path to file to write in.
-#
 #     :package: the name of the package.
-#
 #     :mode_suffix: the suffix to use dependencing on mode
-#
 #     :config: the name of configuration that may have dependencies
-#
 #     :configs_already_written: the IN OUT variable containing the list of configurations already written in use file
 #
 function(write_In_Binary_Configuration_Dependency_In_Use_File file package mode_suffix config configs_already_written)
@@ -2320,9 +2232,7 @@ endfunction(write_In_Binary_Configuration_Dependency_In_Use_File)
 #   Write the use file of a package for the given build mode.
 #
 #     :file: the path to file to write in.
-#
 #     :package: the name of the package.
-#
 #     :build_mode: the build mode considered (Release or Debug).
 #
 function(write_Use_File file package build_mode)
@@ -2683,9 +2593,7 @@ endmacro(generate_Use_File)
 #   Write the description of native dependencies of a given package in the dependencies description file.
 #
 #     :package: the name of the package.
-#
 #     :file: the path to file to write in.
-#
 #     :packages_already_managed: the list of packages already managed in the process of writing dependency file.
 #
 #     :PACKAGES_NEWLY_MANAGED: the output variable containing the list of package newly managed after this call.
@@ -2746,7 +2654,6 @@ endfunction(current_Native_Dependencies_For_Package)
 #   Write the description of external dependencies of a given package in the dependencies description file.
 #
 #     :package: the name of the package.
-#
 #     :file: the path to file to write in.
 #
 #     :PACKAGES_NEWLY_MANAGED: the output variable containing the list of external package newly managed after this call.
@@ -2871,13 +2778,10 @@ endmacro(generate_Dependencies_File)
 #   Generate the header file used by the logging system to identify components generating logs.
 #
 #     :component: the name of the component.
-#
 #     :target_folder: the path to target_folder to write in.
-#
 #     :in_include: if true target_folder targets a public include dir, oitherwise it targets a source dir.
 #
 #     :GENERATED_FILE: the output variable containing the path to the generated header file.
-#
 #     :PREPROC_VAR_NAME: the output variable containing the name of the preprocessor variable used to guard the use of a given loggable component.
 #
 function(generate_Loggable_File GENERATED_FILE PREPROC_VAR_NAME component target_folder in_include)
@@ -2948,11 +2852,8 @@ endfunction(reset_Temporary_Optimization_Variables)
 #   set optimization variables used to check configurations
 #
 #     :config: the name of the configuration.
-#
 #     :mode: the current buid mode.
-#
 #     :test_ok: set to TRUE or FALSE the result of the check.
-#
 #     :binary_constraints: the list of binary constraints to memorize.
 #
 function(set_Configuration_Temporary_Optimization_Variables config mode test_ok binary_constraints)
@@ -2977,11 +2878,9 @@ endfunction(set_Configuration_Temporary_Optimization_Variables)
 #   check whether a configuration has already been checked.
 #
 #     :config: the name of the configuration.
-#
 #     :mode: the current buid mode.
 #
 #     :RES_CHECK: the output variable that contains the variable containing the previous check result, or that is empty if no previous check.
-#
 #     :RES_CONSTRAINTS: the output variable that contains the variable containing the previous check resulting binary constraints, or that is empty if no previous check.
 #
 function(check_Configuration_Temporary_Optimization_Variables RES_CHECK RES_CONSTRAINTS config mode)
@@ -3010,13 +2909,9 @@ endfunction(check_Configuration_Temporary_Optimization_Variables)
 #   set optimization variables used to check runtime links of a component.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode.
-#
 #     :list_of_local_links_var: the parent scope variable containing the list of links to use to generate symplinks for package.
-#
 #     :list_of_using_links_var: the parent scope variable containing the list of links to use to generate symplinks for another package than package.
 #
 function(set_Runtime_Links_Temporary_Optimization_Variables package component mode list_of_local_links_var list_of_using_links_var)
@@ -3041,13 +2936,10 @@ endfunction(set_Runtime_Links_Temporary_Optimization_Variables)
 #   check whether runtime links of a component have already been computed.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode.
 #
 #     :LOCAL_LINKS: the output variable that contains the variable containing the previous check resulting runtime local links, or that is empty if no previous check.
-#
 #     :USING_LINKS: the output variable that contains the variable containing the previous check resulting runtime local links, or that is empty if no previous check.
 #
 function(check_Runtime_Links_Temporary_Optimization_Variables LOCAL_LINKS USING_LINKS package component mode)
@@ -3078,9 +2970,7 @@ endfunction(check_Runtime_Links_Temporary_Optimization_Variables)
 #    Check whether runtime dependencies of a component have already been managed (i.e. symlinks generated).
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode.
 #
 #     :ALREADY_MANAGED: the output variable that is TRUE is component has already been managed, false otherwise.
@@ -3109,9 +2999,7 @@ endfunction(check_Runtime_Dependencies_Resolution_Temporary_Optimization_Variabl
 #    Set runtime dependencies resolution of a component as "managed".
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode.
 #
 function(set_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables package component mode)
@@ -3135,11 +3023,8 @@ endfunction(set_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables
 #   set optimization variables used to check runtime resources of a component.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode.
-#
 #     :list_of_resources: the list of runtime resources to memorize.
 #
 function(set_Resources_Temporary_Optimization_Variables package component mode list_of_resources)
@@ -3163,9 +3048,7 @@ endfunction(set_Resources_Temporary_Optimization_Variables)
 #   check whether runtime resources of a component have already been computed.
 #
 #     :package: the name of the package containing the component.
-#
 #     :component: the name of the component.
-#
 #     :mode: the build mode.
 #
 #     :RESOURCES: the output variable that contains the variable containing the previous check resulting runtime resources, or that is empty if no previous check.
@@ -3195,9 +3078,7 @@ endfunction(check_Resource_Temporary_Optimization_Variables)
 #   set optimization variables used to check runtime resources in source/build tree for a given source component.
 #
 #     :component: the name of the component.
-#
 #     :mode: the build mode.
-#
 #     :list_of_resources: the list of runtime resources to memorize.
 #
 function(set_Source_Resources_Temporary_Optimization_Variables component mode list_of_resources)
@@ -3221,7 +3102,6 @@ endfunction(set_Source_Resources_Temporary_Optimization_Variables)
 #   check whether path to runtime resources in Build tree for a given component have already been computed .
 #
 #     :component: the name of the source component.
-#
 #     :mode: the build mode.
 #
 #     :RESOURCES: the output variable that contains the variable containing the previous check resulting runtime resources, or that is empty if no previous check.

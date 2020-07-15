@@ -205,7 +205,6 @@ endfunction(generate_Package_CI_Config_File)
 #    Subsidiary CI generation function used to write how a runner is selected according to a given platform
 #
 #      :configfile: The path to the CI configuration file to write in.
-#
 #      :platform: the platform identifier.
 #
 function(add_CI_Config_File_Runner_Selection_By_Platform configfile platform)
@@ -228,7 +227,6 @@ endfunction(add_CI_Config_File_Runner_Selection_By_Platform)
 #    Subsidiary CI generation function used to write how a runner is selected according to a given platform, for all jabs of the pid CI pipeline
 #
 #      :configfile: The path to the CI configuration file to write in.
-#
 #      :platform: the platform identifier.
 #
 function(add_CI_Config_File_Jobs_Definitions_By_Platform configfile platform)
@@ -287,7 +285,6 @@ endfunction(verify_Wrapper_CI_Content)
 #    Subsidiary CI generation function used to write how a runner is selected according to a given platform, for all jobs of the pid CI pipeline
 #
 #      :configfile: The path to the CI configuration file to write in.
-#
 #      :platform: the platform identifier.
 #
 function(add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper configfile platform)
