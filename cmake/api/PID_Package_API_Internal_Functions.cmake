@@ -2521,7 +2521,9 @@ function(declare_System_Component_Dependency_Using_Configuration component expor
 			"${all_static_links}"
 			"${all_shared_links}"
 			"${${platform_config}_C_STANDARD}"
+			"${${platform_config}_C_MAX_STANDARD}"
 			"${${platform_config}_CXX_STANDARD}"
+			"${${platform_config}_CXX_MAX_STANDARD}"
 			"${rpath}"
 	 )
 endfunction(declare_System_Component_Dependency_Using_Configuration)
