@@ -1739,10 +1739,6 @@ function(generate_Environment_Toolchain_File)
   endif()
 
   # add build tools variables  to the toolset
-  if(${PROJECT_NAME}_CROSSCOMPILATION AND CMAKE_VERSION VERSION_LESS 3.6)#when crosscompiling I need to force the C/C++ compilers if CMake < 3.6
-    file(APPEND ${description_file} "include(CMakeForceCompiler)\n")
-  endif()
-
   #manage languages directly managed at workspace level (CMake managed languages)
   foreach(lang IN ITEMS C CXX ASM Fortran Python CUDA)
     if(NOT ${PROJECT_NAME}_${lang}_TOOLSETS OR ${PROJECT_NAME}_${lang}_TOOLSETS LESS 1)
@@ -1759,21 +1755,6 @@ function(generate_Environment_Toolchain_File)
         file(APPEND ${description_file} "set(PYTHON_LIBRARY ${${prefix}_LIBRARY} CACHE INTERNAL \"\" FORCE)\n")
       endif()
     elseif(${prefix}_COMPILER) #other languages are compiled by default so to be managed a compiler must be defined
-      if(${PROJECT_NAME}_CROSSCOMPILATION  #during crosscomppilation
-        AND lang MATCHES "C|CXX|Fortran"   #force commands are only available for those languages
-        AND CMAKE_VERSION VERSION_LESS 3.6)#in CMake < 3.6
-        #when crosscompiling force no check of compilers
-        file(APPEND ${description_file} "CMAKE_FORCE_${lang}_COMPILER(${${prefix}_COMPILER} \"${${prefix}_COMPILER_ID}\")\n")
-        if(lang STREQUAL C)#if no check then the CMAKE_SIZE_OF_VOID_P must be set !!
-          if(${PROJECT_NAME}_ARCH_CONSTRAINT)#if any constraint has been defined
-            math(EXPR register_size "${${PROJECT_NAME}_ARCH_CONSTRAINT}/8")
-          else()
-            math(EXPR register_size "${CURRENT_PLATFORM_ARCH}/8")
-          endif()
-          #need to add this variable if I force the compiler => allow PID to finnaly deduce architecture from build configuration
-          file(APPEND ${description_file} "set(CMAKE_SIZEOF_VOID_P ${register_size} CACHE INETRNAL \"\" FORCE)\n")
-        endif()
-      endif()
       #add the default command for setting compiler anytime
       file(APPEND ${description_file} "set(CMAKE_${lang}_COMPILER ${${prefix}_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
 
@@ -1851,10 +1832,8 @@ function(generate_Environment_Toolchain_File)
   endif()
 
   if(${PROJECT_NAME}_CROSSCOMPILATION)
-    if(NOT CMAKE_VERSION VERSION_LESS 3.6)#CMAKE_TRY_COMPILE_TARGET_TYPE available since version 3.6 of CMake
-      # avoid problem with try_compile when cross compiling
-      file(APPEND ${description_file} "set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY CACHE INTERNAL \"\" FORCE)\n")
-    endif()
+    # avoid problem with try_compile when cross compiling
+    file(APPEND ${description_file} "set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY CACHE INTERNAL \"\" FORCE)\n")
   endif()
 
 endfunction(generate_Environment_Toolchain_File)

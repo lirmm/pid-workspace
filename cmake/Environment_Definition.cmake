@@ -25,7 +25,7 @@ if(ENVIRONMENT_DEFINITION_INCLUDED)
 endif()
 set(ENVIRONMENT_DEFINITION_INCLUDED TRUE)
 
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.8.2)
 get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
 set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
@@ -1032,7 +1032,7 @@ endmacro(return_Environment_Check)
 #
 #   .. command:: host_Match_Target_Platform(IT_MATCHES)
 #
-#     Check whether host fullfull all target platform constraints.
+#     Check whether host fullfil all target platform constraints.
 #
 #     .. rubric:: Required parameters
 #
@@ -1075,7 +1075,8 @@ function(host_Match_Target_Platform IT_MATCHES)
     endif()
   endif()
   if(target_abi)
-    if(NOT host_abi STREQUAL target_abi)
+    compare_ABIs(ARE_EQUAL ${host_abi} ${target_abi})
+    if(NOT ARE_EQUAL)
       return()
     endif()
   endif()
@@ -1549,7 +1550,6 @@ function(set_Environment_Constraints)
   list(LENGTH SET_ENV_CONST_VARIABLES SIZE_VARS)
   list(LENGTH SET_ENV_CONST_VALUES SIZE_VALS)
   if(NOT SIZE_VARS EQUAL SIZE_VALS)
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR: Bad usage of function set_Environment_Constraints, you must give the a value for each variable defined using VARIABLES keyword. ")
     return()
   else()

@@ -26,7 +26,7 @@ endif()
 set(PACKAGE_DEFINITION_INCLUDED TRUE)
 ##########################################################################################
 
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.8.2)
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
 get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
@@ -2123,18 +2123,6 @@ endif()
 endmacro(declare_PID_Component_Dependency)
 
 
-function(wrap_CTest_Call name command args)
-  if(NOT CMAKE_VERSION VERSION_LESS 3.4)#cannot do if on tests before this version
-    if(WIN32)
-      add_test(NAME ${name} COMMAND run.bat ${command}.exe ${args})
-    else()
-      add_test(NAME ${name} COMMAND ${command} ${args})
-    endif()
-  else()
-    add_test(${name} ${command} ${args})
-	endif()
-endfunction(wrap_CTest_Call)
-
 #.rst:
 # .. ifmode:: user
 #
@@ -2265,16 +2253,16 @@ if(RUN_PID_TEST_PRIVILEGED)
 endif()
 
 if(RUN_PID_TEST_EXE)
-	wrap_CTest_Call(${RUN_PID_TEST_NAME} "${RUN_PID_TEST_EXE}" "${RUN_PID_TEST_ARGUMENTS}")
+	call_CTest(${RUN_PID_TEST_NAME} "${RUN_PID_TEST_EXE}" "${RUN_PID_TEST_ARGUMENTS}")
 elseif(RUN_PID_TEST_COMPONENT)# run test by executing a PID component
 	if(RUN_PID_TEST_PACKAGE)#component coming from another PID package
 		set(target_of_test ${RUN_PID_TEST_PACKAGE}_${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX})
-		wrap_CTest_Call(${RUN_PID_TEST_NAME} "${target_of_test}" "${RUN_PID_TEST_ARGUMENTS}")
+		call_CTest(${RUN_PID_TEST_NAME} "${target_of_test}" "${RUN_PID_TEST_ARGUMENTS}")
 	else()#internal component
-		wrap_CTest_Call(${RUN_PID_TEST_NAME} "${PROJECT_NAME}_${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX}" "${RUN_PID_TEST_ARGUMENTS}")
+		call_CTest(${RUN_PID_TEST_NAME} "${PROJECT_NAME}_${RUN_PID_TEST_COMPONENT}${INSTALL_NAME_SUFFIX}" "${RUN_PID_TEST_ARGUMENTS}")
 	endif()
 elseif(RUN_PID_TEST_PYTHON)#run PID test with python
-	wrap_CTest_Call(${RUN_PID_TEST_NAME} "${CURRENT_PYTHON_EXECUTABLE}" "${PATH_TO_PYTHON_FILE}")
+	call_CTest(${RUN_PID_TEST_NAME} "${CURRENT_PYTHON_EXECUTABLE}" "${PATH_TO_PYTHON_FILE}")
 	#setting the python path automatically for this test
 	set_tests_properties(${RUN_PID_TEST_NAME} PROPERTIES ENVIRONMENT "PYTHONPATH=${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/__python${CURRENT_PYTHON}__")
 endif()

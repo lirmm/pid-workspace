@@ -51,7 +51,7 @@ Please refer to [PID framework website](http://pid.lirmm.net/pid-framework) to g
 
 Installing the PID framework is a simple task, as soon as adequate dependencies are installed on your workstation:
 
-- CMake, version 3.1.3 or greater
+- CMake, version 3.8.2 or greater
 - git, version 1.7.6 or greater
 - git-lfs, version 2.6 or greater
 

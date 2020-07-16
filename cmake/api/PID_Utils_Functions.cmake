@@ -1958,7 +1958,6 @@ endfunction(package_License_Is_Closed_Source)
 ################ Source file management #####################
 #############################################################
 
-
 #.rst:
 #
 # .. ifmode:: internal
@@ -1983,12 +1982,10 @@ if(CMAKE_Fortran_COMPILER)
 endif()
 
 if(CMAKE_CUDA_COMPILER)#if a CUDA compiler is defined by the current environment, then enable language
-  if(NOT CMAKE_VERSION VERSION_LESS 3.8)# CMake 3.8+ supports CUDA
-    set(temp_flags ${CMAKE_CUDA_FLAGS})#need to deactivate forced flags to avoid problems when detecting language
-    set(CMAKE_CUDA_FLAGS CACHE INTERNAL "" FORCE)
-    enable_language(CUDA)#use cuda compiler
-    set(CMAKE_CUDA_FLAGS ${temp_flags} CACHE INTERNAL "" FORCE)
-  endif()
+  set(temp_flags ${CMAKE_CUDA_FLAGS})#need to deactivate forced flags to avoid problems when detecting language
+  set(CMAKE_CUDA_FLAGS CACHE INTERNAL "" FORCE)
+  enable_language(CUDA)#use cuda compiler
+  set(CMAKE_CUDA_FLAGS ${temp_flags} CACHE INTERNAL "" FORCE)
 endif()
 
 endmacro(activate_Adequate_Languages)
@@ -5114,10 +5111,8 @@ endfunction(adjust_Languages_Standards_Description)
 #     :RES_MIN_CMAKE_VERSION: the output variable containing the minimum required version of CMake.
 #
 function(get_Required_CMake_Version_For_Standard RES_MIN_CMAKE_VERSION cxx_std)
-  set(min_cmake_version_for_std_property 3.1.3)
-  if(cxx_std EQUAL 17)
-    set(min_cmake_version_for_std_property 3.8.2)
-  elseif(cxx_std EQUAL 20)
+  set(min_cmake_version_for_std_property 3.8.2)
+  if(cxx_std EQUAL 20)
     set(min_cmake_version_for_std_property 3.11.4)
   else()#unknown so no result
     set(min_cmake_version_for_std_property)
@@ -5344,6 +5339,34 @@ endfunction(resolve_Imported_Standards)
 #################################################################################################
 ################################### pure CMake utilities ########################################
 #################################################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |call_CTest| replace:: ``call_CTest``
+#  .. _wrap_CTest_Call:
+#
+#  call_CTest
+#  ---------------
+#
+#   .. command:: call_CTest(name command args)
+#
+#    Create a CTest test.
+#
+#     :name: name of the test.
+#
+#     :command: command to execute to runthe test
+#
+#     :args: list of arguments for the command
+#
+function(call_CTest name command args)
+  if(WIN32)
+    add_test(NAME ${name} COMMAND run.bat ${command}.exe ${args})
+  else()
+    add_test(NAME ${name} COMMAND ${command} ${args})
+  endif()
+endfunction(call_CTest)
 
 #.rst:
 #

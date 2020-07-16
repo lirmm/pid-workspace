@@ -41,7 +41,7 @@ set(PID_SET_POLICIES_INCLUDED TRUE)
 ########################################################################
 ##################### definition of CMake policies #####################
 ########################################################################
-cmake_policy(VERSION 3.1.3)
+cmake_policy(VERSION 3.8.2)
 #not guarded policies (they exist since version 3.0 which is the minimum for PID)
 set(CMAKE_WARN_DEPRECATED FALSE CACHE INTERNAL "" FORCE)
 cmake_policy(SET CMP0002 NEW) #allow multiple targets with same name
@@ -53,14 +53,6 @@ cmake_policy(SET CMP0045 NEW) #allow to test if a target exist without a warning
 cmake_policy(SET CMP0048 OLD) #allow to use a custom versionning system
 cmake_policy(SET CMP0053 NEW) #Simplify variable reference and escape sequence evaluation
 cmake_policy(SET CMP0054 NEW) #only KEYWORDS (without "") are considered as KEYWORDS in if() commands
-
-if(POLICY CMP0057)
-  cmake_policy(SET CMP0057 NEW)#allow for if(... IN_LIST ...)  commands
-endif()
-
-if(POLICY CMP0058)#if in a version of CMake that provides this policy
-	cmake_policy(SET CMP0058 NEW) #avoid ninja to warn about Policy CMP0058 if not set
-endif()
-if(POLICY CMP0064)
-	cmake_policy(SET CMP0064 NEW) #interpret TEST keyword in a if() command
-endif()
+cmake_policy(SET CMP0057 NEW)#allow for if(... IN_LIST ...)  commands
+cmake_policy(SET CMP0058 NEW) #avoid ninja to warn about Policy CMP0058 if not set
+cmake_policy(SET CMP0064 NEW) #interpret TEST keyword in a if() command
