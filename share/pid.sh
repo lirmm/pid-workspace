@@ -28,6 +28,12 @@ pid() {
         return $res
     fi
     _pid_ws_get_project_name
+    # we know that using the pid script is only made by user, never internally
+    # by PID commands: we can use this property to clean the global progress
+    # file if for any reason it still exists in workspace
+    if [ -e $ws_dir/build/pid_progress.cmake ]; then
+      rm $ws_dir/build/pid_progress.cmake
+    fi
 
     # Parses all arguments
     #  handle fake and real targets, sets the arguments as environment variables
