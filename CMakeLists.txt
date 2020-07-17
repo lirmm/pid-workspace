@@ -255,7 +255,7 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "               - add: add an additionnal environment to a target available profile."
 	COMMAND ${CMAKE_COMMAND} -E echo "               - rm: remove an additionnal environment from a target available profile."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Argument for mk, del, load [mandatory] and add, rm [optional]---"
-	COMMAND ${CMAKE_COMMAND} -E echo "             - profile=*name*: name of the target profile. If not specified (for add and rm), the target profile is default."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - profile=*name*: name of the target profile. If not specified -for add and rm-, the target profile is default."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments for mk, add, rm [mandatory] ---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - env=*name*: name of the target environment."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Optional arguments ---"
