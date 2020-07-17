@@ -1760,14 +1760,14 @@ function(generate_Environment_Toolchain_File)
 
       if(${prefix}_COMPILER_FLAGS)
         fill_String_From_List(LANG_FLAGS ${prefix}_COMPILER_FLAGS " ")
-        file(APPEND ${description_file} "set(CMAKE_${lang}_FLAGS  \"${LANG_FLAGS}\" CACHE INTERNAL \"\" FORCE)\n")
+        file(APPEND ${description_file} "set(CMAKE_${lang}_FLAGS  ${LANG_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
       endif()
 
       if(lang MATCHES "CUDA")#for CUDA also set the old variables for compiler info
         file(APPEND ${description_file} "set(CUDA_NVCC_EXECUTABLE ${${prefix}_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
         if(${prefix}_COMPILER_FLAGS)
           fill_String_From_List(LANG_FLAGS ${prefix}_COMPILER_FLAGS " ")
-          file(APPEND ${description_file} "set(CUDA_NVCC_FLAGS \"${LANG_FLAGS}\" CACHE INTERNAL \"\" FORCE)\n")
+          file(APPEND ${description_file} "set(CUDA_NVCC_FLAGS ${LANG_FLAGS} CACHE INTERNAL \"\" FORCE)\n")
         endif()
         if(${prefix}_HOST_COMPILER)
           file(APPEND ${description_file} "set(CUDA_HOST_COMPILER ${${prefix}_HOST_COMPILER} CACHE INTERNAL \"\" FORCE)\n")

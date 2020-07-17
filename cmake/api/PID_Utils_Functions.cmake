@@ -1378,7 +1378,7 @@ function(parse_Package_Dependency_All_Version_Arguments package all_args LIST_OF
         list(APPEND all_versions ${RES_VERSION})
 			endif()
 		elseif(ADDITIONNAL_CONSTRAINT)#additionnal constraint without VERSION => error !
-      message("[PID] ERROR : you cannot use EXACT, FROM or TO keywords without using the VERSION keyword (e.g. EXACT VERSION 3.1.3).")
+      message("[PID] ERROR : you cannot use EXACT, FROM or TO keywords without using the VERSION keyword (e.g. EXACT VERSION 3.0.4).")
       set(${PARSE_RESULT} FALSE PARENT_SCOPE)
       return()
     endif()
@@ -4114,8 +4114,8 @@ endfunction(check_For_Dependencies_Version)
 #     Reconfigure the currently built wrapper (i.e. launch cmake configuration).
 #
 function(reconfigure_Wrapper_Build package)
-set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${package}/build)
-execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${TARGET_BUILD_FOLDER})
+  execute_process(COMMAND ${CMAKE_COMMAND} ..
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build)
 endfunction(reconfigure_Wrapper_Build)
 
 #.rst:
@@ -4135,13 +4135,7 @@ endfunction(reconfigure_Wrapper_Build)
 #     :wrapper: the name of the target wrapper.
 #
 function(hard_Clean_Wrapper wrapper)
-set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${wrapper}/build)
-file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
-foreach(a_file IN LISTS thefiles)
-	if(NOT a_file STREQUAL ".gitignore")
-    file(REMOVE_RECURSE ${TARGET_BUILD_FOLDER}/${a_file})
-	endif()
-endforeach()
+  hard_Clean_Build_Folder(${WORKSPACE_DIR}/wrappers/${wrapper}/build)
 endfunction(hard_Clean_Wrapper)
 
 #.rst:
@@ -4230,13 +4224,7 @@ endfunction(reconfigure_Framework_Build)
 #     :framework: the name of the target framework.
 #
 function(hard_Clean_Framework framework)
-  set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
-  file(GLOB thefiles RELATIVE ${TARGET_BUILD_FOLDER} ${TARGET_BUILD_FOLDER}/*)
-  foreach(a_file IN LISTS thefiles)
-  	if(NOT a_file STREQUAL ".gitignore")
-      file(REMOVE_RECURSE ${TARGET_BUILD_FOLDER}/${a_file})
-  	endif()
-  endforeach()
+  hard_Clean_Build_Folder(${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
 endfunction(hard_Clean_Framework)
 
 

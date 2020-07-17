@@ -3,5 +3,5 @@ set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR}/../../.. CACHE PATH "root of the workspace
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/api) # using generic scripts/modules of the workspace
 include(PID_Framework_API_Internal_Functions NO_POLICY_SCOPE)
 
-PROJECT(@PACKAGE_NAME@)
+project(@PACKAGE_NAME@)
 declare_PID_Site(SITE_URL @PACKAGE_SITE_URL@ PACKAGE_URL @PACKAGE_PROJECT_URL@)

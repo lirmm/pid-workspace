@@ -25,7 +25,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/platforms)
 
 include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
-PROJECT(pid-workspace C CXX ASM)
+project(pid-workspace C CXX ASM)
 
 file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 if(DIR_NAME STREQUAL "build")

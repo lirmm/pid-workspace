@@ -482,7 +482,7 @@ macro(reset_Profiles)
   # need to set the definitions used in evalutaion of profile specific configuration
   set(args -DWORKSPACE_DIR=${WORKSPACE_DIR} -DIN_CI_PROCESS=${IN_CI_PROCESS} -DPACKAGE_BINARY_INSTALL_DIR=${PACKAGE_BINARY_INSTALL_DIR})
   include(${dir}/Workspace_Solution_File.cmake)#use the solution file to set global variables
-  #TODO check is OK to use PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT instead of real env name !!
+  #TODO check if OK to use PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT instead of real env name !!
   if(${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_CROSSCOMPILATION)
     list(APPEND args -DPID_CROSSCOMPILATION=TRUE)
   endif()
@@ -501,7 +501,7 @@ macro(reset_Profiles)
 
   # write the configuration file to memorize choices for next configuration (and for user editing)
   write_Profiles_Description_File()
-  # write the configuration file to memorize at global scope (in pid folder) the global information on current profile
+  # write the configuration file to memorize at global scope (in build folder) the global information on current profile
   write_Workspace_Profiles_Info_File()
 
   # configuring the CMake generator in use
