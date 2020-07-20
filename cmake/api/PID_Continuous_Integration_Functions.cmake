@@ -117,6 +117,9 @@ endfunction(verify_Package_CI_Content)
 #
 function(generate_Package_CI_Config_File)
 
+#update CI files (e.g. if CI has evolved with last workspace update)
+verify_Package_CI_Content()
+
 if(NOT ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS)
 	if(EXISTS ${CMAKE_SOURCE_DIR}/.gitlab-ci.yml)
 		file(REMOVE ${CMAKE_SOURCE_DIR}/.gitlab-ci.yml)#remove the file because CI is allowed for no platform
@@ -125,8 +128,6 @@ if(NOT ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS)
 else()
   list(GET ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS 0 PACKAGE_CI_MAIN_PLATFORM)
 endif()
-
-verify_Package_CI_Content()
 
 # determine general informations about package content
 if(NOT ${PROJECT_NAME}_COMPONENTS_LIBS)
@@ -255,7 +256,6 @@ endfunction(add_CI_Config_File_Jobs_Definitions_By_Platform)
 #    Verify that wrapper CI scripts exist in wrapper repository and perform corrective action otherwise.
 #
 function(verify_Wrapper_CI_Content)
-
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/share/ci)#the ci folder is missing
 	file(COPY ${WORKSPACE_DIR}/cmake/patterns/wrappers/package/share/ci DESTINATION ${CMAKE_SOURCE_DIR}/share)
 	message("[PID] INFO : creating the ci folder in wrapper ${PROJECT_NAME} repository")
@@ -308,6 +308,9 @@ endfunction(add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper)
 #
 function(generate_Wrapper_CI_Config_File)
 
+#update CI files (e.g. if CI has evolved with last workspace update)
+verify_Wrapper_CI_Content()
+
 if(NOT ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS)
 	if(EXISTS ${CMAKE_SOURCE_DIR}/.gitlab-ci.yml)
 		file(REMOVE ${CMAKE_SOURCE_DIR}/.gitlab-ci.yml)#remove the file as CI is allowed for no platform
@@ -317,7 +320,6 @@ else()
   list(GET ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS 0 PACKAGE_CI_MAIN_PLATFORM)
 endif()
 
-verify_Wrapper_CI_Content()
 
 #is there a static site defined for the project ?
 if(NOT ${PROJECT_NAME}_FRAMEWORK AND NOT ${PROJECT_NAME}_SITE_GIT_ADDRESS)
