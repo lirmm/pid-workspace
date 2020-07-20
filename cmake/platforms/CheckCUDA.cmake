@@ -33,6 +33,7 @@ set(temp_CUDA_flags)# a code compatibility has been specified using an environme
 foreach(flag IN LISTS CMAKE_CUDA_FLAGS)
   if(flag MATCHES "arch=compute_([0-9]+),code=sm_([0-9]+)")
     set(temp_CUDA_flags ${CMAKE_CUDA_FLAGS})# an arch has been specified using an environment
+    break()
   endif()
 endforeach()
 
@@ -95,14 +96,24 @@ set(CUDA_STANDARD_LIBRARIES ${SONAME} CACHE INTERNAL "")
 set(CUDA_STD_SYMBOLS CACHE INTERNAL "")#no symbol version in cuda library
 
 # Check which arch can be computed depending on the version of NVCC
-if(CUDA_VERSION VERSION_LESS "6.0")#CUDA not really managed under version 6
-  set(AVAILABLE_CUDA_ARCHS "2.0" "2.1" "3.0" "3.2" "3.5" CACHE INTERNAL "")
-elseif(CUDA_VERSION VERSION_LESS "8.0")
-  set(AVAILABLE_CUDA_ARCHS  "2.0" "2.1" "3.0" "3.2" "3.5" "5.0" "5.2" CACHE INTERNAL "")
-elseif(CUDA_VERSION VERSION_LESS "9.0")
-  set(AVAILABLE_CUDA_ARCHS  "2.0" "2.1" "3.0" "3.2" "3.5" "5.0" "5.2" "6.0" "6.1" CACHE INTERNAL "")
-else()#version is greater than 9, deprecated arch are 201 21, etc.
-  set(AVAILABLE_CUDA_ARCHS  "3.0" "3.2" "3.5" "5.0" "5.2" "6.0" "6.1" "6.2" "7.0" "7.2" "7.5" CACHE INTERNAL "")
+# reference is https://en.wikipedia.org/wiki/CUDA
+set(AVAILABLE_CUDA_ARCHS)
+if(CUDA_VERSION VERSION_LESS "8.0")#CUDA not really managed under version 6
+  message("[PID] WARNING: CUDA version ${CUDA_VERSION} is not supported. Support start from CUDA 8.0 !")
+else()
+  #starting from version 8.0 listing available architectures
+  set(AVAILABLE_CUDA_ARCHS  "2.0" "2.1" "3.0" "3.2" "3.5" "5.0" "5.2" "6.0" "6.1" "6.2" CACHE INTERNAL "")
+  if(CUDA_VERSION VERSION_GREATER_EQUAL "9.0")
+    list(APPEND AVAILABLE_CUDA_ARCHS "7.0" "7.2")
+    list(REMOVE_ITEM AVAILABLE_CUDA_ARCHS "2.0" "2.1") #support for archs < 3.0 is deprecated
+  endif()
+  if(CUDA_VERSION VERSION_GREATER_EQUAL "10.0")
+    list(APPEND AVAILABLE_CUDA_ARCHS "7.5")
+  endif()
+  if(CUDA_VERSION VERSION_GREATER_EQUAL "11.0")
+    list(APPEND AVAILABLE_CUDA_ARCHS "8.0")
+    list(REMOVE_ITEM AVAILABLE_CUDA_ARCHS "2.0" "2.1" "3.0" "3.2" "3.5" "5.0") #support for archs < 5.2 is deprecated
+  endif()
 endif()
 
 if(temp_CUDA_flags) #target architecture has been specified using environment
@@ -134,7 +145,7 @@ else()
     set(DEFAULT_CUDA_RUNTIME ${runtime_version} CACHE INTERNAL "")
   else()#error during nvcc compilation
     if(ADDITIONAL_DEBUG_INFO)
-      message("[PID] WARNING: no CUDA GPU found while a CUDA compiler is installed. Cannot detect default CUDA architecture.")
+      message("[PID] WARNING: no CUDA GPU found while a CUDA compiler is installed. Cannot detect default CUDA architecture. This is probably due to a problem in mismatching driver/toolkit versions. Please install your CUDA drivers.")
     endif()
     get_Greatest_CUDA_Arch(CHOSEN_ARCH "${AVAILABLE_CUDA_ARCHS}")
     set(DEFAULT_CUDA_ARCH ${CHOSEN_ARCH} CACHE INTERNAL "")#default arch is greater available
