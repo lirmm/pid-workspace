@@ -23,43 +23,43 @@ function(check_Standards_Supported_By_Compiler_And_StdLib LIST_OF_STDS)
   #MOST of information comes from https://en.cppreference.com/w/cpp/compiler_support
   #first check for compilers
   if(CURRENT_CXX_COMPILER STREQUAL "gcc")
-    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8.1)#before version 4.8.1 of gcc the c++ 11 standard is not fully supported
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 4.8.1)#before version 4.8.1 of gcc the c++ 11 standard is not fully supported
       list(APPEND compiler_support_up_to 11)
     endif()
-    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5)#before version 5.0 of gcc the c++ 14 standard is not fully supported
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5)#before version 5.0 of gcc the c++ 14 standard is not fully supported
       list(APPEND compiler_support_up_to 14)
     endif()
-    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7)#before version 9.1 of gcc the c++ 17 standard is not fully supported
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 9.1)#before version 9.1 of gcc the c++ 17 standard is not fully supported
       list(APPEND compiler_support_up_to 17)
     endif()
   elseif(CURRENT_CXX_COMPILER STREQUAL "clang")
-    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)#before version 3.3 of clang the c++ 11 standard is not fully supported
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 3.3)#before version 3.3 of clang the c++ 11 standard is not fully supported
       list(APPEND compiler_support_up_to 11)
     endif()
-    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.4)#before version 3.4 of clang the c++ 14 standard is not fully supported
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 3.4)#before version 3.4 of clang the c++ 14 standard is not fully supported
       list(APPEND compiler_support_up_to 14)
     endif()
-    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 6)#before version 6 of clang the c++ 17 standard is not fully supported
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6)#before version 6 of clang the c++ 17 standard is not fully supported
       list(APPEND compiler_support_up_to 17)
     endif()
   elseif(CURRENT_CXX_COMPILER STREQUAL "appleclang")
-    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10.0)#since version 10.0 all features are supported
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0)#since version 10.0 all features are supported
       list(APPEND compiler_support_up_to 11 14 17)
     endif()
   elseif(CURRENT_CXX_COMPILER STREQUAL "msvc")#MSVC == windows == A specific standard library
-    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.14)#before version 19.14 of MSVC the c++ 11 and 14 standards are not fully supported
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.14)#before version 19.14 of MSVC the c++ 11 and 14 standards are not fully supported
       list(APPEND compiler_support_up_to 11 14)
       list(APPEND stdlib_support_up_to 11 14)
     endif()
-    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.24)#before version 19.24 of MSVC the c++ 17 standard is not fully supported
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.24)#before version 19.24 of MSVC the c++ 17 standard is not fully supported
       list(APPEND compiler_support_up_to 17)
       list(APPEND stdlib_support_up_to 17)
     endif()
   elseif(CURRENT_CXX_COMPILER STREQUAL "icc")#intel compiler
-    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15.0)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)
       list(APPEND compiler_support_up_to 11)
     endif()
-    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 17.0)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 17.0)
       list(APPEND compiler_support_up_to 14)
     endif()
   else()
@@ -68,14 +68,14 @@ function(check_Standards_Supported_By_Compiler_And_StdLib LIST_OF_STDS)
   endif()
   #then check for standard library
   if(CXX_STD_LIBRARY_NAME STREQUAL "stdc++")
-    if(NOT CXX_STD_LIBRARY_VERSION VERSION_LESS 6)#before version 4.8.1 of gcc the c++ 11 standard is not fully supported
+    if(CXX_STD_LIBRARY_VERSION VERSION_GREATER_EQUAL 6)#before version 6 of stdc++ the c++ 11 standard is not fully supported
       list(APPEND stdlib_support_up_to 11 14)
     endif()
-    if(NOT CXX_STD_LIBRARY_VERSION VERSION_LESS 9)#before version 9.1 of gcc the c++ 17 standard is not fully supported
+    if(CXX_STD_LIBRARY_VERSION VERSION_GREATER_EQUAL 9)#before version 9 of stdc++ the c++ 17 standard is not fully supported
       list(APPEND stdlib_support_up_to 17)
     endif()
   elseif(CXX_STD_LIBRARY_NAME STREQUAL "c++")
-    if(NOT CXX_STD_LIBRARY_VERSION VERSION_LESS 3.8)#before version 4.8.1 of gcc the c++ 11 standard is not fully supported
+    if(CXX_STD_LIBRARY_VERSION VERSION_GREATER_EQUAL 3.8)#before version 3.8 of c++ the c++ 11 standard is not fully supported
       list(APPEND stdlib_support_up_to 11 14)
     endif()
     #no full support of c++17 right now

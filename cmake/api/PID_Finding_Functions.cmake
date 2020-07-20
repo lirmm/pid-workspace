@@ -864,7 +864,7 @@ set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
 
 # 2) now we have the greater constraint
 set(max_version_constraint "${curr_major}.${curr_max_minor}")
-if(NOT ${package}_VERSION_STRING VERSION_GREATER ${max_version_constraint})
+if(${package}_VERSION_STRING VERSION_LESS_EQUAL ${max_version_constraint})
 	set(${VERSION_TO_FIND} ${max_version_constraint} PARENT_SCOPE) #need to find the new version
 endif()
 endfunction(is_Version_Compatible_With_Previous_Constraints)

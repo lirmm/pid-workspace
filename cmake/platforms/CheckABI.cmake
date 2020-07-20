@@ -193,13 +193,13 @@ if(NOT CURRENT_ABI)#no C++ ABI explictly specified
 		#use default ABI of the binary version of current std libc++ in use
 		foreach(symb IN LISTS CXX_STD_SYMBOLS) #detect ABI based on standard library symbols
 			if(symb MATCHES "^<CXXABI_/([.0-9]+)>$")
-				if(NOT CMAKE_MATCH_1 VERSION_LESS 1.3.9) #build from gcc 5.1 or more (or equivalent compiler ABI settings for clang)
+				if(CMAKE_MATCH_1 VERSION_GREATER_EQUAL 1.3.9) #build from gcc 5.1 or more (or equivalent compiler ABI settings for clang)
 					set(cxxabi_is_cxx11_capable TRUE)
 				else()
 					set(cxxabi_is_cxx11_capable FALSE)
 				endif()
 			elseif(symb MATCHES "^<GLIBCXX_/([.0-9]+)>$")
-				if(NOT CMAKE_MATCH_1 VERSION_LESS 3.4.21) #build from gcc 5.1 or more (or equivalent compiler ABI settings for clang)
+				if(CMAKE_MATCH_1 VERSION_GREATER_EQUAL 3.4.21) #build from gcc 5.1 or more (or equivalent compiler ABI settings for clang)
 					set(glibcxx_is_cxx11_capable TRUE)
 				else()
 					set(glibcxx_is_cxx11_capable FALSE)

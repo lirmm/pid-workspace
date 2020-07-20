@@ -955,7 +955,7 @@ function(check_Platform_Provides_Compatible_Symbol COMPATIBLE package_symbol pla
   foreach(platform_symbol IN LISTS ${platform_symbols_var})
     deserialize_Symbol(PLAT_SYMBOL PLAT_VERSION ${platform_symbol})
     if(PACK_SYMBOL STREQUAL PLAT_SYMBOL)# this is the symbol to check
-      if(NOT PLAT_VERSION VERSION_LESS PACK_VERSION)
+      if(PLAT_VERSION VERSION_GREATER_EQUAL PACK_VERSION)
         set(${COMPATIBLE} TRUE PARENT_SCOPE)
       endif()
       return()

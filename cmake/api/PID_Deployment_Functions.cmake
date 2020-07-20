@@ -2224,7 +2224,7 @@ function(resolve_Required_External_Package_Version RESOLUTION_OK SELECTED_VERSIO
 	foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})
 		if(NOT version VERSION_EQUAL CURRENT_VERSION)
 			if(DEFINED ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO
-			AND NOT CURRENT_VERSION VERSION_LESS ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO) #current version not compatible with the version
+			AND CURRENT_VERSION VERSION_GREATER_EQUAL ${package}_REFERENCE_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO) #current version not compatible with the version
 				set(${RESOLUTION_OK} FALSE PARENT_SCOPE) #there is no solution
 				return()
 			endif()

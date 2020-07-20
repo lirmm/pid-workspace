@@ -1246,8 +1246,8 @@ function(get_Versions_In_Interval IN_VERSIONS all_versions from_version to_versi
 set(temp_list ${${all_versions}})
 set(result_list)
   foreach(element IN LISTS temp_list)
-    if(NOT element VERSION_LESS from_version
-    AND NOT element VERSION_GREATER to_version)
+    if(element VERSION_GREATER_EQUAL from_version
+    AND element VERSION_LESS_EQUAL to_version)
       list(APPEND result_list ${element})
     endif()
   endforeach()
