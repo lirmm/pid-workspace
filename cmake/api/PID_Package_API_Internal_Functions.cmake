@@ -660,15 +660,29 @@ if(language_constraints)
 			endif()
 		endif()
 		if(RESULT_OK OR NOT optional)#if the result if FALSE and the constraint was optional then skip it
-			list(APPEND languages_to_memorize ${LANG_NAME})#memorize name of the configuration
-			set(${LANG_NAME}_constraints_to_memorize ${LANG_CONSTRAINTS})#then memorize all constraints that apply to the configuration
+			set(config_eval_result TRUE)
 			if(PLATFORM_CONSTRAINTS)
-				list(APPEND config_constraints ${PLATFORM_CONSTRAINTS})#memorize platform configurations required by the environment
 				# need to memorize the constraint to automatically add it to components
 				foreach(config IN LISTS PLATFORM_CONSTRAINTS)
-					parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS ${config})
-					append_Unique_In_Cache(${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${USE_MODE_SUFFIX} ${CONFIG_NAME})
+					#checking all platform configurations required by the language toolset
+					check_Platform_Constraints(RESULT IS_CURRENT "" "" "" "" "${config}"  "${optional}")
+					if(NOT RESULT)#bad result
+						set(config_eval_result FALSE)
+						if(error_messages)
+							set(error_messages "${error_messages}, ${config}")
+						else()
+							set(error_messages "language ${lang} has unsatisfied platform constraints: ${config}")
+						endif()
+					else()
+						append_Unique_In_Cache(${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${USE_MODE_SUFFIX} ${config})
+					endif()
 				endforeach()
+			endif()
+			if(config_eval_result)
+				list(APPEND languages_to_memorize ${LANG_NAME})#memorize name of the configuration
+				set(${LANG_NAME}_constraints_to_memorize ${LANG_CONSTRAINTS})#then memorize all constraints that apply to the configuration
+			elseif(NOT optional)#language constraint is not optional so error
+				break()#directly exit the loop
 			endif()
 		endif()
 		if(lang_toolsets)
@@ -680,7 +694,6 @@ if(language_constraints)
 			endif()
 			math(EXPR index "${index}+1")
 		endif()
-
 	endforeach()
 
 	#exit if errors
@@ -724,15 +737,32 @@ endif()
 if(tool_constraints)
 	foreach(tool IN LISTS tool_constraints) ## all environment constraints must be satisfied
 		check_Extra_Tool_Configuration(RESULT_OK CONFIG_CONSTRAINTS "${tool}" ${CMAKE_BUILD_TYPE})
-		if(NOT RESULT_OK)
+		if(NOT RESULT_OK AND NOT optional)
 			if(error_messages)
 				set(error_messages "${error_messages}, ${tool}")
 			else()
 				set(error_messages "tool constraints violated: ${tool}")
 			endif()
+			#if the result is FALSE and the constraint was optional then skip it
+			break()
 		endif()
-		if(RESULT_OK OR NOT optional)#if the result is FALSE and the constraint was optional then skip it
-			list(APPEND config_constraints ${CONFIG_CONSTRAINTS})#memorize platform configurations required by the environment
+		set(config_eval_result TRUE)
+		if(RESULT_OK)
+			foreach(config IN LISTS CONFIG_CONSTRAINTS)
+				#checking all platform configurations required by the language toolset
+				check_Platform_Constraints(RESULT IS_CURRENT "" "" "" "" "${config}" "${optional}")
+				if(NOT RESULT AND NOT optional)#bad result
+					set(config_eval_result FALSE)
+					if(error_messages)
+						set(error_messages "${error_messages}, ${config}")
+					else()
+						set(error_messages "extra tool ${tool} has unsatisfied platform constraints: ${config}")
+					endif()
+				endif()
+			endforeach()
+		endif()
+		if(NOT config_eval_result)
+			break()
 		endif()
 	endforeach()
 
@@ -742,10 +772,6 @@ if(tool_constraints)
 		return()
 	endif()
 endif()
-#checking all platform configurations required by the environment
-foreach(constraint IN LISTS config_constraints)
-	check_Platform_Constraints(RESULT IS_CURRENT "" "" "" "" "${constraint}" FALSE)
-endforeach()
 
 endfunction(check_Environment_Constraints)
 
@@ -1032,7 +1058,6 @@ add_subdirectory(share)
 add_subdirectory(test)
 
 # specific case : resolve which compile option to use to enable the adequate language standard
-# also used to set adequate dependencies to platform configurations if required by language usage
 resolve_Build_Options_For_Targets()
 
 ##########################################################
@@ -1523,6 +1548,15 @@ mark_As_Declared(${c_name})
 
 #finaly apply plugins actions
 manage_Plugins_Contribution_Into_Current_Component()
+#automatically manage implicit platform constraints
+foreach(config IN LISTS ${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${VAR_SUFFIX})
+	declare_System_Component_Dependency_Using_Configuration(
+		${c_name}
+		FALSE
+		${config}
+		"" "" ""
+	)
+endforeach()
 endfunction(declare_Library_Component)
 
 #.rst:
@@ -1661,7 +1695,15 @@ append_Unique_In_Cache(${PROJECT_NAME}_COMPONENTS_APPS ${c_name})
 mark_As_Declared(${c_name})
 #finaly apply plugins actions
 manage_Plugins_Contribution_Into_Current_Component()
-
+#automatically manage implicit platform constraints
+foreach(config IN LISTS ${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${VAR_SUFFIX})
+	declare_System_Component_Dependency_Using_Configuration(
+		${c_name}
+		FALSE
+		${config}
+		"" "" ""
+	)
+endforeach()
 endfunction(declare_Application_Component)
 
 #.rst:
@@ -2428,7 +2470,7 @@ function(declare_System_Component_Dependency_Using_Configuration component expor
 	endif()
 
 	declare_System_Component_Dependency(
-			${component_name}
+			${component}
 			${export}
 			"${includes}"
 			"${lib_dirs}"

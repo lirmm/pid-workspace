@@ -277,14 +277,6 @@ function(resolve_Component_Language_Support component)
     return()
   endif()
 
-  foreach(config IN LISTS ${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${VAR_SUFFIX})
-    declare_System_Component_Dependency_Using_Configuration(
-      ${component}
-      FALSE
-      ${config}
-      "" "" ""
-    )
-  endforeach()
 endfunction(resolve_Component_Language_Support)
 
 #.rst:

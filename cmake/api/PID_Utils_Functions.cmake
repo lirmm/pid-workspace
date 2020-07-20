@@ -65,7 +65,6 @@ function(get_Configuration_Expression_Resulting_Constraints BINARY_CONSTRAINTS c
     endif()
     list(APPEND all_constraints ${constraint} "${RES_VALUE}")#use guillemet to set exactly one element
   endforeach()
-
   #optional constraints are never propagated to binaries description
   set(${BINARY_CONSTRAINTS} ${all_constraints} PARENT_SCOPE)#the value of the variable is not the real value but the name of the variable
 endfunction(get_Configuration_Expression_Resulting_Constraints)
@@ -4597,7 +4596,7 @@ endfunction(get_CXX_Existing_Standards)
 #
 function(translate_Standard_Into_Option RES_C_STD_OPT RES_CXX_STD_OPT c_std_number cxx_std_number)
 	#managing c++
-  is_A_CXX_Language_Standard(IS_CXX_STD ${cxx_std_number})
+  is_A_CXX_Language_Standard(IS_CXX_STD "${cxx_std_number}")
   if(IS_CXX_STD)
     set(${RES_CXX_STD_OPT} "-std=c++${cxx_std_number}" PARENT_SCOPE)
   else()
@@ -4605,7 +4604,7 @@ function(translate_Standard_Into_Option RES_C_STD_OPT RES_CXX_STD_OPT c_std_numb
   endif()
 
 	#managing c
-  is_A_C_Language_Standard(IS_C_STD ${c_std_number})
+  is_A_C_Language_Standard(IS_C_STD "${c_std_number}")
   if(IS_C_STD)
     set(${RES_C_STD_OPT} "-std=c${c_std_number}" PARENT_SCOPE)
   else()
@@ -4819,7 +4818,7 @@ endfunction(compare_ABIs)
 #
 function(is_A_C_Language_Standard IS_STD number)
   get_C_Existing_Standards(ALL_STDS)
-  list(FIND ALL_STDS ${number} INDEX)
+  list(FIND ALL_STDS "${number}" INDEX)
   if(INDEX EQUAL -1)
     set(${IS_STD} FALSE PARENT_SCOPE)
   else()
@@ -4847,7 +4846,7 @@ endfunction(is_A_C_Language_Standard)
 #
 function(is_A_CXX_Language_Standard IS_STD number)
   get_CXX_Existing_Standards(ALL_STDS)
-  list(FIND ALL_STDS ${number} INDEX)
+  list(FIND ALL_STDS "${number}" INDEX)
   if(INDEX EQUAL -1)
     set(${IS_STD} FALSE PARENT_SCOPE)
   else()
@@ -5102,8 +5101,6 @@ function(get_Required_CMake_Version_For_Standard RES_MIN_CMAKE_VERSION cxx_std)
   set(min_cmake_version_for_std_property 3.8.2)
   if(cxx_std EQUAL 20)
     set(min_cmake_version_for_std_property 3.11.4)
-  else()#unknown so no result
-    set(min_cmake_version_for_std_property)
   endif()
   set(${RES_MIN_CMAKE_VERSION} ${min_cmake_version_for_std_property} PARENT_SCOPE)#CXX standard property
 endfunction(get_Required_CMake_Version_For_Standard)

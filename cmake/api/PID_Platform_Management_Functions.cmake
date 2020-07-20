@@ -833,7 +833,7 @@ function(reset_Package_Platforms_Variables)
   endforeach()
 	unset(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} CACHE)
   #also reset cplatform configruation constraints coming from langauge in use
-  unset(${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${VAR_SUFFIX} CACHE)
+  unset(${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${USE_MODE_SUFFIX} CACHE)
 endfunction(reset_Package_Platforms_Variables)
 
 
