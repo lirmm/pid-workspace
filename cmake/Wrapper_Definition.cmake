@@ -2415,6 +2415,11 @@ function(build_B2_External_Project)
     set(OUTPUT_MODE OUTPUT_QUIET)
   endif()
 
+  if(BUILD_B2_EXTERNAL_PROJECT_MODE STREQUAL Debug)
+    set(TARGET_MODE Debug)
+  else()
+    set(TARGET_MODE Release)
+  endif()
 
   if(BUILD_B2_EXTERNAL_PROJECT_COMMENT)
     set(use_comment "(${BUILD_B2_EXTERNAL_PROJECT_COMMENT}) ")
@@ -2527,7 +2532,7 @@ function(build_B2_External_Project)
   endif()
 
   if(NOT result EQUAL 0)#error at configuration time
-    message("[PID] ERROR : cannot configure boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+    message("[PID] ERROR : cannot configure boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment}...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
   endif()
@@ -2544,17 +2549,21 @@ function(build_B2_External_Project)
   # configure_file( ${WORKSPACE_DIR}/cmake/patterns/wrappers/b2_pid_config.jam.in
   #                 ${jamfile}
   #                 @ONLY)
-
-
+  set(jnumber 1)
   if(ENABLE_PARALLEL_BUILD)#parallel build is allowed from CMake configuration
-    get_Environment_Info(JOBS jobs)#get jobs flags from environment
-    if(BUILD_B2_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
-      set(jobs -j${BUILD_B2_EXTERNAL_PROJECT_USER_JOBS})
+    list(FIND LIMITED_JOBS_PACKAGES ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} INDEX)
+    if(INDEX EQUAL -1)#package can compile with many jobs
+      if(BUILD_B2_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
+        set(jnumber ${BUILD_B2_EXTERNAL_PROJECT_USER_JOBS})
+      else()
+        get_Environment_Info(JOBS_NUMBER jnumber)
+      endif()
     endif()
   endif()
-  message("[PID] INFO : Building and installing ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+  set(jobs "-j${jnumber}")
 
-  message("b2 install ${jobs} --prefix=${TARGET_INSTALL_DIR} --layout=system ${COMMAND_ARGS_AS_LIST}")
+
+  message("[PID] INFO : Building and installing ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} in ${TARGET_MODE} mode using ${jnumber} jobs...")
   execute_process(COMMAND ${project_dir}/b2 install
                           ${jobs}
                           --prefix=${TARGET_INSTALL_DIR}
@@ -2650,6 +2659,12 @@ function(build_Autotools_External_Project)
     set(use_comment "(${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_COMMENT}) ")
   endif()
 
+  if(BUILD_AUTOTOOLS_EXTERNAL_PROJECT_MODE STREQUAL Debug)
+    set(TARGET_MODE Debug)
+  else()
+    set(TARGET_MODE Release)
+  endif()
+
   #create the build folder inside the project folder
   set(project_dir ${TARGET_BUILD_DIR}/${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_FOLDER})
   if(NOT EXISTS ${project_dir})
@@ -2736,14 +2751,20 @@ function(build_Autotools_External_Project)
     return()
   endif()
 
+  set(jnumber 1)
   if(ENABLE_PARALLEL_BUILD)#parallel build is allowed from CMake configuration
-    get_Environment_Info(JOBS jobs)#get jobs flags from environment
-    if(BUILD_AUTOTOOLS_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
-      set(jobs -j${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_USER_JOBS})
+    list(FIND LIMITED_JOBS_PACKAGES ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} INDEX)
+    if(INDEX EQUAL -1)#package can compile with many jobs
+      if(BUILD_AUTOTOOLS_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
+        set(jnumber ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_USER_JOBS})
+      else()
+        get_Environment_Info(JOBS_NUMBER jnumber)
+      endif()
     endif()
   endif()
+  set(jobs "-j${jnumber}")
 
-  message("[PID] INFO : Building ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+  message("[PID] INFO : Building ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} in ${TARGET_MODE} mode using ${jnumber} jobs...")
   execute_process(COMMAND ${MAKE_TOOL_EXECUTABLE} ${jobs} WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE} RESULT_VARIABLE result)#build
   if(NOT result EQUAL 0)#error at configuration time
     message("[PID] ERROR : cannot build autotools project ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
@@ -2844,8 +2865,10 @@ function(build_Waf_External_Project)
   #configure build mode (to get available parameters see https://boostorg.github.io/build/tutorial.html section "Feature reference")
   if(BUILD_WAF_EXTERNAL_PROJECT_MODE STREQUAL Debug)
       set(ARGS_FOR_WAF_BUILD "variant=debug")
+      set(TARGET_MODE Debug)
   else()
       set(ARGS_FOR_WAF_BUILD "variant=release")
+      set(TARGET_MODE Release)
   endif()
    #ABI definition is already in compile flags
 
@@ -2886,12 +2909,22 @@ function(build_Waf_External_Project)
   set(ENV{LD} "${ld_tool}")
 
   # Use user-defined number of jobs if defined
+
+  set(jnumber 1)
   if(ENABLE_PARALLEL_BUILD)#parallel build is allowed from CMake configuration
-    get_Environment_Info(JOBS jobs)#get jobs flags from environment
-    if(BUILD_WAF_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
-      set(jobs -j${BUILD_WAF_EXTERNAL_PROJECT_USER_JOBS})
+    list(FIND LIMITED_JOBS_PACKAGES ${BUILD_WAF_EXTERNAL_PROJECT_PROJECT} INDEX)
+    if(INDEX EQUAL -1)#package can compile with many jobs
+      if(BUILD_WAF_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
+        set(jnumber ${BUILD_WAF_EXTERNAL_PROJECT_USER_JOBS})
+      else()
+        get_Environment_Info(JOBS_NUMBER jnumber)
+      endif()
     endif()
   endif()
+  set(jobs "-j${jnumber}")
+
+  message("[PID] INFO : Building ${BUILD_WAF_EXTERNAL_PROJECT_PROJECT} ${use_comment} in ${TARGET_MODE} mode using ${jnumber} jobs...")
+
   execute_process(COMMAND ${CURRENT_PYTHON_EXECUTABLE} waf distclean configure build install ${BUILD_WAF_EXTERNAL_PROJECT_OPTIONS} ${jobs} --prefix=${TARGET_INSTALL_DIR} ..
                   WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}
                   RESULT_VARIABLE result)
@@ -3054,13 +3087,18 @@ function(build_CMake_External_Project)
   get_Environment_Info(MAKE make_program)#get jobs flags from environment
   set(jnumber 1)
   if(ENABLE_PARALLEL_BUILD)#parallel build is allowed from CMake configuration
-    get_Environment_Info(JOBS jobs JOBS_NUMBER jnumber)
-    if(BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
-      set(jobs -j${BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS})
+    list(FIND LIMITED_JOBS_PACKAGES ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} INDEX)
+    if(INDEX EQUAL -1)#package can compile with many jobs
+      if(BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
+        set(jnumber ${BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS})
+      else()
+        get_Environment_Info(JOBS_NUMBER jnumber)
+      endif()
     endif()
   endif()
-  message("[PID] INFO : Building ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment}in ${TARGET_MODE} mode...")
-  message("[PID] INFO : Building using ${jnumber} jobs ...")
+  set(jobs "-j${jnumber}")
+
+  message("[PID] INFO : Building ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment} in ${TARGET_MODE} mode using ${jnumber} jobs...")
   execute_process(
     COMMAND ${make_program} ${jobs} WORKING_DIRECTORY ${project_build_dir} ${OUTPUT_MODE}
     RESULT_VARIABLE result
@@ -3071,7 +3109,7 @@ function(build_CMake_External_Project)
     return()
   endif()
 
-  message("[PID] INFO : Installing ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment}in ${TARGET_MODE} mode...")
+  message("[PID] INFO : Installing ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment} in ${TARGET_MODE} mode...")
   execute_process(
     COMMAND ${make_program} install WORKING_DIRECTORY ${project_build_dir} ${OUTPUT_MODE}
     RESULT_VARIABLE result
@@ -3219,23 +3257,25 @@ function(build_Bazel_External_Project)
   #adding all arguments coming with the current target platform
   # list(APPEND bazel_arguments )
   # TODO look at possible available arguments to the bazel tool see https://docs.bazel.build/versions/master/user-manual.html
-
+  set(jnumber 1)
   if(ENABLE_PARALLEL_BUILD)#parallel build is allowed from CMake configuration
-    get_Environment_Info(JOBS_NUMBER jobs)#get jobs number from environment
-    if(BUILD_BAZEL_EXTERNAL_PROJECT_USER_JOBS)#the user may have set directly the number of jobs
-      set(jobs ${BUILD_BAZEL_EXTERNAL_PROJECT_USER_JOBS})
-    endif()
-    if(NOT jobs EQUAL 0)
-      set(jobs_opt "--jobs=${jobs}")
+    list(FIND LIMITED_JOBS_PACKAGES ${BUILD_BAZEL_EXTERNAL_PROJECT_PROJECT} INDEX)
+    if(INDEX EQUAL -1)#package can compile with many jobs
+      if(BUILD_BAZEL_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
+        set(jnumber ${BUILD_BAZEL_EXTERNAL_PROJECT_USER_JOBS})
+      else()
+        get_Environment_Info(JOBS_NUMBER jnumber)
+      endif()
     endif()
   endif()
+  set(jobs_opt "--jobs=${jnumber}")
 
   if(NOT OUTPUT_MODE STREQUAL OUTPUT_QUIET)
     set(failure_report "--verbose_failures")
   endif()
 
   set(used_target ${BUILD_BAZEL_EXTERNAL_PROJECT_TARGET})
-  message("[PID] INFO : Building ${BUILD_BAZEL_EXTERNAL_PROJECT_PROJECT} ${use_comment}in ${TARGET_MODE} mode...")
+  message("[PID] INFO : Building ${BUILD_BAZEL_EXTERNAL_PROJECT_PROJECT} ${use_comment} in ${TARGET_MODE} mode using ${jnumber} jobs...")
   execute_process(
     COMMAND ${BAZEL_EXECUTABLE} build
     ${failure_report} #getting info about failure

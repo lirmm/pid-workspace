@@ -491,7 +491,8 @@ macro(reset_Profiles)
   # apply result of profile evaluation to the subfolder (reconfigure current project into subfolders)
   # then perform manage platform/plugins to detect all languages features and plugins (automatically done by rerun in subfolder)
   # need to set the definitions used in evalutaion of profile specific configuration
-  set(args -DWORKSPACE_DIR=${WORKSPACE_DIR} -DIN_CI_PROCESS=${IN_CI_PROCESS} -DPACKAGE_BINARY_INSTALL_DIR=${PACKAGE_BINARY_INSTALL_DIR})
+  fill_String_From_List(res_str LIMITED_JOBS_PACKAGES " ")
+  set(args -DWORKSPACE_DIR=${WORKSPACE_DIR} -DIN_CI_PROCESS=${IN_CI_PROCESS} -DPACKAGE_BINARY_INSTALL_DIR=${PACKAGE_BINARY_INSTALL_DIR} -DLIMITED_JOBS_PACKAGES="${res_str}")
   include(${dir}/Workspace_Solution_File.cmake)#use the solution file to set global variables
   if(${default_env_name}_CROSSCOMPILATION)
     list(APPEND args -DPID_CROSSCOMPILATION=TRUE)

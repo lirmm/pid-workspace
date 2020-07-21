@@ -34,6 +34,7 @@ if(DIR_NAME STREQUAL "build")
 	set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR} CACHE INTERNAL "")
 	option(IN_CI_PROCESS "Determine wether the build takes place in a CI environment (ON) or not (default to OFF)." OFF)
 	option(ADDITIONAL_DEBUG_INFO "Get debug infi from configuration" OFF)
+	set(LIMITED_JOBS_PACKAGES "" CACHE STRING "List of packages to build with only one job")
 	mark_as_advanced(IN_CI_PROCESS)
 	set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
 
