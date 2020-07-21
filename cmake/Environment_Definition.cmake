@@ -1612,23 +1612,24 @@ endfunction(set_Environment_Constraints)
 #
 #     .. rubric:: Required parameters
 #
-#     :VERSION: the output variable that is TRUE if host now matches constraints
-#     :program_str: the expression executed to get program version
-#     :version_extraction_regex: the regular expression used to get versioninfo from program output
+#     :APT|PACMAN|YUM|BREW|PORTS|CHOCO ... : the list of package to install for a given packager. Many packages can be defined.
+#
+#     .. rubric:: Required parameters
+#
+#     :RESULT var: the output variable that is TRUE if somes packages have been installed, FALSE otherwise.
 #
 #     .. rubric:: Example
 #
 #     .. code-block:: cmake
 #
-#        install_System_Packages(VERSION_RES "gcc -v" "^gcc[ \t]+version[ \t]+([^ \t]+)[ \t]+.*$")
-#        if(VERSION_RES)
-#         # do something
-#        endif()
+#        install_System_Packages(APT gcc-9 PACMAN gcc-9)
 #
-function(install_System_Packages RESULT)
-  set(${RESULT} FALSE PARENT_SCOPE)
-  set(multiValueArg ${PID_KNOWN_PACKAGING_SYSTEMS}) #the value may be a list
-  cmake_parse_arguments(INSTALL_SYSTEM_PACKAGES "" "" "${multiValueArg}" ${ARGN})
+function(install_System_Packages)
+  set(use_packages)
+  cmake_parse_arguments(INSTALL_SYSTEM_PACKAGES "" "RESULT" "${PID_KNOWN_PACKAGING_SYSTEMS}" ${ARGN})#use known packagers names as multi value arguments
+  if(INSTALL_SYSTEM_PACKAGES_RESULT)
+    set(${INSTALL_SYSTEM_PACKAGES_RESULT} FALSE PARENT_SCOPE)
+  endif()
   foreach(packager IN LISTS PID_KNOWN_PACKAGING_SYSTEMS)
     if( INSTALL_SYSTEM_PACKAGES_${packager}
         AND packager STREQUAL CURRENT_PACKAGING_SYSTEM)#OK there is a packager specified for the one used in current platform
@@ -1640,5 +1641,7 @@ function(install_System_Packages RESULT)
     return()
   endif()
   execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} ${use_packages})
-  set(${RESULT} TRUE PARENT_SCOPE)
+  if(INSTALL_SYSTEM_PACKAGES_RESULT)
+    set(${INSTALL_SYSTEM_PACKAGES_RESULT} TRUE PARENT_SCOPE)
+  endif()
 endfunction(install_System_Packages)
