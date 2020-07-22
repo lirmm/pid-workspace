@@ -1478,11 +1478,13 @@ macro(evaluate_Platform_Configuration config path_to_config)
   endforeach()
 
   #prepare CMake project used for evaluation
-  if(NOT EXISTS ${eval_folder})#create the build folder used for evaluation
-    file(MAKE_DIRECTORY ${eval_folder})
+  if(NOT EXISTS ${eval_folder})
+    file(MAKE_DIRECTORY ${eval_folder})#create the build folder used for evaluation
+  elseif(EXISTS ${eval_folder}/CMakeCache.txt)
+    file(REMOVE ${eval_folder}/CMakeCache.txt)#clean the cache
   endif()
-
-  if(${check_file} IS_NEWER_THAN ${eval_project_file})# only regenerate the project file if check file has changed (project regenerated)
+  if(${check_file} IS_NEWER_THAN ${eval_project_file} # only regenerate the project file if check file has changed (project regenerated)
+    OR ${WORKSPACE_DIR}/cmake/api/PID_Platform_Management_Functions.cmake IS_NEWER_THAN ${eval_project_file})# or if current file has changed (implementation evolution)
     file(GLOB eval_build_files "${eval_folder}/*")#clean the eval project subfolder when necessary
     if(eval_build_files)
       file(REMOVE_RECURSE ${eval_build_files})
@@ -1494,8 +1496,8 @@ macro(evaluate_Platform_Configuration config path_to_config)
     file(APPEND ${eval_project_file} "include(Configuration_Definition NO_POLICY_SCOPE)\n")
     file(APPEND ${eval_project_file} "project(test_${config} ${eval_languages})\n")
     file(APPEND ${eval_project_file} "set(CMAKE_MODULE_PATH \${CMAKE_SOURCE_DIR} \${CMAKE_MODULE_PATH})\n")
-    file(APPEND ${eval_project_file} "include(${eval_file})\n")
-    file(APPEND ${eval_project_file} "configure_file(${eval_result_config_file} ${eval_result_file} @ONLY)")
+    file(APPEND ${eval_project_file} "include(${${config}_EVAL_FILE})\n")
+    file(APPEND ${eval_project_file} "configure_file(\${CMAKE_SOURCE_DIR}/output_vars.cmake.in \${CMAKE_SOURCE_DIR}/output_vars.cmake @ONLY)")
   endif()
   #prepare CMake project pattern file used used for getting result
   if(NOT EXISTS ${eval_result_config_file})
@@ -1534,7 +1536,7 @@ macro(evaluate_Platform_Configuration config path_to_config)
 
   if(CMAKE_HOST_WIN32)#on a window host path must be resolved
   	separate_arguments(COMMAND_ARGS_AS_LIST WINDOWS_COMMAND "${calling_defs}")
-  else()#if not on wondows use a UNIX like command syntax
+  else()#if not on windows use a UNIX like command syntax
   	separate_arguments(COMMAND_ARGS_AS_LIST UNIX_COMMAND "${calling_defs}")#always from host perpective
   endif()
   #2) evaluate
