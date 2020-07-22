@@ -1108,6 +1108,7 @@ function(evaluate_Language_Toolset_Configuration RESULT lang toolset)
   endif()
 
   use_Language_Toolset(${lang} ${toolset}_${lang}_TOOLSET_0)#always toolset 0 since added or overwrite more environments
+  set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(evaluate_Language_Toolset_Configuration)
 
 

@@ -227,6 +227,7 @@ set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
 reset_Documentation_Info()
 reset_CI_Variables()
 reset_Packages_Finding_Variables()
+reset_Temporary_Optimization_Variables(${CMAKE_BUILD_TYPE})
 init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
 init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "")
 check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")#configuring git remotes
