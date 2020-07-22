@@ -300,6 +300,8 @@ if(NOT GIT_CONFIGURED)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR: your git tool is NOT configured. To use PID you need to configure git:\ngit config --global user.name \"Your Name\"\ngit config --global user.email <your email address>\n")
 	return()
 endif()
+update_Git_Ignore_File(${WORKSPACE_DIR}/cmake/patterns/frameworks/framework/.gitignore)
+
 if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 	set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake ${CMAKE_MODULE_PATH}) # adding the cmake scripts files from the framework

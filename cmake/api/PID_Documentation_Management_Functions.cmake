@@ -276,37 +276,7 @@ endfunction(generate_Package_License_File)
 #     Create/Update the .gitignore file for current package project.
 #
 function(generate_Package_Git_Ignore_File)
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-  set(reference_pattern ${WORKSPACE_DIR}/cmake/patterns/packages/package/.gitignore)
-  set(project_file ${CMAKE_SOURCE_DIR}/.gitignore)
-  if(EXISTS ${project_file})#update
-    file(STRINGS ${reference_pattern} PATTERN_LINES)
-    file(STRINGS ${CMAKE_SOURCE_DIR}/.gitignore PROJECT_LINES)
-    set(all_pattern_included TRUE)
-    foreach(line IN LISTS PATTERN_LINES)
-      list(FIND PROJECT_LINES "${line}" INDEX)
-      if(INDEX EQUAL -1)#default line not found
-        set(all_pattern_included FALSE)
-        break()#stop here and regenerate
-      endif()
-    endforeach()
-    if(NOT all_pattern_included)
-      set(TO_APPEND_AFTER_PATTERN)
-      foreach(line IN LISTS PROJECT_LINES)
-        list(FIND PATTERN_LINES "${line}" INDEX)
-        if(INDEX EQUAL -1)#line not found in pattern
-          list(APPEND TO_APPEND_AFTER_PATTERN ${line})
-        endif()
-      endforeach()
-      file(COPY ${reference_pattern} DESTINATION ${CMAKE_SOURCE_DIR})#regenerate the file
-      foreach(line IN LISTS TO_APPEND_AFTER_PATTERN)
-        file(APPEND ${project_file} "${line}\n")
-      endforeach()
-    endif()#otherwise nothing to do
-  else()#create
-    file(COPY ${reference_pattern} DESTINATION ${CMAKE_SOURCE_DIR})
-  endif()
-endif()
+
 endfunction(generate_Package_Git_Ignore_File)
 
 #.rst:

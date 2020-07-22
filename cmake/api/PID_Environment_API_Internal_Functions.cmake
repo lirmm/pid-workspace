@@ -160,6 +160,9 @@ macro(declare_Environment author institution mail year license address public_ad
   	message(FATAL_ERROR "[PID] CRITICAL ERROR: your git tool is NOT configured. To use PID you need to configure git:\ngit config --global user.name \"Your Name\"\ngit config --global user.email <your email address>\n")
   	return()
   endif()
+
+  update_Git_Ignore_File(${WORKSPACE_DIR}/cmake/patterns/environments/environment/.gitignore)
+
   if(NOT DIR_NAME STREQUAL "build")
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : please run cmake in the build folder of the environment ${PROJECT_NAME}.")
   	return()

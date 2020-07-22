@@ -1064,7 +1064,9 @@ resolve_Build_Options_For_Targets()
 ############ MANAGING non source files ###################
 ##########################################################
 generate_Package_Readme_Files() # generating and putting into source directory the readme file used by gitlab + in build tree the api doc welcome page (contain the same information)
-generate_Package_Git_Ignore_File() # generating and putting into source directory the .gitignore file removing all unwanted artifacts
+if(${CMAKE_BUILD_TYPE} MATCHES Release) # generating and putting into source directory the .gitignore file removing all unwanted artifacts
+  update_Git_Ignore_File(${WORKSPACE_DIR}/cmake/patterns/packages/package/.gitignore)
+endif()
 generate_Package_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Package_Install_Script() # generating and putting into source directory the file and folder containing stand alone install scripts
 generate_Package_Find_File() # generating/installing the generic cmake find file for the package

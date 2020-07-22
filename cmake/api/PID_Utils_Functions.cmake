@@ -5591,3 +5591,51 @@ function(create_Shell_Script_Symlinks)
 		endif()
 	endforeach()
 endfunction(create_Shell_Script_Symlinks)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_Git_Ignore_File| replace:: ``update_Git_Ignore_File``
+#  .. _update_Git_Ignore_File:
+#
+#  update_Git_Ignore_File
+#  ----------------------
+#
+#   .. command:: update_Git_Ignore_File()
+#
+#     Create/Update the .gitignore file for current project.
+#
+#     :gitignore_pattern: the path to the pattern file to use
+#
+function(update_Git_Ignore_File gitignore_pattern)
+  set(project_file ${CMAKE_SOURCE_DIR}/.gitignore)
+  if(EXISTS ${project_file})#update
+    file(STRINGS ${gitignore_pattern} PATTERN_LINES)
+    file(STRINGS ${CMAKE_SOURCE_DIR}/.gitignore PROJECT_LINES)
+    set(all_pattern_included TRUE)
+    foreach(line IN LISTS PATTERN_LINES)
+      list(FIND PROJECT_LINES "${line}" INDEX)
+      if(INDEX EQUAL -1)#default line not found
+        set(all_pattern_included FALSE)
+        break()#stop here and regenerate
+      endif()
+    endforeach()
+    if(NOT all_pattern_included)
+      set(TO_APPEND_AFTER_PATTERN)
+      foreach(line IN LISTS PROJECT_LINES)
+        list(FIND PATTERN_LINES "${line}" INDEX)
+        if(INDEX EQUAL -1)#line not found in pattern
+          list(APPEND TO_APPEND_AFTER_PATTERN ${line})
+        endif()
+      endforeach()
+      file(COPY ${gitignore_pattern} DESTINATION ${CMAKE_SOURCE_DIR})#regenerate the file
+      foreach(line IN LISTS TO_APPEND_AFTER_PATTERN)
+        file(APPEND ${project_file} "${line}\n")
+      endforeach()
+    endif()#otherwise nothing to do
+  else()#create
+    file(COPY ${gitignore_pattern} DESTINATION ${CMAKE_SOURCE_DIR})
+  endif()
+endfunction(update_Git_Ignore_File)
