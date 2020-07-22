@@ -3044,6 +3044,8 @@ function(build_CMake_External_Project)
         OR val MATCHES "NOTFOUND")#if VAL is not empty
        set(calling_defs "${calling_defs} -D${var}=${val}")
      endif()
+   elseif(def MATCHES "(.+)=")#empty assignment
+     set(calling_defs "${calling_defs} -D${CMAKE_MATCH_1}=")
    else()#no setting this is a cmake specific argument
      set(calling_defs "${calling_defs} ${def}")
    endif()
