@@ -3042,7 +3042,6 @@ function(build_CMake_External_Project)
         OR val MATCHES "FALSE|OFF"
         OR val EQUAL 0
         OR val MATCHES "NOTFOUND")#if VAL is not empty
-        message("")
        set(calling_defs "${calling_defs} -D${var}=${val}")
      endif()
    else()#no setting this is a cmake specific argument
