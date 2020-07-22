@@ -1500,7 +1500,7 @@ macro(evaluate_Platform_Configuration config path_to_config)
     file(APPEND ${eval_project_file} "configure_file(\${CMAKE_SOURCE_DIR}/output_vars.cmake.in \${CMAKE_SOURCE_DIR}/output_vars.cmake @ONLY)")
   endif()
   #prepare CMake project pattern file used used for getting result
-  if(NOT EXISTS ${eval_result_config_file})
+  if(NOT EXISTS ${eval_result_config_file} OR ${check_file} IS_NEWER_THAN ${eval_result_config_file})
     set(eval_vars)#getting all meaningfull variables returned from the eval script
     foreach(var IN LISTS ${config}_RETURNED_VARIABLES)
       list(APPEND eval_vars ${${config}_${var}_RETURNED_VARIABLE})#getting name of each returned variable
