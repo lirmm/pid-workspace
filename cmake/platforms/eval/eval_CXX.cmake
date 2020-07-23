@@ -115,7 +115,7 @@ if(CMAKE_CXX_COMPILER)
     	endforeach()
     endif()
     set(FLAGS_FOR_OPTIMS)
-    foreach(opt IN LISTS C_optimization)
+    foreach(opt IN LISTS CXX_optimization)
       foreach(flag IN LISTS CPU_${opt}_FLAGS)#these variables can themselves contain list
         if(NOT CMAKE_CXX_FLAGS MATCHES "${flag}")#only add flag if not already used
           set(FLAGS_FOR_OPTIMS "${FLAGS_FOR_OPTIMS} ${flag}")

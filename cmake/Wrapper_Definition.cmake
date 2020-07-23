@@ -2085,7 +2085,7 @@ endfunction(get_Environment_Info)
 #   :ARCH <VAR>: Output the architecture in ``VAR``
 #   :ABI <VAR>: Output the ABI in ``VAR``
 #   :DISTRIBUTION <VAR>: Output the distribution in ``VAR``
-#   :VERSION <VAR>: Output the version of the distribution in ``VAR``
+#   :DISTRIB_VERSION <VAR>: Output the version of the distribution in ``VAR``
 #   :PYTHON <VAR>: Output the Python version in ``VAR``
 #
 #   .. admonition:: Effects
@@ -2101,7 +2101,7 @@ endfunction(get_Environment_Info)
 #      message("curr_os=${curr_os}")
 #
 function(get_Target_Platform_Info)
-set(oneValueArgs NAME OS ARCH ABI TYPE PYTHON DISTRIBUTION VERSION)
+set(oneValueArgs NAME OS ARCH ABI TYPE PYTHON DISTRIBUTION DISTRIB_VERSION PROC_OPTIM)
 cmake_parse_arguments(GET_TARGET_PLATFORM_INFO "" "${oneValueArgs}" "" ${ARGN} )
 set(OK FALSE)
 if(GET_TARGET_PLATFORM_INFO_NAME)
@@ -2136,12 +2136,16 @@ if(GET_TARGET_PLATFORM_INFO_DISTRIBUTION)
 		set(OK TRUE)
 		set(${GET_TARGET_PLATFORM_INFO_DISTRIBUTION} ${CURRENT_DISTRIBUTION} PARENT_SCOPE)
 endif()
-if(GET_TARGET_PLATFORM_INFO_VERSION)
+if(GET_TARGET_PLATFORM_INFO_DISTRIB_VERSION)
 		set(OK TRUE)
-		set(${GET_TARGET_PLATFORM_INFO_VERSION} ${CURRENT_DISTRIBUTION_VERSION} PARENT_SCOPE)
+		set(${GET_TARGET_PLATFORM_INFO_VERSION} ${CURRENT_DISTRIBUTION_DISTRIB_VERSION} PARENT_SCOPE)
+endif()
+if(GET_TARGET_PLATFORM_INFO_PROC_OPTIM)
+  	set(OK TRUE)
+  	set(${GET_TARGET_PLATFORM_INFO_PROC_OPTIM} ${CURRENT_SPECIFIC_INSTRUCTION_SET} PARENT_SCOPE)
 endif()
 if(NOT OK)
-	message("[PID] ERROR : you must use one or more of the NAME, TYPE, ARCH, OS or ABI keywords together with corresponding variables that will contain the resulting property of the current platform in use.")
+	message("[PID] ERROR : you must use one or more of the NAME, TYPE, ARCH, OS, ABI, DISTRIBUTION, DISTRIB_VERSION, PYTHON or PROC_OPTIM keywords together with corresponding variables that will contain the resulting property of the current platform in use.")
 endif()
 endfunction(get_Target_Platform_Info)
 
