@@ -547,3 +547,38 @@ function(extract_Symbols_From_PID_Libraries list_of_libraries_var list_of_symbol
   endforeach()
   set(${OUT_LIST_OF_SYMBOL_VERSION_PAIRS} ${all_symbols_pair} PARENT_SCOPE)
 endfunction(extract_Symbols_From_PID_Libraries)
+
+#.rst:
+#
+# .. ifmode:: system
+#
+#  .. |extract_Version_Numbers| replace:: ``extract_Version_Numbers``
+#  .. _extract_Version_Numbers:
+#
+#  extract_Version_Numbers
+#  ^^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: extract_Version_Numbers(MAJOR MINOR PATCH version)
+#
+#      extract numbers from a version string
+#
+#     .. rubric:: Required parameters
+#
+#     :MAJOR: the output variable that contains the major number of version.
+#     :MINOR: the output variable that contains the minor number of version.
+#     :PATCH: the output variable that contains the patch number of version.
+#     :version: the full version string
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#        extract_Version_Numbers(MAJOR MINOR PATCH 1.2.3)
+#        message("major number is ${MAJOR}")
+#
+function(extract_Version_Numbers MAJOR MINOR PATCH version)
+  get_Version_String_Numbers("${version}" extract_major extract_minor extract_patch)
+  set(${MAJOR} ${extract_major} PARENT_SCOPE)
+  set(${MINOR} ${extract_minor} PARENT_SCOPE)
+  set(${PATCH} ${extract_patch} PARENT_SCOPE)
+endfunction(extract_Version_Numbers)

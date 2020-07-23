@@ -2514,7 +2514,7 @@ function(build_B2_External_Project)
     # separate_arguments(COMMAND_ARGS_AS_LIST WINDOWS_COMMAND "${ARGS_FOR_B2_BUILD}")
     string(REGEX REPLACE "/" "-" COMMAND_ARGS_AS_LIST ${ARGS_FOR_B2_BUILD})
     string(REGEX REPLACE " " ";" COMMAND_ARGS_AS_LIST ${COMMAND_ARGS_AS_LIST})
-  else()#if not on wondows use a UNIX like command syntac
+  else()#if not on windows use a UNIX like command syntac
     separate_arguments(COMMAND_ARGS_AS_LIST UNIX_COMMAND "${ARGS_FOR_B2_BUILD}")#always from host perpective
   endif()
 
@@ -3050,6 +3050,7 @@ function(build_CMake_External_Project)
      set(calling_defs "${calling_defs} ${def}")
    endif()
   endforeach()
+  #use separate_arguments to adequately manage list in values
   if(CMAKE_HOST_WIN32)#on a window host path must be resolved
 		separate_arguments(COMMAND_ARGS_AS_LIST WINDOWS_COMMAND "${calling_defs}")
 	else()#if not on windows use a UNIX like command syntax

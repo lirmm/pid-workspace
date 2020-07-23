@@ -41,13 +41,6 @@ set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE INTERNAL "")
 set(CUDA_LIBRARIES CACHE INTERNAL "")
 set(CUDA_INCLUDE_DIRS CACHE INTERNAL "")
 find_package(CUDA)
-if(NOT CUDA_nppi_LIBRARY)#nppi is deduced from other libs (just to allow old code to resolve symbols)
-  set(CUDA_nppi_LIBRARY ${CUDA_nppial_LIBRARY} ${CUDA_nppicc_LIBRARY} ${CUDA_nppicom_LIBRARY} ${CUDA_nppidei_LIBRARY} ${CUDA_nppif_LIBRARY} ${CUDA_nppig_LIBRARY} ${CUDA_nppim_LIBRARY} ${CUDA_nppist_LIBRARY} ${CUDA_nppisu_LIBRARY} ${CUDA_nppitc_LIBRARY} CACHE INTERNAL "" FORCE)
-endif()
-
-if(NOT CUDA_npp_LIBRARY)#old "all in one" npp library has been splitted into 3 libs (since 5.0)
-  set(CUDA_npp_LIBRARY ${CUDA_nppi_LIBRARY} ${CUDA_nppc_LIBRARY} ${CUDA_npps_LIBRARY} CACHE INTERNAL "" FORCE)
-endif()
 
 if(NOT CUDA_FOUND)#simply stop the configuration
   if(NOT CUDA_NVCC_EXECUTABLE OR NOT CUDA_VERSION)
@@ -82,7 +75,8 @@ check_language(CUDA)
 if(CMAKE_CUDA_COMPILER)
   enable_language(CUDA)
 else()#create the variable from the one created by find_package(CUDA)
-  set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE FILEPATH "" FORCE)
+  message("[PID] WARNING : cannot automatically detect CUDA. Please set the CUDA_TOOLKIT_ROOT_DIR variable !")
+  return()
 endif()
 
 set(CUDA_LIBRARIES ${CUDA_LIBRARIES} CACHE INTERNAL "" FORCE)
@@ -118,12 +112,11 @@ endif()
 
 if(temp_CUDA_flags) #target architecture has been specified using environment
   set(CMAKE_CUDA_FLAGS "${temp_CUDA_flags}" CACHE STRING "" FORCE)
-  set(CUDA_NVCC_FLAGS "${CMAKE_CUDA_FLAGS}" CACHE STRING "" FORCE)
 else()
   # we are not in the context of evaluating an environment on current host
   # detecting current CUDA architecture on host, if any
   # goal is to set default values for used architectures
-  execute_process( COMMAND ${CUDA_NVCC_EXECUTABLE} --cudart shared --compiler-bindir ${CMAKE_CUDA_HOST_COMPILER} ${WORKSPACE_DIR}/cmake/platforms/checks/DetectCudaArch.cu --run
+  execute_process( COMMAND ${CMAKE_CUDA_COMPILER} --cudart shared --compiler-bindir ${CMAKE_CUDA_HOST_COMPILER} ${WORKSPACE_DIR}/cmake/platforms/checks/DetectCudaArch.cu --run
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
     RESULT_VARIABLE _nvcc_res OUTPUT_VARIABLE _nvcc_out ERROR_VARIABLE _nvcc_error
     OUTPUT_STRIP_TRAILING_WHITESPACE)
