@@ -3052,7 +3052,7 @@ function(build_CMake_External_Project)
   endforeach()
   if(CMAKE_HOST_WIN32)#on a window host path must be resolved
 		separate_arguments(COMMAND_ARGS_AS_LIST WINDOWS_COMMAND "${calling_defs}")
-	else()#if not on wondows use a UNIX like command syntac
+	else()#if not on windows use a UNIX like command syntax
 		separate_arguments(COMMAND_ARGS_AS_LIST UNIX_COMMAND "${calling_defs}")#always from host perpective
 	endif()
 
