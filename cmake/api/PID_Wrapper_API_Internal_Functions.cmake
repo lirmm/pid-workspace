@@ -2948,6 +2948,10 @@ function(configure_Wrapper_Build_Variables package version)
 	set(${prefix}_BUILD_CXX_MAX_STANDARD ${cxx_max_std} CACHE INTERNAL "")
 	set(${prefix}_BUILD_LINKS ${all_links} CACHE INTERNAL "")
 	set(${prefix}_BUILD_RUNTIME_RESOURCES ${all_resources} CACHE INTERNAL "")
+
+	#memorize also variables that will be used to enforce the standards used during compilation
+	set(USE_C_STD ${${prefix}_BUILD_C_STANDARD} CACHE INTERNAL "")
+	set(USE_CXX_STD ${${prefix}_BUILD_CXX_STANDARD} CACHE INTERNAL "")
 endfunction(configure_Wrapper_Build_Variables)
 
 ################################################################################

@@ -2475,6 +2475,10 @@ function(build_B2_External_Project)
   #configure compilation flags
   get_Environment_Info(CXX RELEASE CFLAGS cxx_flags COMPILER cxx_compiler)
   get_Environment_Info(C RELEASE CFLAGS c_flags)
+  #enfore use of standard defined in description
+  translate_Standard_Into_Option(RES_C_STD_OPT RES_CXX_STD_OPT ${USE_C_STD} ${USE_CXX_STD})
+  set(c_flags "${c_flags} ${RES_C_STD_OPT}")
+  set(cxx_flags "${cxx_flags} ${RES_CXX_STD_OPT}")
 
   if(NOT WIN32)
     if(c_flags)
@@ -2526,8 +2530,14 @@ function(build_B2_External_Project)
 
   set(TEMP_CXX $ENV{CXX})
   set(TEMP_CXXFLAGS $ENV{CXXFLAGS})
-  set(ENV{CXX})
+  set(TEMP_CC $ENV{CC})
+  set(TEMP_CFLAGS $ENV{CFLAGS})
   set(ENV{CXXFLAGS})
+  set(ENV{CFLAGS})
+  get_Environment_Info(CXX RELEASE COMPILER cxx_compiler)
+  set(ENV{CXX} ${cxx_compiler})
+  get_Environment_Info(C RELEASE COMPILER c_compiler)
+  set(ENV{CC} ${c_compiler})
 
   if(WIN32)
     execute_process(COMMAND ${project_dir}/bootstrap.bat --with-toolset=${install_toolset} --layout=system WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}  RESULT_VARIABLE result)
@@ -2536,13 +2546,15 @@ function(build_B2_External_Project)
   endif()
 
   if(NOT result EQUAL 0)#error at configuration time
+    set(ENV{CXX} ${TEMP_CXX})
+    set(ENV{CXXFLAGS} ${TEMP_CXXFLAGS})
+    set(ENV{CC} ${TEMP_CC})
+    set(ENV{CFLAGS} ${TEMP_CFLAGS})
     message("[PID] ERROR : cannot configure boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment}...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
   endif()
 
-  set(ENV{CXX} ${TEMP_CXX})
-  set(ENV{CXXFLAGS} ${TEMP_CXXFLAGS})
   #generating the jam file for boost build
   # set(jamfile ${project_dir}/user-config.jam)
   # set(TOOLSET_NAME ${install_toolset})
@@ -2579,6 +2591,12 @@ function(build_B2_External_Project)
                  RESULT_VARIABLE result
                  ERROR_VARIABLE varerr)
 
+
+  set(ENV{CXX} ${TEMP_CXX})
+  set(ENV{CXXFLAGS} ${TEMP_CXXFLAGS})
+  set(ENV{CC} ${TEMP_CC})
+  set(ENV{CFLAGS} ${TEMP_CFLAGS})
+  
   if(NOT result EQUAL 0
     AND NOT (varerr MATCHES "^link\\.jam: No such file or directory[ \t\n]*$"))#if the error is the one specified this is a normal situation (i.e. a BUG in previous version of b2, -> this message should be a warning)
     message("[PID] ERROR : cannot build and install boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
@@ -2686,9 +2704,14 @@ function(build_Autotools_External_Project)
   set(LD_FLAGS_ENV ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_LD_FLAGS})
   set(CPP_FLAGS_ENV ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_CPP_FLAGS})
 
+  #enforce use of standards defined in description
+  translate_Standard_Into_Option(RES_C_STD_OPT RES_CXX_STD_OPT ${USE_C_STD} ${USE_CXX_STD})
+  list(APPEND C_FLAGS_ENV ${RES_C_STD_OPT})
+  list(APPEND CXX_FLAGS_ENV ${RES_CXX_STD_OPT})
   get_Environment_Info(CXX RELEASE CFLAGS cxx_flags COMPILER cxx_compiler LINKER ld_tool AR ar_tool)
   get_Environment_Info(SHARED LDFLAGS ld_flags)
   get_Environment_Info(C RELEASE CFLAGS c_flags COMPILER c_compiler)
+
   if(c_flags)
     set(APPEND C_FLAGS_ENV ${c_flags})
   endif()
@@ -2880,6 +2903,9 @@ function(build_Waf_External_Project)
   set(C_FLAGS_ENV ${BUILD_WAF_EXTERNAL_PROJECT_C_FLAGS})
   set(CXX_FLAGS_ENV ${BUILD_WAF_EXTERNAL_PROJECT_CXX_FLAGS})
   set(LD_FLAGS_ENV ${BUILD_WAF_EXTERNAL_PROJECT_LD_FLAGS})
+  translate_Standard_Into_Option(RES_C_STD_OPT RES_CXX_STD_OPT ${USE_C_STD} ${USE_CXX_STD})
+  list(APPEND C_FLAGS_ENV ${RES_C_STD_OPT})
+  list(APPEND CXX_FLAGS_ENV ${RES_CXX_STD_OPT})
 
   get_Environment_Info(CXX RELEASE CFLAGS cxx_flags COMPILER cxx_compiler LINKER ld_tool)
   get_Environment_Info(SHARED LDFLAGS ld_flags)
@@ -2933,7 +2959,7 @@ function(build_Waf_External_Project)
                   WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}
                   RESULT_VARIABLE result)
 
-  #put back environment variables in previosu state
+  #put back environment variables in previous state
   set(ENV{LDFLAGS} "${TEMP_LD}")
   set(ENV{CFLAGS} "${TEMP_C}")
   set(ENV{CXXFLAGS} "${TEMP_CXX}")
@@ -3077,6 +3103,8 @@ function(build_CMake_External_Project)
                             -DCMAKE_INSTALL_BINDIR=bin
                             -DCMAKE_INSTALL_INCLUDEDIR=include
                             -DDATAROOTDIR=share
+                            -DCMAKE_C_STANDARD=${USE_C_STD}
+                            -DCMAKE_CXX_STANDARD=${USE_CXX_STD}
                             -C ${WORKSPACE_DIR}/build/${CURRENT_PROFILE}/Workspace_Build_Info.cmake
                             ${COMMAND_ARGS_AS_LIST}
                             ..
