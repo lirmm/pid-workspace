@@ -1,8 +1,8 @@
 # Introduction
 
-PID stands for *Packages integration and development*. It is a development methodology used to standardize and automate the development process of C/C++ projects. The present repository contains the base implementation of PID, based on CMake APIs and commands.
+PID stands for *Packages Integrated Development*. It is a development methodology used to standardize and automate the development process of C/C++ projects. The present repository contains the base implementation of PID, based on CMake APIs and commands.
 
-This project defines a **workspace** where users put their C/C++ projects and the workspace repository is used to share references on existing projects. For a deeper understanding and start learning PID, you can refer to [this website](http://pid.lirmm.net/pid-framework).
+This project defines a **workspace** where users put their C/C++ projects but also contains implemntation of commands and CMake APIs used to define projects. For a deeper understanding and start learning PID, you can refer to [this website](http://pid.lirmm.net/pid-framework).
 
 # What is it useful for ?
 
@@ -18,29 +18,23 @@ PID is designed for solving most common (and sometimes difficult) problems we ca
    - same basic structure, concepts, commands and options to manage the life cycle of projects.  
    - `CMake` APIs for a clean description of projects.
    - based on `git` and `Gitlab` tools for lifecycle management and continuous integration.
-
 + **Languages supported**
    - C/C++, CUDA, Fortran and ASSEMBLER
-   - Python (support of python wrappers and python scripts).
-
+   - Python (support of python bindings and python scripts).
 + **Automation of package life cycle management**: CMake generated commands to configure, build/test, release versions, publish online documentation, upload binary archives in repositories, deliver and deploy package on a computer.
-
 + **Automatic resolution of dependencies and constraints**
   - resolution of eligible versions of dependencies
   - check for target platform binary compatiblity
   - automatic deployment of required dependencies versions (from source repositories or binary archives).
-
 + **Automation of Continuous Integration / Delivery process**
   - generation of online documentation (static site, API, check tools reports)
   - management of online repositories for generated binary archives of package versions.
   - CI/CD process managed for concurrent platforms (only gitlab-CI for now).
-
 + **Support for customization**
    - change build environements and target binary platforms in use, manage cross-compilation (based on CMake features).
-   - add new support for new development tools : specific support of an IDE ; dependencies management tools like `pkg-config` ; code generators like `f2c`, etc..
-
+   - add new support for new development tools : specific support of an IDE ; dependencies management tools like `pkg-config` ; code generators like `f2c`, etc.
 + **Cross platform implementation**
-  - PID should work on most of UNIX platforms. It has been tested on Ubuntu, Debian, Arch Linux, FreeBSD, MACOS and Raspbian. Many UNIX systems have never or rarely been tested like SolarisOS, iOS or MACOS as well as many Linux distributions (RedHat, Gentoo) and derivatives (Android). But these OS can be supported with little effort (PID being mostly cross-platform).
+  - PID should work on most of UNIX platforms. It has been tested on Ubuntu, Debian, Fedora, Arch Linux, FreeBSD, MACOS and Raspbian. Many UNIX systems have never or rarely been tested like SolarisOS, iOS  as well as many Linux distributions (RedHat, Gentoo) and derivatives (Android). But these OS can be supported with little effort (PID being mostly cross-platform).
   - Support for Windows is still experimental.
 
 # Install

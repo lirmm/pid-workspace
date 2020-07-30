@@ -23,7 +23,7 @@ You should let the developper team know what is the problem, what needs to be do
 + **Core runtime mechanism**: new C/C++ API to do things at runtime
 + **Updating official references to projects**: adding references to new projects into the PID official contribution space.
 
-Depending on what you want to do you will have to perform different actions on different projects. Only API changes are applied to current repository, other apply to other projects. Nevertheless you should always follow the typical procedure explained below.
+Depending on what you want to do you will have to perform different actions on different projects. **Only API changes apply to current repository**, other apply to other projects. Nevertheless you should always follow the typical procedure explained below.
 
 ## Typical procedure
 
@@ -54,9 +54,9 @@ To contribute to [PID static site documentation](http://pid.lirmm.net/pid-framew
 
 ### Updating official references to projects
 
-This consists in publishing files that are used to reference content generated with PID methodology. This is achieved in a specific way in PID, through projects called `contribution spaces` (in some ways it can be seen as an equivalent of a CONAN remote). To publish or update references to official PID content you need to modify the `pid-contributions` project. As each `contribution space` has a git repository you simply need to fork and propose merge request to the `pid-contributions` repository. If this later is not already available on the current hosting service, **open an issue to get `pid-contributions`**.
+This consists in publishing files that are used to reference content generated with PID methodology. This is achieved in a specific way in PID, through projects called `contribution spaces`. To publish or update references to official PID content you need to modify the `pid-contributions` project. As each `contribution space` has a git repository you simply need to fork and propose merge request to the `pid-contributions` repository. If this later is not already available on the current hosting service, **open an issue to get `pid-contributions`**.
 
-Note: you can provide your own `contribution space` so updating PID official one is only meaningfull if you intend to publish your packages to the largest possible audience.
+Note: you can provide your own `contribution space` so updating PID official one is only meaningfull if you intend to publish your packages to the largest possible audience (since `pid-contributions` is the default contribution space, it is always available for anyone).
 
 ### Updating core runtime mechanisms
 
