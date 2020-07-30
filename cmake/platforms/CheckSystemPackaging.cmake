@@ -25,7 +25,7 @@ if(NOT PID_CROSSCOMPILATION) #there is a pâckaging system only if a distributio
     find_program(PATH_TO_APT NAMES apt NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)
     if(PATH_TO_APT)
       set(CURRENT_PACKAGING_SYSTEM APT CACHE INTERNAL "")#sudo apt install -y ...
-      set(CURRENT_PACKAGING_SYSTEM_EXE apt CACHE INTERNAL "")
+      set(CURRENT_PACKAGING_SYSTEM_EXE apt-get CACHE INTERNAL "")
       set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS install -y CACHE INTERNAL "")
     else()
       find_program(PATH_TO_PACMAN NAMES pacman NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)
