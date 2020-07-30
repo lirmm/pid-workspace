@@ -191,11 +191,11 @@ else()# a package deployment is required
 	if(NO_SOURCE STREQUAL "true" OR NO_SOURCE STREQUAL "TRUE")
 		#if no source required then binary references must exist
 		load_Package_Binary_References(REFERENCES_OK ${DEPLOYED_PACKAGE})# now load the binary references of the package
-		set(references_loaded TRUE)#memorize that references have been loaded
 		if(NOT REFERENCES_OK)
 			message("[PID] ERROR : Cannot find any reference to a binary version of ${DEPLOYED_PACKAGE}. Aborting since no source deployment has been required.")
 			return()
 		endif()
+		set(references_loaded TRUE)#memorize that references have been loaded
 		if(TARGET_VERSION) # a specific version is targetted
 			exact_Version_Archive_Exists(${DEPLOYED_PACKAGE} "${TARGET_VERSION}" EXIST)
 			if(NOT EXIST)
@@ -254,7 +254,7 @@ else()# a package deployment is required
 
 	if(TARGET_VERSION)
 		if(is_external)#external package is deployed
-			set(message_to_print "[PID] INFO : deploying external package ${DEPLOYED_PACKAGE} (version ${TARGET_VERSION}) in the workspace ...")
+			set(message_to_print "[PID] INFO : deploying external PID package ${DEPLOYED_PACKAGE} (version ${TARGET_VERSION}) in the workspace ...")
 		else()#native package is deployed
 			set(message_to_print "[PID] INFO : deploying native PID package ${DEPLOYED_PACKAGE} (version ${TARGET_VERSION}) in the workspace ...")
 		endif()

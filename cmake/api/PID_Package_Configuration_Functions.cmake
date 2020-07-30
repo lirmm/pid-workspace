@@ -806,7 +806,7 @@ endfunction(get_Bin_Component_Direct_Internal_Runtime_Dependencies)
 #
 #   .. command:: get_External_Component_Direct_Runtime_Links(RES_LINKS package component mode)
 #
-#   Get list of all shared links directly used by an external component at runtime.
+#   Get list of all shared links provided by an external component at runtime.
 #
 #     :package: the name of the package containing the component.
 #     :component: the name of the component.
@@ -893,53 +893,58 @@ endfunction(get_Bin_Component_Direct_Runtime_Links)
 #  get_External_Component_Runtime_Links
 #  ------------------------------------
 #
-#   .. command:: get_External_Component_Runtime_Links(RES_LINKS package component mode)
+#   .. command:: get_External_Component_Runtime_Links(ALL_LOCAL_RUNTIME_LINKS ALL_USING_RUNTIME_LINKS package component mode)
 #
-#   Get list of all shared links directly used by an external component at runtime.
+#   Get list of all shared links used by an external component at runtime.
 #
 #     :package: the name of the package containing the component.
 #     :component: the name of the component.
 #     :mode: the build mode (Release or Debug) for the component.
 #
-#     :RES_LINKS: the output variable that contains the list of shared links used by component at runtime.
+#     :ALL_LOCAL_RUNTIME_LINKS: the output variable that contains the list of all runtime links of the component to be used in local package.
+#     :ALL_USING_RUNTIME_LINKS: the output variable that contains the list of all runtime links of the component to be used in using packages.
 #
-function(get_External_Component_Runtime_Links RES_LINKS package component mode)
+function(get_External_Component_Runtime_Links ALL_LOCAL_RUNTIME_LINKS ALL_USING_RUNTIME_LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(result)
 check_Runtime_Links_Temporary_Optimization_Variables(LOCAL_LINKS_VAR USING_LINKS_VAR ${package} ${component} ${mode})
-if(USING_LINKS_VAR)#an external component can only generate using links
-  set(${RES_LINKS} ${${USING_LINKS_VAR}} PARENT_SCOPE)
+if(LOCAL_LINKS_VAR AND USING_LINKS_VAR)
+  set(${ALL_LOCAL_RUNTIME_LINKS} ${${LOCAL_LINKS_VAR}} PARENT_SCOPE)
+  set(${ALL_USING_RUNTIME_LINKS} ${${USING_LINKS_VAR}} PARENT_SCOPE)
   return()
 endif()
+set(local_package_result)
+set(using_package_result)
 
 #directly adding shared links owned by the component
 get_External_Component_Direct_Runtime_Links(LOCAL_LINKS ${package} ${component} ${mode})
-list(APPEND result ${LOCAL_LINKS})
+list(APPEND using_package_result ${LOCAL_LINKS})
 
 #then check for shared links in external component internal dependencies
 foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-  #recursion to get runtime resources
+  #recursion to get runtime links
   rename_If_Alias(dep_comp_name ${package} TRUE ${dep_component} ${mode})#by definition a resolved component is a native one
-  get_External_Component_Runtime_Links(DEP_LINKS ${package} ${dep_comp_name} ${mode})
-  list(APPEND result ${DEP_LINKS})
+  get_External_Component_Runtime_Links(LOCAL_DEP_LINKS USING_DEP_LINKS ${package} ${dep_comp_name} ${mode})
+  list(APPEND local_package_result ${LOCAL_DEP_LINKS})
+  list(APPEND using_package_result ${USING_DEP_LINKS})
 endforeach()
 
 #then check for shared links in external component external dependencies
 foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-    #recursion to get runtime resources
+    #recursion to get runtime links
     rename_If_Alias(dep_comp_name ${dep_package} TRUE ${dep_component} ${mode})#by definition a resolved component is a native one
-    get_External_Component_Runtime_Links(DEP_LINKS ${dep_package} ${dep_comp_name} ${mode})
-    list(APPEND result ${DEP_LINKS})
+    get_External_Component_Runtime_Links(LOCAL_DEP_LINKS USING_DEP_LINKS ${dep_package} ${dep_comp_name} ${mode})
+    list(APPEND local_package_result ${USING_DEP_LINKS})#as the component belongs to another package we always use its using links in local package
+    list(APPEND using_package_result ${USING_DEP_LINKS})
   endforeach()
 endforeach()
 
-if(result)
-  list(REMOVE_DUPLICATES result)
-endif()
-set(${RES_LINKS} ${result} PARENT_SCOPE)
-set(empty_result)#external component will never have symlinks generated for themselves
-set_Runtime_Links_Temporary_Optimization_Variables(${package} ${component} ${mode} empty_result result)
+remove_Duplicates_From_List(local_package_result)
+remove_Duplicates_From_List(using_package_result)
+set(${ALL_LOCAL_RUNTIME_LINKS} ${local_package_result} PARENT_SCOPE)
+set(${ALL_USING_RUNTIME_LINKS} ${using_package_result} PARENT_SCOPE)
+set_Runtime_Links_Temporary_Optimization_Variables(${package} ${component} ${mode} local_package_result using_package_result)
 endfunction(get_External_Component_Runtime_Links)
 
 #.rst:
@@ -965,8 +970,6 @@ endfunction(get_External_Component_Runtime_Links)
 #
 function(get_Bin_Component_Runtime_Links ALL_LOCAL_RUNTIME_LINKS ALL_USING_RUNTIME_LINKS package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(local_package_result)
-set(using_package_result)
 
 #optimization
 check_Runtime_Links_Temporary_Optimization_Variables(LOCAL_LINKS_VAR USING_LINKS_VAR ${package} ${component} ${mode})
@@ -975,8 +978,10 @@ if(LOCAL_LINKS_VAR AND USING_LINKS_VAR)
   set(${ALL_USING_RUNTIME_LINKS} ${${USING_LINKS_VAR}} PARENT_SCOPE)
   return()
 endif()
+set(local_package_result)
+set(using_package_result)
 
-# 1) adding directly used external dependencies (only those bound to external package are interesting, system dependencies do not need a specific treatment)
+# 1) adding directly used external dependencies and system dependencies
 get_Bin_Component_Direct_Runtime_Links(RES_LINKS ${package} ${component} ${mode})
 list(APPEND local_package_result ${RES_LINKS})
 
@@ -985,8 +990,8 @@ foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_
   foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
     rename_If_Alias(dep_comp_name ${dep_package} TRUE ${dep_component} ${mode})#by definition a resolved component is a native one
     #shared links of direct dependency will be needed if native component depends on the external dependency
-    get_External_Component_Runtime_Links(DEP_LINKS ${dep_package} ${dep_comp_name} ${mode})
-    list(APPEND local_package_result ${DEP_LINKS})
+    get_External_Component_Runtime_Links(DEP_LOCAL_LINKS DEP_USING_LINKS ${dep_package} ${dep_comp_name} ${mode})
+    list(APPEND local_package_result ${DEP_USING_LINKS})
   endforeach()
 endforeach()
 
@@ -1024,13 +1029,9 @@ foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFF
 endforeach()
 
 # build the final results
-if(local_package_result)
-  list(REMOVE_DUPLICATES local_package_result)
-endif()
+remove_Duplicates_From_List(local_package_result)
 list(APPEND using_package_result ${local_package_result})#local result contains
-if(using_package_result)
-  list(REMOVE_DUPLICATES using_package_result)
-endif()
+remove_Duplicates_From_List(using_package_result)
 
 set(${ALL_LOCAL_RUNTIME_LINKS} ${local_package_result} PARENT_SCOPE)
 set(${ALL_USING_RUNTIME_LINKS} ${using_package_result} PARENT_SCOPE)
@@ -1077,8 +1078,8 @@ foreach(dep_package IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCIES$
   foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
     #shared links of direct dependency will be needed if native component depends on the external dependency
     rename_If_Alias(dep_comp_name ${dep_package} TRUE ${dep_component} ${mode})#by definition a resolved component is a native one
-    get_External_Component_Runtime_Links(DEP_LINKS ${dep_package} ${dep_comp_name} ${mode})
-    list(APPEND result ${DEP_LINKS})
+    get_External_Component_Runtime_Links(DEP_LOCAL_LINKS DEP_USING_LINKS ${dep_package} ${dep_comp_name} ${mode})
+    list(APPEND result ${DEP_USING_LINKS})
   endforeach()
 endforeach()
 
@@ -1152,18 +1153,179 @@ endif()
 set(${package}_DURING_PREPARE_RUNTIME${VAR_SUFFIX} TRUE)
 
 # 1) resolving runtime dependencies by recursion (resolving dependancy packages' components first)
-if(${package}_DEPENDENCIES${VAR_SUFFIX})
-	foreach(dep IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
-		resolve_Package_Runtime_Dependencies(${dep} ${mode})
-	endforeach()
-endif()
-# 2) resolving runtime dependencies of the package's own components
-foreach(component IN LISTS ${package}_COMPONENTS)
-	resolve_Bin_Component_Runtime_Dependencies(${package} ${component} ${mode})
+foreach(dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+  resolve_Package_Runtime_Dependencies(${dep} ${mode})
 endforeach()
+foreach(dep IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
+  resolve_Package_Runtime_Dependencies(${dep} ${mode})
+endforeach()
+# 2) resolving runtime dependencies of the package's own components
+get_Package_Type(${package} PACK_TYPE)
+if(PACK_TYPE STREQUAL "EXTERNAL")
+  if(mode STREQUAL "Debug")
+    make_Empty_Folder(${${package}_ROOT_DIR}/.rpath)
+  endif()
+  foreach(component IN LISTS ${package}_COMPONENTS${VAR_SUFFIX})
+  	resolve_External_Component_Runtime_Dependencies(${package} ${${package}_VERSION_STRING} ${component} ${mode})
+  endforeach()
+else()
+  foreach(component IN LISTS ${package}_COMPONENTS)
+  	resolve_Bin_Component_Runtime_Dependencies(${package} ${component} ${mode})
+  endforeach()
+endif()
 set(${package}_DURING_PREPARE_RUNTIME${VAR_SUFFIX} FALSE)
 set(${package}_PREPARE_RUNTIME${VAR_SUFFIX} TRUE)
 endfunction(resolve_Package_Runtime_Dependencies)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_External_Component_Runtime_Dependencies| replace:: ``resolve_External_Component_Runtime_Dependencies``
+#  .. _resolve_External_Component_Runtime_Dependencies:
+#
+#  resolve_External_Component_Runtime_Dependencies
+#  -----------------------------------------------
+#
+#   .. command:: resolve_External_Component_Runtime_Dependencies(package component mode)
+#
+#   Resolve runtime dependencies for a component contained in another package than currently defined one (a binary component).
+#   Resolution consists in creating adequate symlinks for shared libraries used by component.
+#
+#     :package: the name of the package that contains the component.
+#     :version: the version of the package that contains the component.
+#     :component: the name of the component.
+#     :mode: the build mode (Release or Debug) for the component.
+#
+function(resolve_External_Component_Runtime_Dependencies package version component mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+
+  rename_If_Alias(real_comp_name ${package} TRUE ${component} ${mode})
+  is_Runtime_Component(COMP_IS_RUNTIME ${package} ${real_comp_name})
+  if(NOT COMP_IS_RUNTIME)#no runtime elements so nothing to resolve
+  	return()
+  endif()
+  check_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables(MANAGED ${package} ${real_comp_name} ${mode})
+  if(MANAGED)#optimization
+    return()
+  endif()
+  set(ALL_RUNTIME_DEPS)
+  # 1) getting all shared links dependencies
+  get_External_Component_Runtime_Links(RES_LOCAL_LINKS RES_USING_LINKS ${package} ${real_comp_name} ${mode})
+  list(APPEND ALL_RUNTIME_DEPS ${RES_LOCAL_LINKS})#the binary package own runtime dependencies is resolved to need to consider only its local links dependencies
+  #2) getting direct and undirect runtime resources dependencies
+  get_External_Component_Runtime_Resources(DEP_RESOURCES ${package} ${real_comp_name} ${mode} FALSE)
+  list(APPEND ALL_RUNTIME_DEPS ${DEP_RESOURCES})#the binary package own runtime dependencies is resolved to need to consider only its local links dependencies
+  #3) generate symlinks
+  create_External_Component_Symlinks(${package} ${real_comp_name} ${mode} "${ALL_RUNTIME_DEPS}")
+  get_Platform_Variables(PYTHON python_version)
+  if(python_version AND mode STREQUAL "Release")#python packages are only in release mode
+    set(python_symlinks ${RES_USING_LINKS} ${DEP_RESOURCES})#from python package perspective, all links are output of itself (local libraries in external package must be symlinked)
+    set(path_to_python_install ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/__python${python_version}__)
+	  if(NOT EXISTS ${path_to_python_install})
+	    file(MAKE_DIRECTORY ${path_to_python_install})
+	  endif()
+    foreach(package_path IN LISTS ${package}_${real_comp_name}_PYTHON_PACKAGES${VAR_SUFFIX})#component define one or more python package
+      #correctly configure those python packages with symlinks
+      configure_External_Python_Packages(${package} ${version} ${CURRENT_PLATFORM} ${python_version} FALSE ${package_path} "${python_symlinks}")
+    endforeach()
+  endif()
+  set_Runtime_Dependencies_Resolution_Temporary_Optimization_Variables(${package} ${real_comp_name} ${mode})
+endfunction(resolve_External_Component_Runtime_Dependencies)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |configure_External_Python_Packages| replace:: ``configure_External_Python_Packages``
+#  .. _configure_External_Python_Packages:
+#
+#  configure_External_Python_Packages
+#  ----------------------------------
+#
+#   .. command:: configure_External_Python_Packages(package platform python_version package_path list_of_symlinks)
+#
+#   Generating symlinks to python packages defined by an external package.
+#
+#     :package: the name of the external package that contains python packages.
+#     :version: version of the package.
+#     :platform: the name of current platform.
+#     :python_version: the python version currently used.
+#     :change_rpath: if TRUE the rpath of python modules will be changed.
+#     :package_path: the relative path to python package in external package install folder.
+#     :list_of_symlinks: the list of symlinks to generate into python package.
+#
+function(configure_External_Python_Packages package version platform python_version change_rpath package_path list_of_symlinks)
+  message("configure_External_Python_Packages package_path=${package_path}")
+  set(path_to_python_install ${WORKSPACE_DIR}/install/${platform}/__python${python_version}__)
+  set(root_folder_in_install ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
+
+  set(create_pack FALSE)
+  if(package_path MATCHES "^.+\\.py$")
+    set(create_pack TRUE)
+    set(relative_package_path ${package_path})
+  elseif(EXISTS ${root_folder_in_install}/${package_path}
+         AND IS_DIRECTORY ${root_folder_in_install}/${package_path})#the package is a folder with a init.py file inside
+    #do not create the package
+    set(relative_package_path ${package_path})
+  elseif(package_path MATCHES ".+\\.(so|dylib|dll)$")# filename with extension => python bindings
+    set(create_pack TRUE)
+    set(relative_package_path "${package_path}")
+  else()# filename without extension => python bindings, adding the adequate extension
+    set(create_pack TRUE)
+    create_Shared_Lib_Extension(RES_EXT ${platform} "")#get the dynamic library extension
+    set(relative_package_path "${package_path}${RES_EXT}")
+  endif()
+  set(binaries_to_modify)
+  if(create_pack)#no package defined, PID imposes to create one, no direct python module allowed
+    get_filename_component(NAME_OF_PACK ${relative_package_path} NAME_WE)
+    #clean and create package folder in workspace's python install dir
+    #package has same name as the module (without extension)
+    if(EXISTS ${path_to_python_install}/${NAME_OF_PACK})
+      file(REMOVE_RECURSE ${path_to_python_install}/${NAME_OF_PACK})
+    endif()
+    file(MAKE_DIRECTORY ${path_to_python_install}/${NAME_OF_PACK})
+    set(symlink_deps_folders ${path_to_python_install}/${NAME_OF_PACK})
+
+    # create the package init script
+    set(PYTHON_PACKAGE ${NAME_OF_PACK})
+    configure_file(${WORKSPACE_DIR}/cmake/patterns/wrappers/__init__.py.in ${path_to_python_install}/${NAME_OF_PACK}/__init__.py @ONLY)
+    #now create a symlink to the module in it
+    get_filename_component(NAME_OF_LINK ${relative_package_path} NAME)
+    create_Symlink(${root_folder_in_install}/${relative_package_path} ${path_to_python_install}/${NAME_OF_PACK}/${NAME_OF_LINK})#generate the symlink used
+    if(relative_package_path MATCHES ".+\\.(so|dylib|dll)$")
+      set(binaries_to_modify ${root_folder_in_install}/${relative_package_path})
+    endif()
+  else()#already a package simply, symlink it
+    get_filename_component(NAME_OF_LINK ${relative_package_path} NAME)
+    create_Symlink(${root_folder_in_install}/${relative_package_path} ${path_to_python_install}/${NAME_OF_LINK})#generate the symlink used
+    #in this folder listing binaries I need to modify
+    set(symlink_deps_folders ${root_folder_in_install}/${relative_package_path})#by default we always put dependency symlinks in the package root folder
+    set(binaries_to_modify)
+    file(GLOB_RECURSE ALL_FILES "${root_folder_in_install}/${relative_package_path}/*" )
+    foreach(a_file IN LISTS ALL_FILES)
+      if(a_file MATCHES ".+\\.(so|dylib|dll)$")
+        list(APPEND binaries_to_modify ${a_file})
+        get_filename_component(THE_DIR ${a_file} DIRECTORY)
+        list(APPEND symlink_deps_folders ${THE_DIR})
+      endif()
+    endforeach()
+    list(REMOVE_DUPLICATES symlink_deps_folders)
+  endif()
+  #now set the rpath of each shared object into the python package (i.e. python bindings)
+  if(change_rpath)
+    foreach(shared IN LISTS binaries_to_modify)
+      set_PID_Compatible_Rpath(${shared})
+    endforeach()
+  endif()
+  #need to create symlinks to shared objects used by module so that they can be resolved at runtime
+  foreach(symlink IN LISTS list_of_symlinks)
+    get_filename_component(LINK_NAME ${symlink} NAME)
+    foreach(a_folder IN LISTS symlink_deps_folders)#if there are subpackages I also need to generate symlinks to dependencies in them
+      create_Symlink(${symlink} ${a_folder}/${LINK_NAME})#generate the symlink used
+    endforeach()
+  endforeach()
+endfunction(configure_External_Python_Packages)
 
 #.rst:
 #
@@ -1201,6 +1363,7 @@ endif()
 if(${package}_${real_comp_name}_TYPE STREQUAL "PYTHON")
   create_Python_Install_Symlinks(${package} ${real_comp_name} ${mode})
 else()
+  set(ALL_RUNTIME_DEPS)
   # 1) getting all shared links dependencies
   get_Bin_Component_Runtime_Links(LOCAL_LINKS USING_LINKS ${package} ${real_comp_name} ${mode})#suppose that findPackage has resolved everything
   list(APPEND ALL_RUNTIME_DEPS ${LOCAL_LINKS})#the binary package own runtime dependencies is resolved to need to consider only its local links dependencies
@@ -1210,6 +1373,7 @@ else()
   if(ALL_RUNTIME_DEPS)
     list(REMOVE_DUPLICATES ALL_RUNTIME_DEPS)
   endif()
+  #3) generate symlinks
   create_Bin_Component_Symlinks(${package} ${real_comp_name} ${mode} "${ALL_RUNTIME_DEPS}")
 
   is_Usable_Python_Wrapper_Module(USABLE_WRAPPER ${package} ${real_comp_name})
@@ -1231,7 +1395,9 @@ else()
   	#finally we need to reference also the module binary itself
   	get_Binary_Location(LOCATION_RES ${package} ${real_comp_name} ${mode})
   	list(APPEND ALL_RUNTIME_DEPS ${LOCATION_RES})
+    #create symlinks inside the python package (get access to all runtime objects)
   	create_Bin_Component_Python_Symlinks(${package} ${real_comp_name} ${mode} "${ALL_RUNTIME_DEPS}")
+    #create symlink to the pyhton package inside the python install folder
     create_Python_Install_Symlinks(${package} ${real_comp_name} ${mode})
   endif()
 endif()
@@ -1265,6 +1431,33 @@ foreach(resource IN LISTS resources)
 	create_Runtime_Symlink("${resource}" "${${package}_ROOT_DIR}/.rpath" ${package}_${component}${TARGET_SUFFIX})
 endforeach()
 endfunction(create_Bin_Component_Symlinks)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_External_Component_Symlinks| replace:: ``create_External_Component_Symlinks``
+#  .. _create_External_Component_Symlinks:
+#
+#  create_External_Component_Symlinks
+#  -----------------------------
+#
+#   .. command:: create_External_Component_Symlinks(package component mode resources)
+#
+#   Generating symlinks to a set of runtime resources used by a component contained in a package that is not the currenlty defined one.
+#
+#     :package: the name of the external package that contains the component.
+#     :component: the name of the component.
+#     :mode: the build mode (Release or Debug) for the component.
+#     :resources: the list of path to resources that need to be symlinked.
+#
+function(create_External_Component_Symlinks package component mode resources)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  #creatings symbolic links
+  foreach(resource IN LISTS resources)
+  	create_Runtime_Symlink("${resource}" "${${package}_ROOT_DIR}/.rpath" "")#no rpath sobfolder for external packages
+  endforeach()
+endfunction(create_External_Component_Symlinks)
 
 #.rst:
 #
@@ -1549,16 +1742,15 @@ endfunction(resolve_Source_Component_Runtime_Dependencies_Build_Tree)
 #   Define a target that automatically cleans the install folder of the currenlty defined package anytime the build target is launched.
 #
 function(clean_Install_Dir)
-get_Platform_Variables(BASENAME curr_platform_name)
 if(	${CMAKE_BUILD_TYPE} MATCHES Release
-	AND EXISTS ${WORKSPACE_DIR}/install/${curr_platform_name}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH}
-	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${curr_platform_name}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH} #if package is already installed
+	AND EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH}
+	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${PROJECT_NAME}/${${PROJECT_NAME}_DEPLOY_PATH} #if package is already installed
 )
 	# calling a script that will do the job in its own context (to avoid problem when including cmake scripts that would redefine critic variables)
 	add_custom_target(cleaning_install
 							COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
 						 -DPACKAGE_NAME=${PROJECT_NAME}
-						 -DCURRENT_PLATFORM=${curr_platform_name}
+						 -DCURRENT_PLATFORM=${CURRENT_PLATFORM}
 						 -DPACKAGE_INSTALL_VERSION=${${PROJECT_NAME}_DEPLOY_PATH}
 						 -DPACKAGE_VERSION=${${PROJECT_NAME}_VERSION}
 						 -DNEW_USE_FILE=${CMAKE_BINARY_DIR}/share/Use${PROJECT_NAME}-${${PROJECT_NAME}_VERSION}.cmake #this file does not exist at configruation time (only after generation phase)

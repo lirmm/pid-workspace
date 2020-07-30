@@ -1064,6 +1064,45 @@ endfunction(install_Runtime_Symlink)
 #
 # .. ifmode:: internal
 #
+#  .. |set_PID_Compatible_Rpath| replace:: ``set_PID_Compatible_Rpath``
+#  .. _set_PID_Compatible_Rpath:
+#
+#  set_PID_Compatible_Rpath
+#  ------------------------
+#
+#   .. command:: set_PID_Compatible_Rpath(package version)
+#
+#    Set the rpath of a binary with a PID compliant format
+#
+#      :path_to_binary: the path to the binary file to modify
+#
+function(set_PID_Compatible_Rpath path_to_binary)
+	if(CMAKE_HOST_APPLE)#TODO check with APPLE as I am not sure of what needs to be done
+		get_filename_component(RES_NAME ${path_to_binary} NAME)
+		execute_process(COMMAND ${RPATH_UTILITY} -id "@rpath/${RES_NAME}" ${path_to_binary}
+		                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+									  ERROR_QUIET OUTPUT_QUIET)
+		execute_process(COMMAND ${RPATH_UTILITY} -add_rpath "@loader_path/../.rpath" ${path_to_binary}
+										WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+									  ERROR_QUIET OUTPUT_QUIET)
+		execute_process(COMMAND ${RPATH_UTILITY} -add_rpath "@loader_path/../lib" ${path_to_binary}
+										WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+									  ERROR_QUIET OUTPUT_QUIET)
+		execute_process(COMMAND ${RPATH_UTILITY} -add_rpath "@loader_path" ${path_to_binary}
+										WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+									  ERROR_QUIET OUTPUT_QUIET)
+	else()
+		set(rpath "\$ORIGIN/../.rpath:\$ORIGIN/../lib:\$ORIGIN")
+		execute_process(COMMAND ${RPATH_UTILITY} --force-rpath --set-rpath "${rpath}" ${path_to_binary}
+										WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+									  ERROR_QUIET OUTPUT_QUIET)
+	endif()
+endfunction(set_PID_Compatible_Rpath)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |check_Directory_Exists| replace:: ``check_Directory_Exists``
 #  .. _check_Directory_Exists:
 #
@@ -3487,11 +3526,10 @@ endfunction(list_All_Wrappers_In_Workspace)
 #     :BIN_PACKAGES: the output variable that contains the list of  binary packages in the workspace.
 #
 function(list_All_Binary_Packages_In_Workspace BIN_PACKAGES)
-get_Platform_Variables(BASENAME curr_platform_str)
-file(GLOB bin_pakages RELATIVE ${WORKSPACE_DIR}/install/${curr_platform_str} ${WORKSPACE_DIR}/install/${curr_platform_str}/*)
+file(GLOB bin_pakages RELATIVE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM} ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/*)
 foreach(a_file IN LISTS bin_pakages)
-	if(EXISTS ${WORKSPACE_DIR}/install/${curr_platform_str}/${a_file}
-      AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${curr_platform_str}/${a_file})
+	if(EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${a_file}
+  AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${a_file})
 		list(APPEND result ${a_file})
 	endif()
 endforeach()
@@ -3812,8 +3850,7 @@ endfunction(set_Version_Number_To_Package)
 #
 function(is_Binary_Package_Version_In_Development RESULT package version)
 set(${RESULT} FALSE PARENT_SCOPE)
-get_Platform_Variables(BASENAME curr_platform_str)
-set(USE_FILE ${WORKSPACE_DIR}/install/${curr_platform_str}/${package}/${version}/share/Use${package}-${version}.cmake)
+set(USE_FILE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${version}/share/Use${package}-${version}.cmake)
 if(EXISTS ${USE_FILE}) #file does not exists means the target version is not in development
   include(${USE_FILE})#include the definitions
   if(${package}_DEVELOPMENT_STATE STREQUAL "development") #this binary package has been built from a development branch

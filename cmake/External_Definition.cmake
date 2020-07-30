@@ -510,11 +510,8 @@ macro(declare_PID_External_Component)
 		set(${curr_ext_package}_${curr_ext_comp}_RUNTIME_RESOURCES${VAR_SUFFIX} ${resources} CACHE INTERNAL "")
 	endif()
 
-  set(python_packs)
-	foreach(a_pack IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_PYTHON)
-    transform_External_Path_Into_Absolute_Path_Expression(RES_PACK ${curr_ext_package} ${a_pack})
-    list(APPEND python_packs ${RES_PACK})
-	endforeach()
+  set(python_packs ${DECLARE_PID_EXTERNAL_COMPONENT_PYTHON})
+  #Note do not immediately resolve external path
   if(python_packs)
 		list(REMOVE_DUPLICATES python_packs)
 		set(${curr_ext_package}_${curr_ext_comp}_PYTHON_PACKAGES${VAR_SUFFIX} ${python_packs} CACHE INTERNAL "")

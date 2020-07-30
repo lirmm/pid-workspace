@@ -790,7 +790,7 @@ if(DECLARE_PID_WRAPPER_ENVIRONMENT_OPTIONAL)
 else()
   set(optional FALSE)
 endif()
-declare_Wrapped_Language_Configuration("${DECLARE_PID_WRAPPER_ENVIRONMENT_LANGUAGE}" "${DECLARE_PID_WRAPPER_ENVIRONMENT_TOOLSET}" "${DECLARE_PID_WRAPPER_ENVIRONMENT_TOOL}" "${optional}")
+declare_Wrapped_Environment_Configuration("${DECLARE_PID_WRAPPER_ENVIRONMENT_LANGUAGE}" "${DECLARE_PID_WRAPPER_ENVIRONMENT_TOOLSET}" "${DECLARE_PID_WRAPPER_ENVIRONMENT_TOOL}" "${optional}")
 endmacro(declare_PID_Wrapper_Environment)
 
 #.rst:
@@ -2611,7 +2611,7 @@ function(build_B2_External_Project)
   set(ENV{CXXFLAGS} ${TEMP_CXXFLAGS})
   set(ENV{CC} ${TEMP_CC})
   set(ENV{CFLAGS} ${TEMP_CFLAGS})
-  
+
   if(NOT result EQUAL 0
     AND NOT (varerr MATCHES "^link\\.jam: No such file or directory[ \t\n]*$"))#if the error is the one specified this is a normal situation (i.e. a BUG in previous version of b2, -> this message should be a warning)
     message("[PID] ERROR : cannot build and install boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")

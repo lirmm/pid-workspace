@@ -28,6 +28,7 @@ include(PID_Version_Management_Functions NO_POLICY_SCOPE)
 include(PID_Progress_Management_Functions NO_POLICY_SCOPE)
 include(PID_Finding_Functions NO_POLICY_SCOPE)
 include(PID_Deployment_Functions NO_POLICY_SCOPE)
+include(PID_Package_Configuration_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 include(PID_Documentation_Management_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
@@ -547,7 +548,7 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME \"${${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME}\" CACHE INTERNAL \"\")\n")
 
-	#manage platform configuration description
+	#manage build environment configuration description
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS} CACHE INTERNAL \"\")\n")
 	foreach(lang IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS)
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS} CACHE INTERNAL \"\")\n")
@@ -892,22 +893,22 @@ endfunction(add_Known_Version)
 #
 # .. ifmode:: internal
 #
-#  .. |declare_Wrapped_Language_Configuration| replace:: ``declare_Wrapped_Language_Configuration``
-#  .. _declare_Wrapped_Language_Configuration:
+#  .. |declare_Wrapped_Environment_Configuration| replace:: ``declare_Wrapped_Environment_Configuration``
+#  .. _declare_Wrapped_Environment_Configuration:
 #
-#  declare_Wrapped_Language_Configuration
-#  --------------------------------------
+#  declare_Wrapped_Environment_Configuration
+#  -----------------------------------------
 #
-#   .. command:: declare_Wrapped_Language_Configuration(languages lang_toolsets tools optional)
+#   .. command:: declare_Wrapped_Environment_Configuration(languages lang_toolsets tools optional)
 #
-#    Declare a platform constraint for currenlty described version of the external package. Internal counterpart of declare_PID_Wrapper_Platform_Configuration.
+#    Declare a constraint on build environment for currenlty described version of the external package. Internal counterpart of declare_PID_Wrapper_Environment.
 #
 #      :languages: list of language configuration check expressions
 #      :lang_toolsets: list of language toolsets expressed as environment check expressions
 #      :tools: list of additional tools configuration check expressions.
 #      :optional: if TRUE requirements are optional (will not generate errors if checks fail)
 #
-function(declare_Wrapped_Language_Configuration languages lang_toolsets tools optional)
+function(declare_Wrapped_Environment_Configuration languages lang_toolsets tools optional)
 	set(config_constraints)
 	if(lang_toolsets)
 		set(index 0)
@@ -969,7 +970,7 @@ function(declare_Wrapped_Language_Configuration languages lang_toolsets tools op
 			declare_Wrapped_Platform_Configuration("" "${config_constraints}" "")
 		endif()
 	endif()
-endfunction(declare_Wrapped_Language_Configuration)
+endfunction(declare_Wrapped_Environment_Configuration)
 
 #.rst:
 #
@@ -1640,98 +1641,32 @@ endfunction(install_External_PID_Version_File_For_Version)
 function(install_External_Python_Packages package version platform python_version)
 	#testing if there are packages to install
 	if(${package}_KNOWN_VERSION_${version}_BUILD_PYTHON_PACKAGES)
-		create_Shared_Lib_Extension(RES_EXT ${platform} "")#get the dynamic library extension
 		set(path_to_python_install ${WORKSPACE_DIR}/install/${platform}/__python${python_version}__)
-		if(NOT EXISTS path_to_python_install)
-			file(MAKE_DIRECTORY ${path_to_python_install})
-		endif()
-		set(root_folder_in_install ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
+	  if(NOT EXISTS ${path_to_python_install})
+	    file(MAKE_DIRECTORY ${path_to_python_install})
+	  endif()
+
 		foreach(component IN LISTS ${package}_KNOWN_VERSION_${version}_BUILD_PYTHON_PACKAGES)
 			#build the list of shared objects to symlink into the python package
 			set(list_of_symlinks)
-			message("PYTHON ${component} shared_links=${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_BUILD_SHARED_LINKS}")
 			foreach(link IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_BUILD_SHARED_LINKS)
 				if(NOT link MATCHES "^-.+")#do not use linker scripts
 					list(APPEND list_of_symlinks ${link})
 				endif()
 			endforeach()
-			message("PYTHON ${component} resources=${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_BUILD_RUNTIME_RESOURCES}")
 			foreach(res IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_BUILD_RUNTIME_RESOURCES)
 				if(res MATCHES ".+\\.(so|dylib|dll).*")#only get shared object, not all runtime resources
 					list(APPEND list_of_symlinks ${res})
 				endif()
 			endforeach()
 			#adding local shared object given by local dependencies
-			message("PYTHON ${component} deps=${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_BUILD_LOCAL_DEPENDENCIES}")
 			foreach(dep_comp IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_BUILD_LOCAL_DEPENDENCIES)
 				list(APPEND list_of_symlinks ${${package}_KNOWN_VERSION_${version}_COMPONENT_${dep_comp}_BUILD_LOCAL_RUNTIME_OBJECTS})
 			endforeach()
-			message("PYTHON ${component} list_of_symlinks=${list_of_symlinks}")
 
 			foreach(package_path IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_BUILD_PYTHON_PACKAGES)
 				#management of python
-				set(create_pack FALSE)
-				if(package_path MATCHES "^.+\\.py$")
-					set(create_pack TRUE)
-					set(relative_package_path ${package_path})
-				elseif(EXISTS ${root_folder_in_install}/${package_path}
-							 AND IS_DIRECTORY ${root_folder_in_install}/${package_path})#the package is a folder with a init.py file inside
-					#do not create the package
-					set(relative_package_path ${package_path})
-				elseif(package_path MATCHES ".+\\.(so|dylib|dll)$")# filename with extension => python bindings
-					set(create_pack TRUE)
-					set(relative_package_path "${package_path}")
-				else()# filename without extension => python bindings, adding the adequate extension
-					set(create_pack TRUE)
-					set(relative_package_path "${package_path}${RES_EXT}")
-				endif()
-				set(binaries_to_modify)
-				if(create_pack)#no package defined, PID imposes to create one, no direct python module allowed
-					get_filename_component(NAME_OF_PACK ${relative_package_path} NAME_WE)
-					#clean and create package folder in workspace's python install dir
-					#package has same name as the module (without extension)
-					if(EXISTS ${path_to_python_install}/${NAME_OF_PACK})
-						file(REMOVE_RECURSE ${path_to_python_install}/${NAME_OF_PACK})
-					endif()
-					file(MAKE_DIRECTORY ${path_to_python_install}/${NAME_OF_PACK})
-					set(symlink_deps_folders ${path_to_python_install}/${NAME_OF_PACK})
-
-					# create the package init script
-					set(PYTHON_PACKAGE ${NAME_OF_PACK})
-					configure_file(${WORKSPACE_DIR}/cmake/patterns/wrappers/__init__.py.in ${path_to_python_install}/${NAME_OF_PACK}/__init__.py @ONLY)
-					#now create a symlink to the module in it
-					get_filename_component(NAME_OF_LINK ${relative_package_path} NAME)
-					create_Symlink(${root_folder_in_install}/${relative_package_path} ${path_to_python_install}/${NAME_OF_PACK}/${NAME_OF_LINK})#generate the symlink used
-					if(relative_package_path MATCHES ".+\\.(so|dylib|dll)$")
-						set(binaries_to_modify ${root_folder_in_install}/${relative_package_path})
-					endif()
-				else()#already a package simply, symlink it
-					get_filename_component(NAME_OF_LINK ${relative_package_path} NAME)
-					create_Symlink(${root_folder_in_install}/${relative_package_path} ${path_to_python_install}/${NAME_OF_LINK})#generate the symlink used
-					#in this folder listing binaries I need to modify
-					set(symlink_deps_folders ${root_folder_in_install}/${relative_package_path})#by default we always put dependency symlinks in the package root folder
-					set(binaries_to_modify)
-					file(GLOB_RECURSE ALL_FILES "${root_folder_in_install}/${relative_package_path}/*" )
-					foreach(a_file IN LISTS ALL_FILES)
-						if(a_file MATCHES ".+\\.(so|dylib|dll)$")
-							list(APPEND binaries_to_modify ${a_file})
-							get_filename_component(THE_DIR ${a_file} DIRECTORY)
-							list(APPEND symlink_deps_folders ${THE_DIR})
-						endif()
-					endforeach()
-					list(REMOVE_DUPLICATES symlink_deps_folders)
-				endif()
-				#now set the rpath of each shared object into the python package (i.e. python bindings)
-				foreach(shared IN LISTS binaries_to_modify)
-					set_PID_Compatible_Rpath(${shared})
-				endforeach()
-				#need to create symlinks to shared objects used by module so that they can be resolved at runtime
-				foreach(symlink IN LISTS list_of_symlinks)
-					get_filename_component(LINK_NAME ${symlink} NAME)
-					foreach(a_folder IN LISTS symlink_deps_folders)#if there are subpackages I also need to generate symlinks to dependencies in them
-						create_Symlink(${symlink} ${a_folder}/${LINK_NAME})#generate the symlink used
-					endforeach()
-				endforeach()
+				configure_External_Python_Packages(${package} ${version} ${platform} ${python_version} TRUE ${package_path} "${list_of_symlinks}")
 			endforeach()
 		endforeach()
 	endif()
@@ -1806,46 +1741,6 @@ function(set_External_Runtime_Component_Rpath package version)
 	endif()
 endfunction(set_External_Runtime_Component_Rpath)
 
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |set_PID_Compatible_Rpath| replace:: ``set_PID_Compatible_Rpath``
-#  .. _set_PID_Compatible_Rpath:
-#
-#  set_PID_Compatible_Rpath
-#  ------------------------
-#
-#   .. command:: set_PID_Compatible_Rpath(package version)
-#
-#    Set the rpath of a binary with a PID compliant format
-#
-#      :path_to_binary: the path to the binary file to modify
-#
-function(set_PID_Compatible_Rpath path_to_binary)
-	if(CMAKE_HOST_APPLE)#TODO check with APPLE as I am not sure of what needs to be done
-		get_filename_component(RES_NAME ${path_to_binary} NAME)
-		execute_process(COMMAND ${RPATH_UTILITY} -id "@rpath/${RES_NAME}" ${path_to_binary}
-		                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-									  ERROR_QUIET OUTPUT_QUIET)
-		execute_process(COMMAND ${RPATH_UTILITY} -add_rpath "@loader_path/../.rpath" ${path_to_binary}
-										WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-									  ERROR_QUIET OUTPUT_QUIET)
-		execute_process(COMMAND ${RPATH_UTILITY} -add_rpath "@loader_path/../lib" ${path_to_binary}
-										WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-									  ERROR_QUIET OUTPUT_QUIET)
-		execute_process(COMMAND ${RPATH_UTILITY} -add_rpath "@loader_path" ${path_to_binary}
-										WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-									  ERROR_QUIET OUTPUT_QUIET)
-	else()
-		set(rpath "\$ORIGIN/../.rpath:\$ORIGIN/../lib:\$ORIGIN")
-		execute_process(COMMAND ${RPATH_UTILITY} --force-rpath --set-rpath "${rpath}" ${path_to_binary}
-										WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-									  ERROR_QUIET OUTPUT_QUIET)
-	endif()
-endfunction(set_PID_Compatible_Rpath)
-
 #.rst:
 #
 # .. ifmode:: internal
@@ -1893,8 +1788,8 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 	#add checks for required language configurations
 	set(list_of_lang_checks)
 	set(list_of_lang_configs_names)
-	foreach(lang IN LISTS ${package}_KNOWN_VERSION_${version}_LANGUAGES)
-		generate_Configuration_Expression(RESULTING_EXPRESSION ${lang} "${${package}_KNOWN_VERSION_${version}_LANGUAGE_${lang}_ARGS}")
+	foreach(lang IN LISTS ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS)
+		generate_Configuration_Expression(RESULTING_EXPRESSION ${lang} "${${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS}")
 		list(APPEND list_of_lang_checks ${RESULTING_EXPRESSION})
 		list(APPEND list_of_lang_configs_names ${lang})
 	endforeach()

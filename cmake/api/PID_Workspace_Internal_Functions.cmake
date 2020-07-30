@@ -1525,16 +1525,33 @@ endfunction(deploy_PID_Environment)
 function(bind_Installed_Package BOUND platform package version only_resolve)
 	set(${BOUND} FALSE PARENT_SCOPE)
 	set(BIN_PACKAGE_PATH ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
-	include(${BIN_PACKAGE_PATH}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
-	#using the generated Use<package>-<version>.cmake file to get adequate version information about components
-	if(	res STREQUAL NOTFOUND)
-		message("[PID] ERROR : The binary package ${package} (version ${version}) whose runtime dependencies must be (re)bound cannot be found from the workspace path : ${WORKSPACE_DIR}")
-		return()
-	elseif(NOT DEFINED ${package}_COMPONENTS)#if there is no component defined for the package there is an error
-		message("[PID] INFO : binary package ${package} (version ${version}) has no component defined, this denote a bad state for this package.")
-		return()
+	get_Package_Type(${package} PACK_TYPE)
+	if(PACK_TYPE STREQUAL "EXTERNAL")
+		if(NOT EXISTS ${BIN_PACKAGE_PATH}/share/Use${package}-${version}.cmake)
+			if(ADDITIONAL_DEBUG_INFO)
+				message("[PID] WARNING : when resolving runtime dependencies, the binary package ${package} (version ${version}) has no description.")
+			endif()
+			return()
+		endif()
+		#getting full external packages description
+		set(CMAKE_BUILD_TYPE Debug)
+		set(${package}_FOUND_Debug TRUE CACHE INTERNAL "")
+		include(${BIN_PACKAGE_PATH}/share/Use${package}-${version}.cmake)
+		set(CMAKE_BUILD_TYPE Release)
+		set(${package}_FOUND TRUE CACHE INTERNAL "")
+		include(${BIN_PACKAGE_PATH}/share/Use${package}-${version}.cmake)
+	else()
+		#testing and getting full native packages description in one call
+		include(${BIN_PACKAGE_PATH}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
+		#using the generated Use<package>-<version>.cmake file to get adequate version information about components
+		if(	res STREQUAL NOTFOUND)
+			message("[PID] ERROR : when resolving runtime dependencies, the binary package ${package} (version ${version}) description cannot be found from the workspace path : ${WORKSPACE_DIR}")
+			return()
+		elseif(NOT DEFINED ${package}_COMPONENTS)#if there is no component defined for the package there is an error
+			message("[PID] ERROR : when resolving runtime dependencies, the binary package ${package} (version ${version}) has no component defined, this denote a bad state for this package.")
+			return()
+		endif()
 	endif()
-	include(PID_Package_API_Internal_Functions NO_POLICY_SCOPE)
 
 	##################################################################
 	############### resolving all runtime dependencies ###############
@@ -1542,12 +1559,12 @@ function(bind_Installed_Package BOUND platform package version only_resolve)
 
 	#set the variable to be able to use Package Internal API
 	set(${package}_ROOT_DIR ${BIN_PACKAGE_PATH} CACHE INTERNAL "")
-
+	set(${package}_VERSION_STRING ${version} CACHE INTERNAL "")
 	set(PROJECT_NAME workspace)
 	if(only_resolve)
-		set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE)
+		set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE CACHE INTERNAL "" FORCE)
 	else()
-		set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE)
+		set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE CACHE INTERNAL "" FORCE)
 	endif()
 
 	set(CMAKE_BUILD_TYPE Debug)#to adequately interpret external packages description
@@ -1734,13 +1751,12 @@ set(REPOSITORY_IN_WORKSPACE FALSE)
 if(EXISTS ${WORKSPACE_DIR}/wrappers/${package})
 	set(REPOSITORY_IN_WORKSPACE TRUE)
 endif()
-get_Platform_Variables(BASENAME platform_name)
 set(MAX_CURR_VERSION 0.0.0)
 if(NOT version)#deploying the latest version of the package
 	#first try to directly download its archive
 	if(${package}_REFERENCES) #there are references to external package binaries
 		foreach(version_i IN LISTS ${package}_REFERENCES)
-			list(FIND ${package}_REFERENCE_${version_i} ${platform_name} INDEX)
+			list(FIND ${package}_REFERENCE_${version_i} ${CURRENT_PLATFORM} INDEX)
 			if(NOT INDEX EQUAL -1) #a reference for this OS is known
 				if(version_i VERSION_GREATER MAX_CURR_VERSION)
 					set(MAX_CURR_VERSION ${version_i})
@@ -1748,8 +1764,8 @@ if(NOT version)#deploying the latest version of the package
 			endif()
 		endforeach()
 		if(NOT MAX_CURR_VERSION STREQUAL 0.0.0)
-			if(EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${package}/${MAX_CURR_VERSION}
-			AND NOT redeploy)
+			if(EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${MAX_CURR_VERSION}
+				AND NOT redeploy)
 				message("[PID] INFO : external package ${package} version ${MAX_CURR_VERSION} already lies in the workspace, use force=true to force the redeployment.")
 				return()
 			endif()
@@ -1758,11 +1774,13 @@ if(NOT version)#deploying the latest version of the package
 				message("[PID] ERROR : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive or due to no archive exists for current platform and build constraints. Please contact the administrator of the package ${package}.")
 				return()
 			else()
-				set(CMAKE_BUILD_TYPE Debug)#to adequately interpret external packages description
-				resolve_Package_Dependencies(${package} Debug TRUE) # finding all package dependencies
-				set(CMAKE_BUILD_TYPE Release)#to adequately interpret external packages description
-				resolve_Package_Dependencies(${package} Release TRUE) # finding all package dependencies
-				set(${DEPLOYED} "BINARY" PARENT_SCOPE)
+				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${MAX_CURR_VERSION} FALSE)
+				if(BOUND)
+					message("[PID] INFO : deploying ${package} binary archive version ${MAX_CURR_VERSION} success !")
+					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
+				else()
+					message("[PID] ERROR : external package ${package} version ${MAX_CURR_VERSION} cannot be deployed in workspace.")
+				endif()
 				message("[PID] INFO : external package ${package} version ${MAX_CURR_VERSION} has been deployed from its binary archive.")
 				return()
 			endif()
@@ -1784,8 +1802,8 @@ if(NOT version)#deploying the latest version of the package
 		endif()
 		set(list_of_installed_versions)
 		if(NOT redeploy #only exlcude the installed versions if redeploy is not required
-		AND EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${package}/)
-			list_Version_Subdirectories(RES_VERSIONS ${WORKSPACE_DIR}/install/${platform_name}/${package})
+		AND EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/)
+			list_Version_Subdirectories(RES_VERSIONS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
 			set(list_of_installed_versions ${RES_VERSIONS})
 		endif()
 		deploy_Source_External_Package(SOURCE_DEPLOYED ${package} "${list_of_installed_versions}")
@@ -1809,12 +1827,14 @@ else()#deploying a specific version of the external package
 				message("[PID] ERROR : problem deploying ${package} binary archive version ${version}. Deployment aborted !")
 				return()
 			else()
-				set(CMAKE_BUILD_TYPE Debug)#to adequately interpret external packages description
-				resolve_Package_Dependencies(${package} Debug TRUE) # finding all package dependencies
-				set(CMAKE_BUILD_TYPE Release)#to adequately interpret external packages description
-				resolve_Package_Dependencies(${package} Release TRUE) # finding all package dependencies
-				message("[PID] INFO : deploying ${package} binary archive for version ${version} succeeded !")
-				set(${DEPLOYED} "BINARY" PARENT_SCOPE)
+				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${version} FALSE)
+				if(BOUND)
+					message("[PID] INFO : deploying ${package} binary archive version ${version} success !")
+					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
+				else()
+					message("[PID] ERROR : external package ${package} version ${version} cannot be deployed in workspace.")
+				endif()
+				message("[PID] INFO : external package ${package} version ${version} has been deployed from its binary archive.")
 				return()
 			endif()
 		endif()
@@ -2065,21 +2085,20 @@ endfunction(add_Connection_To_PID_Framework)
 #      :RESULT: the output variable that is TRUE if package version has been removed, FALSE otherwise.
 #
 function(clear_PID_Package RESULT package version)
-get_Platform_Variables(BASENAME platform_name)
 set(${RESULT} TRUE PARENT_SCOPE)
 if("${version}" MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+")	#specific version targetted
 
-	if( EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${package}/${version}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${platform_name}/${package}/${version})
-		file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${platform_name}/${package}/${version})
+	if( EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${version}
+	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${version})
+		file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${version})
 	else()
 		message("[PID] ERROR : package ${package} version ${version} does not resides in workspace install directory.")
 		set(${RESULT} FALSE PARENT_SCOPE)
 	endif()
 elseif(version MATCHES "all")#all versions targetted (including own versions and installers folder)
-	if( EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${package}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${platform_name}/${package})
-		file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${platform_name}/${package})
+	if( EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}
+	AND IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
+		file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
 	else()
 		message("[PID] ERROR : package ${package} is not installed in workspace.")
 		set(${RESULT} FALSE PARENT_SCOPE)
@@ -2107,9 +2126,8 @@ endfunction(clear_PID_Package)
 #      :package: the name of the package.
 #
 function(remove_PID_Package package)
-get_Platform_Variables(BASENAME platform_name)
 #clearing install folder
-if(	EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${package})
+if(	EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
 	clear_PID_Package(RES ${package} all)
 endif()
 #clearing source folder
@@ -2133,9 +2151,8 @@ endfunction(remove_PID_Package)
 #      :wrapper: the name of the wrapper.
 #
 function(remove_PID_Wrapper wrapper)
-	get_Platform_Variables(BASENAME platform_name)
 	#clearing install folder
-	if(	EXISTS ${WORKSPACE_DIR}/install/${platform_name}/${wrapper})
+	if(	EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${wrapper})
 		clear_PID_Package(RES ${wrapper} all)
 	endif()
 	#clearing source folder
@@ -2575,9 +2592,8 @@ endfunction(release_PID_Package)
 #      :package: the name of the native package to update.
 #
 function(update_PID_Source_Package package)
-get_Platform_Variables(BASENAME platform_name)
 set(INSTALLED FALSE)
-list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${platform_name}/${package})
+list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
 get_Package_Type(${package} PACK_TYPE)
 if(PACK_TYPE STREQUAL "NATIVE")
 	message("[PID] INFO : launch the update of native package ${package} from sources...")
@@ -2611,9 +2627,8 @@ endfunction(update_PID_Source_Package)
 #      :package: the name of the naive package to update.
 #
 function(update_PID_Binary_Package package)
-get_Platform_Variables(BASENAME platform_name)
 message("[PID] INFO : launch the update of binary package ${package}...")
-list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${platform_name}/${package})
+list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
 get_Package_Type(${package} PACK_TYPE)
 if(PACK_TYPE STREQUAL "NATIVE")
 	deploy_Binary_Native_Package(DEPLOYED ${package} "${version_dirs}")

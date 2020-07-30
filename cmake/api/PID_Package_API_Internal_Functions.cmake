@@ -1025,6 +1025,9 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	#here every package dependency should have been resolved OR ERROR
 
 	# 2) when done resolving runtime dependencies for all used package (direct or undirect)
+	foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+		resolve_Package_Runtime_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
+	endforeach()
 	foreach(dep_pack IN LISTS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 		resolve_Package_Runtime_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
 	endforeach()
@@ -1229,7 +1232,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	if(NOT TARGET uninstall)
 		add_custom_target(uninstall
 			COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}
-			COMMAND ${CMAKE_COMMAND} -E  remove_directory ${WORKSPACE_DIR}/install/${curr_platform_name}/${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}
+			COMMAND ${CMAKE_COMMAND} -E  remove_directory ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${PROJECT_NAME}/${${PROJECT_NAME}_VERSION}
 			VERBATIM
 		)
 	endif()

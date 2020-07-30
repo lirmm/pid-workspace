@@ -694,30 +694,27 @@ if(USE_SOURCES) #package sources reside in the workspace
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
 	endif()
 else()#using references
+  set(LOADED FALSE)
+  set(PACKAGE_BINARY_DEPLOYED FALSE)
   include_Package_Reference_File(PATH_TO_FILE ${package})
 	if(NOT PATH_TO_FILE)
-		message("[PID] ERROR : the reference file for package ${package} cannot be found in the workspace ! Package update aborted.")
-		return()
-	endif()
-	load_Package_Binary_References(LOADED ${package}) #loading binary references to be informed of new released versions
-	if(NOT LOADED)
-		if(ADDITIONAL_DEBUG_INFO)
-			message("[PID] WARNING : no binary reference for package ${package}. Package update aborted.") #just a warning because this si not a true error in PID development process. May be due to the fact that the package has been installed with sources but sources have been revomed and not the binary
-		endif()
-	endif()
-
-	set(PACKAGE_BINARY_DEPLOYED FALSE)
-	if(NOT refer_path STREQUAL NOTFOUND)
-		if(NOT NO_VERSION)#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number
-			deploy_Binary_Native_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${IS_EXACT} "")
-		else()# deploying the most up to date version
-			deploy_Binary_Native_Package(PACKAGE_BINARY_DEPLOYED ${package} "")
-		endif()
-	else()
-		message("[PID] ERROR : reference file not found for package ${package}!! This is maybe due to a bad release of package ${package}. Please contact the administrator of this package. !!!")
-	endif()
-
-	if(PACKAGE_BINARY_DEPLOYED) # if there is ONE adequate reference, downloading and installing it
+    message("[PID] ERROR : reference file not found for package ${package}!! This is maybe due to a bad release of package ${package}. Please contact the administrator of this package. !!!")
+  else()
+    load_Package_Binary_References(LOADED ${package}) #loading binary references to be informed of new released versions
+  endif()
+  if(NOT LOADED)
+    if(ADDITIONAL_DEBUG_INFO)
+      message("[PID] WARNING : no binary reference for package ${package}. Package update aborted.") #just a warning because this si not a true error in PID development process. May be due to the fact that the package has been installed with sources but sources have been revomed and not the binary
+    endif()
+  else()
+    if(NOT NO_VERSION)#seeking for an adequate version regarding the pattern VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest minor version number
+      deploy_Binary_Native_Package_Version(PACKAGE_BINARY_DEPLOYED ${package} ${VERSION_MIN} ${IS_EXACT} "")
+    else()# deploying the most up to date version
+      deploy_Binary_Native_Package(PACKAGE_BINARY_DEPLOYED ${package} "")
+    endif()
+  endif()
+  # if there is ONE adequate reference, it has been downloaded and installed
+	if(PACKAGE_BINARY_DEPLOYED)
 		set(${INSTALL_OK} TRUE PARENT_SCOPE)
 	else()# otherwise, trying to "git clone" the package source (if it can be accessed)
   	set(DEPLOYED FALSE)
@@ -737,7 +734,6 @@ else()#using references
     else()
     	set(${INSTALL_OK} FALSE PARENT_SCOPE)
     	message("[PID] ERROR : impossible to locate source repository of package ${package} or to find a compatible binary version starting from ${VERSION_MIN}.")
-    	return()
 		endif()
 	endif()
 endif()
@@ -1483,9 +1479,9 @@ endfunction(select_Platform_Binary_For_Version)
 #
 function(deploy_Binary_Native_Package DEPLOYED package already_installed_versions)
 set(available_versions "")
+set(${DEPLOYED} FALSE PARENT_SCOPE)
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
 select_Last_Version(RES_VERSION "${available_versions}")# taking the most up to date version from all eligible versions
@@ -1499,7 +1495,6 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
   		download_And_Install_Binary_Native_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
       if(NOT INSTALLED)
         add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE) #situation is problematic but we can still overcome it by using sources ... if possible
-        set(${DEPLOYED} FALSE PARENT_SCOPE)
       	return()
       endif()
       #checking and resolving package dependencies and constraints
@@ -1511,7 +1506,6 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
         #need to remove the package because it cannot be configured
         uninstall_Binary_Package(${package} ${RES_VERSION} ${RES_PLATFORM})
         message("[PID] ERROR : cannot configure version ${version} of native package ${package}.")
-        set(${DEPLOYED} FALSE PARENT_SCOPE)
       	return()
       endif()
       add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
@@ -1562,12 +1556,12 @@ endfunction(deploy_Binary_Native_Package)
 #
 function(deploy_Binary_Native_Package_Version DEPLOYED package min_version is_exact already_installed_versions)
 set(available_versions "")
+set(${DEPLOYED} FALSE PARENT_SCOPE)
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
 	if(ADDITIONAL_DEBUG_INFO)
 		message("[PID] INFO : no available binary versions of package ${package} for the current platform.")
 	endif()
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
 
@@ -1584,7 +1578,6 @@ if(NOT RES_VERSION)
 	else()
 		message("[PID] INFO : no adequate binary version of package ${package} found with minimum version ${min_version}.")
 	endif()
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
 set(INSTALLED FALSE)
@@ -1597,7 +1590,6 @@ if(INDEX EQUAL -1) # selected version not found in versions to exclude
   		download_And_Install_Binary_Native_Package(INSTALLED ${package} "${RES_VERSION}" "${RES_PLATFORM}")
       if(NOT INSTALLED)
         add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE) #situation is problematic but we can still overcome it by using sources ... if possible
-        set(${DEPLOYED} FALSE PARENT_SCOPE)
       	return()
       endif()
       #checking and resolving package dependencies and constraints
@@ -1609,7 +1601,6 @@ if(INDEX EQUAL -1) # selected version not found in versions to exclude
         #need to remove the package because it cannot be configured
         uninstall_Binary_Package(${package} ${RES_VERSION} ${RES_PLATFORM})
         message("[PID] ERROR : cannot configure version ${RES_VERSION} of native package ${package}.")
-        set(${DEPLOYED} FALSE PARENT_SCOPE)
       	return()
       endif()
       add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
@@ -1724,7 +1715,7 @@ if(NOT numeric_error_dbg EQUAL 0)#there is an error
 endif()
 
 ######## installing the package ##########
-set(target_install_folder ${WORKSPACE_DIR}/install/${platform_str}/${package})
+set(target_install_folder ${WORKSPACE_DIR}/install/${platform}/${package})
 # 1) creating the package root install folder
 if(NOT EXISTS ${target_install_folder})
   file(MAKE_DIRECTORY ${target_install_folder})
@@ -2255,8 +2246,7 @@ endfunction(resolve_Required_External_Package_Version)
 #
 function(uninstall_External_Package package)
 set(version ${${package}_VERSION_STRING})
-get_Platform_Variables(BASENAME platform_str)
-set(path_to_install_dir ${WORKSPACE_DIR}/install/${platform_str}/${package}/${version})
+set(path_to_install_dir ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${version})
 if(EXISTS ${path_to_install_dir} AND IS_DIRECTORY ${path_to_install_dir})
   file(REMOVE_RECURSE ${path_to_install_dir}) #delete the external package version folder
 endif()
@@ -2536,9 +2526,9 @@ endfunction(install_System_Configuration_Check)
 #
 function(deploy_Binary_External_Package DEPLOYED package already_installed_versions)
 set(available_versions "")
+set(${DEPLOYED} FALSE PARENT_SCOPE)
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
 select_Last_Version(RES_VERSION "${available_versions}")# taking the most up to date version from all eligible versions
@@ -2551,7 +2541,6 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
 		select_Platform_Binary_For_Version(${RES_VERSION} "${available_with_platform}" TARGET_PLATFORM)
 		if(NOT TARGET_PLATFORM)
 			message("[PID] ERROR : cannot find the binary version ${RES_VERSION} of package ${package} compatible with current platform.")
-			set(${DEPLOYED} FALSE PARENT_SCOPE)
 			return()
 		endif()
 
@@ -2559,7 +2548,6 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
 		if(NOT INSTALLED)
       add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" TRUE)
       message("[PID] ERROR : cannot install version ${RES_VERSION} of external package ${package}.")
-      set(${DEPLOYED} FALSE PARENT_SCOPE)
       return()
 		endif()
     #checking and resolving external package dependencies and constraints
@@ -2571,7 +2559,6 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
       #need to remove the package because it cannot be configured
       uninstall_Binary_Package(${package} ${RES_VERSION} ${TARGET_PLATFORM})
       message("[PID] ERROR : cannot configure version ${RES_VERSION} of external package ${package}.")
-      set(${DEPLOYED} FALSE PARENT_SCOPE)
       return()
     endif()
 
@@ -2626,17 +2613,16 @@ endfunction(deploy_Binary_External_Package)
 #
 function(deploy_Binary_External_Package_Version DEPLOYED package version force)
 set(available_versions "")
+set(${DEPLOYED} FALSE PARENT_SCOPE)
 get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
 if(NOT available_versions)
 	message("[PID] ERROR : no available binary version of package ${package} that match current platform ${CURRENT_PLATFORM}.")
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
 #now getting the best platform for that version
 select_Platform_Binary_For_Version("${version}" "${available_with_platform}" TARGET_PLATFORM)
 if(NOT TARGET_PLATFORM)
 	message("[PID] ERROR : cannot find the binary version ${version} of package ${package} compatible with current platform.")
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
 if(NOT force)# forcing means reinstalling from scratch
@@ -2650,7 +2636,6 @@ if(RES STREQUAL "UNKNOWN")
 	if(NOT INSTALLED)
     add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
     message("[PID] ERROR : cannot install version ${version} of external package ${package}.")
-    set(${DEPLOYED} FALSE PARENT_SCOPE)
     return()
 	endif()
 
@@ -2663,13 +2648,11 @@ if(RES STREQUAL "UNKNOWN")
     #need to remove the package because it cannot be configured
     uninstall_Binary_Package(${package} ${version} ${TARGET_PLATFORM})
     message("[PID] ERROR : cannot configure version ${version} of external package ${package}.")
-    set(${DEPLOYED} FALSE PARENT_SCOPE)
     return()
   endif()
   add_Managed_Package_In_Current_Process(${package} ${version} "SUCCESS" TRUE)
 
 elseif(NOT RES STREQUAL "SUCCESS") # this package version has already FAILED TO be install during current process
-	set(${DEPLOYED} FALSE PARENT_SCOPE)
 	return()
 endif()
 
@@ -2741,7 +2724,7 @@ if(EXISTS ${package}_REFERENCE_${version}_${platform}_URL_DEBUG)
 endif()
 
 ######## installing the external package ##########
-set(target_install_folder ${WORKSPACE_DIR}/install/${platform_str}/${package}/${version})
+set(target_install_folder ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
 # 1) creating the external package root folder and the version folder
 if(NOT EXISTS ${target_install_folder})
   file(MAKE_DIRECTORY ${target_install_folder})
@@ -2861,24 +2844,23 @@ endfunction(uninstall_Binary_Package)
 #
 function(configure_Binary_Package RESULT package external version platform mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-set(${RESULT} TRUE PARENT_SCOPE)
+set(${RESULT} FALSE PARENT_SCOPE)
 
-extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE platform_base ${platform})
-
-include(${WORKSPACE_DIR}/install/${platform_base}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
-if(res STREQUAL NOTFOUND)
-  if(NOT external)
-    #using the hand written Use<package>-<version>.cmake file to get adequate version information about plaforms
-    set(${RESULT} FALSE PARENT_SCOPE)
+#using the hand written Use<package>-<version>.cmake file to get adequate version information about plaforms
+include(${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
+if(res STREQUAL NOTFOUND)#file not found
+  if(external)
+    # Note: a native package MUST have a use file BUT an external package may have no usefile (even if it should be rare)
+    # we simply consider that for "raw external package" (with no description provided) there is nothing to configure
+    set(${RESULT} TRUE PARENT_SCOPE)
   endif()
   return()# no use file in native package => problem !
-endif()# no use file in external package ("raw external package") => nothing to do
+endif()
 
 # 0) checking global ABI compatibility
 is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${package} ${mode})
 if(NOT IS_ABI_COMPATIBLE)
   message("[PID] WARNING : binaries in package ${package} version ${version} are not compatible with your current platform settings.")
-  set(${RESULT} FALSE PARENT_SCOPE)
   return() #problem => the binary package has been built with an incompatible C++ ABI
 endif()
 
@@ -2901,7 +2883,6 @@ foreach(config IN LISTS CONFIGS_TO_CHECK)#if empty no configuration for this pla
     message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
   else()
     message("[PID] WARNING : platform configuration ${config} for package ${package} is NOT satisfied.")
-    set(${RESULT} FALSE PARENT_SCOPE)
     return()
   endif()
 endforeach()
@@ -2912,17 +2893,16 @@ foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #check 
     get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${dep_pack})
   	if(REQUIRED_VERSION)#if a version of the same package is already required then check their compatibility
       get_Compatible_Version(IS_COMPATIBLE TRUE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} ${IS_SYSTEM} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}" "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_SYSTEM${VAR_SUFFIX}}")
-        if(NOT IS_COMPATIBLE)
-          set(${RESULT} FALSE PARENT_SCOPE)
-          message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}, and this version is not compatible with already used version ${REQUIRED_VERSION}.")
-          return()
-        endif()
+      if(NOT IS_COMPATIBLE)
+        message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}, and this version is not compatible with already used version ${REQUIRED_VERSION}.")
+        return()
       endif()
+    endif()
   endif()
 endforeach()
 
 if(external)#external packages may be provided with specific script to use when deploying binaries
-  set(TARGET_INSTALL_DIR ${WORKSPACE_DIR}/install/${platform_base}/${package}/${version})
+  set(TARGET_INSTALL_DIR ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
   if(${package}_SCRIPT_POST_INSTALL)
     message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/cmake_script/${${package}_SCRIPT_POST_INSTALL} ...")
     include(${TARGET_INSTALL_DIR}/cmake_script/${${package}_SCRIPT_POST_INSTALL} NO_POLICY_SCOPE)#execute the script
@@ -2936,7 +2916,6 @@ else()
     	if(REQUIRED_VERSION)#if a version of the same native package is already required then check their compatibility
         get_Compatible_Version(IS_COMPATIBLE FALSE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} FALSE ${${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_DEPENDENCIY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}" FALSE)
         if(NOT IS_COMPATIBLE)
-          set(${RESULT} FALSE PARENT_SCOPE)
           message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}, and this version is not compatible with already used version ${REQUIRED_VERSION}.")
           return()
         endif()
@@ -2945,6 +2924,7 @@ else()
   endforeach()
 endif()
 
+set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(configure_Binary_Package)
 
 #############################################################################################

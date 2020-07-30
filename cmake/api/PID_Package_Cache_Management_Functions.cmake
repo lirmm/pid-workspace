@@ -1813,16 +1813,24 @@ endfunction(is_HeaderFree_Component)
 #     :RESULT: the output variable that is TRUE if component exists at runtime, FALSE otherwise.
 #
 function(is_Runtime_Component RESULT package component)
-if (	${package}_${component}_TYPE STREQUAL "APP"
-	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
-	OR ${package}_${component}_TYPE STREQUAL "TEST"
-	OR ${package}_${component}_TYPE STREQUAL "SHARED"
-	OR ${package}_${component}_TYPE STREQUAL "MODULE"
-	)
-	set(${RESULT} TRUE PARENT_SCOPE)
-else()
-	set(${RESULT} FALSE PARENT_SCOPE)
-endif()
+  set(${RESULT} FALSE PARENT_SCOPE)
+  get_Package_Type(${package} PACK_TYPE)
+  if(PACK_TYPE STREQUAL "EXTERNAL")
+    if( ${package}_${component}_SHARED_LINKS${VAR_SUFFIX}
+        OR ${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}
+        OR ${package}_${component}_PYTHON_PACKAGES${VAR_SUFFIX})
+        set(${RESULT} TRUE PARENT_SCOPE)
+    endif()
+  else()#native package
+    if (	${package}_${component}_TYPE STREQUAL "APP"
+    	OR ${package}_${component}_TYPE STREQUAL "EXAMPLE"
+    	OR ${package}_${component}_TYPE STREQUAL "TEST"
+    	OR ${package}_${component}_TYPE STREQUAL "SHARED"
+    	OR ${package}_${component}_TYPE STREQUAL "MODULE"
+    	)
+    	set(${RESULT} TRUE PARENT_SCOPE)
+    endif()
+  endif()
 endfunction(is_Runtime_Component)
 
 #.rst:

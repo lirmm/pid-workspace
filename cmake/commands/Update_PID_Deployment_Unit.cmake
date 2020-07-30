@@ -64,7 +64,7 @@ if(TARGET_PACKAGE)
 	if(TARGET_PACKAGE STREQUAL "all")
 		update_PID_All_Packages()
 	else()
-		list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${platform_name}/${package})
+		list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
 
 		get_Package_Type(${TARGET_PACKAGE} PACK_TYPE)
 		if(PACK_TYPE STREQUAL "NATIVE")

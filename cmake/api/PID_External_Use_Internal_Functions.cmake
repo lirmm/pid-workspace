@@ -297,7 +297,7 @@ endfunction(configure_Local_Target_With_PID_Components)
 #
 #   .. command:: generate_Local_Component_Symlinks(local_target_folder_name local_dependency undirect_deps)
 #
-#    Generate symlinks for runtime resources in the install tree of a non PID defined component dependning on a given PID component.
+#    Generate symlinks for runtime resources in the install tree of a non PID defined component depending on a given PID component.
 #
 #     :local_target_folder_name: the name of the local component's folder containing its runtime resources
 #     :package: the name of package containg dependency component.
@@ -313,9 +313,9 @@ function(generate_Local_Component_Symlinks local_target_folder_name package comp
   get_Package_Type(${package} PACK_TYPE)
   if(PACK_TYPE STREQUAL "EXTERNAL")
     #shared links of direct dependency will be needed if native component depends on the external dependency
-    get_External_Component_Runtime_Links(DEP_LINKS ${package} ${component} ${mode})
+    get_External_Component_Runtime_Links(DEP_LOCAL_LINKS DEP_USING_LINKS ${package} ${component} ${mode})
     get_External_Component_Runtime_Resources(DEP_RESOURCES ${package} ${component} ${mode} FALSE)
-    list(APPEND to_symlink ${DEP_LINKS} ${DEP_RESOURCES})
+    list(APPEND to_symlink ${DEP_USING_LINKS} ${DEP_RESOURCES})
   else()#native packages
     get_Binary_Location(LOCATION_RES ${package} ${component} ${mode})
     list(APPEND to_symlink ${LOCATION_RES})
