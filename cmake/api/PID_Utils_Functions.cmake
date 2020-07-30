@@ -2841,7 +2841,7 @@ endfunction(get_Package_Type)
 #  is_External_Package_Defined
 #  ---------------------------
 #
-#   .. command:: is_External_Package_Defined(ext_package mode RES_PATH_TO_PACKAGE)
+#   .. command:: is_External_Package_Defined(RES_PATH_TO_PACKAGE ext_package mode)
 #
 #    Get the path to the target external package install folder.
 #
@@ -2850,11 +2850,10 @@ endfunction(get_Package_Type)
 #
 #     :RES_PATH_TO_PACKAGE: the output variable that contains the path to the external package install folder or NOTFOUND if package cannot be found in workspace.
 #
-function(is_External_Package_Defined ext_package mode RES_PATH_TO_PACKAGE)
-get_Platform_Variables(BASENAME curr_platform_str)
+function(is_External_Package_Defined RES_PATH_TO_PACKAGE ext_package mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(${ext_package}_FOUND${VAR_SUFFIX})
-	set(${RES_PATH_TO_PACKAGE} ${WORKSPACE_DIR}/install/${curr_platform_str}/${ext_package}/${${ext_package}_VERSION_STRING} PARENT_SCOPE)
+	set(${RES_PATH_TO_PACKAGE} ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${ext_package}/${${ext_package}_VERSION_STRING} PARENT_SCOPE)
 else()
 	set(${RES_PATH_TO_PACKAGE} PARENT_SCOPE)
 endif()
@@ -2975,7 +2974,7 @@ foreach(link IN LISTS ext_links)
     #otherwise this is a variable that must simply be omitted
   elseif(link MATCHES "^<([^>]+)>(.*)$")# a replacement has taken place => this is a full path to a library
     set(ext_package_name ${CMAKE_MATCH_1})
-		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
+		is_External_Package_Defined(PATHTO ${ext_package_name} ${mode})
 		if(NOT PATHTO)
       if(GLOBAL_PROGRESS_VAR)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -2987,7 +2986,7 @@ foreach(link IN LISTS ext_links)
 	elseif(link MATCHES "^([^<]+)<([^>]+)>(.*)")# this may be a link with a prefix (like -L<path>) that need replacement
 		set(link_prefix ${CMAKE_MATCH_1})
     set(ext_package_name ${CMAKE_MATCH_2})
-		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
+		is_External_Package_Defined(PATHTO ${ext_package_name} ${mode})
 		if(NOT PATHTO)
       if(GLOBAL_PROGRESS_VAR)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -3035,7 +3034,7 @@ foreach(include_dir IN LISTS ext_inc_dirs)
     #otherwise this is a variable that must simply be omitted
   elseif(include_dir MATCHES "^<([^>]+)>(.*)$")# a replacement has taken place => this is a full path to an incude dir of an external package
 		set(ext_package_name ${CMAKE_MATCH_1})
-		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
+		is_External_Package_Defined(PATHTO ${ext_package_name} ${mode})
 		if(NOT PATHTO)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
@@ -3043,7 +3042,7 @@ foreach(include_dir IN LISTS ext_inc_dirs)
 		list(APPEND res_includes ${PATHTO}${CMAKE_MATCH_2})
 	elseif(include_dir MATCHES "^-I<([^>]+)>(.*)$")# this may be an include dir with a prefix (-I<path>) that need replacement
 		set(ext_package_name ${CMAKE_MATCH_1})
-		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
+		is_External_Package_Defined(PATHTO ${ext_package_name} ${mode})
 		if(NOT PATHTO)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for include dir ${include_dir}!! Please set the path to this external package.")
@@ -3084,7 +3083,7 @@ foreach(resource IN LISTS ext_resources)
   set(CMAKE_MATCH_2)
 	if(resource MATCHES "^<([^>]+)>(.*)")# a replacement has taken place => this is a relative path to an external package resource
 		set(ext_package_name ${CMAKE_MATCH_1})
-		is_External_Package_Defined(${ext_package_name} ${mode} PATHTO)
+		is_External_Package_Defined(PATHTO ${ext_package_name} ${mode})
 		if(NOT PATHTO)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for resource ${resource}!! Please set the path to this external package.")
