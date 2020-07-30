@@ -75,7 +75,7 @@ endfunction(configure_Git)
 # .. ifmode:: internal
 #
 #  .. |git_Provides_GETURL| replace:: ``git_Provides_GETURL``
-#  .. git_Provides_GETURL:
+#  .. _git_Provides_GETURL:
 #
 #  git_Provides_GETURL
 #  -------------------
@@ -88,12 +88,38 @@ endfunction(configure_Git)
 #
 function(git_Provides_GETURL RESULT)
 
-if(GIT_VERSION AND NOT (GIT_VERSION VERSION_LESS 2.7.0))
+if(GIT_VERSION AND GIT_VERSION VERSION_GREATER_EQUAL 2.7.0)
 	set(${RESULT} TRUE PARENT_SCOPE)
 else()
 	set(${RESULT} FALSE PARENT_SCOPE)
 endif()
 endfunction(git_Provides_GETURL)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |git_Provides_LSREMOTE| replace:: ``git_Provides_LSREMOTE``
+#  .. _git_Provides_LSREMOTE:
+#
+#  git_Provides_LSREMOTE
+#  ---------------------
+#
+#   .. command:: git_Provides_LSREMOTE( RESULT )
+#
+#      Tells wether the git tool used provides the ls-remote command.
+#
+#      :RESULT: The boolean variable that will be set to TRUE if git provides the ls-remote command, FALSE otherwise.
+#
+function(git_Provides_LSREMOTE RESULT)
+
+  if(GIT_VERSION AND GIT_VERSION VERSION_GREATER_EQUAL 2.6.7)
+  	set(${RESULT} TRUE PARENT_SCOPE)
+  else()
+  	set(${RESULT} FALSE PARENT_SCOPE)
+  endif()
+endfunction(git_Provides_LSREMOTE)
 
 ######################################################################
 ############# function used to navigate between branches #############
@@ -1256,9 +1282,19 @@ endfunction(publish_Repository_Version)
 #     :CONNECTED: the output variable that is TRUE if package connected to the target remote, FALSE otherwise
 #
 function(test_Remote_Connection CONNECTED path_to_repo remote)
-  execute_process(COMMAND git remote show ${remote}
+  git_Provides_LSREMOTE(RESULT)
+  if(RESULT)#use ls-remote as it is more efficient
+    execute_process(COMMAND git ls-remote ${remote}
                   WORKING_DIRECTORY ${path_to_repo}
+                  TIMEOUT 5
                   OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE res)
+  else()
+    execute_process(COMMAND git remote show ${remote}
+                  WORKING_DIRECTORY ${path_to_repo}
+                  TIMEOUT 10
+                  OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE res)
+  endif()
+  #Note: set a timeout to avoid being stuck when a server is known BUT cannot be reached
   if(res EQUAL 0)
   	set(${CONNECTED} TRUE PARENT_SCOPE)
   else()
@@ -2752,35 +2788,6 @@ endfunction(reconnect_Framework_Repository)
 #
 # .. ifmode:: internal
 #
-#  .. |is_Framework_Connected| replace:: ``is_Framework_Connected``
-#  .. _is_Framework_Connected:
-#
-#  is_Framework_Connected
-#  ----------------------
-#
-#   .. command:: is_Framework_Connected(CONNECTED framework remote)
-#
-#     Tell wether a framework's repository is connected with a given remote.
-#
-#     :framework: the name of target framework
-#     :remote: the name of the remote
-#
-#     :CONNECTED: the output variable that is TRUE if framework is connected to the remote, FALSE otherwise (including if the remote does not exist)
-#
-function(is_Framework_Connected CONNECTED framework remote)
-	execute_process(COMMAND git remote show ${remote}
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework} OUTPUT_QUIET ERROR_VARIABLE res)
-	if(NOT res OR res STREQUAL "")
-		set(${CONNECTED} TRUE PARENT_SCOPE)
-	else()
-		set(${CONNECTED} FALSE PARENT_SCOPE)
-	endif()
-endfunction(is_Framework_Connected)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
 #  .. |change_Origin_Framework_Repository| replace:: ``change_Origin_Framework_Repository``
 #  .. _change_Origin_Framework_Repository:
 #
@@ -3019,35 +3026,6 @@ function(reconnect_Environment_Repository environment url)
   execute_process(COMMAND git pull origin master
                   WORKING_DIRECTORY ${env_path})#updating master
 endfunction(reconnect_Environment_Repository)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |is_Environment_Connected| replace:: ``is_Environment_Connected``
-#  .. _is_Environment_Connected:
-#
-#  is_Environment_Connected
-#  ------------------------
-#
-#   .. command:: is_Environment_Connected(CONNECTED environment remote)
-#
-#     Tell wether a environment's repository is connected with a given remote.
-#
-#     :environment: the name of target environment
-#     :remote: the name of the remote
-#
-#     :CONNECTED: the output variable that is TRUE if environment is connected to the remote, FALSE otherwise (including if the remote does not exist)
-#
-function(is_Environment_Connected CONNECTED environment remote)
-	execute_process(COMMAND git remote show ${remote}
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/environments/${environment} OUTPUT_QUIET ERROR_VARIABLE res)
-	if(NOT res OR res STREQUAL "")
-		set(${CONNECTED} TRUE PARENT_SCOPE)
-	else()
-		set(${CONNECTED} FALSE PARENT_SCOPE)
-	endif()
-endfunction(is_Environment_Connected)
 
 #.rst:
 #

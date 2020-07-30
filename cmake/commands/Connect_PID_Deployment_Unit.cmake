@@ -111,7 +111,7 @@ elseif(TARGET_FRAMEWORK)# a framework is connected
 		message(FATAL_ERROR "[PID] ERROR : the git url of the origin remote repository (${URL}) does not define a repository with same name than framework ${TARGET_FRAMEWORK}.")
 	endif()
 	set(ALREADY_CONNECTED FALSE)
-	is_Framework_Connected(ALREADY_CONNECTED ${TARGET_FRAMEWORK} origin)
+	is_Repository_Connected(ALREADY_CONNECTED ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK} origin)
 	if(ALREADY_CONNECTED )#the package must be connected to the official remote for this option to be valid
 		if(NOT (FORCED_RECONNECTION STREQUAL "true"))
 			message(FATAL_ERROR "[PID] ERROR : framework ${TARGET_FRAMEWORK} is already connected to a git repository. Use the force=true option to force the reconnection.")
@@ -141,7 +141,7 @@ elseif(TARGET_ENVIRONMENT)# an environment is connected
 		message(FATAL_ERROR "[PID] ERROR : the git url of the origin remote repository (${URL}) does not define a repository with same name than environment ${TARGET_FRAMEWORK}.")
 	endif()
 	set(ALREADY_CONNECTED FALSE)
-	is_Environment_Connected(ALREADY_CONNECTED ${TARGET_ENVIRONMENT} origin)
+	is_Repository_Connected(ALREADY_CONNECTED ${WORKSPACE_DIR}/environments/${TARGET_ENVIRONMENT} origin)
 	if(ALREADY_CONNECTED )#the package must be connected to the official remote for this option to be valid
 		if(NOT (FORCED_RECONNECTION STREQUAL "true"))
 			message(FATAL_ERROR "[PID] ERROR : environment ${TARGET_ENVIRONMENT} is already connected to a git repository. Use the force=true option to force the reconnection.")
