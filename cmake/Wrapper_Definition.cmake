@@ -1056,6 +1056,10 @@ declare_Wrapped_Component(${component_name}
 #dealing with dependencies
 if(DECLARE_PID_WRAPPER_COMPONENT_EXPORT)#exported dependencies
   foreach(dep IN LISTS DECLARE_PID_WRAPPER_COMPONENT_EXPORT)
+    if(dep STREQUAL component_name)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: when declaring component ${component_name} in wrapper ${PROJECT_NAME}, the component declare itself as a dependency !")
+    endif()
     extract_Component_And_Package_From_Dependency_String(RES_COMP RES_PACK ${dep})
     if(RES_PACK)
       set(COMP_ARGS "${RES_COMP};PACKAGE;${RES_PACK}")
@@ -1070,6 +1074,10 @@ endif()
 
 if(DECLARE_PID_WRAPPER_COMPONENT_DEPEND)#non exported dependencies
   foreach(dep IN LISTS DECLARE_PID_WRAPPER_COMPONENT_DEPEND)
+    if(dep STREQUAL component_name)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: when declaring component ${component_name} in wrapper ${PROJECT_NAME}, the component declare itself as a dependency !")
+    endif()
     extract_Component_And_Package_From_Dependency_String(RES_COMP RES_PACK ${dep})
     if(RES_PACK)
       set(COMP_ARGS "${RES_COMP};PACKAGE;${RES_PACK}")
@@ -1258,6 +1266,11 @@ else()#this is a dependency to another component defined in the same external pa
     endif()
 	endif()
   if(target_component)
+    if(target_component STREQUAL component_name)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: when declaring dependency to component ${component_name} in wrapper ${PROJECT_NAME}, the component declare itself as a dependency !")
+    endif()
+
   	declare_Wrapped_Component_Internal_Dependency(${component_name}
   		${target_component}
   		${exported}
