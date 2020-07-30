@@ -17,6 +17,16 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+####### searching for shared objects manipulation utility (patchelf on unix, libtool on macos) #######
+if(CMAKE_HOST_APPLE)
+  find_program(SHARED_OBJ_UTILITY install_name_tool)
+elseif(CMAKE_HOST_UNIX)
+  find_program(SHARED_OBJ_UTILITY patchelf)
+endif()
+if(SHARED_OBJ_UTILITY)
+  set(RPATH_UTILITY "${SHARED_OBJ_UTILITY}" CACHE INTERNAL "" FORCE)
+endif()
+
 ####### searching for doxygen related binaries (api documentation generator) #######
 find_package(Doxygen)
 if(DOXYGEN_FOUND)

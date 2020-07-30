@@ -3715,6 +3715,7 @@ if(PID_CROSSCOMPILATION) #only write these information if we are trully cross co
 endif()
 
 #add also detected dev tools
+file(APPEND ${file} "set(RPATH_UTILITY \"${RPATH_UTILITY}\" CACHE INTERNAL \"\" FORCE)\n")
 file(APPEND ${file} "set(DOXYGEN_EXECUTABLE ${DOXYGEN_EXECUTABLE} CACHE INTERNAL \"\" FORCE)\n")
 file(APPEND ${file} "set(LATEX_COMPILER ${LATEX_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
 file(APPEND ${file} "set(MAKEINDEX_COMPILER ${MAKEINDEX_COMPILER} CACHE INTERNAL \"\" FORCE)\n")

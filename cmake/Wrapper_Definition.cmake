@@ -2611,6 +2611,7 @@ function(build_B2_External_Project)
   endif()
 
   symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
+  set_External_Runtime_Component_Rpath(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
 endfunction(build_B2_External_Project)
 
 
@@ -2813,6 +2814,7 @@ function(build_Autotools_External_Project)
   endif()
 
   symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
+  set_External_Runtime_Component_Rpath(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
 endfunction(build_Autotools_External_Project)
 
 #.rst:
@@ -2979,6 +2981,7 @@ function(build_Waf_External_Project)
   endif()
 
   symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
+  set_External_Runtime_Component_Rpath(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
 endfunction(build_Waf_External_Project)
 
 #.rst:
@@ -3094,6 +3097,19 @@ function(build_CMake_External_Project)
   message("[PID] INFO : Configuring ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment}...")
   # pre-populate the cache with the cache file of the workspace containing build infos,
   # then populate with additionnal information
+  # specific: management of rpath
+  set(rpath_options "-DCMAKE_SKIP_BUILD_RPATH=FALSE -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=FALSE -DCMAKE_BUILD_WITH_INSTALL_RPATH=FALSE")
+  if(APPLE)
+    set(rpath_options "${rpath_options} -DCMAKE_MACOSX_RPATH=TRUE -DCMAKE_INSTALL_RPATH=@loader_path/../.rpath;@loader_path/../lib;@loader_path")
+  elseif (UNIX)
+    set(rpath_options "${rpath_options} -DCMAKE_INSTALL_RPATH=\$ORIGIN/../.rpath;\$ORIGIN/../lib;\$ORIGIN")
+  endif()
+  if(CMAKE_HOST_WIN32)#on a window host path must be resolved
+		separate_arguments(RPATH_ARGS_AS_LIST WINDOWS_COMMAND "${rpath_options}")
+	else()#if not on windows use a UNIX like command syntax
+		separate_arguments(RPATH_ARGS_AS_LIST UNIX_COMMAND "${rpath_options}")#always from host perpective
+	endif()
+
   execute_process(
     COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=${TARGET_MODE}
                             -DCMAKE_INSTALL_PREFIX=${TARGET_INSTALL_DIR}
@@ -3103,6 +3119,7 @@ function(build_CMake_External_Project)
                             -DCMAKE_INSTALL_BINDIR=bin
                             -DCMAKE_INSTALL_INCLUDEDIR=include
                             -DDATAROOTDIR=share
+                            ${RPATH_ARGS_AS_LIST}
                             -DCMAKE_C_STANDARD=${USE_C_STD}
                             -DCMAKE_CXX_STANDARD=${USE_CXX_STD}
                             -C ${WORKSPACE_DIR}/build/${CURRENT_PROFILE}/Workspace_Build_Info.cmake

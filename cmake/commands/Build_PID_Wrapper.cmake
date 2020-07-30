@@ -177,7 +177,7 @@ else()#by default build the given package version using external project specifi
 	message("[PID] INFO : all required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
 
 	#prepare deployment script execution by caching build variable that may be used inside
-	configure_Wrapper_Build_Variables(${TARGET_EXTERNAL_PACKAGE} ${version})
+	configure_Wrapper_Build_Variables(${TARGET_EXTERNAL_PACKAGE} ${version} ${CURRENT_PLATFORM})
 
 	if(NOT DO_NOT_EXECUTE_SCRIPT OR NOT DO_NOT_EXECUTE_SCRIPT STREQUAL true)
 
@@ -204,6 +204,7 @@ install_External_Find_File_For_Version(${TARGET_EXTERNAL_PACKAGE})
 install_External_PID_Version_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${version} ${CURRENT_PLATFORM})
 
 if(NOT use_os_variant)# perform specific operations at the end of the install process, if any specified and if external package is not the OS_variant
+	install_External_Rpath_Symlinks(${TARGET_EXTERNAL_PACKAGE} ${version} ${CURRENT_PLATFORM})
 	if(post_install_script_file AND EXISTS ${package_version_src_dir}/${post_install_script_file})
 	  file(COPY ${package_version_src_dir}/${post_install_script_file} DESTINATION  ${TARGET_INSTALL_DIR}/cmake_script)
 	  message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/cmake_script/${post_install_script_file} ...")
