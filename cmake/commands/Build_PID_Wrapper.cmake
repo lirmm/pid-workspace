@@ -202,9 +202,11 @@ file(MAKE_DIRECTORY ${TARGET_INSTALL_DIR}/share)
 install_External_Use_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${version} ${CURRENT_PLATFORM})
 install_External_Find_File_For_Version(${TARGET_EXTERNAL_PACKAGE})
 install_External_PID_Version_File_For_Version(${TARGET_EXTERNAL_PACKAGE} ${version} ${CURRENT_PLATFORM})
-
 if(NOT use_os_variant)# perform specific operations at the end of the install process, if any specified and if external package is not the OS_variant
 	install_External_Rpath_Symlinks(${TARGET_EXTERNAL_PACKAGE} ${version} ${CURRENT_PLATFORM})
+	if(CURRENT_PYTHON)#only install python packages if python set for target platform
+		install_External_Python_Packages(${TARGET_EXTERNAL_PACKAGE} ${version} ${CURRENT_PLATFORM} ${CURRENT_PYTHON})
+	endif()
 	if(post_install_script_file AND EXISTS ${package_version_src_dir}/${post_install_script_file})
 	  file(COPY ${package_version_src_dir}/${post_install_script_file} DESTINATION  ${TARGET_INSTALL_DIR}/cmake_script)
 	  message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/cmake_script/${post_install_script_file} ...")

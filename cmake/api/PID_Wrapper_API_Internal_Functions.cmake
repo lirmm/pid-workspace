@@ -88,6 +88,8 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_C_STANDARD CACHE INTERNAL "")
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_STANDARD CACHE INTERNAL "")
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_RUNTIME_RESOURCES CACHE INTERNAL "")
+		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_PYTHON_PACKAGES CACHE INTERNAL "")
+
 
 		#reset information related to system dependencies
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_INCLUDES CACHE INTERNAL "")
@@ -584,6 +586,8 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_STANDARD} CACHE INTERNAL \"\")\n")
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_MAX_STANDARD ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_CXX_MAX_STANDARD} CACHE INTERNAL \"\")\n")
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_RUNTIME_RESOURCES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_RUNTIME_RESOURCES} CACHE INTERNAL \"\")\n")
+		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_PYTHON_PACKAGES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_PYTHON_PACKAGES} CACHE INTERNAL \"\")\n")
+
 
 		#manage information related to system dependencies
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_INCLUDES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_INCLUDES} CACHE INTERNAL \"\")\n")
@@ -1284,7 +1288,9 @@ endfunction(declare_Wrapped_External_Dependency)
 #  declare_Wrapped_Component
 #  -------------------------
 #
-#   .. command:: declare_Wrapped_Component(component shared_links soname static_links includes definitions options c_standard cxx_standard runtime_resources)
+#   .. command:: declare_Wrapped_Component(component shared_links soname static_links includes
+#                                          definitions options c_standard cxx_standard
+#                                          runtime_resources aliases python_packages)
 #
 #    Define a new component for currently described external package version. Internal counterpart of declare_PID_Wrapper_Component.
 #
@@ -1301,8 +1307,9 @@ endfunction(declare_Wrapped_External_Dependency)
 #      :cxx_max_standard: max C++ language standard allowd when using the component.
 #      :runtime_resources: the list of path to file and folder used at runtime by the component, relative to external package root install folder.
 #      :aliases: the list of alias of the component.
+#      :python_packages: the list of path to python packages that are defined by the component.
 #
-function(declare_Wrapped_Component component shared_links soname static_links includes definitions options c_standard c_max_standard cxx_standard cxx_max_standard runtime_resources aliases)
+function(declare_Wrapped_Component component shared_links soname static_links includes definitions options c_standard c_max_standard cxx_standard cxx_max_standard runtime_resources aliases python_packages)
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENTS ${component})
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SHARED_LINKS ${shared_links} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SONAME ${soname} CACHE INTERNAL "")
@@ -1316,6 +1323,8 @@ set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${compone
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_C_MAX_STANDARD ${c_max_standard} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_CXX_MAX_STANDARD ${cxx_max_standard} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_RUNTIME_RESOURCES ${runtime_resources} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_PYTHON_PACKAGES ${python_packages} CACHE INTERNAL "")
+
 if(aliases)
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_ALIASES "${aliases}")
 	foreach(alias IN LISTS aliases)
@@ -1607,6 +1616,126 @@ function(install_External_PID_Version_File_For_Version package version platform)
 	endif()
 	file(COPY ${file_path} DESTINATION ${target_folder})
 endfunction(install_External_PID_Version_File_For_Version)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_External_Python_Packages| replace:: ``install_External_Python_Packages``
+#  .. _install_External_Python_Packages:
+#
+#  install_External_Python_Packages
+#  ---------------------------------------------
+#
+#   .. command:: install_External_Python_Packages(package version platform python_version)
+#
+#    Install the symlinks to python packages generated by the wrapper into adequate forlder of the target install tree for current platform..
+#
+#      :package: the name of the external package.
+#      :version: the version of the external package for which a PID version file is installed.
+#      :platform: the identifier of the platform to use in workspace install tree.
+#      :python_version: the version of python that python packages are using
+#
+function(install_External_Python_Packages package version platform python_version)
+	#testing if there are packages to install
+	if(${package}_KNOWN_VERSION_${version}_BUILD_PYTHON_PACKAGES)
+		create_Shared_Lib_Extension(RES_EXT ${platform} "")#get the dynamic library extension
+		set(path_to_python_install ${WORKSPACE_DIR}/install/${platform}/__python${python_version}__)
+		if(NOT EXISTS path_to_python_install)
+			file(MAKE_DIRECTORY ${path_to_python_install})
+		endif()
+		set(root_folder_in_install ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
+		foreach(component IN LISTS ${package}_KNOWN_VERSION_${version}_BUILD_PYTHON_PACKAGES)
+			#build the list of shared objects to symlink into the python package
+			set(list_of_symlinks)
+			message("PYTHON ${component} shared_links=${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_BUILD_SHARED_LINKS}")
+			foreach(link IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_BUILD_SHARED_LINKS)
+				if(NOT link MATCHES "^-.+")#do not use linker scripts
+					list(APPEND list_of_symlinks ${link})
+				endif()
+			endforeach()
+			message("PYTHON ${component} resources=${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_BUILD_RUNTIME_RESOURCES}")
+			foreach(res IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_BUILD_RUNTIME_RESOURCES)
+				if(res MATCHES ".+\\.(so|dylib|dll).*")#only get shared object, not all runtime resources
+					list(APPEND list_of_symlinks ${res})
+				endif()
+			endforeach()
+			#adding local shared object given by local dependencies
+			message("PYTHON ${component} deps=${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_BUILD_LOCAL_DEPENDENCIES}")
+			foreach(dep_comp IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_BUILD_LOCAL_DEPENDENCIES)
+				list(APPEND list_of_symlinks ${${package}_KNOWN_VERSION_${version}_COMPONENT_${dep_comp}_BUILD_LOCAL_RUNTIME_OBJECTS})
+			endforeach()
+			message("PYTHON ${component} list_of_symlinks=${list_of_symlinks}")
+
+			foreach(package_path IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_BUILD_PYTHON_PACKAGES)
+				#management of python
+				set(create_pack FALSE)
+				if(package_path MATCHES "^.+\\.py$")
+					set(create_pack TRUE)
+					set(relative_package_path ${package_path})
+				elseif(EXISTS ${root_folder_in_install}/${package_path}
+							 AND IS_DIRECTORY ${root_folder_in_install}/${package_path})#the package is a folder with a init.py file inside
+					#do not create the package
+					set(relative_package_path ${package_path})
+				elseif(package_path MATCHES ".+\\.(so|dylib|dll)$")# filename with extension => python bindings
+					set(create_pack TRUE)
+					set(relative_package_path "${package_path}")
+				else()# filename without extension => python bindings, adding the adequate extension
+					set(create_pack TRUE)
+					set(relative_package_path "${package_path}${RES_EXT}")
+				endif()
+				set(binaries_to_modify)
+				if(create_pack)#no package defined, PID imposes to create one, no direct python module allowed
+					get_filename_component(NAME_OF_PACK ${relative_package_path} NAME_WE)
+					#clean and create package folder in workspace's python install dir
+					#package has same name as the module (without extension)
+					if(EXISTS ${path_to_python_install}/${NAME_OF_PACK})
+						file(REMOVE_RECURSE ${path_to_python_install}/${NAME_OF_PACK})
+					endif()
+					file(MAKE_DIRECTORY ${path_to_python_install}/${NAME_OF_PACK})
+					set(symlink_deps_folders ${path_to_python_install}/${NAME_OF_PACK})
+
+					# create the package init script
+					set(PYTHON_PACKAGE ${NAME_OF_PACK})
+					configure_file(${WORKSPACE_DIR}/cmake/patterns/wrappers/__init__.py.in ${path_to_python_install}/${NAME_OF_PACK}/__init__.py @ONLY)
+					#now create a symlink to the module in it
+					get_filename_component(NAME_OF_LINK ${relative_package_path} NAME)
+					create_Symlink(${root_folder_in_install}/${relative_package_path} ${path_to_python_install}/${NAME_OF_PACK}/${NAME_OF_LINK})#generate the symlink used
+					if(relative_package_path MATCHES ".+\\.(so|dylib|dll)$")
+						set(binaries_to_modify ${root_folder_in_install}/${relative_package_path})
+					endif()
+				else()#already a package simply, symlink it
+					get_filename_component(NAME_OF_LINK ${relative_package_path} NAME)
+					create_Symlink(${root_folder_in_install}/${relative_package_path} ${path_to_python_install}/${NAME_OF_LINK})#generate the symlink used
+					#in this folder listing binaries I need to modify
+					set(symlink_deps_folders ${root_folder_in_install}/${relative_package_path})#by default we always put dependency symlinks in the package root folder
+					set(binaries_to_modify)
+					file(GLOB_RECURSE ALL_FILES "${root_folder_in_install}/${relative_package_path}/*" )
+					foreach(a_file IN LISTS ALL_FILES)
+						if(a_file MATCHES ".+\\.(so|dylib|dll)$")
+							list(APPEND binaries_to_modify ${a_file})
+							get_filename_component(THE_DIR ${a_file} DIRECTORY)
+							list(APPEND symlink_deps_folders ${THE_DIR})
+						endif()
+					endforeach()
+					list(REMOVE_DUPLICATES symlink_deps_folders)
+				endif()
+				#now set the rpath of each shared object into the python package (i.e. python bindings)
+				foreach(shared IN LISTS binaries_to_modify)
+					set_PID_Compatible_Rpath(${shared})
+				endforeach()
+				#need to create symlinks to shared objects used by module so that they can be resolved at runtime
+				foreach(symlink IN LISTS list_of_symlinks)
+					get_filename_component(LINK_NAME ${symlink} NAME)
+					foreach(a_folder IN LISTS symlink_deps_folders)#if there are subpackages I also need to generate symlinks to dependencies in them
+						create_Symlink(${symlink} ${a_folder}/${LINK_NAME})#generate the symlink used
+					endforeach()
+				endforeach()
+			endforeach()
+		endforeach()
+	endif()
+endfunction(install_External_Python_Packages)
 
 #.rst:
 #
@@ -2254,6 +2383,23 @@ function(generate_Description_For_External_Component file_for_version package pl
 	if(alias_list)#there are aliases
 		fill_String_From_List(RES_ALIAS alias_list " ")
 		set(options_str "${options_str} ALIAS ${RES_ALIAS}")
+	endif()
+	#management of python
+	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_PYTHON_PACKAGES)
+		create_Shared_Lib_Extension(RES_EXT ${platform} "")#get the dynamic library extension
+		set(final_list_of_packages)#add the adequate extension name depending on the platform
+		foreach(package_path IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_PYTHON_PACKAGES)
+			if(package_path MATCHES "^.+\\.py$")
+				list(APPEND final_list_of_packages ${package_path})
+			elseif(package_path MATCHES "^.+/$")#the package is a folder with a init.py file inside
+				list(APPEND final_list_of_packages ${package_path})
+			else()# filename without extension => python bindings, adding the adequate extension
+				list(APPEND final_list_of_packages "${package_path}${RES_EXT}")
+			endif()
+		endforeach()
+
+		fill_String_From_List(RES_PYTHON final_list_of_packages " ")
+		set(options_str "${options_str} PYTHON ${RES_PYTHON}")
 	endif()
 	file(APPEND ${file_for_version} "declare_PID_External_Component(PACKAGE ${package} COMPONENT ${component}${options_str})\n")
 
@@ -3019,6 +3165,7 @@ function(set_Build_Info_For_Component package component version platform)
 	set(${prefix}_COMPONENT_${component}_BUILD_SHARED_LINKS ${COMPLETE_SHARED_LINKS_PATH} CACHE INTERNAL "")
 	set(${prefix}_COMPONENT_${component}_BUILD_RUNTIME_RESOURCES ${COMPLETE_RESOURCE_PATH} CACHE INTERNAL "")
 
+	set(${prefix}_COMPONENT_${component}_BUILD_PYTHON_PACKAGES ${${prefix}_COMPONENT_${component}_PYTHON_PACKAGES} CACHE INTERNAL "")
 	#dealing with local shared objects (for rpath)
 	set(local_shared)
 	create_Relative_Path_To_Shared(RELATIVE_BIN_SHARED ${package} ${version} ${component} ${platform})
@@ -3109,6 +3256,7 @@ function(configure_Wrapper_Build_Variables package version platform)
 	set(all_resources)
 	set(all_local_resources)
 	set(all_runtime_links)
+	set(all_python_packs)
 	set(all_local_runtime_objs)
 	set(all_local_runtime_exe)
 	##########################################################################################################################
@@ -3160,6 +3308,9 @@ function(configure_Wrapper_Build_Variables package version platform)
 		list(APPEND all_runtime_links ${${prefix}_COMPONENT_${component}_BUILD_SHARED_LINKS})
 		list(APPEND all_resources ${${prefix}_COMPONENT_${component}_BUILD_RUNTIME_RESOURCES})
 		list(APPEND all_local_resources ${${prefix}_COMPONENT_${component}_BUILD_LOCAL_RUNTIME_RESOURCES})
+		if(${prefix}_COMPONENT_${component}_BUILD_PYTHON_PACKAGES)
+			list(APPEND all_python_packs ${component})
+		endif()
 		list(APPEND all_local_runtime_objs ${${prefix}_COMPONENT_${component}_BUILD_LOCAL_RUNTIME_OBJECTS})
 		list(APPEND all_local_runtime_exe ${${prefix}_COMPONENT_${component}_BUILD_LOCAL_RUNTIME_EXE})
 	endforeach()
@@ -3173,6 +3324,7 @@ function(configure_Wrapper_Build_Variables package version platform)
 	remove_Duplicates_From_List(all_lib_dirs)
 	remove_Duplicates_From_List(all_runtime_links)
 	remove_Duplicates_From_List(all_resources)
+	remove_Duplicates_From_List(all_python_packs)
 	remove_Duplicates_From_List(all_local_resources)
 	remove_Duplicates_From_List(all_local_runtime_objs)
 	remove_Duplicates_From_List(all_local_runtime_exe)
@@ -3190,6 +3342,7 @@ function(configure_Wrapper_Build_Variables package version platform)
 	set(${prefix}_BUILD_SHARED_LINKS ${all_runtime_links} CACHE INTERNAL "")
 	set(${prefix}_BUILD_RUNTIME_RESOURCES ${all_resources} CACHE INTERNAL "")
 	set(${prefix}_BUILD_LOCAL_RUNTIME_RESOURCES ${all_local_resources} CACHE INTERNAL "")
+	set(${prefix}_BUILD_PYTHON_PACKAGES ${all_python_packs} CACHE INTERNAL "")
 	set(${prefix}_BUILD_LOCAL_RUNTIME_OBJECTS ${all_local_runtime_objs} CACHE INTERNAL "")
 	set(${prefix}_BUILD_LOCAL_RUNTIME_EXE ${all_local_runtime_exe} CACHE INTERNAL "")
 

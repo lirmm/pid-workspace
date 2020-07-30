@@ -987,6 +987,7 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #     :RUNTIME_RESOURCES <list of path>: list of path relative to the installed external package version root folder.
 #     :EXPORT ...: list of components that are exported by the declared component. Each element has the pattern [<package name>/]<component_name>.
 #     :DEPEND ...: list of components that the declared component depends on. Each element has the pattern [<package name>/]<component_name>.
+#     :PYTHON ...: list of files and/or folder that define a python package. Used to define python bindings.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -1010,7 +1011,7 @@ endmacro(PID_Wrapper_Component)
 
 macro(declare_PID_Wrapper_Component)
 set(oneValueArgs COMPONENT C_STANDARD C_MAX_STANDARD CXX_STANDARD CXX_MAX_STANDARD STANDARD SONAME)
-set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES EXPORT DEPEND ALIAS) #known versions of the external package that can be used to build/run it
+set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES EXPORT DEPEND ALIAS PYTHON) #known versions of the external package that can be used to build/run it
 cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_COMPONENT)
   if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^CXX_STANDARD|CXX_MAX_STANDARD|C_STANDARD|C_MAX_STANDARD|SONAME|INCLUDES|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS|RUNTIME_RESOURCES$")
@@ -1050,7 +1051,8 @@ declare_Wrapped_Component(${component_name}
 	"${CXX_STD_USED}"
 	"${DECLARE_PID_WRAPPER_COMPONENT_CXX_MAX_STANDARD}"
 	"${DECLARE_PID_WRAPPER_COMPONENT_RUNTIME_RESOURCES}"
-	"${DECLARE_PID_WRAPPER_COMPONENT_ALIAS}")
+	"${DECLARE_PID_WRAPPER_COMPONENT_ALIAS}"
+  "${DECLARE_PID_WRAPPER_COMPONENT_PYTHON}")
 
 
 #dealing with dependencies
