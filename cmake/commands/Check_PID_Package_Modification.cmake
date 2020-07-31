@@ -95,8 +95,10 @@ endfunction(Find_Unique_Auxiliary_Elements)
 ########### PACKAGE_NAME : name of the package to check
 ########### WORKSPACE_DIR : path to the root of the workspace
 #################################################################################################
-
-
+if(NOT EXISTS ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/share/checksources)#force rebuild if this file do not exists
+	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/share/checksources "")
+	return()
+endif()
 if(EXISTS ${SOURCE_PACKAGE_CONTENT}) #the package has already been configured
 	include(${SOURCE_PACKAGE_CONTENT}) #import source code meta-information (which files for each component)
 else()#first time after a cleaning: need to reconfigure
@@ -112,7 +114,7 @@ set(path_to_package ${WORKSPACE_DIR}/packages/${PACKAGE_NAME})
 #testing if some of the included CMakeLists.txt files have been modified
 test_Modified_Components(${PACKAGE_NAME} ${CMAKE_MAKE_PROGRAM} MODIFIED)
 if(MODIFIED)
-	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/release/share/checksources "")
+	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/share/checksources "")
 	return()
 endif()
 unset(FILE_PACKAGE_ALL_SRC)
@@ -228,7 +230,6 @@ foreach(component IN LISTS ${PACKAGE_NAME}_COMPONENTS)
 	endif()
 endforeach()
 
-
 if(REMOVED_FILES OR ADDED_FILES)#try make rebuild_cache
 	if(REMOVED_FILES)
 		list(REMOVE_DUPLICATES REMOVED_FILES)
@@ -238,6 +239,5 @@ if(REMOVED_FILES OR ADDED_FILES)#try make rebuild_cache
 		list(REMOVE_DUPLICATES ADDED_FILES)
 		message("[PID] INFO : there are files that have been added to source tree : ${ADDED_FILES}")
 	endif()
-
 	file(WRITE ${WORKSPACE_DIR}/packages/${PACKAGE_NAME}/build/share/checksources "")
 endif()
