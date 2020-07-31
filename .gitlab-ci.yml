@@ -37,6 +37,16 @@ stages:
         - pid
         - raspbian
 
+.selection_ubuntu16: &selection_ubuntu16
+   tags:
+        - pid
+        - x86_64_linux_abi11
+
+.selection_ubuntu18: &selection_ubuntu18
+   tags:
+        - pid
+        - x86_64_linux_abi11__ub18_gcc8__
+
 .selection_freebsd_: &selection_freebsd
    tags:
         - pid
@@ -69,6 +79,22 @@ stages:
         - x86_64_windows_abi98
 
 ############ jobs description #############
+
+ubuntu16 deploy:
+  <<: *deploy
+  <<: *selection_ubuntu16
+
+ubuntu16 create_and_build:
+  <<: *create_and_build
+  <<: *selection_ubuntu16
+
+ubuntu18 deploy:
+  <<: *deploy
+  <<: *selection_ubuntu18
+
+ubuntu18 create_and_build:
+  <<: *create_and_build
+  <<: *selection_ubuntu18
 
 freebsd deploy:
   <<: *deploy
