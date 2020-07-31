@@ -226,7 +226,7 @@ if(NOT CURRENT_ABI)#no C++ ABI explictly specified
 		endif()
 		if(FORCE_COMPILER_ABI STREQUAL "NEW")
 			set(CURRENT_ABI "CXX11" CACHE INTERNAL "")
-		elseif(ORCE_COMPILER_ABI STREQUAL "OLD")
+		elseif(FORCE_COMPILER_ABI STREQUAL "OLD")
 			set(CURRENT_ABI "CXX" CACHE INTERNAL "")
 		endif()
 	endif()
