@@ -13,12 +13,12 @@ stages:
 
 .create_and_build_: &create_and_build
    stage: create_and_build
-   script: 
+   script:
         - pid create package=foobar author=CI
         - pid build package=foobar
         - pid rebuild package=foobar
         - pid info package=foobar
-        - sh -c "! ./pid info package=foobar2" # assert failure 
+        - sh -c "! ./pid info package=foobar2" # assert failure
 
 
 .deploy_: &deploy
@@ -40,32 +40,33 @@ stages:
 .selection_freebsd_: &selection_freebsd
    tags:
         - pid
-        - freebsd
+        - x86_64_freebsd_abi11
 
 .selection_archlinux_: &selection_archlinux
    tags:
         - pid
-        - archlinux
+        - x86_64_linux_abi11__archlinux__
 
 .selection_debian_: &selection_debian
    tags:
         - pid
-        - debian
+        - x86_64_linux_abi11__debian10_gcc-8-3__
 
 .selection_fedora_: &selection_fedora
    tags:
         - pid
-        - fedora
+        - x86_64_linux_abi11__fedora32_gcc-10-1__
+
 
 .selection_macos_catalina_: &selection_macos_catalina
    tags:
         - pid
-        - macos_catalina
+        - x86_64_macos_abi11
 
 .selection_windows10_: &selection_windows10
    tags:
         - pid
-        - windows10
+        - x86_64_windows_abi98
 
 ############ jobs description #############
 
@@ -111,20 +112,14 @@ catalina create_and_build:
 
 ############ more specific jobs #############
 
-raspbian deploy:
-    stage: deploy
-    before_script:
-        - ~/start_buster.sh 
-        - echo "Waiting for system to boot"
-        - sleep 60 # TODO proper boot detection
-        - rsync -avX --rsh="/usr/bin/sshpass -p lirmm ssh -o StrictHostKeyChecking=no -l root -p 2722" /root/.ssh root@127.0.0.1:/root/
-        - rsync -avX --rsh="/usr/bin/sshpass -p lirmm ssh -o StrictHostKeyChecking=no -l root -p 2722" `pwd` root@127.0.0.1:/root/
-        - ~/run.sh "ssh-keyscan gite.lirmm.fr > /root/.ssh/known_hosts"
-        - ~/run.sh ./pid contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONAL_DEBUG_INFO=ON
-        - ~/run.sh ./pid contributions cmd=prio_max space=pid-tests
-    script: 
-        - ~/run.sh ./pid deploy package=mytestpackage
-    <<: *selection_raspbian
+# raspbian deploy:
+#     stage: deploy
+#     before_script:
+#         - ~/run.sh ./pid contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONAL_DEBUG_INFO=ON
+#         - ~/run.sh ./pid contributions cmd=prio_max space=pid-tests
+#     script:
+#         - ~/run.sh ./pid deploy package=mytestpackage
+#     <<: *selection_raspbian
 
 windows10 deploy:
     stage: deploy
@@ -134,7 +129,7 @@ windows10 deploy:
         - ./pid.bat configure -DCMAKE_GENERATOR=Ninja
         - ./pid.bat contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONAL_DEBUG_INFO=ON
         - ./pid.bat contributions cmd=prio_max space=pid-tests
-    script: 
+    script:
         - ./pid.bat deploy package=pid-rpath branch=cxx17
         - ./pid.bat deploy package=open-phri branch=win32_fix
     <<: *selection_windows10
