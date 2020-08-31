@@ -30,7 +30,7 @@ stages:
 
 ############ patterns for platforms selection #############
 # here the project generates patterns for runner selection according for all platforms defined in the workspace
-#platform x86_64_linux_abi11
+#platform x86_64_linux_stdc++11
 
 .selection_raspbian_: &selection_raspbian
    tags:
@@ -40,43 +40,43 @@ stages:
 .selection_ubuntu16: &selection_ubuntu16
    tags:
         - pid
-        - x86_64_linux_abi11
+        - x86_64_linux_stdc++11
 
 .selection_ubuntu18: &selection_ubuntu18
    tags:
         - pid
-        - x86_64_linux_abi11__ub18_gcc8__
+        - x86_64_linux_stdc++11__ub18_gcc8__
 
 .selection_freebsd_: &selection_freebsd
    tags:
         - pid
-        - x86_64_freebsd_abi11
+        - x86_64_freebsd_c++
 
 .selection_archlinux_: &selection_archlinux
    tags:
         - pid
-        - x86_64_linux_abi11__archlinux__
+        - x86_64_linux_stdc++11__archlinux__
 
 .selection_debian_: &selection_debian
    tags:
         - pid
-        - x86_64_linux_abi11__debian10_gcc-8-3__
+        - x86_64_linux_stdc++11__debian10_gcc-8-3__
 
 .selection_fedora_: &selection_fedora
    tags:
         - pid
-        - x86_64_linux_abi11__fedora32_gcc-10-1__
+        - x86_64_linux_stdc++11__fedora32_gcc-10-1__
 
 
 .selection_macos_catalina_: &selection_macos_catalina
    tags:
         - pid
-        - x86_64_macos_abi11
+        - x86_64_macos_c++
 
 .selection_windows10_: &selection_windows10
    tags:
         - pid
-        - x86_64_windows_abi98
+        - x86_64_windows_msvc
 
 ############ jobs description #############
 

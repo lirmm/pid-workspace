@@ -304,7 +304,7 @@ endmacro(add_PID_Package_Author)
 #
 #   .. code-block:: cmake
 #
-#    PID_Reference(VERSION 1.0.0 PLATFORM x86_linux_64_abi11
+#    PID_Reference(VERSION 1.0.0 PLATFORM x86_linux_64_stdc++11
 #      URL https://gite.lirmm.fr/pid/pid-binaries/wikis/pid-rpath/1.0.0/linux64/pid-rpath-1.0.0-linux64.tar.gz
 #          https://gite.lirmm.fr/pid/pid-binaries/wikis/pid-rpath/1.0.0/linux64/pid-rpath-1.0.0-dbg-linux64.tar.gz
 #    )
@@ -479,7 +479,7 @@ endmacro(declare_PID_Documentation)
 #    			ADVANCED specific_usage.md
 #    			LOGO	img/rouage_PID.jpg
 #    			PUBLISH_BINARIES
-#         ALLOWED_PLATFORMS x86_64_linux_abi11)
+#         ALLOWED_PLATFORMS x86_64_linux_stdc++11)
 #
 #   Declaring the publication of the ``pid-rpath`` package into the ``pid`` framework:
 #
@@ -491,7 +491,7 @@ endmacro(declare_PID_Documentation)
 #       DESCRIPTION pid-rpath is a package providing a little API to ease the management of runtime resources within a PID workspace. Runtime resources may be either configuration files, executables or module libraries. Its usage is completely bound to the use of PID system.
 #       ADVANCED specific_usage.md
 #       PUBLISH_BINARIES
-#       ALLOWED_PLATFORMS x86_64_linux_abi11)
+#       ALLOWED_PLATFORMS x86_64_linux_stdc++11)
 #
 macro(PID_Publishing)
   declare_PID_Publishing(${ARGN})
@@ -776,7 +776,7 @@ endmacro(check_PID_Environment)
 #   :TYPE <arch>: Constraint on the processor type.
 #   :OS <name>: Constraint on the operating system.
 #   :ARCH <32|64>: Constraint on the processor architecture.
-#   :ABI <CXX|CXX11>: Constraint on the ABI of the compiler.
+#   :ABI <name>: Constraint on the c++ ABI.
 #
 #   .. admonition:: Constraints
 #      :class: warning
@@ -912,11 +912,7 @@ if(GET_PID_PLATFORM_INFO_ARCH)
 endif()
 if(GET_PID_PLATFORM_INFO_ABI)
 	set(OK TRUE)
-  if(CURRENT_PLATFORM_ABI STREQUAL "abi11")
-    set(${GET_PID_PLATFORM_INFO_ABI} CXX11 PARENT_SCOPE)
-  elseif(CURRENT_PLATFORM_ABI STREQUAL "abi98")
-    set(${GET_PID_PLATFORM_INFO_ABI} CXX PARENT_SCOPE)
-  endif()
+  set(${GET_PID_PLATFORM_INFO_ABI} ${CURRENT_PLATFORM_ABI} PARENT_SCOPE)
 endif()
 if(GET_PID_PLATFORM_INFO_PYTHON)
 		set(OK TRUE)
@@ -1146,7 +1142,8 @@ elseif(nb_options LESS 1)
 endif()
 
 if(type STREQUAL "UNKNOWN")
-  if(CMAKE_CURRENT_SOURCE_DIR MATCHES "^${CMAKE_SOURCE_DIR}/src.*$")#it is a library
+  usable_In_Regex(matchable_path_to_source ${CMAKE_SOURCE_DIR})
+  if(CMAKE_CURRENT_SOURCE_DIR MATCHES "^${matchable_path_to_source}/src.*$")#it is a library
     check_Required_Directories_Exist(PROBLEM "SHARED" ${dir_name})
     if(PROBLEM)
       check_Required_Directories_Exist(PROBLEM "HEADER" ${dir_name})
@@ -1162,17 +1159,17 @@ if(type STREQUAL "UNKNOWN")
     else()#OK let's consider it is a shared library
       set(type "SHARED")
     endif()
-  elseif(CMAKE_CURRENT_SOURCE_DIR MATCHES "^${CMAKE_SOURCE_DIR}/apps.*$")#it is an application
+  elseif(CMAKE_CURRENT_SOURCE_DIR MATCHES "^${matchable_path_to_source}/apps.*$")#it is an application
     check_Required_Directories_Exist(PROBLEM "APP" ${dir_name})
     if(NOT PROBLEM)
       set(type "APP")
     endif()
-  elseif(CMAKE_CURRENT_SOURCE_DIR MATCHES "^${CMAKE_SOURCE_DIR}/test.*$")#it is a test unit
+  elseif(CMAKE_CURRENT_SOURCE_DIR MATCHES "^${matchable_path_to_source}/test.*$")#it is a test unit
     check_Required_Directories_Exist(PROBLEM "TEST" ${dir_name})
     if(NOT PROBLEM)
       set(type "TEST")
     endif()
-  elseif(CMAKE_CURRENT_SOURCE_DIR MATCHES "^${CMAKE_SOURCE_DIR}/share/script.*$")#it is a python script
+  elseif(CMAKE_CURRENT_SOURCE_DIR MATCHES "^${matchable_path_to_source}/share/script.*$")#it is a python script
     check_Required_Directories_Exist(PROBLEM "PYTHON" ${dir_name})
     if(NOT PROBLEM)
       set(type "PYTHON")

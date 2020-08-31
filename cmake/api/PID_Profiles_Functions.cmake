@@ -1436,7 +1436,7 @@ endfunction(evaluate_Extra_Tool_Configuration)
 #      :PROC_TYPE <string>: type of the processor (e.g. x86, arm).
 #      :PROC_ARCH <string>: address type of the processor (32 or 64 bits).
 #      :OS <string>: operating system of the platform (linux, freebsd, macos, windows).
-#      :ABI <string>: ABI to use for C++ compilation ("abi98" or "abi11").
+#      :ABI <string>: ABI to use for C++ compilation ("stdc++", "stdc++11", "c++").
 #      :INSTANCE <string>: instance name for target platform.
 #      :DISTRIBUTION <string>: name of the operating system distribution.
 #      :DISTRIBUTION_VERSION <version>: version of the distribution.

@@ -241,7 +241,7 @@ endmacro(check_PID_External_Package_Language)
 #
 #     .. code-block:: cmake
 #
-#        check_PID_External_Package_Platform(PACKAGE boost PLATFORM x86_64_linux_abi11 CONFIGURATION posix)
+#        check_PID_External_Package_Platform(PACKAGE boost PLATFORM x86_64_linux_stdc++11 CONFIGURATION posix)
 #
 macro(check_PID_External_Package_Platform)
 set(options)

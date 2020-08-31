@@ -822,7 +822,7 @@ if(NOT SKIP AND os) # an operating system is specified, so it applies like a fil
 	endif()
 endif()
 
-if(NOT SKIP AND abi) # an operating system is specified, so it applies like a filter on current platform
+if(NOT SKIP AND abi) # a target ABI is specified, so it applies like a filter on current platform
 	if(NOT CURRENT_PLATFORM_ABI STREQUAL abi)
 		set(SKIP TRUE)
 	endif()

@@ -3799,7 +3799,7 @@ function(write_Platform_Description file)
 	file(APPEND ${file} "set(C_STANDARD_LIBRARIES ${C_STANDARD_LIBRARIES} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(C_STD_SYMBOLS ${C_STD_SYMBOLS} CACHE INTERNAL \"\" FORCE)\n")
 
-	file(APPEND ${file} "set(CURRENT_CXX_ABI ${CURRENT_ABI} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(CURRENT_CXX_ABI ${CURRENT_CXX_ABI} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CURRENT_CXX_COMPILER ${CURRENT_CXX_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CURRENT_CXX_COMPILER_WARN_ALL_OPTIONS ${CURRENT_CXX_COMPILER_WARN_ALL_OPTIONS} CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CURRENT_CXX_COMPILER_WARN_AS_ERRORS_OPTIONS ${CURRENT_CXX_COMPILER_WARN_AS_ERRORS_OPTIONS} CACHE INTERNAL \"\" FORCE)\n")
@@ -3949,28 +3949,17 @@ function(manage_Migrations)
 #To PID V4
 if((EXISTS ${WORKSPACE_DIR}/configurations AND IS_DIRECTORY ${WORKSPACE_DIR}/configurations)
 		OR (EXISTS ${WORKSPACE_DIR}/external AND IS_DIRECTORY ${WORKSPACE_DIR}/external))
-		message(WARNING "[PID] Your are migrating your workspace to PID version 4 or greater. Workspace subfolders configurations and external will be removed. Currenlty installed external package will be moved to their corresponding subfolders in install folder. All runtime dependencies need to be resolved since workspace hierarchy has changed. This will be done automatically anytime you build a native package. Also some wrappers may face troubles with some of their dependencies. Simply rebuild these dependencies anytime build of a wrapper fails due to some unresolved path (path into workspace containing the external folder).")
+		message(WARNING "[PID] Your are migrating your workspace to PID version 4 or greater. Workspace subfolders configurations and external will be removed. Currenlty installed packages will be removed. You will need to rebuild install the content of your local workspace.")
 endif()
+# All previously existing configurations are now wrappers referenced in official pid contribution space
 if(EXISTS ${WORKSPACE_DIR}/configurations AND IS_DIRECTORY ${WORKSPACE_DIR}/configurations)
 	file(REMOVE_RECURSE ${WORKSPACE_DIR}/configurations)
 endif()#simply remove all configurations as they are provided using wrappers.
-# All previously existing configurations are now wrappers referenced in official pid contribution space
-if(EXISTS ${WORKSPACE_DIR}/external AND IS_DIRECTORY ${WORKSPACE_DIR}/external)
-	#need to removed all installed binaries since they are no more compatible (change in generating sonames)
-	file(GLOB installed_packages ${WORKSPACE_DIR}/install/*)
-	foreach(pack IN LISTS installed_packages)
-		file(REMOVE_RECURSE ${pack})
-	endforeach()
-	#external package can be kept as is, they just need to be movedin adequate install folder
-	file(GLOB installed_platforms RELATIVE ${WORKSPACE_DIR}/external ${WORKSPACE_DIR}/external/*)
-	foreach(platform IN LISTS installed_platforms)
-		file(GLOB installed_externals RELATIVE ${WORKSPACE_DIR}/external/${platform} ${WORKSPACE_DIR}/external/${platform}/*)
-		foreach(pack IN LISTS installed_externals)
-			file(RENAME ${WORKSPACE_DIR}/external/${platform}/${pack} ${WORKSPACE_DIR}/install/${platform}/${pack})
-		endforeach()
-	endforeach()
-	file(REMOVE_RECURSE ${WORKSPACE_DIR}/external)
-endif()
+file(GLOB installed_native ${WORKSPACE_DIR}/install/*)
+foreach(platform IN LISTS installed_native)#removing all packages
+	file(REMOVE_RECURSE ${platform})
+endforeach()
+file(REMOVE_RECURSE ${WORKSPACE_DIR}/external)#removing all existing installed external packages
 endfunction(manage_Migrations)
 
 #.rst:

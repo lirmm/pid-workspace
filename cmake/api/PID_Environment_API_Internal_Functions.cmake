@@ -256,13 +256,7 @@ function(set_Build_Environment_Platform instance type_constraint arch_constraint
   set(${PROJECT_NAME}_TYPE_CONSTRAINT ${type_constraint} CACHE INTERNAL "")
   set(${PROJECT_NAME}_ARCH_CONSTRAINT ${arch_constraint} CACHE INTERNAL "")
   set(${PROJECT_NAME}_OS_CONSTRAINT ${os_constraint} CACHE INTERNAL "")
-  if(abi_constraint STREQUAL "abi98" OR abi_constraint STREQUAL "98" OR abi_constraint STREQUAL "CXX")
-    set(${PROJECT_NAME}_ABI_CONSTRAINT CXX CACHE INTERNAL "")
-  elseif(abi_constraint STREQUAL "abi11" OR abi_constraint STREQUAL "11" OR abi_constraint STREQUAL "CXX11")
-    set(${PROJECT_NAME}_ABI_CONSTRAINT CXX11 CACHE INTERNAL "")
-  else()
-    set(${PROJECT_NAME}_ABI_CONSTRAINT CACHE INTERNAL "")
-  endif()
+  set(${PROJECT_NAME}_ABI_CONSTRAINT ${abi_constraint} CACHE INTERNAL "")
   set(${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT ${distribution} CACHE INTERNAL "")
   set(${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT ${distrib_version} CACHE INTERNAL "")
 endfunction(set_Build_Environment_Platform)
@@ -1360,9 +1354,8 @@ function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
     set(result FALSE)
   endif()
 
-  if(${PROJECT_NAME}_ABI_CONSTRAINT)#processor architecture type constraint is specified
-    compare_ABIs(ARE_EQUAL ${${PROJECT_NAME}_ABI_CONSTRAINT} ${CURRENT_PLATFORM_ABI})
-    if(NOT ARE_EQUAL)
+  if(${PROJECT_NAME}_ABI_CONSTRAINT)#ABI constraint is specified
+    if(NOT ${PROJECT_NAME}_ABI_CONSTRAINT STREQUAL CURRENT_PLATFORM_ABI)
       #for the ABI it is not necessary to cross compile, juste to have adequate compiler and pass adequate arguments
       set(result FALSE)
     endif()
@@ -1434,8 +1427,7 @@ function(is_Environment_Solution_Eligible RESULT index)
     endif()
   endif()
   if(${PROJECT_NAME}_SOLUTION_${index}_ABI)# a constraint on processor architecture type
-    compare_ABIs(ARE_EQUAL "${${PROJECT_NAME}_SOLUTION_${index}_ABI}" "${CURRENT_PLATFORM_ABI}")
-    if(NOT ARE_EQUAL)#not the current one
+    if(NOT ${PROJECT_NAME}_SOLUTION_${index}_ABI STREQUALCURRENT_PLATFORM_ABI )#not the current one
       return()
     endif()
   endif()
@@ -1643,7 +1635,7 @@ function(deduce_Platform_Variables)
     set(use_os ${CURRENT_PLATFORM_OS})
   endif()
   if(${PROJECT_NAME}_ABI_CONSTRAINT)#operating system type constraint is specified
-    set(use_abi ${${PROJECT_NAME}_OS_CONSTRAINT})
+    set(use_abi ${${PROJECT_NAME}_ABI_CONSTRAINT})
   else()
     set(use_abi ${CURRENT_PLATFORM_ABI})
   endif()

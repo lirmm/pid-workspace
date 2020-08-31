@@ -199,7 +199,7 @@ endmacro(add_PID_Environment_Author)
 #
 #     .. rubric:: Optional parameters
 #
-#     :PLATFORM <platform>: defines a complete specification of the target platform (e.g. x86_64_linux_abi11).
+#     :PLATFORM <platform>: defines a complete specification of the target platform (e.g. x86_64_linux_stdc++11).
 #     :INSTANCE <name>: defines a platform instance name.
 #     :TYPE <proc>: the type of architecture for processor of the platform (e.g. x86).
 #     :ARCH <bits>: the size of processor architecture registry, 16, 32 or 64.
@@ -218,7 +218,7 @@ endmacro(add_PID_Environment_Author)
 #     .. code-block:: cmake
 #
 #        PID_Environment_Platform(
-#           PLATFORM x86_64_linux_abi11
+#           PLATFORM x86_64_linux_stdc++11
 #           DISTRIBUTION ubuntu
 #           DISTRIB_VERSION 18.04
 #        )
@@ -1075,8 +1075,7 @@ function(host_Match_Target_Platform IT_MATCHES)
     endif()
   endif()
   if(target_abi)
-    compare_ABIs(ARE_EQUAL ${host_abi} ${target_abi})
-    if(NOT ARE_EQUAL)
+    if(NOT host_abi STREQUAL target_abi)
       return()
     endif()
   endif()
@@ -1172,7 +1171,7 @@ function(get_Environment_Target_Platform)
     if(PID_CROSSCOMPILATION OR ${PROJECT_NAME}_ABI_CONSTRAINT)#constraint has been explicilty specified
       set(${GET_ENV_TARGET_PLATFORM_ABI} ${${PROJECT_NAME}_ABI_CONSTRAINT} PARENT_SCOPE)
     else()#no constraint so same as host
-      set(${GET_ENV_TARGET_PLATFORM_ABI} ${CURRENT_ABI} PARENT_SCOPE)
+      set(${GET_ENV_TARGET_PLATFORM_ABI} ${CURRENT_CXX_ABI} PARENT_SCOPE)
     endif()
   endif()
 
@@ -1262,12 +1261,13 @@ endfunction(get_Environment_Host_Platform)
 #
 #     .. code-block:: cmake
 #
-#        get_Environment_Target_ABI_Flags(FLAGS "CXX11")
+#        get_Environment_Target_ABI_Flags(FLAGS "stdc++11")
 #
 function(get_Environment_Target_ABI_Flags FLAGS target_abi)
-  if(target_abi STREQUAL "CXX11" OR target_abi EQUAL 11 OR target_abi STREQUAL "abi11")
+  set(${FLAGS} PARENT_SCOPE)#by default no flag is required for standard libraries
+  if(target_abi STREQUAL "stdc++11")#using new abi of stdc++
     set(${FLAGS} "-D_GLIBCXX_USE_CXX11_ABI=1" PARENT_SCOPE)
-  elseif(NOT WIN32)#use legacy abi
+  elseif(target_abi STREQUAL "stdc++")#use legacy abi of stdc++
     set(${FLAGS} "-D_GLIBCXX_USE_CXX11_ABI=0" PARENT_SCOPE)
   endif()
 endfunction(get_Environment_Target_ABI_Flags)

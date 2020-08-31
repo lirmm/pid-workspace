@@ -387,9 +387,9 @@ _pid_ws_print_help() {
         echo "  pid exec pid-rpath build force=true                                   force rebuild of pid-rpath"
         echo "  pid cd pid-rpath                                                      change directory to pid-rpath"
         echo "  pid build force=true -DBUILD_EXAMPLES=ON                              build pid-rpath examples"
-        echo "  pid run x86_64_linux_abi11 pid-rpath 2.0.0 pid-rpath_rpath-example    run pid-rpath example"
+        echo "  pid run x86_64_linux_stdc++11 pid-rpath 2.0.0 pid-rpath_rpath-example run pid-rpath example"
         echo "  pid run_build release pid-rpath_rpath-example                         run pid-rpath example from build tree"
-        echo "  pid workspace configure -DADDITIONAL_DEBUG_INFO=ON                   reconfigure the workspace"
+        echo "  pid workspace configure -DADDITIONAL_DEBUG_INFO=ON                    reconfigure the workspace"
 }
 
 ### Completion helper function

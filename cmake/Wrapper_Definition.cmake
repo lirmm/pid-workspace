@@ -446,7 +446,7 @@ endmacro(define_PID_Wrapper_User_Option)
 #          FRAMEWORK pid
 #          DESCRIPTION boost is a PID wrapper for external project called Boost. Boost provides many libraries and templates to ease development in C++.
 #          PUBLISH_BINARIES
-#          ALLOWED_PLATFORMS x86_64_linux_abi11)
+#          ALLOWED_PLATFORMS x86_64_linux_stdc++11)
 #
 
 macro(PID_Wrapper_Publishing)
@@ -2137,11 +2137,7 @@ if(GET_TARGET_PLATFORM_INFO_ARCH)
 endif()
 if(GET_TARGET_PLATFORM_INFO_ABI)
 	set(OK TRUE)
-  if(CURRENT_PLATFORM_ABI STREQUAL "abi11")
-    set(${GET_TARGET_PLATFORM_INFO_ABI} CXX11 PARENT_SCOPE)
-  elseif(CURRENT_PLATFORM_ABI STREQUAL "abi98")
-    set(${GET_TARGET_PLATFORM_INFO_ABI} CXX PARENT_SCOPE)
-  endif()
+  set(${GET_TARGET_PLATFORM_INFO_ABI} ${CURRENT_PLATFORM_ABI} PARENT_SCOPE)
 endif()
 if(GET_TARGET_PLATFORM_INFO_PYTHON)
 		set(OK TRUE)

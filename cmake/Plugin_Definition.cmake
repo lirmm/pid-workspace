@@ -103,7 +103,8 @@ function(get_Package_Component_Links PACKAGE_LIB_FOLDER_IN_INSTALL RELATIVE_LINK
   get_Package_Type(${package} PACK_TYPE)
   get_Package_Version(RES_VERSION ${package})
   set(PATH_TO_PACKAGE_INSTALL ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${RES_VERSION})
-  set(${PACKAGE_LIB_FOLDER_IN_INSTALL} ${PATH_TO_PACKAGE_INSTALL}/lib)
+  set(${PACKAGE_LIB_FOLDER_IN_INSTALL} ${PATH_TO_PACKAGE_INSTALL}/lib PARENT_SCOPE)
+  usable_In_Regex(matchable_path_to_install ${PATH_TO_PACKAGE_INSTALL})
   set(all_relative_links)
   set(all_public_links)
   set(all_private_links)
@@ -119,7 +120,8 @@ function(get_Package_Component_Links PACKAGE_LIB_FOLDER_IN_INSTALL RELATIVE_LINK
       resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${${package}_${component}_STATIC_LINKS${VAR_SUFFIX}}" ${CMAKE_BUILD_TYPE})
       foreach(link IN LISTS COMPLETE_LINKS_PATH)#links are absolute or already defined "the OS way"
         if(IS_ABSOLUTE ${link}) #this is an absolute path
-          if(link MATCHES "^${PATH_TO_PACKAGE_INSTALL}/lib/(.+)$")#relative relation found between the file and the workspace
+
+          if(link MATCHES "^${matchable_path_to_install}/lib/(.+)$")#relative relation found between the file and the workspace
             list(APPEND all_relative_links ${CMAKE_MATCH_1})
           else()
             list(APPEND all_public_links ${link})
@@ -133,7 +135,7 @@ function(get_Package_Component_Links PACKAGE_LIB_FOLDER_IN_INSTALL RELATIVE_LINK
       resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${${package}_${component}_SHARED_LINKS${VAR_SUFFIX}}" ${CMAKE_BUILD_TYPE})
       foreach(link IN LISTS COMPLETE_LINKS_PATH)#links are absolute or already defined "the OS way"
         if(IS_ABSOLUTE ${link}) #this is an absolute path
-          if(link MATCHES "^${PATH_TO_PACKAGE_INSTALL}/lib/(.+)$")#relative relation found between the file and the workspace
+          if(link MATCHES "^${matchable_path_to_install}/lib/(.+)$")#relative relation found between the file and the workspace
             list(APPEND all_relative_links ${CMAKE_MATCH_1})
           else()
             list(APPEND all_public_links ${link})
@@ -253,6 +255,8 @@ function(get_Package_Component_Includes PACKAGE_INCLUDE_FOLDER_IN_INSTALL INCLUD
   set(include_list_rel)
   set(PATH_TO_PACKAGE_INSTALL ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${RES_VERSION})
   set(${PACKAGE_INCLUDE_FOLDER_IN_INSTALL} ${PATH_TO_PACKAGE_INSTALL}/include PARENT_SCOPE)
+  usable_In_Regex(matchable_path_to_install ${PATH_TO_PACKAGE_INSTALL})
+
   if(PACK_TYPE STREQUAL "NATIVE")
     #add the include folder defined by the component
     list(APPEND include_list_rel "${${package}_${component}_HEADER_DIR_NAME}")#relative to package include
@@ -262,7 +266,7 @@ function(get_Package_Component_Includes PACKAGE_INCLUDE_FOLDER_IN_INSTALL INCLUD
   if(${package}_${component}_INC_DIRS${VAR_SUFFIX})
     resolve_External_Includes_Path(COMPLETE_INCLUDES_PATH "${${package}_${component}_INC_DIRS${VAR_SUFFIX}}" ${CMAKE_BUILD_TYPE})
    	foreach(inc IN LISTS COMPLETE_INCLUDES_PATH)
-      if(inc MATCHES "^${PATH_TO_PACKAGE_INSTALL}/include(.*)$")#this is an external package relative include path
+      if(inc MATCHES "^${matchable_path_to_install}/include(.*)$")#this is an external package relative include path
         if(NOT CMAKE_MATCH_1)
           set(include_list_rel "${include_list_rel};")
         else()
@@ -671,8 +675,9 @@ endfunction(remove_Residual_Files)
 #
 function(convert_Files_Extensions RES_FILES_PATH input_list generated_extension)
   set(temp_list)
-  foreach(a_file IN LISTS ${input_list})
-    if(a_file MATCHES "^${CMAKE_SOURCE_DIR}/(.+)$")#give a relative path
+  usable_In_Regex(matchable_path_to_source ${CMAKE_SOURCE_DIR})
+  foreach(a_file IN LISTS input_list)
+    if(a_file MATCHES "^${matchable_path_to_source}/(.+)$")#give a relative path
       list(APPEND temp_list ${CMAKE_MATCH_1})
     elseif(NOT IS_ABSOLUTE ${a_file})#directly using the relative path
       list(APPEND temp_list ${a_file})
