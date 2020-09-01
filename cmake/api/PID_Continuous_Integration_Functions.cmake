@@ -210,7 +210,8 @@ endfunction(generate_Package_CI_Config_File)
 #
 function(add_CI_Config_File_Runner_Selection_By_Platform configfile platform)
 file(APPEND ${configfile} "#platform ${platform}\n\n")
-file(APPEND ${configfile} ".selection_platform_${platform}_: &selection_platform_${platform}\n    tags:\n        - pid\n        - ${platform}\n\n")
+string(REPLACE "+" "plus" res_platform ${platform})#YAML label cannot contain + symbol (common in ABI names)
+file(APPEND ${configfile} ".selection_platform_${res_platform}_: &selection_platform_${res_platform}\n    tags:\n        - pid\n        - ${platform}\n\n")
 endfunction(add_CI_Config_File_Runner_Selection_By_Platform)
 
 #.rst:
@@ -232,9 +233,9 @@ endfunction(add_CI_Config_File_Runner_Selection_By_Platform)
 #
 function(add_CI_Config_File_Jobs_Definitions_By_Platform configfile platform)
 file(APPEND ${configfile} "#pipeline generated for platform: ${platform}\n\n")
-
-file(APPEND ${configfile} "build_integration_${platform}:\n  <<: *build_integration\n  <<: *selection_platform_${platform}\n\n")
-file(APPEND ${configfile} "build_release_${platform}:\n  <<: *build_release\n  <<: *selection_platform_${platform}\n\n")
+string(REPLACE "+" "plus" res_platform ${platform})#YAML label cannot contain + symbol (common in ABI names)
+file(APPEND ${configfile} "build_integration_${res_platform}:\n  <<: *build_integration\n  <<: *selection_platform_${res_platform}\n\n")
+file(APPEND ${configfile} "build_release_${res_platform}:\n  <<: *build_release\n  <<: *selection_platform_${res_platform}\n\n")
 endfunction(add_CI_Config_File_Jobs_Definitions_By_Platform)
 
 #########################################################################################
@@ -289,7 +290,8 @@ endfunction(verify_Wrapper_CI_Content)
 #
 function(add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper configfile platform)
 file(APPEND ${configfile} "#pipeline generated for platform: ${platform}\n\n")
-file(APPEND ${configfile} "build_wrapper_${platform}:\n <<: *build_wrapper\n <<: *selection_platform_${platform}\n\n")
+string(REPLACE "+" "plus" res_platform ${platform})#YAML label cannot contain + symbol (common in ABI names)
+file(APPEND ${configfile} "build_wrapper_${res_platform}:\n <<: *build_wrapper\n <<: *selection_platform_${res_platform}\n\n")
 endfunction(add_CI_Config_File_Jobs_Definitions_By_Platform_For_Wrapper)
 
 #.rst:
