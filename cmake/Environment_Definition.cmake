@@ -1255,21 +1255,23 @@ endfunction(get_Environment_Host_Platform)
 #
 #     :target_abi: the desired ABI to be used
 #
-#     :FLAGS: the output variable that contains compile flags for using target abi
+#     :CFLAGS: the output variable that contains compile flags for using target abi
 #
 #     .. rubric:: Example
 #
 #     .. code-block:: cmake
 #
-#        get_Environment_Target_ABI_Flags(FLAGS "stdc++11")
+#        get_Environment_Target_ABI_Flags(CFLAGS "stdc++11")
 #
-function(get_Environment_Target_ABI_Flags FLAGS target_abi)
-  set(${FLAGS} PARENT_SCOPE)#by default no flag is required for standard libraries
+function(get_Environment_Target_ABI_Flags CFLAGS target_abi)
+  set(result_cflags)
   if(target_abi STREQUAL "stdc++11")#using new abi of stdc++
-    set(${FLAGS} "-D_GLIBCXX_USE_CXX11_ABI=1" PARENT_SCOPE)
+    set(result_cflags "-D_GLIBCXX_USE_CXX11_ABI=1")
   elseif(target_abi STREQUAL "stdc++")#use legacy abi of stdc++
-    set(${FLAGS} "-D_GLIBCXX_USE_CXX11_ABI=0" PARENT_SCOPE)
+    set(result_cflags "-D_GLIBCXX_USE_CXX11_ABI=0")
   endif()
+  #no flags for other standard libraries
+  set(${CFLAGS} ${result_cflags} PARENT_SCOPE)#by default no flag is required for standard libraries
 endfunction(get_Environment_Target_ABI_Flags)
 
 #.rst:

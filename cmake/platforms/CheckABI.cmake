@@ -68,6 +68,17 @@ else()#other systems
 endif()
 endfunction(get_Current_Standard_Library_Version)
 
+function(reset_CXX_ABI_Flags)
+	# remove any compilation setting that forces a specific compiler ABI
+	#this line is needed to force the compiler to use libstdc++11 newer version of API whatever the version of the distribution is
+	#e.g. on ubuntu 14 with compiler gcc 5.4 the default value is 0 (legacy ABI)
+	set(TEMP_FLAGS "${CMAKE_CXX_FLAGS}")
+	string(REPLACE "-D_GLIBCXX_USE_CXX11_ABI=0" "" TEMP_FLAGS "${TEMP_FLAGS}")
+	string(REPLACE "-D_GLIBCXX_USE_CXX11_ABI=1" "" TEMP_FLAGS "${TEMP_FLAGS}")
+	string(STRIP "${TEMP_FLAGS}" TEMP_FLAGS)
+	set(CMAKE_CXX_FLAGS "${TEMP_FLAGS}" CACHE STRING "" FORCE)#needed for following system checks
+endfunction(reset_CXX_ABI_Flags)
+
 #those two functions must be extended anytime a new standard C library is used
 function(get_C_Standard_Library_Symbols_Version RES_SYMBOL_VERSIONS operating_system library_name path_to_library)
 	set(STD_SYMBOLS)
@@ -119,15 +130,7 @@ function(get_CXX_Standard_Library_Symbols_Version RES_NAME RES_VERSION RES_SYMBO
 						endif()
 				endif()
 		endif()
-		# remove any compilation setting that forces a specific compiler ABI
-		#this line is needed to force the compiler to use libstdc++11 newer version of API whatever the version of the distribution is
-		#e.g. on ubuntu 14 with compiler gcc 5.4 the default value is 0 (legacy ABI)
-		set(TEMP_FLAGS "${CMAKE_CXX_FLAGS}")
-		string(REPLACE "-D_GLIBCXX_USE_CXX11_ABI=0" "" TEMP_FLAGS "${TEMP_FLAGS}")
-		string(REPLACE "-D_GLIBCXX_USE_CXX11_ABI=1" "" TEMP_FLAGS "${TEMP_FLAGS}")
-		string(STRIP "${TEMP_FLAGS}" TEMP_FLAGS)
-		set(CMAKE_CXX_FLAGS "${TEMP_FLAGS}" CACHE STRING "" FORCE)#needed for following system checks
-
+		reset_CXX_ABI_Flags()
 		if(NOT USE_ABI)
 			# if code pass here it means there is no flag specified for the target ABI
 			#depending on symbol versions we can detect which compiler was used to build the standard library !!
