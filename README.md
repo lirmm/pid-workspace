@@ -1,12 +1,12 @@
 # Introduction
 
-PID stands for *Packages Integrated Development*. It is a development methodology used to standardize and automate the development process of C/C++ projects. The present repository contains the base implementation of PID, based on CMake APIs and commands.
+PID stands for *Packages Integral Development*. It is a development methodology used to standardize and automate the development process of C/C++ projects. The present repository contains the base implementation of PID, based on CMake APIs and commands.
 
 This project defines a **workspace** where users put their C/C++ projects but also contains implemntation of commands and CMake APIs used to define projects. For a deeper understanding and start learning PID, you can refer to [this website](http://pid.lirmm.net/pid-framework).
 
 # What is it useful for ?
 
-The term "methodoloy" is supposed to cover all phases of code development process. The goal is to provide a packaging system where people can easily share and reuse the projects they work(ed) on, either under source or binary format. Indeed, in the context of my laboratory (LIRMM, Montpellier, France), and more precisely for robotic teams, we had no frame to develop and share our projects which lead to tremendously complex reuse of code.
+The term "methodology" is supposed to cover all phases of code development process. The goal is to provide a packaging system where people can easily share and reuse the projects they work(ed) on, either under source or binary format. Indeed, in the context of my laboratory (LIRMM, Montpellier, France), and more precisely for robotic teams, we had no frame to develop and share our projects which lead to tremendously complex reuse of code.
 
 The basic idea is to use a CMake API to describe all aspects of the project in the most precise and formal way: software they generate ; projects then depends on ; git branches they define; available versions released ; prebuild binaries already available online ; documentation or licensing aspects and so on. This way PID automates everything related to software project development in a kind of standard "way of doing".
 

@@ -1440,7 +1440,7 @@ endfunction(create_Bin_Component_Symlinks)
 #  .. _create_External_Component_Symlinks:
 #
 #  create_External_Component_Symlinks
-#  -----------------------------
+#  ----------------------------------
 #
 #   .. command:: create_External_Component_Symlinks(package component mode resources)
 #
