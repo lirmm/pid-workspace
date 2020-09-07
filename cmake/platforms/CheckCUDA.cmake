@@ -30,9 +30,11 @@ endfunction()
 set(CUDA_Language_AVAILABLE FALSE CACHE INTERNAL "")
 # CUDA arch may have been directly set in CMAKE_CUDA_FLAGS
 set(temp_CUDA_flags)# a code compatibility has been specified using an environment
+set(used_CUDA_ARCH)
 foreach(flag IN LISTS CMAKE_CUDA_FLAGS)
   if(flag MATCHES "arch=compute_([0-9]+),code=sm_([0-9]+)")
-    set(temp_CUDA_flags ${CMAKE_CUDA_FLAGS})# an arch has been specified using an environment
+    string(REGEX REPLACE "([0-9]+)([0-9])$" "\\1.\\2" used_arch ${CMAKE_MATCH_1})
+    list(APPEND used_CUDA_ARCH ${used_arch})
     break()
   endif()
 endforeach()
@@ -70,6 +72,7 @@ endif()
 set(CUDA_Language_AVAILABLE TRUE CACHE INTERNAL "")
 
 #memorizing build variables
+set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE INTERNAL "" FORCE)
 set(CMAKE_CUDA_FLAGS CACHE INTERNAL "" FORCE) #for security, avoid setting flags when language is checked (otherwise if errors occurs they will be persistent)
 check_language(CUDA)
 if(CMAKE_CUDA_COMPILER)
@@ -109,9 +112,8 @@ else()
     list(REMOVE_ITEM AVAILABLE_CUDA_ARCHS "2.0" "2.1" "3.0" "3.2" "3.5" "5.0") #support for archs < 5.2 is deprecated
   endif()
 endif()
-
-if(temp_CUDA_flags) #target architecture has been specified using environment
-  set(CMAKE_CUDA_FLAGS "${temp_CUDA_flags}" CACHE STRING "" FORCE)
+if(used_CUDA_ARCH) #target architecture has been specified using environment
+  set(DEFAULT_CUDA_ARCH ${used_CUDA_ARCH} CACHE INTERNAL "")#default arch is greater available
 else()
   # we are not in the context of evaluating an environment on current host
   # detecting current CUDA architecture on host, if any
@@ -145,8 +147,7 @@ else()
     set(DEFAULT_CUDA_DRIVER CACHE INTERNAL "")#no default driver means no nvidia card installed
     set(DEFAULT_CUDA_RUNTIME CACHE INTERNAL "")#no default runtime means no nvidia card installed
   endif()
-
-  string(REGEX REPLACE "\\." "" arch "${DEFAULT_CUDA_ARCH}")
-  set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${arch},code=sm_${arch} -D_FORCE_INLINES" CACHE STRING "" FORCE)
-  set(CUDA_NVCC_FLAGS "${CMAKE_CUDA_FLAGS}" CACHE STRING "" FORCE)
 endif()
+string(REGEX REPLACE "\\." "" arch "${DEFAULT_CUDA_ARCH}")
+set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${arch},code=sm_${arch} -D_FORCE_INLINES" CACHE STRING "" FORCE)
+set(CUDA_NVCC_FLAGS "${CMAKE_CUDA_FLAGS}" CACHE STRING "" FORCE)
