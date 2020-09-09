@@ -2621,10 +2621,10 @@ function(build_B2_External_Project)
     create_Symlink(${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
   endif()
 
+  enforce_Standard_Install_Dirs(${TARGET_INSTALL_DIR})
   symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
   set_External_Runtime_Component_Rpath(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
 endfunction(build_B2_External_Project)
-
 
 #.rst:
 #
@@ -2824,6 +2824,7 @@ function(build_Autotools_External_Project)
     create_Symlink(${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
   endif()
 
+  enforce_Standard_Install_Dirs(${TARGET_INSTALL_DIR})
   symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
   set_External_Runtime_Component_Rpath(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
 endfunction(build_Autotools_External_Project)
@@ -2991,6 +2992,7 @@ function(build_Waf_External_Project)
     create_Symlink(${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
   endif()
 
+  enforce_Standard_Install_Dirs(${TARGET_INSTALL_DIR})
   symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
   set_External_Runtime_Component_Rpath(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
 endfunction(build_Waf_External_Project)
@@ -3181,7 +3183,7 @@ function(build_CMake_External_Project)
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
   endif()
-
+  enforce_Standard_Install_Dirs(${TARGET_INSTALL_DIR})
   symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
 endfunction(build_CMake_External_Project)
 
@@ -3372,12 +3374,6 @@ function(build_Bazel_External_Project)
     else()
       file(COPY ${bin_path} DESTINATION ${TARGET_INSTALL_DIR}/lib)
     endif()
-  endif()
-
-  # Build systems may install libraries in a lib64 folder on some platforms
-	# If it's the case, symlink the folder to lib in order to have a unique wrapper description
-  if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
-    create_Symlink(${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
   endif()
 
   symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})

@@ -5548,6 +5548,38 @@ endfunction(symlink_DLLs_To_Lib_Folder)
 #
 # .. ifmode:: internal
 #
+#  .. |enforce_Standard_Install_Dirs| replace:: ``enforce_Standard_Install_Dirs``
+#  .. _enforce_Standard_Install_Dirs:
+#
+#  enforce_Standard_Install_Dirs
+#  ---------------------------------
+#
+#   .. command:: enforce_Standard_Install_Dirs(install_directory)
+#
+#    create symlinks to existing install folder directories with PID standard names. Used to get homogeneous installs.
+#    Note: Build systems may install libraries for instance in a lib64 folder on some platforms, If it's the case, symlink the folder to lib in order to have a unique wrapper description.
+#
+#     :install_directory: the installation directory containing the bin and src folders
+#
+function(enforce_Standard_Install_Dirs install_directory)
+  if(EXISTS ${install_directory}/lib64)
+    create_Symlink(${install_directory}/lib64 ${install_directory}/lib)
+  endif()
+  if(EXISTS ${install_directory}/lib32)
+    create_Symlink(${install_directory}/lib32 ${install_directory}/lib)
+  endif()
+  if(EXISTS ${install_directory}/bin64)
+    create_Symlink(${install_directory}/bin64 ${install_directory}/bin)
+  endif()
+  if(EXISTS ${install_directory}/bin32)
+    create_Symlink(${install_directory}/bin32 ${install_directory}/bin)
+  endif()
+endfunction(enforce_Standard_Install_Dirs)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |create_Shell_Script_Symlinks| replace:: ``create_Shell_Script_Symlinks``
 #  .. create_Shell_Script_Symlinks:
 #
