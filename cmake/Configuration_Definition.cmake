@@ -146,7 +146,7 @@ endmacro(installable_PID_Configuration)
 #
 #     .. code-block:: cmake
 #
-#        execute_OS_Configuration_Command(apt install -y libgtk2.0-dev libgtkmm-2.4-dev)
+#        execute_OS_Configuration_Command(apt-get install -y libgtk2.0-dev libgtkmm-2.4-dev)
 #
 macro(execute_OS_Configuration_Command)
 if(NOT DO_NOT_INSTALL)
