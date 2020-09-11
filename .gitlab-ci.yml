@@ -40,33 +40,38 @@ stages:
 .selection_ubuntu16: &selection_ubuntu16
    tags:
         - pid
-        - x86_64_linux_stdc++11
+        - x86_64_linux_stdc++11__ub16_gcc7__
 
 .selection_ubuntu18: &selection_ubuntu18
    tags:
         - pid
-        - x86_64_linux_stdc++11__ub18_gcc8__
+        - x86_64_linux_stdc++11__ub18_gcc9__
+
+.selection_ubuntu18: &selection_ubuntu20
+   tags:
+        - pid
+        - x86_64_linux_stdc++11__ub20_gcc9__
+
+.selection_archlinux_: &selection_archlinux
+   tags:
+        - pid
+        - x86_64_linux_stdc++11__arch_gcc10__
+
+.selection_debian_: &selection_debian
+   tags:
+        - pid
+        - x86_64_linux_stdc++11__deb10_gcc8__
+
+.selection_fedora_: &selection_fedora
+   tags:
+        - pid
+        - x86_64_linux_stdc++11__fedo32_gcc10__
+
 
 .selection_freebsd_: &selection_freebsd
    tags:
         - pid
         - x86_64_freebsd_c++
-
-.selection_archlinux_: &selection_archlinux
-   tags:
-        - pid
-        - x86_64_linux_stdc++11__archlinux__
-
-.selection_debian_: &selection_debian
-   tags:
-        - pid
-        - x86_64_linux_stdc++11__debian10_gcc-8-3__
-
-.selection_fedora_: &selection_fedora
-   tags:
-        - pid
-        - x86_64_linux_stdc++11__fedora32_gcc-10-1__
-
 
 .selection_macos_catalina_: &selection_macos_catalina
    tags:
@@ -96,13 +101,13 @@ ubuntu18 create_and_build:
   <<: *create_and_build
   <<: *selection_ubuntu18
 
-freebsd deploy:
+ubuntu20 deploy:
   <<: *deploy
-  <<: *selection_freebsd
+  <<: *selection_ubuntu20
 
-freebsd create_and_build:
+ubuntu20 create_and_build:
   <<: *create_and_build
-  <<: *selection_freebsd
+  <<: *selection_ubuntu20
 
 archlinux deploy:
   <<: *deploy
@@ -128,13 +133,21 @@ debian create_and_build:
   <<: *create_and_build
   <<: *selection_debian
 
-catalina deploy:
-  <<: *deploy
-  <<: *selection_macos_catalina
+# freebsd deploy:
+#   <<: *deploy
+#   <<: *selection_freebsd
+#
+# freebsd create_and_build:
+#   <<: *create_and_build
+#   <<: *selection_freebsd
 
-catalina create_and_build:
-  <<: *create_and_build
-  <<: *selection_macos_catalina
+# catalina deploy:
+#   <<: *deploy
+#   <<: *selection_macos_catalina
+#
+# catalina create_and_build:
+#   <<: *create_and_build
+#   <<: *selection_macos_catalina
 
 ############ more specific jobs #############
 
@@ -147,15 +160,15 @@ catalina create_and_build:
 #         - ~/run.sh ./pid deploy package=mytestpackage
 #     <<: *selection_raspbian
 
-windows10 deploy:
-    stage: deploy
-    before_script:
-        - source /home/PID/msvc_setup.sh
-        - which cl.exe
-        - ./pid.bat configure -DCMAKE_GENERATOR=Ninja
-        - ./pid.bat contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONAL_DEBUG_INFO=ON
-        - ./pid.bat contributions cmd=prio_max space=pid-tests
-    script:
-        - ./pid.bat deploy package=pid-rpath branch=cxx17
-        - ./pid.bat deploy package=open-phri branch=win32_fix
-    <<: *selection_windows10
+# windows10 deploy:
+#     stage: deploy
+#     before_script:
+#         - source /home/PID/msvc_setup.sh
+#         - which cl.exe
+#         - ./pid.bat configure -DCMAKE_GENERATOR=Ninja
+#         - ./pid.bat contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONAL_DEBUG_INFO=ON
+#         - ./pid.bat contributions cmd=prio_max space=pid-tests
+#     script:
+#         - ./pid.bat deploy package=pid-rpath branch=cxx17
+#         - ./pid.bat deploy package=open-phri branch=win32_fix
+#     <<: *selection_windows10
