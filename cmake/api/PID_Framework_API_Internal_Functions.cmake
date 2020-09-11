@@ -684,20 +684,27 @@ endfunction(generate_Framework_Reference_File)
 #
 # .. ifmode:: internal
 #
-#  .. |update_Environment_CI_Config_File| replace:: ``update_Environment_CI_Config_File``
-#  .. _update_Environment_CI_Config_File:
+#  .. |update_Framework_CI_Config_File| replace:: ``update_Framework_CI_Config_File``
+#  .. _update_Framework_CI_Config_File:
 #
-#  update_Environment_CI_Config_File
+#  update_Framework_CI_Config_File
 #  ----------------------------------
 #
-#   .. command:: update_Environment_CI_Config_File(pathtonewfile)
+#   .. command:: update_Framework_CI_Config_File(pathtonewfile)
 #
 #   Update the CI config file with the one coming from the workspace
 #
-function(update_Environment_CI_Config_File)
-file(COPY ${WORKSPACE_DIR}/cmake/patterns/frameworks/framework/.gitlab-ci.yml DESTINATION ${CMAKE_SOURCE_DIR})
-verify_Framework_CI_Content()
-endfunction(update_Environment_CI_Config_File)
+function(update_Framework_CI_Config_File)
+	verify_Framework_CI_Content()
+	#configuring pattern file
+	set(FRAMEWORK_CI_CONTRIBUTION_SPACES ${TARGET_CONTRIBUTION_SPACE})
+	if(FRAMEWORK_CI_CONTRIBUTION_SPACES)
+		list(REMOVE_ITEM FRAMEWORK_CI_CONTRIBUTION_SPACES pid)#remove official contribution space as it is used by default
+	endif()
+	configure_file(${WORKSPACE_DIR}/cmake/patterns/frameworks/framework/.gitlab-ci.yml.in
+		             ${CMAKE_SOURCE_DIR}/.gitlab-ci.yml @ONLY)#adding the gitlab-ci configuration file to the repository
+
+endfunction(update_Framework_CI_Config_File)
 
 #.rst:
 #
@@ -989,7 +996,7 @@ generate_Framework_Readme_File() # generating and putting into source directory 
 generate_Framework_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Framework_Data() # generating the data files for jekyll (result in the build tree)
 generate_Framework_Binary_References() # generating in the project the cmake script files that allow to find references on packages of the framework
-update_Environment_CI_Config_File() #update CI file with version coming from framework
+update_Framework_CI_Config_File() #update CI file with version coming from framework
 
 # build steps
 # 1) create or clean the "generated" folder in build tree.
