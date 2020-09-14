@@ -839,8 +839,8 @@ endmacro(PID_Wrapper_Configuration)
 
 macro(declare_PID_Wrapper_Platform_Configuration)
 set(options)
-set(oneValueArgs PLATFORM)
-set(multiValueArgs CONFIGURATION OPTIONAL)
+set(oneValueArgs)
+set(multiValueArgs PLATFORM CONFIGURATION OPTIONAL)
 cmake_parse_arguments(DECLARE_PID_WRAPPER_PLATFORM "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION AND NOT DECLARE_PID_WRAPPER_PLATFORM_OPTIONAL)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -2615,12 +2615,6 @@ function(build_B2_External_Project)
     return()
   endif()
 
-  # Build systems may install libraries in a lib64 folder on some platforms
-	# If it's the case, symlink the folder to lib in order to have a unique wrapper description
-  if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
-    create_Symlink(${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
-  endif()
-
   enforce_Standard_Install_Dirs(${TARGET_INSTALL_DIR})
   symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
   set_External_Runtime_Component_Rpath(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
@@ -2818,12 +2812,6 @@ function(build_Autotools_External_Project)
     return()
   endif()
 
-  # Build systems may install libraries in a lib64 folder on some platforms
-	# If it's the case, symlink the folder to lib in order to have a unique wrapper description
-  if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
-    create_Symlink(${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
-  endif()
-
   enforce_Standard_Install_Dirs(${TARGET_INSTALL_DIR})
   symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
   set_External_Runtime_Component_Rpath(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
@@ -2984,12 +2972,6 @@ function(build_Waf_External_Project)
     message("[PID] ERROR : cannot configure/build/install Waf project ${BUILD_WAF_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
-  endif()
-
-  # Build systems may install libraries in a lib64 folder on some platforms
-	# If it's the case, symlink the folder to lib in order to have a unique wrapper description
-  if(EXISTS ${TARGET_INSTALL_DIR}/lib64)
-    create_Symlink(${TARGET_INSTALL_DIR}/lib64 ${TARGET_INSTALL_DIR}/lib)
   endif()
 
   enforce_Standard_Install_Dirs(${TARGET_INSTALL_DIR})

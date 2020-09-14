@@ -2512,7 +2512,7 @@ endfunction(get_Library_Dirs_For_Links)
 #
 function(create_Shared_Lib_Extension RES_EXT platform soname)
   extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${platform})
-  if(RES_OS STREQUAL macos)
+  if(RES_OS STREQUAL "macos")
     if(soname OR soname EQUAL 0)
       if(soname MATCHES "^\\.[0-9].*$")
         set(${RES_EXT} "${soname}.dylib" PARENT_SCOPE)
@@ -2522,7 +2522,7 @@ function(create_Shared_Lib_Extension RES_EXT platform soname)
     else()
       set(${RES_EXT} ".dylib" PARENT_SCOPE)
     endif()
-	elseif(RES_OS STREQUAL windows)
+	elseif(RES_OS STREQUAL "windows")
 		set(${RES_EXT} ".dll" PARENT_SCOPE)
 	else()# Linux or any other standard UNIX system
 		if(soname OR soname EQUAL 0)
@@ -5526,13 +5526,13 @@ endfunction(append_Join_Generator_Expressions)
 #  .. _symlink_DLLs_To_Lib_Folder:
 #
 #  symlink_DLLs_To_Lib_Folder
-#  ---------------------------------
+#  ---------------------------
 #
 #   .. command:: symlink_DLLs_To_Lib_Folder(install_directory)
 #
-#    On Windows, symlinks any DLL present in install_directory/bin to install_directory/src for consistency with UNIX platforms
+#    On Windows, symlinks any DLL present in install_directory/bin to install_directory/lib for consistency with UNIX platforms
 #
-#     :install_directory: the installation directory containing the bin and src folders
+#     :install_directory: the installation directory containing the bin and lib folders
 #
 function(symlink_DLLs_To_Lib_Folder install_directory)
   if(WIN32)
