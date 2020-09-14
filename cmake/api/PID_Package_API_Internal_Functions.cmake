@@ -2421,6 +2421,7 @@ append_Unique_In_Cache(${PROJECT_NAME}_${DECLARED_COMP}_EXTERNAL_DEPENDENCY_${de
 endfunction(declare_External_Component_Dependency)
 
 
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -2434,7 +2435,7 @@ endfunction(declare_External_Component_Dependency)
 #   .. command:: declare_System_Component_Dependency_Using_Configuration(component export platform_config comp_defs comp_exp_defs dep_defs)
 #
 #     Specify a dependency between a component of the currently defined native package and system components defined using a platform configuration.
-	#
+#
 #     :component: the name of the component that have a dependency.
 #     :export: if TRUE component exports the content of the dependency.
 #     :platform_config: the name of the platform configuration to export.
@@ -2445,34 +2446,32 @@ endfunction(declare_External_Component_Dependency)
 function(declare_System_Component_Dependency_Using_Configuration component export platform_config comp_defs comp_exp_defs dep_defs)
 	set(all_shared_links)
 	set(all_static_links)
-	foreach(link IN LISTS ${platform_config}_LINK_OPTIONS)#for each link defined by the configuration
-		get_Link_Type(RES_TYPE ${link})
-		if(RES_TYPE STREQUAL STATIC)#a static archive extension is explicitly given
-			list(APPEND all_static_links ${link})
-		else()#by default links refer to shared object (if no extension given)
-			list(APPEND all_shared_links ${link})
-		endif()
+	get_All_Configuration_Visible_Build_Variables(LINK_OPTS COMPILE_OPTS INC_DIRS LIB_DIRS DEFS RPATH ${platform_config})
+	foreach(var IN LISTS LINK_OPTS)
+		foreach(link IN LISTS ${var})#for each link defined by the configuration variable
+			get_Link_Type(RES_TYPE ${link})
+			if(RES_TYPE STREQUAL STATIC)#a static archive extension is explicitly given
+				list(APPEND all_static_links ${link})
+			else()#by default links refer to shared object (if no extension given)
+				list(APPEND all_shared_links ${link})
+			endif()
+		endforeach()
 	endforeach()
 	#same call as an hand-made one but using automatically standard configuration variables
-	set(all_dep_defs ${${platform_config}_DEFINITIONS} ${dep_defs})#preprocessor definition that apply to the interface of the configuration's components come from : 1) the configuration definition itself and 2) can be set directly by the user component
-
-	#only transmit configuration variable if the configuration defines those variables (even if standard they are not all always defined)
-	set(includes)
-	if(DEFINED ${platform_config}_INCLUDE_DIRS)
-		set(includes ${platform_config}_INCLUDE_DIRS)
-	endif()
-	set(lib_dirs)
-	if(DEFINED ${platform_config}_LIBRARY_DIRS)
-		set(lib_dirs ${platform_config}_LIBRARY_DIRS)
-	endif()
+	set(all_dep_defs ${dep_defs})#preprocessor definition that apply to the interface of the configuration's components come from : 1) the configuration definition itself and 2) can be set directly by the user component
+	foreach(var IN LISTS DEFS)#note: ${var} is the name of the variable
+		list(APPEND all_dep_defs ${${var}})#preprocessor definition that apply to the interface of the configuration's components come from : 1) the configuration definition itself and 2) can be set directly by the user component
+	endforeach()
 	set(opts)
-	if(DEFINED ${platform_config}_COMPILER_OPTIONS)
-		set(opts ${platform_config}_COMPILER_OPTIONS)
-	endif()
-	set(rpath)
-	if(DEFINED ${platform_config}_RPATH)
-		set(rpath ${platform_config}_RPATH)
-	endif()
+	foreach(var IN LISTS COMPILE_OPTS)#note: ${var} is the name of the variable
+		list(APPEND opts ${${var}})#preprocessor definition that apply to the interface of the configuration's components come from : 1) the configuration definition itself and 2) can be set directly by the user component
+	endforeach()
+	#only transmit configuration variable if the configuration defines those variables (even if standard they are not all always defined)
+	#Note: compared to previous variables those ones are not immediately evaluated since they refer to "path" that can change when relocation occurs
+	#or when deployed on another system
+	set(includes ${INC_DIRS})
+	set(lib_dirs ${LIB_DIRS})
+	set(rpath ${RPATH})
 
 	declare_System_Component_Dependency(
 			${component}

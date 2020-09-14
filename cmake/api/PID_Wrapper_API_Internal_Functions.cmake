@@ -2846,13 +2846,12 @@ function(set_Build_Info_For_Component package component version platform)
 	set(lib_dirs ${${prefix}_COMPONENT_${component}_SYSTEM_LIB_DIRS})
 	set(defs ${${prefix}_COMPONENT_${component}_SYSTEM_DEFINITIONS})
 	set(opts ${${prefix}_COMPONENT_${component}_SYSTEM_OPTIONS})
-
 	#build info may be specified on component they are required to enfore tha use of adequate build option
 	set(c_std ${${prefix}_COMPONENT_${component}_C_STANDARD})
 	set(c_max_std ${${prefix}_COMPONENT_${component}_C_MAX_STANDARD})
 	set(cxx_std ${${prefix}_COMPONENT_${component}_CXX_STANDARD})
 	set(cxx_max_std ${${prefix}_COMPONENT_${component}_CXX_MAX_STANDARD})
-
+	set(res ${${prefix}_COMPONENT_${component}_SYSTEM_RUNTIME_RESOURCES})
 	set(all_local_deps)
 	#standards need to be resolve for the component (including its own standard constraints) to get a finally usable language standard resolved
 	if(${prefix}_COMPONENT_${component}_SYSTEM_C_STANDARD
@@ -2886,7 +2885,6 @@ function(set_Build_Info_For_Component package component version platform)
 		endif()
 	endif()
 
-	set(res ${${prefix}_COMPONENT_${component}_SYSTEM_RUNTIME_RESOURCES})
 
 	#local recursion first and caching result to avoid doing many time the same operation
 	# getting all build options from internal dependencies
@@ -3022,9 +3020,9 @@ function(set_Build_Info_For_Component package component version platform)
 			endif()
 		endforeach()
 	endforeach()
-	#evaluate variables, if any
+	#first evaluate element of the list => if they are variables they are evaluated
 	evaluate_Variables_In_List(EVAL_SHARED_LNKS runtime_links)
-	evaluate_Variables_In_List(EVAL_LNKS links) #first evaluate element of the list => if they are variables they are evaluated
+	evaluate_Variables_In_List(EVAL_LNKS links)
 	evaluate_Variables_In_List(EVAL_INCS includes)
 	evaluate_Variables_In_List(EVAL_LDIRS lib_dirs)
 	evaluate_Variables_In_List(EVAL_DEFS defs)
