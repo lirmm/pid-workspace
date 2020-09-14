@@ -1620,18 +1620,18 @@ if(NOT COMP_IS_RUNTIME)
 endif()
 
 # 1) getting all public runtime dependencies
-get_Source_Component_Runtime_Links(ALL_RUNTIME_DEPS ${real_comp_name} ${CMAKE_BUILD_TYPE})
+get_Source_Component_Runtime_Links(ALL_RUNTIME_DEPS ${real_comp_name} ${mode})
 # 2) getting direct and undirect runtime resources dependencies
-get_Bin_Component_Runtime_Resources(RES_RESOURCES ${PROJECT_NAME} ${real_comp_name} ${CMAKE_BUILD_TYPE} FALSE)
+get_Bin_Component_Runtime_Resources(RES_RESOURCES ${PROJECT_NAME} ${real_comp_name} ${mode} FALSE)
 list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
 
 if(ALL_RUNTIME_DEPS)
   list(REMOVE_DUPLICATES ALL_RUNTIME_DEPS)
 endif()
 if(WIN32)
-  create_Source_Component_Symlinks_Build_Tree(${real_comp_name} ${CMAKE_BUILD_TYPE} ALL_RUNTIME_DEPS)
+  create_Source_Component_Symlinks_Build_Tree(${real_comp_name} ${mode} ALL_RUNTIME_DEPS)
 endif()
-create_Source_Component_Symlinks(${real_comp_name} ${CMAKE_BUILD_TYPE} ALL_RUNTIME_DEPS)
+create_Source_Component_Symlinks(${real_comp_name} ${mode} ALL_RUNTIME_DEPS)
 is_Usable_Python_Wrapper_Module(USABLE_WRAPPER ${PROJECT_NAME} ${real_comp_name})
 if(USABLE_WRAPPER)
 	# getting path to internal targets dependecies that produce a runtime code (not used for rpath but required for python modules)
