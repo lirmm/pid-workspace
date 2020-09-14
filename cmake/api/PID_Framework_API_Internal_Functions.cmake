@@ -302,7 +302,7 @@ if(NOT GIT_CONFIGURED)
 endif()
 update_Git_Ignore_File(${WORKSPACE_DIR}/cmake/patterns/frameworks/framework/.gitignore)
 
-if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
+if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}(-framework|-site)?/build$")
 	set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 	set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake ${CMAKE_MODULE_PATH}) # adding the cmake scripts files from the framework
 
