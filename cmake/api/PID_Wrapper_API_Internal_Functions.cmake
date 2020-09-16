@@ -64,7 +64,6 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS CACHE INTERNAL "")
 	#reset platform configurations
 	foreach(config IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS)
-		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATION_${config} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS CACHE INTERNAL "")
 	endforeach()
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS CACHE INTERNAL "")
@@ -558,7 +557,6 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 	#manage platform configuration description
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS} CACHE INTERNAL \"\")\n")
 	foreach(config IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS)
-		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATION_${config} ${${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATION_${config}} CACHE INTERNAL \"\")\n")
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS} CACHE INTERNAL \"\")\n")
 	endforeach()
 
@@ -992,59 +990,57 @@ endfunction(declare_Wrapped_Environment_Configuration)
 #
 function(declare_Wrapped_Platform_Configuration platform configurations options)
 if(platform)# if a platform constraint applies
+	set(target_curr_platform)
+	foreach(plat IN LISTS platform)
+		if(plat STREQUAL CURRENT_PLATFORM_BASE
+			OR plat STREQUAL CURRENT_PLATFORM_OS)#OS is the main useful element o check when considering platform configuration
+			set(target_curr_platform ${plat})
+			break()
+		endif()
+	endforeach()
+	if(NOT target_curr_platform)#nothing more to do
+		return()
+	endif()
 	foreach(config IN LISTS configurations)
 		parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")#need to parse the configuration strings to extract arguments (if any)
 		if(NOT CONFIG_NAME)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
 			return()
-		elseif(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} # no other platform constraint already applies
-			OR NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} STREQUAL "all")#the configuration has no constraint
-				append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} "${platform}")
 		endif()
 		append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")# update the list of required configurations
 		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONFIG_ARGS}" CACHE INTERNAL "")
-
-		if(platform STREQUAL CURRENT_PLATFORM_BASE)
-			#check that the configuration applies to the current platform if the current platform is the target of this constraint
-			set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
-			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
-			if(NOT RESULT_OK)
-				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satify configuration ${config}!")
-				return()
-			endif()
-			set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
+		#check that the configuration applies to the current platform if the current platform is the target of this constraint
+		set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
+		check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
+		if(NOT RESULT_OK)
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satify configuration ${config}!")
+			return()
 		endif()
+		set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
 	endforeach()
 
 	#now dealing with options
 	foreach(config IN LISTS options)
-		if(platform STREQUAL CURRENT_PLATFORM_BASE)
-			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
-			if(RESULT_OK)
-				set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
+		check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
+		if(RESULT_OK)
+			set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
+		else()
+			if(CONFIG_NAME)#can reset only if CONFIG_NAME has been extracted
+				set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
 			else()
-				if(CONFIG_NAME)#can reset only if CONFIG_NAME has been extracted
-					set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
-				else()
-					finish_Progress(${GLOBAL_PROGRESS_VAR})
-					message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
-					return()
-				endif()
-			endif()
-
-			if(${CONFIG_NAME}_AVAILABLE) #if available then it is considered as "used"
-				append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")
-				if(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} # no other platform constraint already applies
-					OR NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} STREQUAL "all")#the configuration has no constraint
-						append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} "${platform}")
-						set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONSTRAINTS}" CACHE INTERNAL "")
-				endif()
+				finish_Progress(${GLOBAL_PROGRESS_VAR})
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
+				return()
 			endif()
 		endif()
-	endforeach()
 
+		if(${CONFIG_NAME}_AVAILABLE) #if available then it is considered as "used"
+			append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")
+			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONSTRAINTS}" CACHE INTERNAL "")
+		endif()
+	endforeach()
 else()#no platform constraint applies => this platform configuration is adequate for all platforms
 	foreach(config IN LISTS configurations)
 		parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
@@ -1053,7 +1049,6 @@ else()#no platform constraint applies => this platform configuration is adequate
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
 			return()
 		endif()
-		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} "all" CACHE INTERNAL "")
 		#check that the configuration applies to the current platform anytime
 		append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")# update the list of required configurations
 
@@ -1092,11 +1087,7 @@ else()#no platform constraint applies => this platform configuration is adequate
 
 		if(${CONFIG_NAME}_AVAILABLE) #if available then it is considered as used
 			append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")
-			if(NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} # no other platform constraint already applies
-				OR NOT ${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} STREQUAL "all")#the configuration has no constraint
-				set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME} "all" CACHE INTERNAL "")
-				set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONFIG_ARGS}" CACHE INTERNAL "")
-			endif()
+			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONFIG_ARGS}" CACHE INTERNAL "")
 		endif()
 	endforeach()
 endif()
@@ -1691,6 +1682,7 @@ endfunction(install_External_Python_Packages)
 #      :platform: the identifier of the platform to use in workspace install tree.
 #
 function(install_External_Rpath_Symlinks package version platform)
+
 	set(all_symlinks ${${package}_KNOWN_VERSION_${version}_BUILD_SHARED_LINKS} ${${package}_KNOWN_VERSION_${version}_BUILD_RUNTIME_RESOURCES} ${${package}_KNOWN_VERSION_${version}_BUILD_LOCAL_RUNTIME_RESOURCES})
 	#Note: need to add local runtime resources, even if not necessarily meaningful
 	set(list_of_symlinks)
@@ -1803,13 +1795,10 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 	set(list_of_platform_checks)
 	set(list_of_platform_configs_names)
 	foreach(config IN LISTS ${package}_KNOWN_VERSION_${version}_CONFIGURATIONS)
-		if(${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config} STREQUAL "all"
-			OR ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config} STREQUAL "${platform}")#this configuration is required for any platform
-			generate_Configuration_Expression(RESULTING_EXPRESSION ${config} "${${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS}")
-			list(APPEND list_of_platform_checks ${RESULTING_EXPRESSION})
-			list(APPEND list_of_platform_configs_names ${config})
-			generate_Platform_Configuration_Expression_For_Dependency(list_of_platform_checks list_of_platform_configs_names ${config})
-		endif()
+		generate_Configuration_Expression(RESULTING_EXPRESSION ${config} "${${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS}")
+		list(APPEND list_of_platform_checks ${RESULTING_EXPRESSION})
+		list(APPEND list_of_platform_configs_names ${config})
+		generate_Platform_Configuration_Expression_For_Dependency(list_of_platform_checks list_of_platform_configs_names ${config})
 	endforeach()
 	if(list_of_platform_checks)
 		file(APPEND ${file_for_version} "#description of external package ${package} version ${version} required platform configurations\n")
@@ -2133,6 +2122,52 @@ endfunction(generate_Description_For_External_Component_Dependencies)
 #
 # .. ifmode:: internal
 #
+#  .. |create_Relative_Path_To_Static| replace:: ``create_Relative_Path_To_Static``
+#  .. _create_Relative_Path_To_Static:
+#
+#  create_Relative_Path_To_Static
+#  -------------------------------
+#
+#   .. command:: create_Relative_Path_To_Static(RES_BINARY package version component platform)
+#
+#    Append the description of a component dependencies to a given external package use file.
+#
+#      :package: the name of target external package.
+#      :version: the target version of external package.
+#      :component: the name of the component that may have dependencies.
+#      :platform: the identifier of target platform in workspace install tree.
+#
+#      :RES_BINARY: the output variable containing the list of shared objects.
+#
+function(create_Relative_Path_To_Static RES_BINARY package version component platform)
+	set(${RES_BINARY} PARENT_SCOPE)
+	create_Static_Lib_Extension(RES_EXT ${platform})
+	set(final_list_of_static)#add the adequate extension name depending on the platform
+	foreach(static_lib_path IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS)
+		static_Library_Needs_Extension(NEEDS_EXT ${static_lib_path} ${platform})
+		# if it's not a path then construct it according to the platform
+		if(NOT static_lib_path MATCHES "/" AND NOT static_lib_path MATCHES "^-l")
+			if(WIN32)
+				set(static_lib_path lib/${static_lib_path})
+			elseif(static_lib_path MATCHES "^lib.*")
+				set(static_lib_path lib/${static_lib_path})
+			else()
+				set(static_lib_path lib/lib${static_lib_path})
+			endif()
+		endif()
+		if(NEEDS_EXT)#OK no extension defined we can apply
+			list(APPEND final_list_of_static "${static_lib_path}${RES_EXT}")
+		else()
+			list(APPEND final_list_of_static "${static_lib_path}")
+		endif()
+	endforeach()
+	set(${RES_BINARY} ${final_list_of_static} PARENT_SCOPE)
+endfunction(create_Relative_Path_To_Static)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |create_Relative_Path_To_Shared| replace:: ``create_Relative_Path_To_Shared``
 #  .. _create_Relative_Path_To_Shared:
 #
@@ -2213,27 +2248,8 @@ function(generate_Description_For_External_Component file_for_version package pl
 		set(options_str " SHARED_LINKS ${RES_SHARED}")
 	endif()
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS)
-		create_Static_Lib_Extension(RES_EXT ${platform})
-		set(final_list_of_static)#add the adequate extension name depending on the platform
-		foreach(static_lib_path IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS)
-			static_Library_Needs_Extension(NEEDS_EXT ${static_lib_path} ${platform})
-			# if it's not a path then construct it according to the platform
-			if(NOT static_lib_path MATCHES "/" AND NOT static_lib_path MATCHES "^-l")
-				if(WIN32)
-					set(static_lib_path lib/${static_lib_path})
-				elseif(static_lib_path MATCHES "^lib.*")
-					set(static_lib_path lib/${static_lib_path})
-				else()
-					set(static_lib_path lib/lib${static_lib_path})
-				endif()
-			endif()
-			if(NEEDS_EXT)#OK no extension defined we can apply
-				list(APPEND final_list_of_static "${static_lib_path}${RES_EXT}")
-			else()
-				list(APPEND final_list_of_static "${static_lib_path}")
-			endif()
-		endforeach()
-		fill_String_From_List(RES_STR final_list_of_static " ")
+		create_Relative_Path_To_Static(RES_BIN_STATIC ${package} ${version} ${component} ${platform})
+		fill_String_From_List(RES_STR RES_BIN_STATIC " ")
 		set(options_str "${options_str} STATIC_LINKS ${RES_STR}")
 	endif()
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_INCLUDES)
@@ -3333,16 +3349,13 @@ endfunction(resolve_Wrapper_Language_Configuration)
 function(resolve_Wrapper_Platform_Configuration CONFIGURED package version)
 	set(IS_CONFIGURED TRUE)
 	foreach(config IN LISTS ${package}_KNOWN_VERSION_${version}_CONFIGURATIONS)
-		if(${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config} STREQUAL "all"
-			OR CURRENT_PLATFORM_OS IN_LIST ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config})
-			check_Platform_Configuration_With_Arguments(RESULT_WITH_ARGS BINARY_CONSTRAINTS ${config} ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS Release)
-			if(NOT RESULT_WITH_ARGS)
-				set(IS_CONFIGURED FALSE)
-				set(${config}_AVAILABLE FALSE CACHE INTERNAL "")
-			else()
-				set(${config}_AVAILABLE TRUE CACHE INTERNAL "")
-				set(${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS ${BINARY_CONSTRAINTS} CACHE INTERNAL "")#reset argument to keep only those required in binary
-			endif()
+		check_Platform_Configuration_With_Arguments(RESULT_WITH_ARGS BINARY_CONSTRAINTS ${config} ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS Release)
+		if(NOT RESULT_WITH_ARGS)
+			set(IS_CONFIGURED FALSE)
+			set(${config}_AVAILABLE FALSE CACHE INTERNAL "")
+		else()
+			set(${config}_AVAILABLE TRUE CACHE INTERNAL "")
+			set(${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS ${BINARY_CONSTRAINTS} CACHE INTERNAL "")#reset argument to keep only those required in binary
 		endif()
 	endforeach()
 	set(${CONFIGURED} ${IS_CONFIGURED} PARENT_SCOPE)

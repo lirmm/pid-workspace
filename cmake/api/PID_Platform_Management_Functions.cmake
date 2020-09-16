@@ -1144,7 +1144,7 @@ endfunction(is_Compatible_With_Current_ABI)
 #
 #   .. command:: generate_Platform_Configuration_Expression_For_Dependency(RESULTING_EXPRESSION config)
 #
-#     Generate an expression (string) that describes the configuration checks neeed to manage dependencies of a given configuration.
+#     Generate an expression (string) that describes the configuration checks needed to manage dependencies of a given configuration.
 #
 #     :config: the name of the system configuration.
 #

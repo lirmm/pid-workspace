@@ -1107,10 +1107,10 @@ foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 	OR ${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
 		will_be_Built(RES ${component})#Note: no need to resolve alias since component list contains only base name in current project
 		if(RES)
-			if(EXISTS ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
-				file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
+			if(EXISTS ${CMAKE_BINARY_DIR}/.rpath/${PROJECT_NAME}_${component}${INSTALL_NAME_SUFFIX})
+				file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/.rpath/${PROJECT_NAME}_${component}${INSTALL_NAME_SUFFIX})
 			endif()
-			file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/.rpath/${component}${INSTALL_NAME_SUFFIX})
+			file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/.rpath/${PROJECT_NAME}_${component}${INSTALL_NAME_SUFFIX})
 		endif()
 	endif()
 endforeach()
@@ -1508,7 +1508,7 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "SHARED")
 		create_Shared_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${use_includes}" "${exported_defs}" "${internal_defs}" "${exported_compiler_options}" "${internal_compiler_options}" "${exported_links}" "${internal_links}")
-		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
+		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") #a static library has no exported links (no interface)
 		contains_Python_Code(HAS_WRAPPER ${CMAKE_CURRENT_SOURCE_DIR}/${dirname})
@@ -1523,7 +1523,7 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 		else()
 			create_Module_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 		endif()
-		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
+		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 		register_Component_Binary(${c_name})#need to register before calling manage python
 		if(HAS_WRAPPER)
 			manage_Python_Scripts(${c_name} ${dirname})#specific case to manage, python scripts must be installed in a share/script subfolder
@@ -1554,7 +1554,7 @@ mark_As_Declared(${c_name})
 #finaly apply plugins actions
 manage_Plugins_Contribution_Into_Current_Component()
 #automatically manage implicit platform constraints
-foreach(config IN LISTS ${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${VAR_SUFFIX})
+foreach(config IN LISTS ${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${USE_MODE_SUFFIX})
 	declare_System_Component_Dependency_Using_Configuration(
 		${c_name}
 		FALSE
@@ -1667,7 +1667,7 @@ endif()
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")# NB : tests do not need to be relocatable since they are purely local
 	create_Executable_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${internal_compiler_options}" "${internal_link_flags}")
 
-	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
+	install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 else()
 	create_TestUnit_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${internal_compiler_options}" "${internal_link_flags}")
 endif()

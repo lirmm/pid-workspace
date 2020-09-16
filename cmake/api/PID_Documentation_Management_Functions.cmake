@@ -1589,7 +1589,9 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
   			DESTINATION  ${TARGET_BINARIES_PATH})#copy the binaries
   	endif()
   	# configure the file used to reference the binary in jekyll
-  	set(BINARY_VERSION ${version})
+    set(BINARY_VERSION ${version})
+    set(BINARY_PACKAGE ${package})
+    set(BINARY_PLATFORM ${platform})
   	configure_file(${WORKSPACE_DIR}/cmake/patterns/static_sites/binary.md.in ${TARGET_BINARIES_PATH}/binary.md @ONLY)#adding to the static site project the markdown file describing the binary package (to be used by jekyll)
 
   	set(NEW_POST_CONTENT_BINARY TRUE)
@@ -1942,6 +1944,8 @@ function(produce_Wrapper_Static_Site_Content package only_bin framework versions
     			file(COPY ${target_dbg_archive_path} DESTINATION ${target_bin_path})#copy the debug archive
       	endif()
       	set(BINARY_VERSION ${version})
+        set(BINARY_PACKAGE ${package})
+        set(BINARY_PLATFORM ${platform})
         # configure the file used to reference the binary in jekyll
         configure_file(${WORKSPACE_DIR}/cmake/patterns/static_sites/binary.md.in ${target_bin_path}/binary.md @ONLY)#adding to the static site project the markdown file describing the binary package (to be used by jekyll)
         list(APPEND NEW_POST_CONTENT_BINARY_VERSIONS ${version})
