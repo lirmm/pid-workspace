@@ -1172,7 +1172,7 @@ cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY "${options}" "${o
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_COMPONENT)
   if(${ARGC} LESS 1 OR ${ARGV0} MATCHES "^EXPORT|DEPEND|EXTERNAL|PACKAGE|INCLUDES|LIBRARY_DIRS|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS|C_STANDARD|CXX_STANDARD|RUNTIME_RESOURCES$")
     finish_Progress(${GLOBAL_PROGRESS_VAR})
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Component_Dependency requires to define the name of the declared component using the COMPONENT keyword or by giving the name as first argument.")
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, PID_Wrapper_Component_Dependency requires to define the name of the declared component using the COMPONENT keyword or by giving the name as first argument.")
     return()
   endif()
   set(component_name ${ARGV0})
@@ -1185,7 +1185,7 @@ endif()
 
 if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_EXPORT AND DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEPEND)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
-  message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling declare_PID_Wrapper_Component_Dependency, EXPORT and DEPEND keywords cannot be used in same time.")
+  message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling PID_Wrapper_Component_Dependency, EXPORT and DEPEND keywords cannot be used in same time.")
   return()
 endif()
 
@@ -1281,29 +1281,32 @@ else()#this is a dependency to another component defined in the same external pa
   else()#no target component defined => it is a system dependency
     if(DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CONFIGURATION)
       set(config ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_CONFIGURATION})
-      set(all_defs ${${config}_DEFINITIONS} ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS})
-
+      get_All_Configuration_Visible_Build_Variables(LINK_OPTS COMPILE_OPTS INC_DIRS LIB_DIRS DEFS RPATH ${config})
+      set(all_links)
+      foreach(var IN LISTS LINK_OPTS)
+        foreach(link IN LISTS ${var})#for each link defined by the configuration variable
+          list(APPEND all_links ${link})#get the value of the link
+        endforeach()
+      endforeach()
+      #same call as an hand-made one but using automatically standard configuration variables
+      set(all_defs ${DECLARE_PID_WRAPPER_COMPONENT_DEPENDENCY_DEFINITIONS})#preprocessor definition that apply to the interface of the configuration's components come from : 1) the configuration definition itself and 2) can be set directly by the user component
+      foreach(var IN LISTS DEFS)#note: ${var} is the name of the variable
+        list(APPEND all_defs ${${var}})#preprocessor definition that apply to the interface of the configuration's components come from : 1) the configuration definition itself and 2) can be set directly by the user component
+      endforeach()
+      set(all_opts)
+      foreach(var IN LISTS COMPILE_OPTS)#note: ${var} is the name of the variable
+        list(APPEND all_opts ${${var}})#preprocessor definition that apply to the interface of the configuration's components come from : 1) the configuration definition itself and 2) can be set directly by the user component
+      endforeach()
       #only transmit configuration variable if the configuration defines those variables (even if standard they are not all always defined)
-      set(includes)
-      if(DEFINED ${config}_INCLUDE_DIRS)
-        set(includes ${config}_INCLUDE_DIRS)
-      endif()
-      set(lib_dirs)
-      if(DEFINED ${config}_LIBRARY_DIRS)
-        set(lib_dirs ${config}_LIBRARY_DIRS)
-      endif()
-      set(opts)
-      if(DEFINED ${config}_COMPILER_OPTIONS)
-        set(opts ${config}_COMPILER_OPTIONS)
-      endif()
-      set(rpath)
-      if(DEFINED ${config}_RPATH)
-        set(rpath ${config}_RPATH)
-      endif()
+      #Note: compared to previous variables those ones are not immediately evaluated since they refer to "path" that can change when relocation occurs
+      #or when deployed on another system
+      set(includes ${INC_DIRS})
+      set(lib_dirs ${LIB_DIRS})
+      set(rpath ${RPATH})
 
       set(fake_intern_opts)
       adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
-                                            fake_intern_opts ${config}_COMPILER_OPTIONS
+                                            fake_intern_opts all_opts
                                             "${${config}_C_STANDARD}"
                                             "${${config}_C_MAX_STANDARD}"
                                             "${${config}_CXX_STANDARD}"
@@ -1317,21 +1320,21 @@ else()#this is a dependency to another component defined in the same external pa
         endif()
       endif()
       #need to apply corrrective action in compiler options
-      set(${config}_COMPILER_OPTIONS ${EXPORT_OPTS} CACHE INTERNAL "")#force adaption of the variable at global scope
+      set(all_opts ${EXPORT_OPTS} CACHE INTERNAL "")#force adaption of the variable at global scope
       declare_Wrapped_Component_System_Dependency(${component_name}
         "${includes}"
         "${lib_dirs}"
-        "${${config}_LINK_OPTIONS}"
+        "${all_links}"
         "${all_defs}"
-        "${opts}"
+        "${all_opts}"
         "${C_STD_USED}"
         "${${config}_C_MAX_STANDARD}"
         "${CXX_STD_USED}"
         "${${config}_CXX_MAX_STANDARD}"
         "${rpath}"
       )
-      set(config)
-    else()
+      set(config)#reset value of the config variable
+    else()#no explicit configuration defined => the user has to manage dependencies "by hand" (should be avoided)
 
       set(fake_intern_opts)
       adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
