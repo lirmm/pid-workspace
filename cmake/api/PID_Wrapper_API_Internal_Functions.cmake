@@ -1722,7 +1722,7 @@ endfunction(install_External_Rpath_Symlinks)
 #      :version: the version of the external package for which a PID version file is installed.
 #
 function(set_External_Runtime_Component_Rpath package version)
-	if(CMAKE_HOST_UNIX OR CMAKE_HOST_APPLE)#do not do anything with windows
+	if(RPATH_UTILITY)#do not do anything with windows
 		foreach(shared IN LISTS ${package}_KNOWN_VERSION_${version}_BUILD_LOCAL_RUNTIME_OBJECTS)
 			set_PID_Compatible_Rpath(${shared})
 		endforeach()

@@ -2491,15 +2491,12 @@ function(build_B2_External_Project)
   get_Environment_Info(C RELEASE CFLAGS c_flags)
   #enfore use of standard defined in description
   translate_Standard_Into_Option(RES_C_STD_OPT RES_CXX_STD_OPT ${USE_C_STD} ${USE_CXX_STD})
-  set(c_flags "${c_flags} ${RES_C_STD_OPT}")
-  set(cxx_flags "${cxx_flags} ${RES_CXX_STD_OPT}")
-
   if(NOT WIN32)
     if(c_flags)
-      set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} cflags=\"${c_flags}\"")#need to use guillemet because pass "as is"
+      set(c_flags "${c_flags} ${RES_C_STD_OPT}")
     endif()
     if(cxx_flags)
-      set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} cxxflags=\"${cxx_flags}\"")#need to use guillemet because pass "as is"
+    set(cxx_flags "${cxx_flags} ${RES_CXX_STD_OPT}")
     endif()
   endif()
 
@@ -2546,8 +2543,8 @@ function(build_B2_External_Project)
   set(TEMP_CXXFLAGS $ENV{CXXFLAGS})
   set(TEMP_CC $ENV{CC})
   set(TEMP_CFLAGS $ENV{CFLAGS})
-  set(ENV{CXXFLAGS})
-  set(ENV{CFLAGS})
+  set(ENV{CXXFLAGS} ${cxx_flags})
+  set(ENV{CFLAGS} ${c_flags})
   get_Environment_Info(CXX RELEASE COMPILER cxx_compiler)
   set(ENV{CXX} ${cxx_compiler})
   get_Environment_Info(C RELEASE COMPILER c_compiler)
@@ -2610,7 +2607,6 @@ function(build_B2_External_Project)
   set(ENV{CXXFLAGS} ${TEMP_CXXFLAGS})
   set(ENV{CC} ${TEMP_CC})
   set(ENV{CFLAGS} ${TEMP_CFLAGS})
-
   if(NOT result EQUAL 0
     AND NOT (varerr MATCHES "^link\\.jam: No such file or directory[ \t\n]*$"))#if the error is the one specified this is a normal situation (i.e. a BUG in previous version of b2, -> this message should be a warning)
     message("[PID] ERROR : cannot build and install boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")

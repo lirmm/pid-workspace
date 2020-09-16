@@ -25,6 +25,8 @@ elseif(CMAKE_HOST_UNIX)
 endif()
 if(SHARED_OBJ_UTILITY)
   set(RPATH_UTILITY "${SHARED_OBJ_UTILITY}" CACHE INTERNAL "" FORCE)
+else()
+  set(RPATH_UTILITY CACHE INTERNAL "" FORCE)
 endif()
 
 ####### searching for doxygen related binaries (api documentation generator) #######
