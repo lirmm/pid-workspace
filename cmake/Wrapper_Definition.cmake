@@ -2496,10 +2496,9 @@ function(build_B2_External_Project)
       set(c_flags "${c_flags} ${RES_C_STD_OPT}")
     endif()
     if(cxx_flags)
-    set(cxx_flags "${cxx_flags} ${RES_CXX_STD_OPT}")
+      set(cxx_flags "${cxx_flags} ${RES_CXX_STD_OPT}")
     endif()
   endif()
-
   if(BUILD_B2_EXTERNAL_PROJECT_LINKS)
     set(all_links)
     foreach(link IN LISTS BUILD_B2_EXTERNAL_PROJECT_LINKS)#specific includes (to manage dependencies)
@@ -2538,44 +2537,38 @@ function(build_B2_External_Project)
   endif()
 
   message("[PID] INFO : Configuring ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
-
-  set(TEMP_CXX $ENV{CXX})
-  set(TEMP_CXXFLAGS $ENV{CXXFLAGS})
-  set(TEMP_CC $ENV{CC})
-  set(TEMP_CFLAGS $ENV{CFLAGS})
-  set(ENV{CXXFLAGS} ${cxx_flags})
-  set(ENV{CFLAGS} ${c_flags})
-  get_Environment_Info(CXX RELEASE COMPILER cxx_compiler)
-  set(ENV{CXX} ${cxx_compiler})
-  get_Environment_Info(C RELEASE COMPILER c_compiler)
-  set(ENV{CC} ${c_compiler})
-
+  # this phase mainly consists in building boost.build tool so we need to let Boost.Build detect
+  # the adequate compiler on platform
   if(WIN32)
-    execute_process(COMMAND ${project_dir}/bootstrap.bat --with-toolset=${install_toolset} --layout=system WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}  RESULT_VARIABLE result)
+    execute_process(COMMAND ${project_dir}/bootstrap.bat --with-toolset=${install_toolset} --layout=system
+    WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}
+    RESULT_VARIABLE result)
   else()
-    execute_process(COMMAND ${project_dir}/bootstrap.sh --with-toolset=${install_toolset} WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}  RESULT_VARIABLE result)
+    execute_process(COMMAND ${project_dir}/bootstrap.sh --with-toolset=${install_toolset}
+    WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}
+    RESULT_VARIABLE result)
   endif()
 
   if(NOT result EQUAL 0)#error at configuration time
     set(ENV{CXX} ${TEMP_CXX})
-    set(ENV{CXXFLAGS} ${TEMP_CXXFLAGS})
     set(ENV{CC} ${TEMP_CC})
-    set(ENV{CFLAGS} ${TEMP_CFLAGS})
     message("[PID] ERROR : cannot configure boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment}...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
   endif()
 
-  #generating the jam file for boost build
-  # set(jamfile ${project_dir}/user-config.jam)
-  # set(TOOLSET_NAME ${install_toolset})
-  # set(TOOLSET_COMPILER_PATH ${cxx_compiler})
-  # if(CURRENT_PYTHON)
-  #   set(PYTHON_TOOLSET "using python : ${CURRENT_PYTHON} : ${CURRENT_PYTHON_EXECUTABLE} ;")
-  # endif()
-  # configure_file( ${WORKSPACE_DIR}/cmake/patterns/wrappers/b2_pid_config.jam.in
-  #                 ${jamfile}
-  #                 @ONLY)
+  #for the build of boost libraries we need to use specific compiler and flags, same as those
+  #use by current profile
+  set(TEMP_CXXFLAGS $ENV{CXXFLAGS})
+  set(TEMP_CFLAGS $ENV{CFLAGS})
+  set(TEMP_CXX $ENV{CXX})
+  set(TEMP_CC $ENV{CC})
+  get_Environment_Info(CXX RELEASE COMPILER cxx_compiler)
+  set(ENV{CXX} ${cxx_compiler})
+  get_Environment_Info(C RELEASE COMPILER c_compiler)
+  set(ENV{CC} ${c_compiler})
+  set(ENV{CXXFLAGS} ${cxx_flags})
+  set(ENV{CFLAGS} ${c_flags})
   set(jnumber 1)
   if(ENABLE_PARALLEL_BUILD)#parallel build is allowed from CMake configuration
     list(FIND LIMITED_JOBS_PACKAGES ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} INDEX)
@@ -2588,7 +2581,6 @@ function(build_B2_External_Project)
     endif()
   endif()
   set(jobs "-j${jnumber}")
-
 
   message("[PID] INFO : Building and installing ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} in ${TARGET_MODE} mode using ${jnumber} jobs...")
   execute_process(COMMAND ${project_dir}/b2 install
