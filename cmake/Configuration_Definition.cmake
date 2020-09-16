@@ -134,7 +134,7 @@ endmacro(installable_PID_Configuration)
 #
 #     .. rubric:: Required parameters
 #
-#     :NOT_PRIVILEGED: is used ass first argument privileged execution is never required
+#     :NOT_PRIVILEGED: is used first argument passed for privileged execution is never required
 #     :...: the commands to be passed (do not use sudo !)
 #
 #     .. admonition:: Effects

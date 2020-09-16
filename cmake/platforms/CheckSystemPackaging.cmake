@@ -18,6 +18,10 @@
 #########################################################################################
 
 set(PID_KNOWN_PACKAGING_SYSTEMS APT PACMAN YUM BREW PORTS CHOCO CACHE INTERNAL "")
+set(CURRENT_PACKAGING_SYSTEM CACHE INTERNAL "")
+set(CURRENT_PACKAGING_SYSTEM_EXE CACHE INTERNAL "")
+set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS CACHE INTERNAL "")
+
 #try to detect available packaging system depending on operating system
 if(NOT PID_CROSSCOMPILATION) #there is a pâckaging system only if a distribution is defined
 
