@@ -765,18 +765,18 @@ endmacro(check_PID_Environment)
 #
 #   Check if the current target platform conforms to the given platform configuration. If constraints are violated then the configuration of the package fail. Otherwise the project will be configured and built accordingly. The configuration will be checked only if the current platform matches some constraints. If there is no constraint then the configuration is checked whatever the current target platform is.
 #
-#   .. rubric:: Required parameters
-#
-#   :CONFIGURATION|OPTIONAL <configurations>: Check the given configurations against the current target platform. If OPTIONAL is used the fail of the check is not fatal fo rthe project configuration.
 #
 #   .. rubric:: Optional parameters
 #
+#   :CONFIGURATION|REQUIRED <list of configurations>: list of platform configruation expressions that define the required configurations on target platform. Call will fail with an error if a configuration is not satisfied. Use of CONFIGURATION keyword is deprecated.
+#   :OPTIONAL <configurations>: list of platform configruation expressions that define the required configurations on target platform. Call will silent errors if a configuration is not satisfied and produce the variable <confi name>_AVAILABLE accordingly.
+#
 #   These parameters can be used to refine the configuration check.
 #
-#   :TYPE <arch>: Constraint on the processor type.
-#   :OS <name>: Constraint on the operating system.
+#   :TYPE <list of arch>: Constraint on the processor type.
+#   :OS <list of os name>: Constraint on the operating system. For instance the list "linux freebsd" can be used. 
 #   :ARCH <32|64>: Constraint on the processor architecture.
-#   :ABI <name>: Constraint on the c++ ABI.
+#   :ABI <list of standard libraries abi>: Constraint on the ABI given by the standard c++ library in use.
 #
 #   .. admonition:: Constraints
 #      :class: warning
@@ -805,7 +805,7 @@ endmacro(check_PID_Environment)
 #
 #   .. code-block:: cmake
 #
-#      check_PID_Platform(openssl)
+#      check_PID_Platform(REQUIRED openssl)
 #
 macro(check_PID_Platform)
 if(NOT PLUGIN_EXEC_BEFORE_DEPS)
@@ -813,43 +813,37 @@ if(NOT PLUGIN_EXEC_BEFORE_DEPS)
   manage_Plugins_In_Package_Before_Dependencies_Description()
   set(PLUGIN_EXEC_BEFORE_DEPS TRUE)
 endif()
-set(oneValueArgs NAME OS ARCH ABI TYPE CURRENT)
-set(multiValueArgs CONFIGURATION OPTIONAL)
-cmake_parse_arguments(CHECK_PID_PLATFORM "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-if(CHECK_PID_PLATFORM_NAME)#there is a filter on configuration to apply dependencing on the platform
-	message("[PID] WARNING : NAME is a deprecated argument. Platforms are now defined at workspace level and this macro now check if the current platform satisfies configuration constraints according to the optionnal conditions specified by TYPE, ARCH, OS and ABI. The only constraints that will be checked are those for which the current platform satisfies the conditions.")
-	if(NOT CHECK_PID_PLATFORM_OS)
+set(multiValueArgs OS ARCH ABI TYPE CONFIGURATION OPTIONAL REQUIRED)
+cmake_parse_arguments(CHECK_PID_PLATFORM "" "" "${multiValueArgs}" ${ARGN} )
+#checking usage of the macro by the user
+if(NOT CHECK_PID_PLATFORM_CONFIGURATION AND NOT CHECK_PID_PLATFORM_REQUIRED AND NOT CHECK_PID_PLATFORM_OPTIONAL)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
+  message(FATAL_ERROR "[PID] CRITICAL ERROR : you must use the keyword REQUIRED or OPTIONAL to describe the set of configuration constraints that apply to the current platform. Use REQUIRED keyword instead of CONFIGURATION since this later is deprecated.")
+endif()
+if(CHECK_PID_PLATFORM_CONFIGURATION AND CHECK_PID_PLATFORM_REQUIRED)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling check_PID_Platform: it requires the use of REQUIRED or CONFIGURATION keyword to specify the required platform configurations, but not both of them. Use of CONFIGURATION is deprecated, prefer using REQUIRED.")
+	return()
+endif()
+set(required ${CHECK_PID_PLATFORM_CONFIGURATION} ${CHECK_PID_PLATFORM_REQUIRED})
+set(optional ${CHECK_PID_PLATFORM_OPTIONAL})
+#Note: deprecated signature has been removed in PID v4 so no backward compatibility (not important because not really used)
+#check for filters on target constraints
+
+#checking the mandatory configurations
+if(required)
+  check_Platform_Constraints(RESULT IS_CURRENT "${CHECK_PID_PLATFORM_TYPE}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${required}" FALSE)
+  if(IS_CURRENT AND NOT RESULT)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must define at least an OS when using the deprecated NAME keyword")
-	endif()
-	if(NOT CHECK_PID_PLATFORM_ARCH)
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must define at least an ARCH when using the deprecated NAME keyword")
-	endif()
-	check_Platform_Constraints(RESULT IS_CURRENT "" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}" FALSE) #no type as it was not managed with PID v1
-	set(${CHECK_PID_PLATFORM_NAME} ${IS_CURRENT})
-	if(IS_CURRENT AND NOT RESULT)
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling check_PID_Platform, constraint cannot be satisfied !")
-	endif()
-else()#no filter on configurations to check
-	if(NOT CHECK_PID_PLATFORM_CONFIGURATION AND NOT CHECK_PID_PLATFORM_OPTIONAL)
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must use the keyword CONFIGURATION or OPTIONAL to describe the set of configuration constraints that apply to the current platform.")
-	endif()
-  if(CHECK_PID_PLATFORM_CONFIGURATION)
-	#checking the mandatory configurations
-  	check_Platform_Constraints(RESULT IS_CURRENT "${CHECK_PID_PLATFORM_TYPE}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_CONFIGURATION}" FALSE)
-  	if(IS_CURRENT AND NOT RESULT)
-      finish_Progress(${GLOBAL_PROGRESS_VAR})
-  		message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling check_PID_Platform, constraint ${CHECK_PID_PLATFORM_CONFIGURATION} cannot be satisfied !")
-  	endif()
-  endif()
-  if(CHECK_PID_PLATFORM_OPTIONAL)
-    #finally checking optional configurations
-    check_Platform_Constraints(RESULT IS_CURRENT "${CHECK_PID_PLATFORM_TYPE}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${CHECK_PID_PLATFORM_OPTIONAL}" TRUE)
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR: when calling check_PID_Platform, constraint ${required} cannot be satisfied !")
   endif()
 endif()
+if(optional)
+  #finally checking optional configurations
+  check_Platform_Constraints(RESULT IS_CURRENT "${CHECK_PID_PLATFORM_TYPE}" "${CHECK_PID_PLATFORM_ARCH}" "${CHECK_PID_PLATFORM_OS}" "${CHECK_PID_PLATFORM_ABI}" "${optional}" TRUE)
+endif()
+unset(required)
+unset(optional)
 endmacro(check_PID_Platform)
 
 #.rst:

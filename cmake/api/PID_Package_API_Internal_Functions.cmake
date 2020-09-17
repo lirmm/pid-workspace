@@ -805,25 +805,25 @@ set(SKIP FALSE)
 
 #1) checking the conditions to know if the configuration concerns the platform currently in use
 if(type) # a processor type is specified, so it applies like a filter on current platform
-	if(NOT CURRENT_PLATFORM_TYPE STREQUAL type)
+	if(NOT CURRENT_PLATFORM_TYPE IN_LIST type)
 		set(SKIP TRUE)
 	endif()
 endif()
 
 if(NOT SKIP AND arch) # a processor architecture is specified, so it applies like a filter on current platform
-	if(NOT CURRENT_PLATFORM_ARCH STREQUAL arch)
+	if(NOT CURRENT_PLATFORM_ARCH IN_LIST arch)
 		set(SKIP TRUE)
 	endif()
 endif()
 
 if(NOT SKIP AND os) # an operating system is specified, so it applies like a filter on current platform
-	if(NOT CURRENT_PLATFORM_OS STREQUAL os)
+	if(NOT CURRENT_PLATFORM_OS IN_LIST os)
 		set(SKIP TRUE)
 	endif()
 endif()
 
 if(NOT SKIP AND abi) # a target ABI is specified, so it applies like a filter on current platform
-	if(NOT CURRENT_PLATFORM_ABI STREQUAL abi)
+	if(NOT CURRENT_PLATFORM_ABI IN_LIST abi)
 		set(SKIP TRUE)
 	endif()
 endif()
