@@ -101,6 +101,7 @@ endmacro(get_Platform_Configurations_To_Check)
 
 set(LANG_CXX_PLATFORM_CONSTRAINTS)
 set(CXX_EVAL_RESULT FALSE)
+
 if(CMAKE_CXX_COMPILER)
   if(CXX_optimization)
     if(CXX_optimization STREQUAL "all" OR CXX_optimization STREQUAL "native")
@@ -130,6 +131,7 @@ if(CMAKE_CXX_COMPILER)
     #2) check that required standard is supported
     list(FIND POSSIBLE_STDS ${CXX_std} INDEX)
     if(INDEX EQUAL -1)
+      message("[PID] ERROR: required c++ standard ${CXX_std} is not supported by current compiler !")
       return()
     endif()
     #3) set options depending on compiler and required support

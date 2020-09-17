@@ -649,6 +649,9 @@ endfunction(get_Library_ELF_Symbols_Max_Versions)
 #     :type: type of the deployment unit (NATIVE, EXTERNAL, FRAMEWORK, ENVIRONMENT)
 #
 macro(manage_Current_Platform build_folder type)
+  #need to unset variable that are not in cache by default
+  unset(CMAKE_CXX_COMPILER_VERSION)
+  unset(CMAKE_CXX_COMPILER_ID)
 	if("${build_folder}" MATCHES "${PROJECT_NAME}/build$")
 		if(CURRENT_PLATFORM)# a current platform is already defined
 			#if any of the following variable changed, the cache of the CMake project needs to be regenerated from scratch
@@ -718,10 +721,8 @@ macro(manage_Current_Platform build_folder type)
       if(DO_CLEAN)
         message("[PID] INFO : cleaning the build folder after major environment change")
         if(type STREQUAL "NATIVE")
-  				hard_Clean_Package_Debug(${PROJECT_NAME})
-  				hard_Clean_Package_Release(${PROJECT_NAME})
-  				reconfigure_Package_Build_Debug(${PROJECT_NAME})#force reconfigure before running the build
-  				reconfigure_Package_Build_Release(${PROJECT_NAME})#force reconfigure before running the build
+  				hard_Clean_Package(${PROJECT_NAME})
+  				reconfigure_Package_Build(${PROJECT_NAME})#force reconfigure before running the build
         elseif(type STREQUAL "EXTERNAL")
           hard_Clean_Wrapper(${PROJECT_NAME})
       		reconfigure_Wrapper_Build(${PROJECT_NAME})

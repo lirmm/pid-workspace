@@ -3926,58 +3926,6 @@ endfunction(hard_Clean_Package)
 #
 # .. ifmode:: internal
 #
-#  .. |hard_Clean_Package_Debug| replace:: ``hard_Clean_Package_Debug``
-#  .. _hard_Clean_Package_Debug:
-#
-#  hard_Clean_Package_Debug
-#  ------------------------
-#
-#   .. command:: hard_Clean_Package_Debug(package)
-#
-#    Clean the debug build folder of a package in an aggressive and definitive way.
-#
-#     :package: the name of the target package.
-#
-function(hard_Clean_Package_Debug package)
-  get_Package_Type(${package} PACK_TYPE)
-  if(PACK_TYPE STREQUAL "EXTERNAL")
-    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${package}/build)
-  else()
-    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/debug)
-  endif()
-  hard_Clean_Build_Folder(${TARGET_BUILD_FOLDER})
-endfunction(hard_Clean_Package_Debug)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |hard_Clean_Package_Release| replace:: ``hard_Clean_Package_Release``
-#  .. _hard_Clean_Package_Release:
-#
-#  hard_Clean_Package_Release
-#  --------------------------
-#
-#   .. command:: hard_Clean_Package_Release(package)
-#
-#    Clean the release build folder of a package in an aggressive and definitive way.
-#
-#     :package: the name of the target package.
-#
-function(hard_Clean_Package_Release package)
-  get_Package_Type(${package} PACK_TYPE)
-  if(PACK_TYPE STREQUAL "EXTERNAL")
-    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/wrappers/${package}/build)
-  else()
-    set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/release)
-  endif()
-  hard_Clean_Build_Folder(${TARGET_BUILD_FOLDER})
-endfunction(hard_Clean_Package_Release)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
 #  .. |reconfigure_Package_Build| replace:: ``reconfigure_Package_Build``
 #  .. _reconfigure_Package_Build:
 #
@@ -3994,48 +3942,6 @@ function(reconfigure_Package_Build package)
 set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build)
 execute_process(COMMAND ${CMAKE_COMMAND} -DBUILD_RELEASE_ONLY:BOOL=OFF .. WORKING_DIRECTORY ${TARGET_BUILD_FOLDER} )
 endfunction(reconfigure_Package_Build)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |reconfigure_Package_Build_Debug| replace:: ``reconfigure_Package_Build_Debug``
-#  .. _reconfigure_Package_Build_Debug:
-#
-#  reconfigure_Package_Build_Debug
-#  -------------------------------
-#
-#   .. command:: reconfigure_Package_Build_Debug(package)
-#
-#    Reconfigure a package in debug mode only.
-#
-#     :package: the name of the target package.
-#
-function(reconfigure_Package_Build_Debug package)
-set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/debug)
-execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${TARGET_BUILD_FOLDER} )
-endfunction(reconfigure_Package_Build_Debug)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |reconfigure_Package_Build_Release| replace:: ``reconfigure_Package_Build_Release``
-#  .. _reconfigure_Package_Build_Release:
-#
-#  reconfigure_Package_Build_Release
-#  ---------------------------------
-#
-#   .. command:: reconfigure_Package_Build_Release(package)
-#
-#    Reconfigure a package in release mode only.
-#
-#     :package: the name of the target package.
-#
-function(reconfigure_Package_Build_Release package)
-set(TARGET_BUILD_FOLDER ${WORKSPACE_DIR}/packages/${package}/build/release)
-execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${TARGET_BUILD_FOLDER} )
-endfunction(reconfigure_Package_Build_Release)
 
 #.rst:
 #
