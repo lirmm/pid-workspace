@@ -848,7 +848,7 @@ if(NOT DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION AND NOT DECLARE_PID_WRAPPER_PL
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, PID_Wrapper_Configuration requires at least to define a required configuration using REQUIRED keyword or an optional configuration using OPTIONAL keyword.")
 	return()
 endif()
-if(DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION AND DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION)
+if(DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION AND DECLARE_PID_WRAPPER_PLATFORM_REQUIRED)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, PID_Wrapper_Configuration requires the use of REQUIRED or CONFIGURATION keyword to specify the required platform configurations, but not both of them. Use of CONFIGURATION is deprecated, prefer using REQUIRED.")
 	return()
