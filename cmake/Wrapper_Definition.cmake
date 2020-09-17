@@ -803,7 +803,7 @@ endmacro(declare_PID_Wrapper_Environment)
 #  PID_Wrapper_Configuration
 #  -------------------------
 #
-#   .. command:: PID_Wrapper_Configuration(CONFIGURATION ... [PLATFORM ...])
+#   .. command:: PID_Wrapper_Configuration(REQUIRED|OPTIONAL ... [PLATFORM ...])
 #
 #   .. command:: declare_PID_Wrapper_Platform_Configuration(CONFIGURATION ... [PLATFORM ...])
 #
@@ -811,11 +811,12 @@ endmacro(declare_PID_Wrapper_Environment)
 #
 #     .. rubric:: Required parameters
 #
-#     :CONFIGURATION <list of configurations>: tells which version of the external package is being wrapped. The version number must exactly match the name of the folder containing the CMakeLists.txt that does this call.
+#     :REQUIRED|CONFIGURATION <list of configurations>: list of configuration expression defining the required target platform configurations.
+#     :OPTIONAL <list of configurations>: list of configuration expression defining the required target platform configurations.
 #
 #     .. rubric:: Optional parameters
 #
-#     :PLATFORM <platform name>: Use to apply the configuration constraints only to the target platform.
+#     :PLATFORM <list of platform or OS name>: Used to apply the configuration constraints only to the target platform (e.g. x86_64_linux_stdc++11) or operating system (e.g. linux).
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -831,7 +832,7 @@ endmacro(declare_PID_Wrapper_Environment)
 #
 #     .. code-block:: cmake
 #
-#        PID_Wrapper_Configuration(CONFIGURATION posix)
+#        PID_Wrapper_Configuration(REQUIRED posix)
 #
 macro(PID_Wrapper_Configuration)
   declare_PID_Wrapper_Platform_Configuration(${ARGN})
@@ -840,14 +841,22 @@ endmacro(PID_Wrapper_Configuration)
 macro(declare_PID_Wrapper_Platform_Configuration)
 set(options)
 set(oneValueArgs)
-set(multiValueArgs PLATFORM CONFIGURATION OPTIONAL)
+set(multiValueArgs PLATFORM CONFIGURATION OPTIONAL REQUIRED)
 cmake_parse_arguments(DECLARE_PID_WRAPPER_PLATFORM "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-if(NOT DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION AND NOT DECLARE_PID_WRAPPER_PLATFORM_OPTIONAL)
+if(NOT DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION AND NOT DECLARE_PID_WRAPPER_PLATFORM_REQUIRED AND NOT DECLARE_PID_WRAPPER_PLATFORM_OPTIONAL)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_Platform requires at least to define a required configuration using CONFIGURATION keyword or an optional configuration using OPTIONAL keyword.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, PID_Wrapper_Configuration requires at least to define a required configuration using REQUIRED keyword or an optional configuration using OPTIONAL keyword.")
 	return()
 endif()
-declare_Wrapped_Platform_Configuration("${DECLARE_PID_WRAPPER_PLATFORM_PLATFORM}" "${DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION}" "${DECLARE_PID_WRAPPER_PLATFORM_OPTIONAL}")
+if(DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION AND DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION)
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, PID_Wrapper_Configuration requires the use of REQUIRED or CONFIGURATION keyword to specify the required platform configurations, but not both of them. Use of CONFIGURATION is deprecated, prefer using REQUIRED.")
+	return()
+endif()
+#Note: CONFIGURATION is kept for backward compatibility
+set(required ${DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION} ${DECLARE_PID_WRAPPER_PLATFORM_REQUIRED})
+declare_Wrapped_Platform_Configuration("${DECLARE_PID_WRAPPER_PLATFORM_PLATFORM}" "${required}" "${DECLARE_PID_WRAPPER_PLATFORM_OPTIONAL}")
+unset(required)
 endmacro(declare_PID_Wrapper_Platform_Configuration)
 
 #.rst:
