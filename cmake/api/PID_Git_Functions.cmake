@@ -418,23 +418,18 @@ endfunction(go_To_Version)
 #     :AVAILABLE_VERSIONS: the variable that contains the list of all tagged versions
 #
 function(get_Repository_Version_Tags AVAILABLE_VERSIONS package)
-  set(package_path ${WORKSPACE_DIR}/packages/${package})
   set(${AVAILABLE_VERSIONS} PARENT_SCOPE)
   get_Package_Type(${package} PACK_TYPE)
   if(PACK_TYPE STREQUAL "NATIVE")
-    if(EXISTS ${package_path})
-      execute_process(COMMAND git tag -l v*
-        WORKING_DIRECTORY ${package_path}
-        OUTPUT_VARIABLE res)
-    endif()
+    set(package_path ${WORKSPACE_DIR}/packages/${package})
   elseif(PACK_TYPE STREQUAL "EXTERNAL")
-    if(EXISTS ${package_path})
-      execute_process(COMMAND git tag -l v*
-        WORKING_DIRECTORY ${package_path}
-        OUTPUT_VARIABLE res)
-    endif()
+    set(package_path ${WORKSPACE_DIR}/wrappers/${package})
   endif()
-
+  if(EXISTS ${package_path})
+    execute_process(COMMAND git tag -l v*
+      WORKING_DIRECTORY ${package_path}
+      OUTPUT_VARIABLE res)
+  endif()
   if(NOT res) #no version available => BUG
   	return()
   endif()
@@ -728,10 +723,12 @@ function(tag_Version package version_string add_it)
 
   if(add_it)
     execute_process(COMMAND git tag -a v${version_string} -m "${tag_message}"
-                    WORKING_DIRECTORY ${WORKSPACE_DIR}/${path_element}/${package})
+                    WORKING_DIRECTORY ${WORKSPACE_DIR}/${path_element}/${package}
+                    ERROR_QUIET OUTPUT_QUIET)
   else()
     execute_process(COMMAND git tag -d v${version_string}
-                    WORKING_DIRECTORY ${WORKSPACE_DIR}/${path_element}/${package})
+                    WORKING_DIRECTORY ${WORKSPACE_DIR}/${path_element}/${package}
+                    ERROR_QUIET OUTPUT_QUIET)
   endif()
 endfunction(tag_Version)
 

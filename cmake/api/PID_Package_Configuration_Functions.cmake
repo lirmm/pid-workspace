@@ -1256,7 +1256,6 @@ endfunction(resolve_External_Component_Runtime_Dependencies)
 #     :list_of_symlinks: the list of symlinks to generate into python package.
 #
 function(configure_External_Python_Packages package version platform python_version change_rpath package_path list_of_symlinks)
-  message("configure_External_Python_Packages package_path=${package_path}")
   set(path_to_python_install ${WORKSPACE_DIR}/install/${platform}/__python${python_version}__)
   set(root_folder_in_install ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
 
