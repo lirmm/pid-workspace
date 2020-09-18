@@ -430,7 +430,7 @@ function(get_Repository_Version_Tags AVAILABLE_VERSIONS package)
       WORKING_DIRECTORY ${package_path}
       OUTPUT_VARIABLE res)
   endif()
-  if(NOT res) #no version available => BUG
+  if(NOT res) #no version available
   	return()
   endif()
   string(REPLACE "\n" ";" GIT_VERSIONS ${res})
@@ -1241,22 +1241,37 @@ endfunction(publish_Repository_Master)
 #
 #   .. command:: publish_Repository_Version(RESULT package version_string)
 #
-#     Publish a new version on a package official repository.
+#     Publish or delete a version tag on a package or wrapper official repository.
 #
 #     :package: the name of target package
+#     :external: is TRUE the package is external, otherwise it is a native package
 #     :version_string: the version to push
+#     :add_it: if TRUE the version tag is added, if false it is deleted
 #
 #     :RESULT: the output variable that is TRUE if official remote has been update with new version tag, FALSE otherwise
 #
-function(publish_Repository_Version RESULT package version_string)
-execute_process(COMMAND git push --porcelain official v${version_string}
-                WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
-                OUTPUT_VARIABLE out ERROR_QUIET)#releasing on master branch of official
-if(out MATCHES "^.*rejected.*$")
-  set(${RESULT} FALSE PARENT_SCOPE)
-	return()
-endif()
-set(${RESULT} TRUE PARENT_SCOPE)
+function(publish_Repository_Version RESULT package external version_string add_it)
+  if(external)
+    set(repo_path ${WORKSPACE_DIR}/wrappers/${package})
+  else()
+    set(repo_path ${WORKSPACE_DIR}/packages/${package})
+  endif()
+  if(add_it)
+    execute_process(COMMAND git push --porcelain official v${version_string}
+                    WORKING_DIRECTORY ${repo_path} OUTPUT_VARIABLE out ERROR_QUIET)#pushing a version tag
+    if(out MATCHES "^.*rejected.*$")
+      set(${RESULT} FALSE PARENT_SCOPE)
+      return()
+    endif()
+  else()
+    execute_process(COMMAND git push --porcelain --delete official v${version_string}
+                    WORKING_DIRECTORY ${repo_path} OUTPUT_VARIABLE out ERROR_QUIET)#deletting a version tag
+    if(out MATCHES "^error.*$")
+      set(${RESULT} FALSE PARENT_SCOPE)
+      return()
+    endif()
+  endif()
+  set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(publish_Repository_Version)
 
 #.rst:
@@ -2493,46 +2508,6 @@ function(update_Wrapper_Repository wrapper)
                   WORKING_DIRECTORY ${wrapper_path} )#fetching master branch to get most up to date archives
 endfunction(update_Wrapper_Repository)
 
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |publish_Wrapper_Repository_Version| replace:: ``publish_Wrapper_Repository_Version``
-#  .. _publish_Wrapper_Repository_Version:
-#
-#  publish_Wrapper_Repository_Version
-#  ----------------------------------
-#
-#   .. command:: publish_Wrapper_Repository_Version(RESULT package version_string add_it)
-#
-#     Push (or delete) a version tag on the remote wrapper repository.
-#
-#     :package: the name of target package
-#     :version_string: the version tag to push
-#     :add_it: if TRUE the tag is added, if FALSE it is removed
-#
-#     :RESULT: the output variable that is TRUE if operation succeeded, FALSE otherwise
-#
-function(publish_Wrapper_Repository_Version RESULT package version_string add_it)
-  set(wrapper_path ${WORKSPACE_DIR}/wrappers/${package})
-  if(add_it)
-    execute_process(COMMAND git push --porcelain origin v${version_string}
-                    WORKING_DIRECTORY ${wrapper_path} OUTPUT_VARIABLE out ERROR_QUIET)#pushing a version tag
-    if(out MATCHES "^.*rejected.*$")
-      set(${RESULT} FALSE PARENT_SCOPE)
-    	return()
-    endif()
-  else()
-    execute_process(COMMAND git push --porcelain --delete origin v${version_string}
-                    WORKING_DIRECTORY ${wrapper_path} OUTPUT_VARIABLE out ERROR_QUIET)#deletting a version tag
-    if(out MATCHES "^error.*$")
-      set(${RESULT} FALSE PARENT_SCOPE)
-      return()
-    endif()
-  endif()
-  set(${RESULT} TRUE PARENT_SCOPE)
-endfunction(publish_Wrapper_Repository_Version)
 
 ##############################################################################
 ############## frameworks repository related functions #######################

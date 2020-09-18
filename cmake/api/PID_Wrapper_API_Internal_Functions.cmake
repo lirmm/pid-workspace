@@ -295,10 +295,10 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	  add_custom_target(memorizing
 			${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 			-DCMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR}
-			-DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
-			-DTARGET_EXTERNAL_VERSION=\${version}
+			-DTARGET_PACKAGE=${PROJECT_NAME}
+			-DTARGET_VERSION=\${version}
 			-DREMOTE_ADDR=${address}
-			-P ${WORKSPACE_DIR}/cmake/commands/Memorizing_PID_Wrapper_Version.cmake
+			-P ${WORKSPACE_DIR}/cmake/commands/Memorizing_PID_Version.cmake
 	  	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	    COMMENT "[PID] memorizing new wrapper implementation ..."
 	  )

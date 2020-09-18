@@ -2480,7 +2480,7 @@ if(branch)#if we use a specific branch for patching then do not merge into maste
 		return()
 	endif()
 	tag_Version(${package} ${STRING} TRUE)#create the version tag
-	publish_Repository_Version(RESULT_OK ${package} ${STRING})
+	publish_Repository_Version(RESULT_OK ${package} FALSE ${STRING} TRUE)
 	delete_Package_Temporary_Branch(${package} ${CURRENT_BRANCH})#always delete the temporary branch whether the push succeeded or failed
 	if(NOT RESULT_OK)#the user has no sufficient push rights
 		tag_Version(${package} ${STRING} FALSE)#remove local tag
@@ -2505,7 +2505,7 @@ else()# check that integration branch is a fast forward of master
 	publish_Repository_Master(RESULT_OK ${package})
 	#TODO before everything testing if user has rights to push
 	if(RESULT_OK)
-		publish_Repository_Version(RESULT_OK ${package} ${STRING})
+		publish_Repository_Version(RESULT_OK ${package} FALSE ${STRING} TRUE)
 	endif()
 	if(NOT RESULT_OK)#the user has no sufficient push rights
 		tag_Version(${package} ${STRING} FALSE)#remove local tag

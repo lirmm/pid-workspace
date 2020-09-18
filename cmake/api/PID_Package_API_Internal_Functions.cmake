@@ -158,6 +158,17 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 
 	add_dependencies(reconfigure checksources)
 
+	# target used to create/replace version tags
+	add_custom_target(memorizing
+		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DCMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DTARGET_VERSION=\${version}
+						-DREMOTE_ADDR=${address}
+						-P ${WORKSPACE_DIR}/cmake/commands/Memorizing_PID_Version.cmake
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+		COMMENT "[PID] memorizing existing version ..."
+	)
 
 	# update target (update the package from upstream git repository)
 	add_custom_target(update
