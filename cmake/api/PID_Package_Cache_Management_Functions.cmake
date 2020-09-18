@@ -2921,7 +2921,7 @@ function(check_Configuration_Temporary_Optimization_Variables RES_CHECK_MADE RES
       if(INCLUDED)
         set(${RES_CHECK_MADE} TRUE PARENT_SCOPE)
         set(${RES_CHECK} ${TEMP_CONFIG_${config}_CHECK_${iter}${VAR_SUFFIX}} PARENT_SCOPE)
-        set(${RES_CONSTRAINTS} ${TEMP_CONFIG_${config}_BINARY_CONSTRAINTS_${iter}${VAR_SUFFIX}} PARENT_SCOPE)
+        set(${RES_CONSTRAINTS} ${TEMP_CONFIG_${config}_BINARY_CONSTRAINTS_${iter}${VAR_SUFFIX}} PARENT_SCOPE)
         return()
       endif()
     endforeach()

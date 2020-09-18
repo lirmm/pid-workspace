@@ -1263,10 +1263,10 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
     return()
   endif()
   #check if the configuration has already been checked
-  check_Configuration_Temporary_Optimization_Variables(CHECK_ALREADY_MADE RES_CHECK RES_CONSTRAINTS ${config_name} ${config_args} ${mode})
+  check_Configuration_Temporary_Optimization_Variables(CHECK_ALREADY_MADE CHECK_SUCCESS BIN_CONSTRAINTS ${config_name} ${config_args} ${mode})
   if(CHECK_ALREADY_MADE)#same check has already been made, we want to avoid redoing them unecessarily
-    set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
-    set(${BINARY_CONTRAINTS} ${${RES_CONSTRAINTS}} PARENT_SCOPE)
+    set(${CHECK_OK} ${CHECK_SUCCESS} PARENT_SCOPE)
+    set(${BINARY_CONTRAINTS} ${BIN_CONSTRAINTS} PARENT_SCOPE)
     return()
   endif()
   reset_Platform_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
