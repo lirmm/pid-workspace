@@ -16,11 +16,4 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-
-set(LANG_Python_PLATFORM_CONSTRAINTS)
-if(CURRENT_PYTHON_EXECUTABLE)
-  set(Python_EVAL_RESULT TRUE)
-  set(Python_soname ${Python_STANDARD_LIBRARIES})
-else()
-  set(Python_EVAL_RESULT FALSE)
-endif()
+set(LANG_Python_IN_BINARY_CONSTRAINTS soname)
