@@ -134,30 +134,46 @@ function(prepare_Configuration_Expression_Arguments config arguments possible_co
   set(${config}_no_arguments ${all_args_to_unset} PARENT_SCOPE)
 endfunction(prepare_Configuration_Expression_Arguments)
 
+
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |check_Configuration_Arguments_Included_In_Constraints| replace:: ``check_Configuration_Arguments_Included_In_Constraints``
-#  .. check_Configuration_Arguments_Included_In_Constraints:
+#  .. |compare_Current_Configuration_Check_Args_With_Previous| replace:: ``compare_Current_Configuration_Check_Args_With_Previous``
+#  .. compare_Current_Configuration_Check_Args_With_Previous:
 #
-#  check_Configuration_Arguments_Included_In_Constraints
-#  -----------------------------------------------------
+#  compare_Current_Configuration_Check_Args_With_Previous
+#  ------------------------------------------------------
 #
-#   .. command:: check_Configuration_Arguments_Included_In_Constraints(INCLUDED arguments_var constraints_var)
+#   .. command:: compare_Current_Configuration_Check_Args_With_Previous(INCLUDED arguments_var constraints_var)
 #
 #    Check whether a set of arguments of a configuration have already been checked in the current configuration process
 #
 #     :arguments_var: the variable containing the list of arguments to check.
 #     :constraints_var: the variable containing the list of constraints already checked.
 #
-#     :INCLUDED: the output variable that is true if al arguments have already been checked.
+#     :INCLUDED: the output variable that is true if same check has been made.
 #
-function(check_Configuration_Arguments_Included_In_Constraints INCLUDED arguments_var constraints_var)
-set(${INCLUDED} FALSE PARENT_SCOPE)
-
-set(argument_couples ${${arguments_var}})
-while(argument_couples)
+function(compare_Current_Configuration_Check_Args_With_Previous INCLUDED arguments_var constraints_var)
+  #quick checks to avoid checking values of both variables
+  if(NOT ${arguments_var} AND NOT ${constraints_var})#both are empty
+    set(${INCLUDED} TRUE PARENT_SCOPE)#by definition they are both equal
+    return()
+  endif()
+  set(${INCLUDED} FALSE PARENT_SCOPE)
+  if((${arguments_var} AND NOT ${constraints_var})#one is empty and not the other
+      OR (NOT ${arguments_var} AND ${constraints_var}))
+      return()#by definition one does not include the other
+  endif()
+  list(LENGTH ${arguments_var} SIZE_ARGS)
+  list(LENGTH ${constraints_var} SIZE_MEM)
+  if(NOT SIZE_ARGS EQUAL SIZE_MEM)
+    return()#not the same number of arguments so we know that the check is not the same
+  endif()
+  math(EXPR last_elem_index_mem "${SIZE_MEM}-1")
+  set(argument_couples ${${arguments_var}})
+  set(constraints_couples ${${constraints_var}})
+  while(argument_couples)
   list(GET argument_couples 0 arg_name)
   list(GET argument_couples 1 arg_value)
   list(REMOVE_AT argument_couples 0 1)#update the list of arguments
@@ -166,41 +182,30 @@ while(argument_couples)
   #evaluate values of the argument so that we can compare it
   parse_Configuration_Expression_Argument_Value(ARG_VAL_LIST "${arg_value}")
 
-  set(constraints_couples ${${constraints_var}})
-  while(constraints_couples)
-    list(GET constraints_couples 0 constraint_name)
-    list(GET constraints_couples 1 constraint_value)
-    list(REMOVE_AT constraints_couples 0 1)#update the list of arguments
-    if(constraint_name STREQUAL arg_name)#argument found in constraints
+  foreach(iter RANGE 0 ${last_elem_index_mem} 2)
+    list(GET constraints_couples ${iter} constraint_name)
+    if(constraint_name STREQUAL arg_name)#argument with same value found
       set(is_arg_found TRUE)
-      #OK we need to check the value
+      #now check the value of this argument
+      math(EXPR value_iter "${iter}+1")
+      list(GET constraints_couples ${value_iter} constraint_value)
       parse_Configuration_Expression_Argument_Value(CONSTRAINT_VAL_LIST "${constraint_value}")
-
-      #second : do the comparison
-      foreach(arg_list_val IN LISTS ARG_VAL_LIST)
-        set(val_found FALSE)
-        foreach(ct_list_val IN LISTS CONSTRAINT_VAL_LIST)
-          if(ct_list_val STREQUAL arg_list_val)
-            set(val_found TRUE)
-            break()
-          endif()
-        endforeach()
-        if(NOT val_found)
-          #we can immediately return => not included
+      #second : do the comparison between the value of both arguments (memorized and checked one)
+      foreach(arg_list_val IN LISTS ARG_VAL_LIST)#Note: for list we siply check if the value to check belongs to the list, we do not check strict equality between lists
+        if(NOT arg_list_val IN_LIST CONSTRAINT_VAL_LIST)
+          #we can immediately return => not same check because value of the same argument differs
           return()
         endif()
       endforeach()
-      break()#exit the loop if argument has been found
     endif()
+    if(NOT is_arg_found)
+      #if argument not found in memorized constraints then the current check is not the same as previous one
+      return()
+    endif()
+  endforeach()
   endwhile()
-  if(NOT is_arg_found)
-    #if argument not found in constraint we can conclude that it is not included in constraints
-    return()
-  endif()
-endwhile()
-set(${INCLUDED} TRUE PARENT_SCOPE)
-endfunction(check_Configuration_Arguments_Included_In_Constraints)
-
+  set(${INCLUDED} TRUE PARENT_SCOPE)
+endfunction(compare_Current_Configuration_Check_Args_With_Previous)
 
 #.rst:
 #

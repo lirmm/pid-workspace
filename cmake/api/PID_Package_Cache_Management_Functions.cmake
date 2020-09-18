@@ -1203,18 +1203,20 @@ endfunction(rename_If_Alias)
 #   Reset cache internal variables related to the build environment coming from the use file of a package (native or external) used as a dependency in the current context.
 #
 #     :package: the name of the package dependency.
+#     :mode: the current build mode.
 #
-function(reset_Build_Info_Cached_Variables_From_Use package)#common for external and native packages
+function(reset_Build_Info_Cached_Variables_From_Use package mode)#common for external and native packages
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   #cleaning the memorized dependency cache variables
   #this is only usefull  avoid having BUGS in package build process after target platform ABI has been changed in workspace
   set(${package}_BUILT_FOR_DISTRIBUTION CACHE INTERNAL "")
   set(${package}_BUILT_FOR_DISTRIBUTION_VERSION CACHE INTERNAL "")
   set(${package}_BUILT_OS_VARIANT CACHE INTERNAL "")#only for external but no side effects on natives
 
-	set(${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX} CACHE INTERNAL "")
   foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX})
     set(${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX} CACHE INTERNAL "")
   endforeach()
+  set(${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX} CACHE INTERNAL "")
 endfunction(reset_Build_Info_Cached_Variables_From_Use)
 
 #.rst:
@@ -1236,7 +1238,7 @@ endfunction(reset_Build_Info_Cached_Variables_From_Use)
 #
 function(reset_Native_Package_Dependency_Cached_Variables_From_Use package mode)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-  reset_Build_Info_Cached_Variables_From_Use(${package})
+  reset_Build_Info_Cached_Variables_From_Use(${package} ${mode})
   #cleaning everything
 
   set(${package}_PLATFORM${VAR_SUFFIX} CACHE INTERNAL "")
@@ -1299,7 +1301,7 @@ endfunction(reset_Native_Package_Dependency_Cached_Variables_From_Use)
 #
 function(reset_External_Package_Dependency_Cached_Variables_From_Use package mode)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-  reset_Build_Info_Cached_Variables_From_Use(${package})
+  reset_Build_Info_Cached_Variables_From_Use(${package} ${mode})
   #cleaning
   set(${package}_PLATFORM${VAR_SUFFIX} CACHE INTERNAL "")
   foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})
@@ -2274,15 +2276,6 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
   file(APPEND ${file} "set(${package}_BUILT_FOR_DISTRIBUTION_VERSION ${CURRENT_DISTRIBUTION_VERSION} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${package}_BUILT_FOR_INSTANCE ${CURRENT_PLATFORM_INSTANCE} CACHE INTERNAL \"\")\n")
 
-  file(APPEND ${file} "#### declaration of language requirements in ${CMAKE_BUILD_TYPE} mode ####\n")
-
-  foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${MODE_SUFFIX})
-    if(${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${MODE_SUFFIX})
-      file(APPEND ${file} "set(${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${MODE_SUFFIX} ${${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-    endif()
-  endforeach()
-  file(APPEND ${file} "set(${package}_LANGUAGE_CONFIGURATIONS${MODE_SUFFIX} ${${package}_LANGUAGE_CONFIGURATIONS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
-
 	file(APPEND ${file} "######### declaration of package components ########\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")
@@ -2316,6 +2309,15 @@ endif()
 get_Platform_Variables(BASENAME curr_platform_name)
 #mode dependent info written adequately depending on the mode
 # 0) platforms configuration constraints
+
+file(APPEND ${file} "#### declaration of language requirements in ${CMAKE_BUILD_TYPE} mode ####\n")
+foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${MODE_SUFFIX})
+  if(${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${MODE_SUFFIX})
+    file(APPEND ${file} "set(${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${MODE_SUFFIX} ${${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+  endif()
+endforeach()
+file(APPEND ${file} "set(${package}_LANGUAGE_CONFIGURATIONS${MODE_SUFFIX} ${${package}_LANGUAGE_CONFIGURATIONS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+
 file(APPEND ${file} "#### declaration of platform dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
 file(APPEND ${file} "set(${package}_PLATFORM${MODE_SUFFIX} ${curr_platform_name} CACHE INTERNAL \"\")\n") # not really usefull since a use file is bound to a given platform, but may be usefull for debug
 
@@ -2839,8 +2841,13 @@ function(reset_Temporary_Optimization_Variables mode)
   endforeach()
   unset(TEMP_VARS CACHE)
   foreach(config IN LISTS TEMP_CONFIGS${VAR_SUFFIX})
-  	unset(TEMP_CONFIG_${config}_CHECK${VAR_SUFFIX} CACHE)
-  	unset(TEMP_CONFIG_${config}_BINARY_CONSTRAINTS${VAR_SUFFIX} CACHE)
+    list(LENGTH TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX} SIZE)
+    math(EXPR total_range "${SIZE}-1")
+    foreach(check RANGE ${total_range})
+      unset(TEMP_CONFIG_${config}_CHECK_${check}${VAR_SUFFIX} CACHE)
+      unset(TEMP_CONFIG_${config}_BINARY_CONSTRAINTS_${check}${VAR_SUFFIX} CACHE)
+    endforeach()
+  	unset(TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX} CACHE)
   endforeach()
   unset(TEMP_CONFIGS${VAR_SUFFIX} CACHE)
 endfunction(reset_Temporary_Optimization_Variables)
@@ -2868,8 +2875,15 @@ endfunction(reset_Temporary_Optimization_Variables)
 #
 function(set_Configuration_Temporary_Optimization_Variables config mode test_ok binary_constraints)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-  set(TEMP_CONFIG_${config}_CHECK${VAR_SUFFIX} ${test_ok} CACHE INTERNAL "")
-  set(TEMP_CONFIG_${config}_BINARY_CONSTRAINTS${VAR_SUFFIX} ${binary_constraints} CACHE INTERNAL "")
+  if(NOT DEFINED TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX})
+    set(next_index 0)
+  else()
+    list(LENGTH TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX} next_index)
+  endif()
+  set(TEMP_CONFIG_${config}_CHECK_${next_index}${VAR_SUFFIX} ${test_ok} CACHE INTERNAL "")
+  set(TEMP_CONFIG_${config}_BINARY_CONSTRAINTS_${next_index}${VAR_SUFFIX} ${binary_constraints} CACHE INTERNAL "")
+  math(EXPR new_size "${next_index}+1")
+  set(TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX} ${new_size} CACHE INTERNAL "")
   append_Unique_In_Cache(TEMP_CONFIGS${VAR_SUFFIX} ${config})
 endfunction(set_Configuration_Temporary_Optimization_Variables)
 
@@ -2883,25 +2897,36 @@ endfunction(set_Configuration_Temporary_Optimization_Variables)
 #  check_Configuration_Temporary_Optimization_Variables
 #  ----------------------------------------------------
 #
-#   .. command:: check_Configuration_Temporary_Optimization_Variables(RES_CHECK RES_CONSTRAINTS config mode)
+#   .. command:: check_Configuration_Temporary_Optimization_Variables(RES_CHECK_MADE config mode)
 #
 #   check whether a configuration has already been checked.
 #
-#     :config: the name of the configuration.
+#     :config: the name of the configuration that is being checked.
+#     :config_args_var: the input variable containing the list of arguments to check.
 #     :mode: the current buid mode.
 #
-#     :RES_CHECK: the output variable that contains the variable containing the previous check result, or that is empty if no previous check.
-#     :RES_CONSTRAINTS: the output variable that contains the variable containing the previous check resulting binary constraints, or that is empty if no previous check.
+#     :RES_CHECK_MADE: the output variable that is TRUE if equivalent check has already been made, false otherwise.
+#     :RES_CHECK: the output variable that contains the result of the previous check.
+#     :RES_CONSTRAINTS: the output variable that contains the constraints of the previous check.
 #
-function(check_Configuration_Temporary_Optimization_Variables RES_CHECK RES_CONSTRAINTS config mode)
-  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-  if(DEFINED TEMP_CONFIG_${config}_CHECK${VAR_SUFFIX})
-    set(${RES_CHECK} TEMP_CONFIG_${config}_CHECK${VAR_SUFFIX} PARENT_SCOPE)
-    set(${RES_CONSTRAINTS} TEMP_CONFIG_${config}_BINARY_CONSTRAINTS${VAR_SUFFIX} PARENT_SCOPE)
-    return()
-  endif()
+function(check_Configuration_Temporary_Optimization_Variables RES_CHECK_MADE RES_CHECK RES_CONSTRAINTS config config_args_var mode)
+  set(${RES_CHECK_MADE} FALSE PARENT_SCOPE)
   set(${RES_CHECK} PARENT_SCOPE)
   set(${RES_CONSTRAINTS} PARENT_SCOPE)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  if(DEFINED TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX})
+    math(EXPR total "${TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX}}-1")
+    foreach(iter RANGE ${total})
+      compare_Current_Configuration_Check_Args_With_Previous(INCLUDED ${config_args_var} TEMP_CONFIG_${config}_BINARY_CONSTRAINTS_${iter}${VAR_SUFFIX})
+      if(INCLUDED)
+        set(${RES_CHECK_MADE} TRUE PARENT_SCOPE)
+        set(${RES_CHECK} ${TEMP_CONFIG_${config}_CHECK_${iter}${VAR_SUFFIX}} PARENT_SCOPE)
+        set(${RES_CONSTRAINTS} ${TEMP_CONFIG_${config}_BINARY_CONSTRAINTS_${iter}${VAR_SUFFIX}} PARENT_SCOPE)
+        return()
+      endif()
+    endforeach()
+    return()
+  endif()
 endfunction(check_Configuration_Temporary_Optimization_Variables)
 
 #.rst:

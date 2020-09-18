@@ -131,7 +131,7 @@ if(CMAKE_CXX_COMPILER)
     #2) check that required standard is supported
     list(FIND POSSIBLE_STDS ${CXX_std} INDEX)
     if(INDEX EQUAL -1)
-      message("[PID] ERROR: required c++ standard ${CXX_std} is not supported by current compiler !")
+      message("[PID] WARNING: required c++ standard ${CXX_std} is not supported by current toolset !")
       return()
     endif()
     #3) set options depending on compiler and required support
@@ -140,5 +140,8 @@ if(CMAKE_CXX_COMPILER)
   endif()
   set(CXX_soname ${CXX_STANDARD_LIBRARIES})
   set(CXX_symbol ${CXX_STD_SYMBOLS})
+  if(NOT CXX_std)#no standard support required at package level
+    set(CXX_std 98)#use minimum standard
+  endif()
   set(CXX_EVAL_RESULT TRUE)
 endif()

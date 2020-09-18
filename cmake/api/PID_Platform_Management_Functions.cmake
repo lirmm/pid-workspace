@@ -817,6 +817,12 @@ endmacro(load_Current_Contribution_Spaces)
 #    Reset all platform constraints applying to current project.
 #
 function(reset_Package_Platforms_Variables)
+
+  foreach(lang IN LISTS ${PROJECT_NAME}_LANGUAGE_CONFIGURATIONS${USE_MODE_SUFFIX})
+    set(${PROJECT_NAME}_LANGUAGE_CONFIGURATION_${lang}_ARGS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+  endforeach()
+  set(${PROJECT_NAME}_LANGUAGE_CONFIGURATIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
+
   foreach(config IN LISTS ${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX})
     foreach(param IN LISTS ${config}_OPTIONAL_CONSTRAINTS)
       unset(${config}_${param} CACHE)
@@ -1070,12 +1076,11 @@ endfunction(get_Soname_Symbols_Values)
 function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
   set(${COMPATIBLE} FALSE PARENT_SCOPE)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-
   # testing for languages standard libraries SO versions and symbols
   foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
     parse_Configuration_Expression_Arguments(PACKAGE_SPECS ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX})
     #get SONAME and SYMBOLS coming from language configuration
-    #WARNING Note: use same arguments as binary (soname and symbol are not used to directly check validaity of the configuration) !!
+    #WARNING Note: use same arguments as binary (soname and symbol are not used to directly check validity of the configuration) !!
     check_Language_Configuration_With_Arguments(SYSCHECK_RESULT LANG_SPECS TARGET_PLATFORM_SPECS ${lang} PACKAGE_SPECS ${mode})
     #get SONAME and SYMBOLS coming from package configuration
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS LANG_SPECS)
@@ -1258,21 +1263,11 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
     return()
   endif()
   #check if the configuration has already been checked
-  check_Configuration_Temporary_Optimization_Variables(RES_CHECK RES_CONSTRAINTS ${config_name} ${mode})
-  if(RES_CHECK)
-    if(${config_args})#testing if the variable containing arguments is not empty
-      #in this situation we need to check if all args match constraints
-      check_Configuration_Arguments_Included_In_Constraints(INCLUDED ${config_args} ${RES_CONSTRAINTS})
-      if(INCLUDED)#no need to evaluate again
-        set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
-        set(${BINARY_CONTRAINTS} ${${RES_CONSTRAINTS}} PARENT_SCOPE)
-        return()
-      endif()
-    else()#we may not need to reevaluate as there is no argument (so they will not change)
-      set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
-      set(${BINARY_CONTRAINTS} ${${RES_CONSTRAINTS}} PARENT_SCOPE)
-      return()
-    endif()
+  check_Configuration_Temporary_Optimization_Variables(CHECK_ALREADY_MADE RES_CHECK RES_CONSTRAINTS ${config_name} ${config_args} ${mode})
+  if(CHECK_ALREADY_MADE)#same check has already been made, we want to avoid redoing them unecessarily
+    set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
+    set(${BINARY_CONTRAINTS} ${${RES_CONSTRAINTS}} PARENT_SCOPE)
+    return()
   endif()
   reset_Platform_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
   include(${PATH_TO_CONFIG}/check_${config_name}.cmake)#get the description of the configuration check
@@ -1289,7 +1284,7 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
     message("[PID] WARNING : when checking arguments of configuration ${config_name}, there are required arguments that are not set : ${RES_STRING}")
     return()
   endif()
-
+  #evaluate the platform configuration expression
   evaluate_Platform_Configuration(${config_name} ${PATH_TO_CONFIG})
   set(${config_name}_AVAILABLE TRUE CACHE INTERNAL "")
   if(NOT ${config_name}_CONFIG_FOUND)
@@ -1299,7 +1294,7 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
     endif()
   endif()
   if(NOT ${config_name}_AVAILABLE)#configuration is not available so we cannot generate output variables
-    set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} FALSE "")
+    set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} FALSE "${${config_args}}")
     return()
   endif()
 
@@ -1309,7 +1304,7 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
     check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${check} ${mode})#check that dependencies are OK
     if(NOT RESULT_OK)
       message("[PID] WARNING : when checking configuration of current platform, configuration ${check}, used by ${config_name} cannot be satisfied.")
-      set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} FALSE "")
+      set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} FALSE "${${config_args}}")
       return()
     endif()
     #here need to manage resulting binary contraints

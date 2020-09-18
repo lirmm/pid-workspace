@@ -854,39 +854,26 @@ function(check_Language_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
   if(NOT ${lang_name}_Language_AVAILABLE)
     return()#if language is not available in the current build environment, simply stop
   endif()
-
   #check if the language configuration has already been checked
-  check_Configuration_Temporary_Optimization_Variables(RES_CHECK RES_CONSTRAINTS ${lang_name} ${mode})
-  if(RES_CHECK)
-    if(${lang_args})#testing if the variable containing arguments is not empty
-      #in this situation we need to check if all args match constraints
-      check_Configuration_Arguments_Included_In_Constraints(INCLUDED ${lang_args} ${RES_CONSTRAINTS})
-      if(INCLUDED)#no need to evaluate again
-        set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
-        set(${BINARY_CONTRAINTS} ${${RES_CONSTRAINTS}} PARENT_SCOPE)
-        return()
-      endif()
-    else()#we may not need to reevaluate as there is no argument (so they will not change)
-      set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
-      set(${BINARY_CONTRAINTS} ${${RES_CONSTRAINTS}} PARENT_SCOPE)
-      return()
-    endif()
+  check_Configuration_Temporary_Optimization_Variables(CHECK_ALREADY_MADE RES_CHECK RES_CONSTRAINTS ${lang_name} ${lang_args} ${mode})
+  if(CHECK_ALREADY_MADE)#same check has already been made, we want to avoid redoing them unecessarily
+    set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
+    set(${BINARY_CONTRAINTS} ${${RES_CONSTRAINTS}} PARENT_SCOPE)
   endif()
 
-  #from here we know we need to check more
+  #from here we know we need to check if language constraints are validated
   import_Language_Parameters(${lang_name})
   set(lang_constraints ${LANG_${lang_name}_OPTIONAL_CONSTRAINTS} ${LANG_${lang_name}_IN_BINARY_CONSTRAINTS})
   if(lang_constraints)
     list(REMOVE_DUPLICATES lang_constraints)
     prepare_Configuration_Expression_Arguments(${lang_name} ${lang_args} lang_constraints)
   endif()
+  evaluate_Language_Configuration(${lang_name})#evaluation takes place here (call to platforms/eval/eval_${lang_name}.cmake)
 
-  evaluate_Language_Configuration(${lang_name})
   if(NOT ${lang_name}_EVAL_RESULT)#language configuration cannot be satisfied
-    set_Configuration_Temporary_Optimization_Variables(${lang_name} ${mode} FALSE "")
+    set_Configuration_Temporary_Optimization_Variables(${lang_name} ${mode} FALSE "${${lang_args}}")#Note: memorizing arguments that provoqued fail of the check
     return()
   endif()
-
   #return the complete set of binary contraints
   if(lang_constraints)
     get_Configuration_Expression_Resulting_Constraints(ALL_CONSTRAINTS ${lang_name} LANG_${lang_name}_IN_BINARY_CONSTRAINTS)
@@ -999,20 +986,11 @@ endfunction(check_Language_Toolset)
 function(check_Language_Toolset_Configuration_With_Arguments CHECK_OK lang_name toolset_name toolset_args mode)
   set(${CHECK_OK} FALSE PARENT_SCOPE)
 
-  #check if the language configuration has already been checked
-  check_Configuration_Temporary_Optimization_Variables(RES_CHECK RES_CONSTRAINTS ${toolset_name} ${mode})
-  if(RES_CHECK)
-    if(${toolset_args})#testing if the variable containing arguments is not empty
-      #in this situation we need to check if all args match constraints
-      check_Configuration_Arguments_Included_In_Constraints(INCLUDED ${toolset_args} ${RES_CONSTRAINTS})
-      if(INCLUDED)#no need to evaluate again
-        set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
-        return()
-      endif()
-    else()#we may not need to reevaluate as there is no argument (so they will not change)
-      set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
-      return()
-    endif()
+  #check if the toolset configuration has already been checked
+
+  check_Configuration_Temporary_Optimization_Variables(CHECK_ALREADY_MADE RES_CHECK RES_CONSTRAINTS ${toolset_name} ${toolset_args} ${mode})
+  if(CHECK_ALREADY_MADE)#same check has already been made, we want to avoid redoing them unecessarily
+    set(${CHECK_OK} ${${RES_CHECK}} PARENT_SCOPE)
   endif()
 
   #if code pass here we have to (re)evaluate the toolset configuration
