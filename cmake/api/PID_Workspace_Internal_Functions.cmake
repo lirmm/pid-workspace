@@ -3860,7 +3860,7 @@ function(write_Global_Info file)
 	file(WRITE ${file} "set(IN_CI_PROCESS ${IN_CI_PROCESS} CACHE INTERNAL \"\" FORCE)\n")
 	#managing user specific constraints
 	separate_arguments(LIMITED_JOBS_PACKAGES)
-	file(WRITE ${file} "set(LIMITED_JOBS_PACKAGES ${LIMITED_JOBS_PACKAGES} CACHE INTERNAL \"\" FORCE)\n")
+	file(APPEND ${file} "set(LIMITED_JOBS_PACKAGES ${LIMITED_JOBS_PACKAGES} CACHE INTERNAL \"\" FORCE)\n")
 	#managing crosscompilation
 	file(APPEND ${file} "set(PID_CROSSCOMPILATION ${PID_CROSSCOMPILATION} CACHE INTERNAL \"\" FORCE)\n")
 
