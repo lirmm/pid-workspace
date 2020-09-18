@@ -217,14 +217,6 @@ _pid_ws_configure() {
     pid_ws_res=$?
 }
 
-# Apply CMake options to the given project
-#   $1: project dir, $2: cmake options
-_pid_ws_apply_options() {
-    if [ "$#" -gt 1 ]; then
-        _pid_ws_configure $@
-    fi
-}
-
 # Run the given target. (Re)configure the project
 #  beforehand if necesarry
 #  $1: project dir, $2: target, $3: cmake options
@@ -233,9 +225,9 @@ _pid_ws_run() {
     if [ ! -f $1/build/CMakeCache.txt ]; then
         cmake -S $1 -B $1/build
     fi
-
-    _pid_ws_apply_options $1 $3
-
+    if [ "$3" ]; then
+      _pid_ws_configure $1 "$3"
+    fi
     if [ -z "$2" ]; then
         cmake --build $1/build
         pid_ws_res=$?
