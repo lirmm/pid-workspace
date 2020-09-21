@@ -4870,9 +4870,9 @@ function(adjust_Languages_Standards_Description ERROR MESSAGE
   set(ret_message)
   #preliminary checks on inputs
   if(c_standard)
+    set(c_standard_used ${c_standard})
     is_A_C_Language_Standard(IS_STD ${c_standard})
   	if(NOT IS_STD)
-      set(c_standard_used ${c_standard})
       get_C_Existing_Standards(ALL_C_STDS)
       fill_String_From_List(POSSIBLE_STDS_STR ALL_C_STDS ", ")
       set(ret_message "${ret_message}bad C_STANDARD argument, its value must be one of: ${POSSIBLE_STDS_STR}. ")

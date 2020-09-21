@@ -2705,9 +2705,9 @@ function(build_Autotools_External_Project)
   # preparing autotools invocation parameters
   #put back environment variables in previosu state
   #configure compilation flags
-  set(C_FLAGS_ENV ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_C_FLAGS})
-  set(CXX_FLAGS_ENV ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_CXX_FLAGS})
-  set(LD_FLAGS_ENV ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_LD_FLAGS})
+  set(C_FLAGS_ENV)
+  set(CXX_FLAGS_ENV)
+  set(LD_FLAGS_ENV)
   set(CPP_FLAGS_ENV ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_CPP_FLAGS})
 
   #enforce use of standards defined in description
@@ -2719,13 +2719,23 @@ function(build_Autotools_External_Project)
   get_Environment_Info(C RELEASE CFLAGS c_flags COMPILER c_compiler)
 
   if(c_flags)
-    set(APPEND C_FLAGS_ENV ${c_flags})
+    list(APPEND C_FLAGS_ENV ${c_flags})
   endif()
   if(cxx_flags)
     list(APPEND CXX_FLAGS_ENV ${cxx_flags})
   endif()
   if(ld_flags)
     list(APPEND LD_FLAGS_ENV ${ld_flags})
+  endif()
+
+  if(BUILD_AUTOTOOLS_EXTERNAL_PROJECT_C_FLAGS)
+    list(APPEND C_FLAGS_ENV ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_C_FLAGS})
+  endif()
+  if(BUILD_AUTOTOOLS_EXTERNAL_PROJECT_CXX_FLAGS)
+    list(APPEND CXX_FLAGS_ENV ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_CXX_FLAGS})
+  endif()
+  if(BUILD_AUTOTOOLS_EXTERNAL_PROJECT_LD_FLAGS)
+    list(APPEND LD_FLAGS_ENV ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_LD_FLAGS})
   endif()
 
   if(C_FLAGS_ENV)
