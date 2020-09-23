@@ -98,7 +98,8 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 			COMMAND ${LCOV_EXECUTABLE} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --zerocounters #prepare coverage generation
 			COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG} # Run tests
 			COMMAND ${LCOV_EXECUTABLE} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --capture --output-file ${coverage_info} --no-external
-			COMMAND ${LCOV_EXECUTABLE} --remove ${coverage_info} 'test/*' '/usr/*' 'install/*' --output-file ${coverage_cleaned} #configure the filter of output (remove everything that is not related to
+			#configure the filter of output (remove everything that is not related to the libraries)
+			COMMAND ${LCOV_EXECUTABLE} --remove ${coverage_info} '/usr/*' '${WORKSPACE_DIR}/install/*' '${CMAKE_SOURCE_DIR}/test/*' --output-file ${coverage_cleaned}
 			COMMAND ${GENHTML_EXECUTABLE} -o ${coverage_dir} ${coverage_cleaned} #generating output
 			COMMAND ${CMAKE_COMMAND} -E remove ${coverage_info} ${coverage_cleaned} #cleanup lcov files
 
