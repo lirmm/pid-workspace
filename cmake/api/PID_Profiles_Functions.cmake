@@ -997,13 +997,19 @@ function(check_Language_Toolset_Configuration_With_Arguments CHECK_OK lang_name 
 
   #if code pass here we have to (re)evaluate the toolset configuration
   if(NOT EXISTS ${WORKSPACE_DIR}/environments/${toolset_name})
+    include_Environment_Reference_File(REF_EXIST ${toolset_name})
+    if(NOT REF_EXIST)
+      set_Configuration_Temporary_Optimization_Variables(${toolset_name} ${mode} FALSE "${toolset_args}")#remember that test failed with those constraints
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: the environment ${toolset_name} is unknown in workspace. Maybe it belongs to a contribution space your are not currently using OR it simply does not exist (check spelling).")
+      return()
+    endif()
     # Note : if environment does not exists it means:
     # 1) there is no chance for it to have been used in current profile
     # 2) we have no chance to find its check script
     # Consequence: immediately force its deployment if possible
     deploy_Environment_Repository(IS_DEPLOYED ${toolset_name})
     if(NOT IS_DEPLOYED)
-      set_Configuration_Temporary_Optimization_Variables(${toolset_name} ${mode} FALSE "${RES_CONSTRAINTS}")#remember that test failed with those constraints
+      set_Configuration_Temporary_Optimization_Variables(${toolset_name} ${mode} FALSE "${toolset_args}")#remember that test failed with those constraints
       return()
     endif()
   endif()
@@ -1015,7 +1021,7 @@ function(check_Language_Toolset_Configuration_With_Arguments CHECK_OK lang_name 
     generate_Environment_Inputs_File(FILE_EXISTS ${toolset_name})
     # 1.2 import variable description file
     if(NOT FILE_EXISTS)
-      set_Configuration_Temporary_Optimization_Variables(${toolset_name} ${mode} FALSE "${RES_CONSTRAINTS}")#remember that test failed with those constraints
+      set_Configuration_Temporary_Optimization_Variables(${toolset_name} ${mode} FALSE "${toolset_args}")#remember that test failed with those constraints
       return()
     endif()
   endif()
@@ -1026,13 +1032,13 @@ function(check_Language_Toolset_Configuration_With_Arguments CHECK_OK lang_name 
   prepare_Configuration_Expression_Arguments(${toolset_name} ${toolset_args} ${toolset_name}_INPUTS)
   evaluate_Language_Toolset_Configuration(RES ${lang_name} ${toolset_name})
   if(NOT RES)#language configuration cannot be satisfied
-    set_Configuration_Temporary_Optimization_Variables(${toolset_name} ${mode} FALSE "${RES_CONSTRAINTS}")#remember that test failed with those constraints
+    set_Configuration_Temporary_Optimization_Variables(${toolset_name} ${mode} FALSE "${toolset_args}")#remember that test failed with those constraints
     return()
   endif()
 
   #return the complete set of binary contraints
   set(${CHECK_OK} TRUE PARENT_SCOPE)
-  set_Configuration_Temporary_Optimization_Variables(${toolset_name} ${mode} TRUE "${RES_CONSTRAINTS}")#remember that test failed with those constraints
+  set_Configuration_Temporary_Optimization_Variables(${toolset_name} ${mode} TRUE "${toolset_args}")#remember that test failed with those constraints
 endfunction(check_Language_Toolset_Configuration_With_Arguments)
 
 #.rst:
@@ -1227,14 +1233,28 @@ endfunction(check_Extra_Tool_Configuration)
 function(check_Extra_Tool_Configuration_With_Arguments CHECK_OK CONFIGS tool tool_args mode)
   set(${CHECK_OK} FALSE PARENT_SCOPE)
   set(${CONFIGS} PARENT_SCOPE)
+
+  check_Configuration_Temporary_Optimization_Variables(CHECK_ALREADY_MADE CHECK_SUCCESS RES_CONSTRAINTS ${tool} ${tool_args} ${mode})
+  if(CHECK_ALREADY_MADE)#same check has already been made, we want to avoid redoing them unecessarily
+    set(${CHECK_OK} ${CHECK_SUCCESS} PARENT_SCOPE)
+    set(${CONFIGS} ${RES_CONSTRAINTS} PARENT_SCOPE)
+  endif()
+
   #if code pass here we have to (re)evaluate the toolset configuration
   if(NOT EXISTS ${WORKSPACE_DIR}/environments/${tool})
+    include_Environment_Reference_File(REF_EXIST ${tool})
+    if(NOT REF_EXIST)
+      set_Configuration_Temporary_Optimization_Variables(${tool} ${mode} FALSE "${RES_CONSTRAINTS}")#remember that test failed with those constraints
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: the environment ${tool} is unknown in workspace. Maybe it belongs to a contribution space your are not currently using OR it simply does not exist (check spelling).")
+      return()
+    endif()
     # Note : if environment does not exists it means:
     # 1) there is no chance for it to have been used in current profile
     # 2) we have no chance to find its check script
     # Consequence: immediately force its deployment if possible
     deploy_Environment_Repository(IS_DEPLOYED ${tool})
     if(NOT IS_DEPLOYED)
+      set_Configuration_Temporary_Optimization_Variables(${tool} ${mode} FALSE "${RES_CONSTRAINTS}")#remember that test failed with those constraints
       return()
     endif()
   endif()
@@ -1246,6 +1266,7 @@ function(check_Extra_Tool_Configuration_With_Arguments CHECK_OK CONFIGS tool too
     generate_Environment_Inputs_File(FILE_EXISTS ${tool})
     # 1.2 import variable description file
     if(NOT FILE_EXISTS)
+      set_Configuration_Temporary_Optimization_Variables(${tool} ${mode} FALSE "${RES_CONSTRAINTS}")#remember that test failed with those constraints
       return()
     endif()
   endif()
@@ -1257,12 +1278,14 @@ function(check_Extra_Tool_Configuration_With_Arguments CHECK_OK CONFIGS tool too
 
   evaluate_Extra_Tool_Configuration(RES RES_CONFIGS ${tool})
   if(NOT RES)#language configuration cannot be satisfied
+    set_Configuration_Temporary_Optimization_Variables(${tool} ${mode} FALSE "${RES_CONSTRAINTS}")#remember that test failed with those constraints
     return()
   endif()
 
   #return the complete set of binary contraints
   set(${CHECK_OK} TRUE PARENT_SCOPE)
   set(${CONFIGS} ${RES_CONFIGS} PARENT_SCOPE)
+  set_Configuration_Temporary_Optimization_Variables(${tool} ${mode} TRUE "${RES_CONSTRAINTS}")#remember that test succeeded with those constraints
 endfunction(check_Extra_Tool_Configuration_With_Arguments)
 
 
