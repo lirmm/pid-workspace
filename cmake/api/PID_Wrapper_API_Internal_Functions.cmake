@@ -42,21 +42,24 @@ include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 #
 # .. ifmode:: internal
 #
-#  .. |reset_Wrapper_Description_Cached_Variables| replace:: ``reset_Wrapper_Description_Cached_Variables``
-#  .. _reset_Wrapper_Description_Cached_Variables:
+#  .. |reset_Wrapper_Version_Info| replace:: ``reset_Wrapper_Version_Info``
+#  .. _reset_Wrapper_Version_Info:
 #
-#  reset_Wrapper_Description_Cached_Variables
-#  ------------------------------------------
+#  reset_Wrapper_Version_Info
+#  ---------------------------
 #
-#   .. command:: reset_Wrapper_Description_Cached_Variables()
+#   .. command:: reset_Wrapper_Version_Info()
 #
 #     Reset all cache variables of the currently built wrapper. Used to ensure consistency of wrapper description.
 #
-function(reset_Wrapper_Description_Cached_Variables)
-
-#reset versions description
-foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
-	#reset langauge configurations
+#      :version: version to reset.
+#      :soname: the global soname for the version.
+#      :compatibility: the previous compatible version
+#      :deploy_file_name: the path to the deployment script used to build/install the given version, relative to this version folder.
+#      :post_install_script: the path to the post install script that must be executed anytime the given version is deployed, relative to this version folder in source tree.
+#      :pre_use_script: the path to the pre use script that is executed anytime the given version is used by another package to perform additional configuration, relative to this version folder in source tree.
+#
+function(reset_Wrapper_Version_Info version soname compatibility deploy_file_name post_install_script pre_use_script)
 	foreach(lang IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS)
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS CACHE INTERNAL "")
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_OPTIONAL CACHE INTERNAL "")
@@ -141,12 +144,33 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_ALIASES CACHE INTERNAL "")
 
 	#reset current version general information
-	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME CACHE INTERNAL "")
-	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH CACHE INTERNAL "")
-	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT CACHE INTERNAL "")
-	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT CACHE INTERNAL "")
-	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME ${soname} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${compatibility} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT ${deploy_file_name} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT ${post_install_script} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT ${pre_use_script} CACHE INTERNAL "")
+endfunction(reset_Wrapper_Version_Info)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Wrapper_Description_Cached_Variables| replace:: ``reset_Wrapper_Description_Cached_Variables``
+#  .. _reset_Wrapper_Description_Cached_Variables:
+#
+#  reset_Wrapper_Description_Cached_Variables
+#  ------------------------------------------
+#
+#   .. command:: reset_Wrapper_Description_Cached_Variables()
+#
+#     Reset all cache variables of the currently built wrapper. Used to ensure consistency of wrapper description.
+#
+function(reset_Wrapper_Description_Cached_Variables)
+
+#reset versions description
+foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
+	#reset language configurations
+	reset_Wrapper_Version_Info(${version} "" "" "" "" "")
 endforeach()
 set(${PROJECT_NAME}_KNOWN_VERSIONS CACHE INTERNAL "")
 
@@ -845,6 +869,7 @@ function(belongs_To_Known_Versions BELONGS_TO version)
 	endif()
 endfunction(belongs_To_Known_Versions)
 
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -879,13 +904,7 @@ if(NOT INDEX EQUAL -1)
 	return()
 endif()
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSIONS ${version})
-set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT ${deploy_file_name} CACHE INTERNAL "")
-set(${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT ${post_install_script} CACHE INTERNAL "")
-set(${PROJECT_NAME}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT ${post_install_script} CACHE INTERNAL "")
-set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME "${so_name}" CACHE INTERNAL "")
-if(compatible_with_version AND NOT compatible_with_version STREQUAL "")
-	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${compatible_with_version} CACHE INTERNAL "")
-endif()
+reset_Wrapper_Version_Info(${version} "${so_name}" "${compatible_with_version}" "${deploy_file_name}" "${post_install_script}" "${pre_use_script}")
 set(CURRENT_MANAGED_VERSION ${version} CACHE INTERNAL "")
 endfunction(add_Known_Version)
 
@@ -899,7 +918,7 @@ endfunction(add_Known_Version)
 #  declare_Wrapped_Environment_Configuration
 #  -----------------------------------------
 #
-#   .. command:: declare_Wrapped_Environment_Configuration(languages lang_toolsets tools optional)
+#   .. command:: declare_Wrapped_Environment_Configuration(NEED_EXIT languages lang_toolsets tools optional)
 #
 #    Declare a constraint on build environment for currenlty described version of the external package. Internal counterpart of declare_PID_Wrapper_Environment.
 #
@@ -908,7 +927,10 @@ endfunction(add_Known_Version)
 #      :tools: list of additional tools configuration check expressions.
 #      :optional: if TRUE requirements are optional (will not generate errors if checks fail)
 #
-function(declare_Wrapped_Environment_Configuration languages lang_toolsets tools optional)
+#      :NEED_EXIT: output variable that is TRUE if current version description has be to exitted
+#
+function(declare_Wrapped_Environment_Configuration NEED_EXIT languages lang_toolsets tools optional)
+	set(${NEED_EXIT} FALSE PARENT_SCOPE)
 	set(config_constraints)
 	if(lang_toolsets)
 		set(index 0)
@@ -917,22 +939,22 @@ function(declare_Wrapped_Environment_Configuration languages lang_toolsets tools
 		parse_Configuration_Expression(LANG_NAME LANG_ARGS "${lang}")#need to parse the configuration strings to extract arguments (if any)
 		if(NOT LANG_NAME)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : langauge configuration check ${lang} is ill formed.")
-			return()
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : language configuration check ${lang} is ill formed.")
 		endif()
-		append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_LANGUAGE_CONFIGURATIONS "${LANG_NAME}")# update the list of required configurations
-		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_LANGUAGE_CONFIGURATION_${LANG_NAME}_ARGS "${LANG_ARGS}" CACHE INTERNAL "")
-		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_LANGUAGE_CONFIGURATION_${LANG_NAME}_OPTIONAL ${optional} CACHE INTERNAL "")
 		#check that the configuration applies to the current build environment
 		check_Language_Configuration(RESULT_OK LANG_NAME CONSTRAINTS PLATFORM_CONSTRAINTS "${lang}" Release)
 		list(APPEND config_constraints ${PLATFORM_CONSTRAINTS})#memorize platform configurations required by the environment
 		if(NOT RESULT_OK)
 			if(NOT optional)
-				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satisfy language configuration ${lang}!")
+				message("[PID] ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satisfy language configuration ${lang}!")
+				set(${NEED_EXIT} TRUE PARENT_SCOPE)
 				return()
 			endif()
 		else()
+			append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_LANGUAGE_CONFIGURATIONS "${LANG_NAME}")# update the list of required configurations
+			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_LANGUAGE_CONFIGURATION_${LANG_NAME}_ARGS "${LANG_ARGS}" CACHE INTERNAL "")
+			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_LANGUAGE_CONFIGURATION_${LANG_NAME}_OPTIONAL ${optional} CACHE INTERNAL "")
+
 			#for toolset, only check that they are well specified for now (real check will be in build process)
 			if(lang_toolsets)
 				list(GET lang_toolsets ${index} corresponding_toolset)
@@ -957,8 +979,8 @@ function(declare_Wrapped_Environment_Configuration languages lang_toolsets tools
 			check_Extra_Tool_Configuration(RESULT_OK CONFIG_CONSTRAINTS "${tool}" Release)
 			if(NOT RESULT_OK)
 				if(NOT optional)
-					finish_Progress(${GLOBAL_PROGRESS_VAR})
-					message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satisfy environment configuration ${tool}!")
+					message("[PID] ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satisfy environment configuration ${tool}!")
+					set(${NEED_EXIT} TRUE PARENT_SCOPE)
 					return()
 				endif()
 			endif()
@@ -976,13 +998,34 @@ endfunction(declare_Wrapped_Environment_Configuration)
 #
 # .. ifmode:: internal
 #
+#  .. |declare_Current_Version_Unavailable| replace:: ``declare_Current_Version_Unavailable``
+#  .. _declare_Current_Version_Unavailable:
+#
+#  declare_Current_Version_Unavailable
+#  --------------------------------------
+#
+#   .. command:: declare_Current_Version_Unavailable()
+#
+#    Declare the current version as unavailable, so use will not be able to build it.
+#
+macro(declare_Current_Version_Unavailable)
+	reset_Wrapper_Version_Info(${CURRENT_MANAGED_VERSION} "" "" "" "" "")
+	remove_From_Cache(${PROJECT_NAME}_KNOWN_VERSIONS ${CURRENT_MANAGED_VERSION})
+	message(WARNING "[PID] WARNING: version ${CURRENT_MANAGED_VERSION} of ${PROJECT_NAME} cannot be generated since some of its platform or environments required contraints cannot be resolved (see previous outputs). This version cannot be built.")
+	unset(CURRENT_MANAGED_VERSION)
+endmacro(declare_Current_Version_Unavailable)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |declare_Wrapped_Platform_Configuration| replace:: ``declare_Wrapped_Platform_Configuration``
 #  .. _declare_Wrapped_Platform_Configuration:
 #
 #  declare_Wrapped_Platform_Configuration
 #  --------------------------------------
 #
-#   .. command:: declare_Wrapped_Platform_Configuration(platform configurations options)
+#   .. command:: declare_Wrapped_Platform_Configuration(NEED_EXIT platform configurations options)
 #
 #    Declare a platform constraint for currenlty described version of the external package. Internal counterpart of declare_PID_Wrapper_Platform_Configuration.
 #
@@ -990,109 +1033,107 @@ endfunction(declare_Wrapped_Environment_Configuration)
 #      :configurations: the list of configurations that must be validated by current platform.
 #      :options: the list of configurations that may be validated or not by current platform.
 #
-function(declare_Wrapped_Platform_Configuration platform configurations options)
-if(platform)# if a platform constraint applies
-	set(target_curr_platform)
-	foreach(plat IN LISTS platform)
-		if(plat STREQUAL CURRENT_PLATFORM_BASE
-			OR plat STREQUAL CURRENT_PLATFORM_OS)#OS is the main useful element o check when considering platform configuration
-			set(target_curr_platform ${plat})
-			break()
-		endif()
-	endforeach()
-	if(NOT target_curr_platform)#nothing more to do
-		return()
-	endif()
-	foreach(config IN LISTS configurations)
-		parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")#need to parse the configuration strings to extract arguments (if any)
-		if(NOT CONFIG_NAME)
-			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
+#      :NEED_EXIT: output variable that is TRUE if current version description has be to exitted
+#
+function(declare_Wrapped_Platform_Configuration NEED_EXIT platform configurations options)
+	set(${NEED_EXIT} FALSE PARENT_SCOPE)
+	if(platform)# if a platform constraint applies
+		set(target_curr_platform)
+		foreach(plat IN LISTS platform)
+			if(plat STREQUAL CURRENT_PLATFORM_BASE
+				OR plat STREQUAL CURRENT_PLATFORM_OS)#OS is the main useful element o check when considering platform configuration
+				set(target_curr_platform ${plat})
+				break()
+			endif()
+		endforeach()
+		if(NOT target_curr_platform)#nothing more to do
 			return()
 		endif()
-		append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")# update the list of required configurations
-		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONFIG_ARGS}" CACHE INTERNAL "")
-		#check that the configuration applies to the current platform if the current platform is the target of this constraint
-		set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
-		check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
-		if(NOT RESULT_OK)
-			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satify configuration ${config}!")
-			return()
-		endif()
-		set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
-	endforeach()
-
-	#now dealing with options
-	foreach(config IN LISTS options)
-		check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
-		if(RESULT_OK)
-			set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
-		else()
-			if(CONFIG_NAME)#can reset only if CONFIG_NAME has been extracted
-				set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
-			else()
+		foreach(config IN LISTS configurations)
+			parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")#need to parse the configuration strings to extract arguments (if any)
+			if(NOT CONFIG_NAME)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
+			endif()
+			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
+			set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
+			if(NOT RESULT_OK)
+				set(${NEED_EXIT} TRUE PARENT_SCOPE)
+				message("[PID] ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satisfy configuration ${config}!")
 				return()
 			endif()
-		endif()
-
-		if(${CONFIG_NAME}_AVAILABLE) #if available then it is considered as "used"
-			append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")
-			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONSTRAINTS}" CACHE INTERNAL "")
-		endif()
-	endforeach()
-else()#no platform constraint applies => this platform configuration is adequate for all platforms
-	foreach(config IN LISTS configurations)
-		parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
-		if(NOT CONFIG_NAME)
-			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
-			return()
-		endif()
-		#check that the configuration applies to the current platform anytime
-		append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")# update the list of required configurations
-
-		#now check the configuration immediately because it should work with any platform
-		set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
-		check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
-		if(NOT RESULT_OK)
-			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satify configuration ${config} with current platform!")
-			return()
-		endif()
-		set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONFIG_ARGS}" CACHE INTERNAL "")
-		set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
-	endforeach()
-
-	#now dealing with options
-	foreach(config IN LISTS options)
-		parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
-		if(NOT CONFIG_NAME)
-			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] ERROR : configuration check ${config} is ill formed. Configuration being optional it is skipped automatically.")
-			return()
-		endif()
-		check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
-		if(RESULT_OK)
-			set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
-		else()
-			if(CONFIG_NAME)#can reset only if CONFIG_NAME has been extracted
-				set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
-			else()
-				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
-				return()
-			endif()
-		endif()
-
-		if(${CONFIG_NAME}_AVAILABLE) #if available then it is considered as used
-			append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")
+			append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")# update the list of required configurations
 			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONFIG_ARGS}" CACHE INTERNAL "")
-		endif()
-	endforeach()
-endif()
+			#check that the configuration applies to the current platform if the current platform is the target of this constraint
+			set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
+		endforeach()
+
+		#now dealing with options
+		foreach(config IN LISTS options)
+			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
+			if(RESULT_OK)
+				set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
+			else()
+				if(CONFIG_NAME)#can reset only if CONFIG_NAME has been extracted
+					set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
+				else()
+					finish_Progress(${GLOBAL_PROGRESS_VAR})
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : unknown problem with configuration check ${config}.")
+				endif()
+			endif()
+
+			if(${CONFIG_NAME}_AVAILABLE) #if available then it is considered as "used"
+				append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")
+				set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONSTRAINTS}" CACHE INTERNAL "")
+			endif()
+		endforeach()
+	else()#no platform constraint applies => this platform configuration is adequate for all platforms
+		foreach(config IN LISTS configurations)
+			parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
+			if(NOT CONFIG_NAME)
+				finish_Progress(${GLOBAL_PROGRESS_VAR})
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
+				return()
+			endif()
+			set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
+			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
+			if(NOT RESULT_OK)
+				set(${NEED_EXIT} TRUE PARENT_SCOPE)
+				message("[PID] ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satisfy configuration ${config} with current platform!")
+				return()
+			endif()
+			#check that the configuration applies to the current platform anytime
+			append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")# update the list of required configurations
+			#now check the configuration immediately because it should work with any platform
+			set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONFIG_ARGS}" CACHE INTERNAL "")
+			set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
+		endforeach()
+
+		#now dealing with options
+		foreach(config IN LISTS options)
+			parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
+			if(NOT CONFIG_NAME)
+				finish_Progress(${GLOBAL_PROGRESS_VAR})
+				message(FATAL_ERROR "[PID] ERROR : configuration check ${config} is ill formed. Configuration being optional it is skipped automatically.")
+			endif()
+			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
+			if(RESULT_OK)
+				set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
+			else()
+				if(CONFIG_NAME)#can reset only if CONFIG_NAME has been extracted
+					set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
+				else()
+					finish_Progress(${GLOBAL_PROGRESS_VAR})
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : unknown problem with configuration check ${config}.")
+				endif()
+			endif()
+
+			if(${CONFIG_NAME}_AVAILABLE) #if available then it is considered as used
+				append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATIONS "${CONFIG_NAME}")
+				set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURATION_${CONFIG_NAME}_ARGS "${CONFIG_ARGS}" CACHE INTERNAL "")
+			endif()
+		endforeach()
+	endif()
 endfunction(declare_Wrapped_Platform_Configuration)
 
 #.rst:

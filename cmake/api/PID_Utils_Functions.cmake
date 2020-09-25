@@ -5299,6 +5299,34 @@ endfunction(append_Unique_In_Cache)
 #
 # .. ifmode:: internal
 #
+#  .. |remove_From_Cache| replace:: ``remove_From_Cache``
+#  .. _remove_From_Cache:
+#
+#  remove_From_Cache
+#  ----------------------
+#
+#   .. command:: remove_From_Cache(list_name element_value)
+#
+#    Remove an element from a list in cache. If the list does not exist in CACHE nothing is done.
+#
+#     :list_name: the input/output CACHE variable containing the list to remove the element from.
+#
+#     :element_value: the element to remove.
+#
+function(remove_From_Cache list_name element_value)
+	if(${list_name})
+		set(temp_list ${${list_name}})
+		list(REMOVE_ITEM temp_list ${element_value})
+		set(${list_name} ${temp_list} CACHE INTERNAL "")
+	else()
+		set(${list_name} ${element_value} CACHE INTERNAL "")
+	endif()
+endfunction(remove_From_Cache)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |remove_Duplicates_From_List| replace:: ``remove_Duplicates_From_List``
 #  .. _remove_Duplicates_From_List:
 #

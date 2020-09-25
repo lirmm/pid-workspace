@@ -1671,6 +1671,7 @@ function(is_Platform_Configuration_Installable INSTALLABLE config path_to_config
     include(Configuration_Definition NO_POLICY_SCOPE)
     set(DO_NOT_INSTALL TRUE)#only evaluate if the system package can be installed, do not proceed
     include(${path_to_config}/${${config}_INSTALL_PROCEDURE})
+    unset(DO_NOT_INSTALL)
     if(${config}_CONFIG_INSTALLABLE)
       set(${INSTALLABLE} TRUE PARENT_SCOPE)
       return()
@@ -1707,6 +1708,7 @@ macro(install_Platform_Configuration config path_to_config)
       include(Configuration_Definition NO_POLICY_SCOPE)
       set(DO_NOT_INSTALL FALSE)# apply installation instructions
       include(${path_to_config}/${${config}_INSTALL_PROCEDURE})
+      unset(DO_NOT_INSTALL)
     endif()
     #now evaluate configuration check after install
     evaluate_Platform_Configuration(${config} ${path_to_config})

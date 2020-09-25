@@ -790,7 +790,13 @@ if(DECLARE_PID_WRAPPER_ENVIRONMENT_OPTIONAL)
 else()
   set(optional FALSE)
 endif()
-declare_Wrapped_Environment_Configuration("${DECLARE_PID_WRAPPER_ENVIRONMENT_LANGUAGE}" "${DECLARE_PID_WRAPPER_ENVIRONMENT_TOOLSET}" "${DECLARE_PID_WRAPPER_ENVIRONMENT_TOOL}" "${optional}")
+declare_Wrapped_Environment_Configuration(DO_EXIT "${DECLARE_PID_WRAPPER_ENVIRONMENT_LANGUAGE}" "${DECLARE_PID_WRAPPER_ENVIRONMENT_TOOLSET}" "${DECLARE_PID_WRAPPER_ENVIRONMENT_TOOL}" "${optional}")
+if(DO_EXIT)
+  unset(DO_EXIT)
+  declare_Current_Version_Unavailable()
+  return()
+endif()
+unset(DO_EXIT)
 endmacro(declare_PID_Wrapper_Environment)
 
 #.rst:
@@ -855,8 +861,14 @@ if(DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION AND DECLARE_PID_WRAPPER_PLATFORM_R
 endif()
 #Note: CONFIGURATION is kept for backward compatibility
 set(required ${DECLARE_PID_WRAPPER_PLATFORM_CONFIGURATION} ${DECLARE_PID_WRAPPER_PLATFORM_REQUIRED})
-declare_Wrapped_Platform_Configuration("${DECLARE_PID_WRAPPER_PLATFORM_PLATFORM}" "${required}" "${DECLARE_PID_WRAPPER_PLATFORM_OPTIONAL}")
+declare_Wrapped_Platform_Configuration(DO_EXIT "${DECLARE_PID_WRAPPER_PLATFORM_PLATFORM}" "${required}" "${DECLARE_PID_WRAPPER_PLATFORM_OPTIONAL}")
 unset(required)
+if(DO_EXIT)
+  unset(DO_EXIT)
+  declare_Current_Version_Unavailable()
+  return()
+endif()
+unset(DO_EXIT)
 endmacro(declare_PID_Wrapper_Platform_Configuration)
 
 #.rst:
