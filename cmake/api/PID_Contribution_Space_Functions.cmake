@@ -861,7 +861,7 @@ endfunction(add_Contribution_Space)
 #
 function(deploy_Contribution_Space DEPLOYED name update publish)
   set(${DEPLOYED} FALSE PARENT_SCOPE)
-  clone_Contribution_Space_Repository(CLONED ${publish})
+  clone_Contribution_Space_Repository(CLONED ${update})
   if(NOT CLONED)
     return()
   endif()
