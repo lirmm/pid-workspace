@@ -2404,10 +2404,10 @@ function(generate_OS_Variant_Symlinks package platform version install_dir)
 			list(LENGTH os_includes_used NB_INCLUDES_OS)#Note: NB_INCLUDES_OS >=1
 			#checking that generating symlinks to OS include folders is feasible
 			if(NB_INCLUDES_OS GREATER NB_INCLUDES_DESCRIPTION)#no solution about that I have no enough "slots" in description to target all system include folders
-				message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot generate symlinks for include as they are too many include folders to target in operating system.")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot generate symlinks for include as they are too many include folders to target in operating system (${os_includes_used}).")
 				return()
 			elseif(NB_INCLUDES_DESCRIPTION GREATER NB_INCLUDES_OS)
-				message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot generate symlinks for include as they are too many include folders defined in package description compared to those declared in operating system.")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot generate symlinks for include as they are too many include folders defined in package description compared to those declared in operating system (${os_includes_used}).")
 				return()
 			else()#they are equal
 				if(NB_INCLUDES_DESCRIPTION GREATER 1)
