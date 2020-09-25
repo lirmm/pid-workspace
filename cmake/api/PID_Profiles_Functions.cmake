@@ -1060,17 +1060,21 @@ endfunction(check_Language_Toolset_Configuration_With_Arguments)
 #
 function(evaluate_Language_Toolset_Configuration RESULT lang toolset)
   set(${RESULT} FALSE PARENT_SCOPE)
-  #first check is only for testing if current toolset is not already OK
-  include(${WORKSPACE_DIR}/environments/${toolset}/build/PID_Environment_Solution_Info.cmake)
-  if(NOT ${toolset}_CHECK)# no check script defined so cannot evaluate if current build env config is OK
-    return()
+  #in case the environment has already been evaluated
+  if(EXISTS ${WORKSPACE_DIR}/environments/${toolset}/build/PID_Environment_Solution_Info.cmake)
+    #first check is only for testing if current toolset is not already OK
+    include(${WORKSPACE_DIR}/environments/${toolset}/build/PID_Environment_Solution_Info.cmake)
+    if(NOT ${toolset}_CHECK)# no check script defined so cannot evaluate if current build env config is OK
+      return()
+    endif()
+    include(${${toolset}_CHECK})#check again with current parameters
+    if(ENVIRONMENT_CHECK_RESULT)
+      set(${RESULT} TRUE PARENT_SCOPE)
+      return()
+    endif()
   endif()
-  include(${${toolset}_CHECK})
-  if(ENVIRONMENT_CHECK_RESULT)
-    set(${RESULT} TRUE PARENT_SCOPE)
-    return()
-  endif()
-  #from here check is not successfull so build env need to be reconfigured by using an available additional toolset
+  #from here check is not successfull, meaning that the current build environment configuration
+  # needs to be reconfigured by using an available additional toolset
   if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
     evaluate_Toolset_From_Environment(IS_OK ${lang} ${toolset} ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
     if(IS_OK)
