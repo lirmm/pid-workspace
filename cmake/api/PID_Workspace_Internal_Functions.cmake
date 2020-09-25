@@ -3838,24 +3838,49 @@ function(write_Platform_Description file)
 	file(APPEND ${file} "set(CURRENT_PYTHON_PACKAGER_EXE_OPTIONS ${CURRENT_PYTHON_PACKAGER_EXE_OPTIONS} CACHE INTERNAL \"\" FORCE)\n")
 endfunction(write_Platform_Description)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |write_Workspace_Global_Info_File| replace:: ``write_Workspace_Global_Info_File``
+#  .. _write_Workspace_Global_Info_File:
+#
+#  write_Workspace_Global_Info_File
+#  --------------------------------
+#
+#   .. command:: write_Workspace_Global_Info_File(file)
+#
+#     (Re)Writing to a given file the workspace CMake options.
+#
+#      :file: the path to the file to write in.
+#
+function(write_Workspace_Global_Info_File file)
+	#managing CI
+	file(WRITE ${file} "set(IN_CI_PROCESS ${IN_CI_PROCESS} CACHE INTERNAL \"\" FORCE)\n")
+	#managing user specific constraints
+	separate_arguments(LIMITED_JOBS_PACKAGES)
+	file(APPEND ${file} "set(LIMITED_JOBS_PACKAGES ${LIMITED_JOBS_PACKAGES} CACHE INTERNAL \"\" FORCE)\n")
+	#managing crosscompilation
+	file(APPEND ${file} "set(PID_CROSSCOMPILATION ${PID_CROSSCOMPILATION} CACHE INTERNAL \"\" FORCE)\n")
+endfunction(write_Workspace_Global_Info_File)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |write_Global_Info| replace:: ``write_Global_Info``
-#  .. _write_Global_Info:
+#  .. |write_CMake_Info| replace:: ``write_CMake_Info``
+#  .. _write_CMake_Info:
 #
-#  write_Global_Info
+#  write_CMake_Info
 #  -----------------
 #
-#   .. command:: write_Global_Info(file)
+#   .. command:: write_CMake_Info(file)
 #
 #     (Re)Writing to a given file the cache variables of the workspace defining global info related to PID and CMake.
 #
 #      :file: the path to the file to write in.
 #
-function(write_Global_Info file)
+function(write_CMake_Info file)
 	#managing CI
 	file(WRITE ${file} "set(IN_CI_PROCESS ${IN_CI_PROCESS} CACHE INTERNAL \"\" FORCE)\n")
 	#managing user specific constraints
@@ -3873,7 +3898,7 @@ function(write_Global_Info file)
 	file(APPEND ${file} "set(CMAKE_GENERATOR_TOOLSET \"${CMAKE_GENERATOR_TOOLSET}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_GENERATOR_PLATFORM \"${CMAKE_GENERATOR_PLATFORM}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_GENERATOR_INSTANCE \"${CMAKE_GENERATOR_INSTANCE}\" CACHE INTERNAL \"\" FORCE)\n")
-endfunction(write_Global_Info)
+endfunction(write_CMake_Info)
 
 #.rst:
 #
@@ -3927,8 +3952,8 @@ write_Current_Configuration_Build_Related_Variables(${CMAKE_BINARY_DIR}/Workspac
 file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake NO_POLICY_SCOPE)\n")
 # defining all build configuration variables related to the current platform
 file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Solution_File.cmake NO_POLICY_SCOPE)\n")
-write_Global_Info(${CMAKE_BINARY_DIR}/Workspace_Global_Info.cmake)
-file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Global_Info.cmake NO_POLICY_SCOPE)\n")
+write_CMake_Info(${CMAKE_BINARY_DIR}/Workspace_CMake_Info.cmake)
+file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_CMake_Info.cmake NO_POLICY_SCOPE)\n")
 endfunction(write_Current_Configuration)
 
 #.rst:

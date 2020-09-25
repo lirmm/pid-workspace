@@ -37,6 +37,8 @@ if(DIR_NAME STREQUAL "build")
 	set(LIMITED_JOBS_PACKAGES "" CACHE STRING "List of packages to build with only one job")
 	mark_as_advanced(IN_CI_PROCESS)
 	set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
+	# write the configuration file to memorize at global scope (in build folder) the global workspace configuration information
+	write_Workspace_Global_Info_File(${CMAKE_BINARY_DIR}/Workspace_Global_Info.cmake)
 
 	### management of workspace repository ###
 	configure_Git()
