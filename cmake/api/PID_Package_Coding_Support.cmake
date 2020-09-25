@@ -239,7 +239,7 @@ else()
 endif()
 
 if(BUILD_STATIC_CODE_CHECKING_REPORT)
-	add_custom_target(staticchecks COMMENT "[PID] INFO : generating a static check report (look into debug/share/static_checks_report folder)")
+	add_custom_target(staticchecks COMMENT "[PID] INFO : generating a static check report (look into release/share/static_checks_report folder)")
 	#now creating test target and enriching the staticchecks global target with information coming from components
 	if(${PROJECT_NAME}_COMPONENTS_LIBS)
 		foreach(component ${${PROJECT_NAME}_COMPONENTS_LIBS})

@@ -56,6 +56,12 @@ if(NOT CONTENT_TO_OPERATE AND DEFINED ENV{content})
 	set(CONTENT_TO_OPERATE $ENV{content} CACHE INTERNAL "" FORCE)
 endif()
 
+read_Contribution_Spaces_Description_File(SUCCESS)#get the current list of contribution spaces
+if(NOT SUCCESS
+  OR NOT CONTRIBUTION_SPACES)
+  message(FATAL_ERROR "[PID] ERROR : no contribution space in use, please configure again your workspace.")
+endif()
+
 set(cmd_list "ls|add|rm|reset|churl|prio_max|prio_min|move|copy|publish|update|status")
 if(NOT TARGET_COMMAND)
   message(FATAL_ERROR "[PID] ERROR : no command defined when managing contribution spaces. Use cmd argument with a value chosen among ${cmd_list}.")
@@ -63,7 +69,9 @@ elseif(NOT TARGET_COMMAND MATCHES "^${cmd_list}$")
   message(FATAL_ERROR "[PID] ERROR :when managing contribution spaces, command ${TARGET_COMMAND} is unknown. Use cmd argument with a value chosen among ${cmd_list}.")
 elseif(NOT TARGET_COMMAND MATCHES "^ls|reset$")
   if(NOT TARGET_CS)
-    message(FATAL_ERROR "[PID] ERROR :when managing contribution spaces, no target contribution space defined (use space argument).")
+    list(GET CONTRIBUTION_SPACES 0 prio_max_cs)
+    set(TARGET_CS ${prio_max_cs} CACHE INTERNAL "" FORCE)
+    message(WARNING "[PID] WARNING :when managing contribution spaces, no target contribution space defined (use space argument). Contribution space with greater priority (${TARGET_CS}) will be used.")
   endif()
   if(TARGET_COMMAND STREQUAL "add")
     if(NOT UPDATE_URL)
@@ -83,12 +91,6 @@ elseif(NOT TARGET_COMMAND MATCHES "^ls|reset$")
       endif()
     endif()
   endif()
-endif()
-
-read_Contribution_Spaces_Description_File(SUCCESS)#get the current list of contribution spaces
-if(NOT SUCCESS
-  OR NOT CONTRIBUTION_SPACES)
-  message(FATAL_ERROR "[PID] ERROR : no contribution space in use, please configure again your workspace.")
 endif()
 
 set(reconfigure FALSE)#by default do nto reconfigure the workspace
