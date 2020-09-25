@@ -2184,25 +2184,10 @@ endfunction(generate_Description_For_External_Component_Dependencies)
 #
 function(create_Relative_Path_To_Static RES_BINARY package version component platform)
 	set(${RES_BINARY} PARENT_SCOPE)
-	create_Static_Lib_Extension(RES_EXT ${platform})
 	set(final_list_of_static)#add the adequate extension name depending on the platform
 	foreach(static_lib_path IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS)
-		static_Library_Needs_Extension(NEEDS_EXT ${static_lib_path} ${platform})
-		# if it's not a path then construct it according to the platform
-		if(NOT static_lib_path MATCHES "/" AND NOT static_lib_path MATCHES "^-l")
-			if(WIN32)
-				set(static_lib_path lib/${static_lib_path})
-			elseif(static_lib_path MATCHES "^lib.*")
-				set(static_lib_path lib/${static_lib_path})
-			else()
-				set(static_lib_path lib/lib${static_lib_path})
-			endif()
-		endif()
-		if(NEEDS_EXT)#OK no extension defined we can apply
-			list(APPEND final_list_of_static "${static_lib_path}${RES_EXT}")
-		else()
-			list(APPEND final_list_of_static "${static_lib_path}")
-		endif()
+		create_Static_Lib_Path(RET_LIB_PATH ${static_lib_path} ${platform})
+		list(APPEND final_list_of_static "${RET_LIB_PATH}")
 	endforeach()
 	set(${RES_BINARY} ${final_list_of_static} PARENT_SCOPE)
 endfunction(create_Relative_Path_To_Static)
@@ -2237,29 +2222,13 @@ function(create_Relative_Path_To_Shared RES_BINARY package version component pla
 		else()
 			set(USE_SONAME "${${package}_KNOWN_VERSION_${version}_SONAME}")
 		endif()
-		create_Shared_Lib_Extension(RES_EXT ${platform} "${USE_SONAME}")#create the soname extension
 		set(final_list_of_shared)#add the adequate extension name depending on the platform
 		foreach(shared_lib_path IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS)
-				shared_Library_Needs_Soname(RESULT_SONAME ${shared_lib_path} ${platform})
-				# if it's not a path then construct it according to the platform
-				if(NOT shared_lib_path MATCHES "/" AND NOT shared_lib_path MATCHES "^-l")
-					if(WIN32)
-						set(shared_lib_path lib/${shared_lib_path})
-					elseif(shared_lib_path MATCHES "^lib.*")
-						set(shared_lib_path lib/${shared_lib_path})
-					else()
-						set(shared_lib_path lib/lib${shared_lib_path})
-					endif()
-				endif()
-				if(RESULT_SONAME)#OK no extension defined we can apply
-					list(APPEND final_list_of_shared "${shared_lib_path}${RES_EXT}")
-				else()
-					list(APPEND final_list_of_shared "${shared_lib_path}")
-				endif()
+				create_Shared_Lib_Path(RESULT_LIB_PATH ${shared_lib_path} ${platform} "${USE_SONAME}")
+				list(APPEND final_list_of_shared "${RESULT_LIB_PATH}")
 		endforeach()
 		set(${RES_BINARY} ${final_list_of_shared} PARENT_SCOPE)
 	endif()
-
 endfunction(create_Relative_Path_To_Shared)
 
 #.rst:
@@ -2387,8 +2356,9 @@ function(generate_OS_Variant_Symlinks package platform version install_dir)
 	foreach(component IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENTS)
 		#each symlink with good name if generated to ensure consistency
 		foreach(stat_link IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS)
+			create_Static_Lib_Path(RESULT_LIB_PATH ${stat_link} ${platform})
 			if(NOT stat_link MATCHES "^-l.*$")#only generate symlinks for non OS libraries
-				generate_OS_Variant_Symlink_For_Path(${install_dir} ${stat_link} "${${package}_RPATH}")
+				generate_OS_Variant_Symlink_For_Path(${install_dir} ${RESULT_LIB_PATH} "${${package}_RPATH}")
 			endif()
 		endforeach()
 		if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS)
@@ -2397,16 +2367,10 @@ function(generate_OS_Variant_Symlinks package platform version install_dir)
 			else()
 				set(USE_SONAME ${${package}_KNOWN_VERSION_${version}_SONAME})
 			endif()
-			create_Shared_Lib_Extension(RES_EXT ${platform} "${USE_SONAME}")#create the soname extension
 			foreach(sha_link IN LISTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS)
-				shared_Library_Needs_Soname(NEEDS_SONAME ${sha_link} ${platform})
-				if(NEEDS_SONAME)#OK no extension defined we can apply
-					set(full_name "${sha_link}${RES_EXT}")
-				else()
-					set(full_name "${sha_link}")
-				endif()
-				if(NOT full_name MATCHES "^-l.*$")#only generate symlinks for non OS libraries
-					generate_OS_Variant_Symlink_For_Path(${install_dir} ${full_name} "${${package}_RPATH}")
+				create_Shared_Lib_Path(RESULT_LIB_PATH ${sha_link} ${platform} "${USE_SONAME}")
+				if(NOT RESULT_LIB_PATH MATCHES "^-l.*$")#only generate symlinks for non OS libraries
+					generate_OS_Variant_Symlink_For_Path(${install_dir} ${RESULT_LIB_PATH} "${${package}_RPATH}")
 				endif()
 			endforeach()
 		endif()
@@ -2497,12 +2461,35 @@ endfunction(generate_OS_Variant_Symlinks)
 #      :list_of_possible_path: the list of all path in filesystem that may match the symlink to generate.
 #
 function(generate_OS_Variant_Symlink_For_Path path_to_install_dir relative_path list_of_possible_path)
-	get_filename_component(target_name ${relative_path} NAME_WE)#using NAME_WE to avoid using extension because find files of configuration may only return names without soname, not complete names
+	#first testing full name compatiblity
+	get_filename_component(full_target_name ${relative_path} NAME)
+	foreach(abs_path IN LISTS list_of_possible_path)
+		get_filename_component(full_source_name ${abs_path} NAME)
+		if(full_source_name STREQUAL full_target_name)#same name for both binaries => create the symlink
+			create_Symlink(${abs_path} ${path_to_install_dir}/${relative_path})
+			return()# only one simlink per relative path !!
+		endif()
+	endforeach()
+	#second testing name without extension within same folder of a file with same but with a different extension (e.g. search .a into same folder as .so)
+	get_filename_component(target_name ${relative_path} NAME_WE)
+	foreach(abs_path IN LISTS list_of_possible_path)
+		get_filename_component(source_name ${abs_path} NAME_WE)
+		if(source_name STREQUAL target_name)#same name for both binaries but different extensions (otherwise previous loop would be successful)
+			get_filename_component(source_dir ${abs_path} DIRECTORY)
+			if(EXISTS ${source_dir}/${full_target_name})#file with exact good name exists in same source folder
+				create_Symlink(${source_dir}/${full_target_name} ${path_to_install_dir}/${relative_path})
+				return()# only one simlink per relative path !!
+			endif()
+		endif()
+	endforeach()
+
+	#last trial: only checking name compatiblity without extension and symlik "brutaly"
 	foreach(abs_path IN LISTS list_of_possible_path)
 		get_filename_component(source_name ${abs_path} NAME_WE)#using NAME_WE to avoid using extension because find files of configuration may only return names without soname, not complete names
 		if(source_name STREQUAL target_name)#same name for both binaries => create the symlink
+
 			create_Symlink(${abs_path} ${path_to_install_dir}/${relative_path})
-			break()# only only simlink per relative path !!
+			return()# only one simlink per relative path !!
 		endif()
 	endforeach()
 endfunction(generate_OS_Variant_Symlink_For_Path)

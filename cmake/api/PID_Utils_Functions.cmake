@@ -2614,6 +2614,86 @@ endfunction(shared_Library_Needs_Soname)
 #
 # .. ifmode:: internal
 #
+#  .. |create_Static_Lib_Path| replace:: ``create_Static_Lib_Path``
+#  .. _create_Static_Lib_Path:
+#
+#  create_Static_Lib_Path
+#  ----------------------
+#
+#   .. command:: create_Static_Lib_Path(RET_PATH library_path platform)
+#
+#    Create a valid static library path from a binary name or relative path
+#
+#     :library_path: the path to the library.
+#     :platform: the target platform.
+#
+#     :RET_PATH: the output variable that contains the path to shared library.
+#
+function(create_Static_Lib_Path RET_PATH library_path platform)
+  static_Library_Needs_Extension(NEEDS_EXT ${library_path} ${platform})
+  # if it's not a path then construct it according to the platform
+  if(NOT library_path MATCHES "/" # if it's not a path then construct it according to the platform
+    AND NOT library_path MATCHES "^-l")#not an option
+    if(WIN32)
+      set(library_path lib/${library_path})
+    elseif(library_path MATCHES "^lib.*")
+      set(library_path lib/${library_path})
+    else()
+      set(library_path lib/lib${library_path})
+    endif()
+  endif()
+  if(NEEDS_EXT)#OK no extension defined we can apply
+    create_Static_Lib_Extension(RES_EXT ${platform})
+    set(library_path "${library_path}${RES_EXT}")
+  endif()
+  set(${RET_PATH} ${library_path} PARENT_SCOPE)
+endfunction(create_Static_Lib_Path)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |create_Shared_Lib_Path| replace:: ``create_Shared_Lib_Path``
+#  .. _create_Shared_Lib_Path:
+#
+#  create_Shared_Lib_Path
+#  ----------------------
+#
+#   .. command:: create_Shared_Lib_Path(RET_PATH library_path platform soname)
+#
+#    Check whether a shared library needs to have a soname extension appended to its name.
+#
+#     :library_path: the path to the library.
+#     :platform: the target platform.
+#     :soname: the soname used by the library.
+#
+#     :RET_PATH: the output variable that contains the path to shared library.
+#
+function(create_Shared_Lib_Path RET_PATH library_path platform soname)
+  shared_Library_Needs_Soname(RESULT_SONAME ${library_path} ${platform})
+  # if it's not a path then construct it according to the platform
+  if(NOT library_path MATCHES "/" #not a path
+     AND NOT library_path MATCHES "^-l")#not an option
+    if(WIN32)
+      set(library_path lib/${library_path})
+    elseif(library_path MATCHES "^lib.*")#the lib prefix is used
+      set(library_path lib/${library_path})
+    else()#no library prefix
+      set(library_path lib/lib${library_path})
+    endif()
+  endif()
+  if(RESULT_SONAME)#OK no extension defined we can apply
+    create_Shared_Lib_Extension(RES_EXT ${platform} "${soname}")#create the soname extension
+    set(library_path "${library_path}${RES_EXT}")
+  endif()
+  set(${RET_PATH} ${library_path} PARENT_SCOPE)
+endfunction(create_Shared_Lib_Path)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |static_Library_Needs_Extension| replace:: ``static_Library_Needs_Extension``
 #  .. _static_Library_Needs_Extension:
 #
