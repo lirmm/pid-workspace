@@ -92,6 +92,6 @@ elseif(TARGET_ENVIRONMENT)
   else()
     message("[PID] ERROR : the name ${TARGET_ENVIRONMENT} does not refer to any known environment in the workspace.")
   endif()
-else()
-	message(FATAL_ERROR "[PID] ERROR : you must specify the name of the package to hard clean using package=<name of package> argument or use all to target all packages")
+else()#no target means hard cleaning the workspace build folder
+  hard_Clean_Build_Folder(${WORKSPACE_DIR}/build)
 endif()
