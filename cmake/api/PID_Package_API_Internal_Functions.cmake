@@ -345,13 +345,13 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 				)
 				add_dependencies(site coverage) #when the site is built with such options activated it means that the coverage report must be built first
 
-				add_custom_target(test #basic tests only in release
+				add_custom_target(testing #basic tests only in release
 					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 					COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
 					VERBATIM
 				)
 			else()
-				add_custom_target(test
+				add_custom_target(testing
 					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 					COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
@@ -359,7 +359,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 				)
 			endif()
 		else()
-			add_custom_target(test
+			add_custom_target(testing
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
 				VERBATIM
@@ -389,7 +389,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 
 	if(GENERATE_INSTALLER)
 		# package target (generation and install of a UNIX binary packet)
-		add_custom_target(package
+		add_custom_target(packaging
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} package
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} package_install
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package
@@ -397,7 +397,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			COMMENT "[PID] Generating and installing system binary package for ${PROJECT_NAME} ..."
 			VERBATIM
 		)
-		add_dependencies(site package)
+		add_dependencies(site packaging)
 	endif()
 
 	if(NOT "${license}" STREQUAL "")
@@ -407,8 +407,6 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			COMMENT "[PID] Applying license to sources of package ${PROJECT_NAME} ..."
 			VERBATIM
 		)
-		add_custom_target(license)
-		add_dependencies(license licensing)
 	endif()
 	if(ADDITIONAL_DEBUG_INFO)
 		add_custom_target(list_dependencies
@@ -424,8 +422,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			VERBATIM
 		)
 	endif()
-	add_custom_target(
-		workspace_path
+	add_custom_target(workspace_path
 		COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} -P ${WORKSPACE_DIR}/cmake/commands/Print_Workspace_Path.cmake
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)
