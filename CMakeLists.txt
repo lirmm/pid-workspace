@@ -236,7 +236,7 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "             - official=false: use a non official repository, the one pointed by origin, to update the workspace."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - update=true: update all packages once the upgrade has been done."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
-	COMMAND ${CMAKE_COMMAND} -E echo " install: 	install a binary package and all its dependencies into the operating system."
+	COMMAND ${CMAKE_COMMAND} -E echo " sysinstall: 	install a binary package and all its dependencies into the operating system."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [mandatory] ---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - package=*name of the package*: target package to install."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - version=*version sumber*: version of the binary package to install."
@@ -445,7 +445,7 @@ set(install_args "\
 set(install_options "\
 	-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} \
 	-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
-add_PID_Command(install Install_PID_Package.cmake)
+add_PID_Command(sysinstall Install_PID_Package.cmake)
 
 ## configuring the workspace
 set(profiles_args "\
