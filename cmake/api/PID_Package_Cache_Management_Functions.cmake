@@ -2845,6 +2845,7 @@ function(reset_Temporary_Optimization_Variables mode)
     math(EXPR total_range "${SIZE}-1")
     foreach(check RANGE ${total_range})
       unset(TEMP_CONFIG_${config}_CHECK_${check}${VAR_SUFFIX} CACHE)
+      unset(TEMP_CONFIG_${config}_CALL_CONSTRAINTS_${check}${VAR_SUFFIX} CACHE)
       unset(TEMP_CONFIG_${config}_BINARY_CONSTRAINTS_${check}${VAR_SUFFIX} CACHE)
     endforeach()
   	unset(TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX} CACHE)
@@ -2864,16 +2865,17 @@ endfunction(reset_Temporary_Optimization_Variables)
 #  set_Configuration_Temporary_Optimization_Variables
 #  --------------------------------------------------
 #
-#   .. command:: set_Configuration_Temporary_Optimization_Variables(config mode test_ok binary_constraints)
+#   .. command:: set_Configuration_Temporary_Optimization_Variables(config mode test_ok call_constraints binary_constraints)
 #
 #   set optimization variables used to check configurations
 #
 #     :config: the name of the configuration.
 #     :mode: the current buid mode.
 #     :test_ok: set to TRUE or FALSE the result of the check.
+#     :call_constraints: the list of call constraints to memorize.
 #     :binary_constraints: the list of binary constraints to memorize.
 #
-function(set_Configuration_Temporary_Optimization_Variables config mode test_ok binary_constraints)
+function(set_Configuration_Temporary_Optimization_Variables config mode test_ok call_constraints binary_constraints)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   if(NOT DEFINED TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX})
     set(next_index 0)
@@ -2881,6 +2883,7 @@ function(set_Configuration_Temporary_Optimization_Variables config mode test_ok 
     list(LENGTH TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX} next_index)
   endif()
   set(TEMP_CONFIG_${config}_CHECK_${next_index}${VAR_SUFFIX} ${test_ok} CACHE INTERNAL "")
+  set(TEMP_CONFIG_${config}_CALL_CONSTRAINTS_${next_index}${VAR_SUFFIX} ${call_constraints} CACHE INTERNAL "")
   set(TEMP_CONFIG_${config}_BINARY_CONSTRAINTS_${next_index}${VAR_SUFFIX} ${binary_constraints} CACHE INTERNAL "")
   math(EXPR new_size "${next_index}+1")
   set(TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX} ${new_size} CACHE INTERNAL "")
@@ -2917,11 +2920,11 @@ function(check_Configuration_Temporary_Optimization_Variables RES_CHECK_MADE RES
   if(DEFINED TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX})
     math(EXPR total "${TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX}}-1")
     foreach(iter RANGE ${total})
-      compare_Current_Configuration_Check_Args_With_Previous(INCLUDED ${config_args_var} TEMP_CONFIG_${config}_BINARY_CONSTRAINTS_${iter}${VAR_SUFFIX})
+      compare_Current_Configuration_Check_Args_With_Previous(INCLUDED ${config_args_var} TEMP_CONFIG_${config}_CALL_CONSTRAINTS_${iter}${VAR_SUFFIX})
       if(INCLUDED)
         set(${RES_CHECK_MADE} TRUE PARENT_SCOPE)
         set(${RES_CHECK} ${TEMP_CONFIG_${config}_CHECK_${iter}${VAR_SUFFIX}} PARENT_SCOPE)
-        set(${RES_CONSTRAINTS} ${TEMP_CONFIG_${config}_BINARY_CONSTRAINTS_${iter}${VAR_SUFFIX}} PARENT_SCOPE)
+        set(${RES_CONSTRAINTS} ${TEMP_CONFIG_${config}_BINARY_CONSTRAINTS_${iter}${VAR_SUFFIX}} PARENT_SCOPE)#returning the binary constraints not the call constraints
         return()
       endif()
     endforeach()

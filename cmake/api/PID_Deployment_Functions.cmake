@@ -195,7 +195,6 @@ foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX}) ## all 
   if(NOT SYSCHECK_RESULT)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to resolve configuration ${config} required by package ${package}.")
-    return()
   endif()
 endforeach()
 
@@ -213,21 +212,17 @@ foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
       if(NOT INSTALL_OK)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external package: ${dep_ext_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace's contributions folder and try to find ReferExternal${dep_ext_pack}.cmake file.")
-  			return()
   		endif()
       resolve_External_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${package} ${dep_ext_pack} ${mode})#launch again the resolution
       if(NOT ${dep_ext_pack}_FOUND${VAR_SUFFIX})#this time the package must be found since installed => internal BUG in PID
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_ext_pack}. This is an internal bug maybe due to a bad find file for ${dep_ext_pack}.")
-        return()
       elseif(NOT IS_VERSION_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${dep_ext_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dep_ext_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_ext_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${dep_ext_pack}_VERSION${VAR_SUFFIX}}.")
-        return()
       elseif(NOT IS_ABI_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent external package ${dep_ext_pack} with an ABI compatible with current platform. This may mean there is no wrapper for ${package} and no available binary package is compliant with current platform ABI.")
-        return()
       else()#OK resolution took place !!
         add_Chosen_Package_Version_In_Current_Process(${dep_ext_pack})#memorize chosen version in progress file to share this information with dependent packages
         if(${dep_ext_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
@@ -262,21 +257,17 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
       if(NOT INSTALL_OK)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install native package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace contributions and try to fond Refer${dep_pack}.cmake file.")
-				return()
   		endif()
       resolve_Native_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${package} ${dep_pack} ${mode})#launch again the resolution
       if(NOT ${dep_pack}_FOUND${VAR_SUFFIX})#this time the package must be found since installed => internal BUG in PID
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed native package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_pack}.")
-        return()
       elseif(NOT IS_VERSION_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent native package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dep_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}.")
-        return()
       elseif(NOT IS_ABI_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has its ABI compatible (otherwise there is simply no solution)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent native package ${dep_pack} with an ABI compatible with current platform. This may mean you have no access to ${package} repository and no available binary package is compliant with current platform ABI.")
-        return()
       else()#OK resolution took place !!
         add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
         if(${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} OR ${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
@@ -286,7 +277,6 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
     else()
       finish_Progress(${GLOBAL_PROGRESS_VAR})
       message(FATAL_ERROR "[PID] CRITICAL ERROR :  native package dependency to ${dep_pack} cannot be resolved since the automatic download of packages is not activated in ${PROJECT_NAME}. You may set the REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD option to ON.")
-      return()
     endif()
   elseif(NOT IS_VERSION_COMPATIBLE OR NOT IS_ABI_COMPATIBLE)#package binary found in install tree but is not compatible !
     list(APPEND list_of_conflicting_dependencies ${dep_pack})
@@ -330,7 +320,6 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
   if(NOT first_time)# we are currently trying to reinstall the same package !!
     finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : Impossible to solve conflicting dependencies for package ${package}. Try to solve these problems by setting adequate versions to dependencies.")
-    return()
   else()#OK first time package is resolved during the build process
     message("[PID] INFO: rebuild package ${package} version ${${package}_VERSION_STRING}...")
     get_Package_Type(${package} PACK_TYPE)
@@ -356,13 +345,11 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
           set(os_str "OS ")
         endif()
         message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} with ${os_str}version ${${package}_VERSION_STRING} cannot be found after its redeployment ! No known solution can automatically be found to this problem. Aborting.")
-        return()
       endif()
       resolve_Package_Dependencies(${package} ${mode} FALSE)#resolving again the dependencies on same package
     else()# cannot do much more about that !!
       finish_Progress(${GLOBAL_PROGRESS_VAR})
       message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} has conflicting dependencies and the target version ${${package}_VERSION_STRING} cannot be rebuilt !")
-    return()
     endif()
   endif()
 endif()
