@@ -74,6 +74,7 @@ endfunction(agregate_All_Platform_Configurations)
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
+include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 load_Workspace_Info() #loading the current platform configuration
