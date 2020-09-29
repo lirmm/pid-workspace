@@ -38,14 +38,32 @@ endif()
 
 # perform actions of the command
 if(TARGET_PACKAGE)
-	if(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
-		remove_PID_Package(${TARGET_PACKAGE})
-	elseif(EXISTS ${WORKSPACE_DIR}/wrappers/${TARGET_PACKAGE}
-		AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${TARGET_PACKAGE})
-		remove_PID_Wrapper(${TARGET_PACKAGE})
-        else()
-		message(FATAL_ERROR "[PID] ERROR : the package to be removed, named ${TARGET_PACKAGE}, does not lie in the workspace.")
+	if(TARGET_PACKAGE STREQUAL "all")
+		list_Subdirectories(PACKS_TO_REMOVE ${WORKSPACE_DIR}/packages)
+		foreach(pack IN LISTS PACKS_TO_REMOVE)
+			remove_PID_Package(${pack})
+		endforeach()
+		list_Subdirectories(PACKS_TO_REMOVE ${WORKSPACE_DIR}/wrappers)
+		foreach(pack IN LISTS PACKS_TO_REMOVE)
+			remove_PID_Wrapper(${pack})
+		endforeach()
+		#then uninstall all packages that have been installed from binaries
+		list_Subdirectories(PACKS_TO_UNINSTALL ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM})
+		foreach(pack IN LISTS PACKS_TO_UNINSTALL)
+			if(NOT pack MATCHES "^__.+__$")
+				clear_PID_Package(RES ${pack} "all")
+			endif()
+		endforeach()
+	else()
+		if(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE}
+			AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
+			remove_PID_Package(${TARGET_PACKAGE})
+		elseif(EXISTS ${WORKSPACE_DIR}/wrappers/${TARGET_PACKAGE}
+			AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${TARGET_PACKAGE})
+			remove_PID_Wrapper(${TARGET_PACKAGE})
+	        else()
+			message(FATAL_ERROR "[PID] ERROR : the package to be removed, named ${TARGET_PACKAGE}, does not lie in the workspace.")
+		endif()
 	endif()
 elseif(TARGET_FRAMEWORK)
 	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK}
