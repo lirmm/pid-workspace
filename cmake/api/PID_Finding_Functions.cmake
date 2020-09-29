@@ -1759,7 +1759,7 @@ else()#the dependency has not been already found
 				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${VAR_SUFFIX}}
 			)
 		endif()
-	else()
+	else()# finding without any specific constraint (version or os variant)
     find_package_resolved(
 			${external_dependency}
 			MODULE
@@ -2012,11 +2012,7 @@ if(EXIST)
         unset(${package}_ROOT_DIR CACHE)
         exit_And_Manage_Install_Requirement_For_External(${package} "[PID] ERROR : the required OS variant version (${VERSION_TO_USE}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
   	  endif()
-    else()#an OS variant is not required
-      if(${package}_BUILT_OS_VARIANT)#the binary package IS an OS variant
-        unset(${package}_ROOT_DIR CACHE)
-        exit_And_Manage_Install_Requirement_For_External(${package} "[PID] ERROR : the required NON OS variant version(${VERSION_TO_USE}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
-      endif()
+    # else even if an OS variant is not required, an OS variant can be used
     endif()
 		set(${package}_FOUND${VAR_SUFFIX} TRUE CACHE INTERNAL "")
 		#add the undirectly used packages as well
