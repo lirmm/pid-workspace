@@ -63,7 +63,7 @@ if(NOT SUCCESS
   message(FATAL_ERROR "[PID] ERROR : no contribution space in use, please configure again your workspace.")
 endif()
 
-set(cmd_list "ls|add|rm|reset|churl|prio_max|prio_min|move|copy|publish|update|status")
+set(cmd_list "ls|add|rm|reset|churl|prio_max|prio_min|move|copy|publish|update|status|delete")
 if(NOT TARGET_COMMAND)
   message(FATAL_ERROR "[PID] ERROR : no command defined when managing contribution spaces. Use cmd argument with a value chosen among ${cmd_list}.")
 elseif(NOT TARGET_COMMAND MATCHES "^${cmd_list}$")
