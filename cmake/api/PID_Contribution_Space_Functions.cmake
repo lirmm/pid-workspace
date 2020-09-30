@@ -833,11 +833,15 @@ endfunction(set_Cache_Entry_For_Default_Contribution_Space)
 #
 function(add_Contribution_Space name update publish)
   append_Unique_In_Cache(CONTRIBUTION_SPACES ${name})#simply add the only update contribution space
-  set(CONTRIBUTION_SPACE_${name}_UPDATE_REMOTE ${update} CACHE INTERNAL "")
   if(publish)
     set(CONTRIBUTION_SPACE_${name}_PUBLISH_REMOTE ${publish} CACHE INTERNAL "")
   else()#no defined publish CS so publish directly in official
     set(CONTRIBUTION_SPACE_${name}_PUBLISH_REMOTE ${update} CACHE INTERNAL "")
+  endif()
+  if(update)
+    set(CONTRIBUTION_SPACE_${name}_UPDATE_REMOTE ${update} CACHE INTERNAL "")
+  else()#no defined publish CS so publish directly in official
+    set(CONTRIBUTION_SPACE_${name}_UPDATE_REMOTE ${publish} CACHE INTERNAL "")
   endif()
 endfunction(add_Contribution_Space)
 
