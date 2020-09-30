@@ -876,7 +876,11 @@ function(update_Contribution_Space_Repository contrib_space)
   if(PATH_TO_DIR)
     #merge official content with local one
     execute_process(COMMAND git pull origin master
-                    WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
+                    WORKING_DIRECTORY ${PATH_TO_DIR}
+                    OUTPUT_QUIET ERROR_VARIABLE out RESULT_VARIABLE res)#pulling master branch of origin (in case of) => merge can take place
+    if(res)
+      message("[PID] ERROR: cannot update contribution space ${contrib_space}. Reason: ${out}. Check the status of ${contrib_space}.")
+    endif()
   endif()
 endfunction(update_Contribution_Space_Repository)
 
@@ -1046,7 +1050,7 @@ function(publish_All_In_Contribution_Space_Repository cs)
                     WORKING_DIRECTORY ${PATH_TO_CS}
                     OUTPUT_QUIET ERROR_VARIABLE out RESULT_VARIABLE res)
    if(res)
-     message("[PID] ERROR : problem publishing in ${cs} contribution space. Reason: ${out} -- ${outd}.")
+     message("[PID] ERROR : problem publishing in ${cs} contribution space. Reason: ${out}. Check the status of ${cs}.")
    endif()
   else()
   	message("[PID] ERROR : problem publishing in ${cs} contribution space because contribution space cannot be found in local workspace.")
