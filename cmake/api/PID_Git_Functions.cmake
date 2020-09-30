@@ -1043,9 +1043,13 @@ function(publish_All_In_Contribution_Space_Repository cs)
   	execute_process(COMMAND git commit -m "global update"
                     WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
   	execute_process(COMMAND git push origin master
-                    WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
+                    WORKING_DIRECTORY ${PATH_TO_CS}
+                    OUTPUT_QUIET ERROR_VARIABLE out RESULT_VARIABLE res)
+   if(res)
+     message("[PID] ERROR : problem publishing in ${cs} contribution space. Reason: ${out} -- ${outd}.")
+   endif()
   else()
-  	message("[PID] ERROR : problem oublishing in ${cs} contribution space.")
+  	message("[PID] ERROR : problem publishing in ${cs} contribution space because contribution space cannot be found in local workspace.")
   endif()
 endfunction(publish_All_In_Contribution_Space_Repository)
 
