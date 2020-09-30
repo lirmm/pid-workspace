@@ -22,9 +22,11 @@ echo ""
 echo "For the current session only run"
 echo "    source $ws_dir/share/pid.sh"
 echo ""
-echo "Then add the above line to your shell setup script"
 if [ ! -z "$shell" ]; then
+    echo "Then add the above line to your shell setup script"
     echo "    echo \"source $ws_dir/share/pid.sh\" >> $HOME/.${shell}rc"
+else
+    echo "Then add this same command to your shell setup script to make it permanent"
 fi
 echo "----------------------------------------------------------------------------------------------------------------"
 
