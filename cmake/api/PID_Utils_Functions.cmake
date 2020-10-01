@@ -1169,6 +1169,40 @@ function (check_Required_Directories_Exist PROBLEM type folder)
 endfunction(check_Required_Directories_Exist)
 
 
+#
+# .. ifmode:: internal
+#
+#  .. |copy_Package_Install_Folder| replace:: ``copy_Package_Install_Folder``
+#  .. _copy_Package_Install_Folder:
+#
+#  copy_Package_Install_Folder
+#  ---------------------------
+#
+#   .. command:: copy_Package_Install_Folder(ERROR source destination working_dir)
+#
+#    Copy content of a package install folder into the folder. Manages invalid symlinks (like those in the rpath folder)
+#
+#      :source: The folder whose content is coped.
+#      :destination: the folder in which content is copied
+#      :working_dir: the working directory for copy operation.
+#
+#      :ERROR: the output variable that contains an error if operation failed.
+#
+function(copy_Package_Install_Folder ERROR source destination working_dir)
+  set(${ERROR} PARENT_SCOPE)
+  if(NOT EXISTS ${destination})
+    file(MAKE_DIRECTORY ${destination})
+  endif()
+  if(EXISTS ${source}/.rpath)#remove any symlink in this folder as they will be invalid after copy and may invalidate the copy operation
+    file(REMOVE_RECURSE ${source}/.rpath)
+  endif()
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${source} ${destination}
+    WORKING_DIRECTORY ${working_dir}
+  ERROR_VARIABLE error_out OUTPUT_QUIET)
+  set(${ERROR} ${error_out} PARENT_SCOPE)
+endfunction(copy_Package_Install_Folder)
+
 #############################################################
 ################ Management of version information ##########
 #############################################################

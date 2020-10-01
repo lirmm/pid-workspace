@@ -2712,12 +2712,8 @@ endif()
 
 ######## installing the external package ##########
 set(target_install_folder ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
-# 1) creating the external package root folder and the version folder
-if(NOT EXISTS ${target_install_folder})
-  file(MAKE_DIRECTORY ${target_install_folder})
-endif()
 
-# 2) extracting binary archive in cross platform way
+# extracting binary archive in cross platform way
 set(error_res "")
 set(error_res_debug "")
 if(ADDITIONAL_DEBUG_INFO)
@@ -2747,7 +2743,7 @@ if (error_res)
 	return()
 endif()
 
-# 3) copying resulting folders into the install path in a cross platform way
+# copying resulting folders into the install path in a cross platform way
 if(ADDITIONAL_DEBUG_INFO)
 	message("[PID] INFO : installing the external binary package ${package} (version ${version}) into the workspace, please wait ...")
 endif()
@@ -2755,16 +2751,9 @@ set(error_res "")
 set(error_res_debug "")
 
 if(EXISTS download_url_dbg)
-	execute_process(
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${target_install_folder}/
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    ERROR_VARIABLE error_res_debug OUTPUT_QUIET)
+  copy_Package_Install_Folder(error_res_debug ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${target_install_folder} ${CMAKE_BINARY_DIR})
 endif()
-
-execute_process(
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${target_install_folder}/
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-	ERROR_VARIABLE error_res OUTPUT_QUIET)
+copy_Package_Install_Folder(error_res_debug ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${target_install_folder} ${CMAKE_BINARY_DIR})
 
 if (error_res OR error_res_debug)
 	set(${INSTALLED} FALSE PARENT_SCOPE)
