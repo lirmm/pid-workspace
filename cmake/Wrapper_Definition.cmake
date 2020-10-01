@@ -3376,3 +3376,28 @@ function(build_Bazel_External_Project)
 
   symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
 endfunction(build_Bazel_External_Project)
+
+
+#.rst:
+#
+# .. ifmode:: script
+#
+#  .. |get_Current_External_Version| replace:: ``get_Current_External_Version``
+#  .. _get_Current_External_Version:
+#
+#  get_Current_External_Version
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: get_Current_External_Version(RESULT_VERSION)
+#
+#     Get the version of external package that is currently built or defined
+#
+function(get_Current_External_Version VERSION_RESULT)
+  set(${VERSION_RESULT} PARENT_SCOPE)
+  if(TARGET_EXTERNAL_VERSION)#we are currently in a script
+    set(${VERSION_RESULT} ${TARGET_EXTERNAL_VERSION} PARENT_SCOPE)
+  else()#context of wrapper configruation
+    get_filename_component(ret_version ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+    set(${VERSION_RESULT} ${ret_version} PARENT_SCOPE)
+  endif()
+endfunction(get_Current_External_Version)
