@@ -1590,20 +1590,20 @@ endfunction(bind_Installed_Package)
 #  deploy_PID_Native_Package
 #  -------------------------
 #
-#   .. command:: deploy_PID_Native_Package(DEPLOYED package version verbose can_use_source branch run_tests)
+#   .. command:: deploy_PID_Native_Package(DEPLOYED package version verbose deploy_mode branch run_tests)
 #
 #   Deploy a native package into workspace. Finally results in installing an existing package version in the workspace install tree.
 #
 #      :package: the name of the package to deploy.
 #      :version: the version to deploy.
 #      :verbose: if TRUE the deployment will print more information to standard output.
-#      :can_use_source: if TRUE the deployment can be done from the package source repository.
+#      :deploy_mode: use BINARY, SOURCE or ANY.
 #      :branch: define the branch to build (may be left empty).
 #      :run_tests: if TRUE built project will run tests.
 #
 #      :DEPLOYED: output variable that is set to SOURCE or BINARY depending on the nature of the deployed package, empty if package has not been deployed.
 #
-function(deploy_PID_Native_Package DEPLOYED package version verbose can_use_source branch run_tests)
+function(deploy_PID_Native_Package DEPLOYED package version verbose deploy_mode branch run_tests)
 set(PROJECT_NAME ${package})
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON)
 if(verbose)
@@ -1614,7 +1614,7 @@ endif()
 set(${DEPLOYED} PARENT_SCOPE)
 
 memorize_Binary_References(REFERENCES_FOUND ${package})
-if(NOT REFERENCES_FOUND AND NOT can_use_source)
+if(NOT REFERENCES_FOUND AND deploy_mode STREQUAL "BINARY")
 	return()
 endif()
 set(REPOSITORY_IN_WORKSPACE FALSE)
@@ -1624,7 +1624,7 @@ endif()
 
 if(NOT version)#no specific version required
 	set(INSTALLED FALSE)
-	if(can_use_source)#this first step is only possible if sources can be used
+	if(NOT deploy_mode STREQUAL "BINARY")#this first step is only possible if sources can be used
 		if(NOT REPOSITORY_IN_WORKSPACE)
 			deploy_Package_Repository(REPOSITORY_DEPLOYED ${package})
 			if(NOT REPOSITORY_DEPLOYED)
@@ -1646,51 +1646,55 @@ if(NOT version)#no specific version required
 	endif()
 	if(NOT INSTALLED)# deployment from sources was not possible
 		#try to install last available version from sources
-		set(RES_VERSION)
-		greatest_Version_Archive(${package} RES_VERSION)
-		if(RES_VERSION)
-			deploy_Binary_Native_Package_Version(BIN_DEPLOYED ${package} ${RES_VERSION} TRUE "")
-			if(NOT BIN_DEPLOYED)
-				message("[PID] ERROR : problem deploying ${package} binary archive version ${RES_VERSION}. Deployment aborted !")
-				#if source deployment was possible then it would already have heppended in this situation
-				#so no more to do -> there is no solution
+		if(NOT deploy_mode STREQUAL "SOURCE")#only possile if binaries can be used
+			set(RES_VERSION)
+			greatest_Version_Archive(${package} RES_VERSION)
+			if(RES_VERSION)
+				deploy_Binary_Native_Package_Version(BIN_DEPLOYED ${package} ${RES_VERSION} TRUE "")
+				if(NOT BIN_DEPLOYED)
+					message("[PID] ERROR : problem deploying ${package} binary archive version ${RES_VERSION}. Deployment aborted !")
+					#if source deployment was possible then it would already have heppended in this situation
+					#so no more to do -> there is no solution
+					return()
+				endif()
+				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${RES_VERSION} FALSE)
+				if(BOUND)
+					message("[PID] INFO : deploying ${package} binary archive version ${RES_VERSION} success !")
+					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
+				else()
+					message("[PID] ERROR : package ${package} version ${RES_VERSION} cannot be deployed in workspace.")
+				endif()
+				return()
+			else()
+				message("[PID] ERROR : no binary archive available for ${package}. Deployment aborted !")
 				return()
 			endif()
-			bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${RES_VERSION} FALSE)
-			if(BOUND)
-				message("[PID] INFO : deploying ${package} binary archive version ${RES_VERSION} success !")
-				set(${DEPLOYED} "BINARY" PARENT_SCOPE)
-			else()
-				message("[PID] ERROR : package ${package} version ${RES_VERSION} cannot be deployed in workspace.")
-			endif()
-			return()
-		else()
-			message("[PID] ERROR : no binary archive available for ${package}. Deployment aborted !")
-			return()
 		endif()
 	else()
 		set(${DEPLOYED} "SOURCE" PARENT_SCOPE)
 	endif()
 else()#deploying a specific version
-	#first, try to download the archive if the binary archive for this version exists
-	exact_Version_Archive_Exists(${package} "${version}" ARCHIVE_EXISTS)
-	if(ARCHIVE_EXISTS)#download the binary directly if an archive exists for this version
-		deploy_Binary_Native_Package_Version(BIN_DEPLOYED ${package} ${version} TRUE "")
-		if(NOT BIN_DEPLOYED)
-			message("[PID] WARNING : problem deploying ${package} binary archive version ${version}. This may be due to binary compatibility problems. Try building from sources...")
-		else()
-			bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${version} FALSE)
-			if(BOUND)
-				message("[PID] INFO : deploying ${package} binary archive version ${version} success !")
-				set(${DEPLOYED} "BINARY" PARENT_SCOPE)
+	if(NOT deploy_mode STREQUAL "SOURCE")#only possible if binaries can be used
+		#first, try to download the archive if the binary archive for this version exists
+		exact_Version_Archive_Exists(${package} "${version}" ARCHIVE_EXISTS)
+		if(ARCHIVE_EXISTS)#download the binary directly if an archive exists for this version
+			deploy_Binary_Native_Package_Version(BIN_DEPLOYED ${package} ${version} TRUE "")
+			if(NOT BIN_DEPLOYED)
+				message("[PID] WARNING : problem deploying ${package} binary archive version ${version}. This may be due to binary compatibility problems. Try building from sources...")
 			else()
-				message("[PID] ERROR : cannot deploy native package ${package} version ${version}.")
+				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${version} FALSE)
+				if(BOUND)
+					message("[PID] INFO : deploying ${package} binary archive version ${version} success !")
+					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
+				else()
+					message("[PID] ERROR : cannot deploy native package ${package} version ${version}.")
+				endif()
+				return()
 			endif()
-			return()
 		endif()
 	endif()
 	#OK so try from sources (either no binary archive exists or deployment faced a problem - probably binary compatibility problem)
-	if(can_use_source)#this first step is only possible if sources can be used
+	if(NOT deploy_mode STREQUAL "BINARY")#this first step is only possible if sources can be used
 		if(NOT REPOSITORY_IN_WORKSPACE)
 			deploy_Package_Repository(REPOSITORY_DEPLOYED ${package})
 			if(NOT REPOSITORY_DEPLOYED)
@@ -1706,7 +1710,7 @@ else()#deploying a specific version
 			message("[PID] ERROR : cannot build ${package} from its repository. Deployment aborted !")
 		endif()
 	else()
-		message("[PID] ERROR : cannot install ${package} since no binary archive exists for that version and no source deployment allowed. Deployment aborted !")
+		message("[PID] ERROR : cannot install ${package} since source deployment is not allowed. Deployment aborted !")
 	endif()
 endif()
 endfunction(deploy_PID_Native_Package)
@@ -1721,19 +1725,19 @@ endfunction(deploy_PID_Native_Package)
 #  deploy_PID_External_Package
 #  ---------------------------
 #
-#   .. command:: deploy_PID_External_Package(DEPLOYED package version verbose can_use_source redeploy)
+#   .. command:: deploy_PID_External_Package(DEPLOYED package version verbose deploy_mode redeploy)
 #
 #   Deploy an external package into workspace. Finally results in installing an existing external package version in the workspace install tree.
 #
 #      :package: the name of the external package to deploy.
 #      :version: the version to deploy (if system is used then deploy the corresponding OS version)
 #      :verbose: if TRUE the deployment will print more information to standard output.
-#      :can_use_source: if TRUE the deployment can be done from the external package wrapper (if any).
+#      :deploy_mode: use SOURCE, BINARY or ANY.
 #      :redeploy: if TRUE the external package version is redeployed even if it was existing before.
 #
 #      :DEPLOYED: output variable that is set to SOURCE or BINARY depending on the nature of the deployed package, empty if package has not been deployed.
 #
-function(deploy_PID_External_Package DEPLOYED package version verbose can_use_source redeploy)
+function(deploy_PID_External_Package DEPLOYED package version verbose deploy_mode redeploy)
 if(verbose)
 	set(ADDITIONAL_DEBUG_INFO ON)
 else()
@@ -1741,7 +1745,7 @@ else()
 endif()
 set(${DEPLOYED} PARENT_SCOPE)
 memorize_Binary_References(REFERENCES_FOUND ${package})
-if(NOT REFERENCES_FOUND AND NOT can_use_source)
+if(NOT REFERENCES_FOUND AND deploy_mode STREQUAL "BINARY")
 	return()
 endif()
 set(PROJECT_NAME ${package})
@@ -1753,46 +1757,47 @@ if(EXISTS ${WORKSPACE_DIR}/wrappers/${package})
 endif()
 set(MAX_CURR_VERSION 0.0.0)
 if(NOT version)#deploying the latest version of the package
-	#first try to directly download its archive
-	if(${package}_REFERENCES) #there are references to external package binaries
-		foreach(version_i IN LISTS ${package}_REFERENCES)
-			list(FIND ${package}_REFERENCE_${version_i} ${CURRENT_PLATFORM} INDEX)
-			if(NOT INDEX EQUAL -1) #a reference for this OS is known
-				if(version_i VERSION_GREATER MAX_CURR_VERSION)
-					set(MAX_CURR_VERSION ${version_i})
+	if(NOT deploy_mode STREQUAL "SOURCE")
+		#first try to directly download its archive
+		if(${package}_REFERENCES) #there are references to external package binaries
+			foreach(version_i IN LISTS ${package}_REFERENCES)
+				list(FIND ${package}_REFERENCE_${version_i} ${CURRENT_PLATFORM} INDEX)
+				if(NOT INDEX EQUAL -1) #a reference for this OS is known
+					if(version_i VERSION_GREATER MAX_CURR_VERSION)
+						set(MAX_CURR_VERSION ${version_i})
+					endif()
 				endif()
-			endif()
-		endforeach()
-		if(NOT MAX_CURR_VERSION STREQUAL 0.0.0)
-			if(EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${MAX_CURR_VERSION}
-				AND NOT redeploy)
-				message("[PID] INFO : external package ${package} version ${MAX_CURR_VERSION} already lies in the workspace, use force=true to force the redeployment.")
-				return()
-			endif()
-			deploy_Binary_External_Package_Version(BIN_DEPLOYED ${package} ${MAX_CURR_VERSION} FALSE)
-			if(NOT BIN_DEPLOYED)#an error occurred during deployment !! => Not a normal situation
-				message("[PID] ERROR : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive or due to no archive exists for current platform and build constraints. Please contact the administrator of the package ${package}.")
-				return()
-			else()
-				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${MAX_CURR_VERSION} FALSE)
-				if(BOUND)
-					message("[PID] INFO : deploying ${package} binary archive version ${MAX_CURR_VERSION} success !")
-					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
+			endforeach()
+			if(NOT MAX_CURR_VERSION STREQUAL 0.0.0)
+				if(EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${MAX_CURR_VERSION}
+					AND NOT redeploy)
+					message("[PID] INFO : external package ${package} version ${MAX_CURR_VERSION} already lies in the workspace, use force=true to force the redeployment.")
+					return()
+				endif()
+				deploy_Binary_External_Package_Version(BIN_DEPLOYED ${package} ${MAX_CURR_VERSION} FALSE)
+				if(NOT BIN_DEPLOYED)#an error occurred during deployment !! => Not a normal situation
+					message("[PID] ERROR : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive or due to no archive exists for current platform and build constraints. Please contact the administrator of the package ${package}.")
+					return()
 				else()
-					message("[PID] ERROR : external package ${package} version ${MAX_CURR_VERSION} cannot be deployed in workspace.")
+					bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${MAX_CURR_VERSION} FALSE)
+					if(BOUND)
+						message("[PID] INFO : deploying ${package} binary archive version ${MAX_CURR_VERSION} success !")
+						set(${DEPLOYED} "BINARY" PARENT_SCOPE)
+					else()
+						message("[PID] ERROR : external package ${package} version ${MAX_CURR_VERSION} cannot be deployed in workspace.")
+					endif()
+					message("[PID] INFO : external package ${package} version ${MAX_CURR_VERSION} has been deployed from its binary archive.")
+					return()
 				endif()
-				message("[PID] INFO : external package ${package} version ${MAX_CURR_VERSION} has been deployed from its binary archive.")
-				return()
-			endif()
-		else()#there may be no binary version available for the target OS => not an error
-			if(ADDITIONAL_DEBUG_INFO)
-				message("[PID] ERROR : no known binary version of external package ${package} for OS ${OS_STRING}.")
+			else()#there may be no binary version available for the target OS => not an error
+				if(ADDITIONAL_DEBUG_INFO)
+					message("[PID] ERROR : no known binary version of external package ${package} for OS ${OS_STRING}.")
+				endif()
 			endif()
 		endif()
 	endif()
-
 	#second option: build it from sources
-	if(can_use_source)#this step is only possible if sources can be used
+	if(NOT deploy_mode STREQUAL "BINARY")#this step is only possible if sources can be used
 		if(NOT REPOSITORY_IN_WORKSPACE)
 			deploy_Wrapper_Repository(SOURCE_DEPLOYED ${package})
 			if(NOT SOURCE_DEPLOYED)
@@ -1814,33 +1819,35 @@ if(NOT version)#deploying the latest version of the package
 			message("[PID] ERROR : cannot build external package ${package} from its wrapper repository. Deployment aborted !")
 		endif()
 	else()
-		message("[PID] ERROR : cannot install external package ${package} since no binary archive exist for that version and no source deployment is required. Deployment aborted !")
+		message("[PID] ERROR : cannot install external package ${package} since source deployment is not allowed. Deployment aborted !")
 	endif()
 
 else()#deploying a specific version of the external package
 	if(NOT version STREQUAL "SYSTEM")
-		#first, try to download the archive if the binary archive for this version exists
-		exact_Version_Archive_Exists(${package} "${version}" ARCHIVE_EXISTS)
-		if(ARCHIVE_EXISTS)#download the binary directly if an archive exists for this version
-			deploy_Binary_External_Package_Version(BIN_DEPLOYED ${package} ${version} FALSE)#deploying the target binary relocatable archive
-			if(NOT BIN_DEPLOYED)
-				message("[PID] ERROR : problem deploying ${package} binary archive version ${version}. Deployment aborted !")
-				return()
-			else()
-				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${version} FALSE)
-				if(BOUND)
-					message("[PID] INFO : deploying ${package} binary archive version ${version} success !")
-					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
+		if(NOT deploy_mode STREQUAL "SOURCE")#not possible if source deployment is forced
+			#first, try to download the archive if the binary archive for this version exists
+			exact_Version_Archive_Exists(${package} "${version}" ARCHIVE_EXISTS)
+			if(ARCHIVE_EXISTS)#download the binary directly if an archive exists for this version
+				deploy_Binary_External_Package_Version(BIN_DEPLOYED ${package} ${version} FALSE)#deploying the target binary relocatable archive
+				if(NOT BIN_DEPLOYED)
+					message("[PID] ERROR : problem deploying ${package} binary archive version ${version}. Deployment aborted !")
+					return()
 				else()
-					message("[PID] ERROR : external package ${package} version ${version} cannot be deployed in workspace.")
+					bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${version} FALSE)
+					if(BOUND)
+						message("[PID] INFO : deploying ${package} binary archive version ${version} success !")
+						set(${DEPLOYED} "BINARY" PARENT_SCOPE)
+					else()
+						message("[PID] ERROR : external package ${package} version ${version} cannot be deployed in workspace.")
+					endif()
+					message("[PID] INFO : external package ${package} version ${version} has been deployed from its binary archive.")
+					return()
 				endif()
-				message("[PID] INFO : external package ${package} version ${version} has been deployed from its binary archive.")
-				return()
 			endif()
 		endif()
 	endif()
 	#Not possible from binaries so try from sources
-	if(can_use_source)#this step is only possible if sources can be used
+	if(NOT deploy_mode STREQUAL "BINARY")#this step is only possible if sources can be used
 		if(NOT REPOSITORY_IN_WORKSPACE)
 			deploy_Wrapper_Repository(SOURCE_DEPLOYED ${package})
 			if(NOT SOURCE_DEPLOYED)
@@ -1873,7 +1880,7 @@ else()#deploying a specific version of the external package
 			set(${DEPLOYED} "SYSTEM" PARENT_SCOPE)
 		endif()
 	else()
-		message("[PID] ERROR : cannot install external package ${package} since no binary archive exist for that version. Deployment aborted !")
+		message("[PID] ERROR : cannot install external package ${package} since source deployment not allowed. Deployment aborted !")
 	endif()
 endif()
 endfunction(deploy_PID_External_Package)

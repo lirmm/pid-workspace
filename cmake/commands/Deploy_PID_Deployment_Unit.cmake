@@ -65,6 +65,10 @@ if(NOT NO_SOURCE AND DEFINED ENV{no_source})
 	set(NO_SOURCE $ENV{no_source} CACHE INTERNAL "" FORCE)
 endif()
 
+if(NOT USE_SOURCE AND DEFINED ENV{use_source})
+	set(USE_SOURCE $ENV{use_source} CACHE INTERNAL "" FORCE)
+endif()
+
 if(NOT USE_BRANCH AND DEFINED ENV{branch})
 	set(USE_BRANCH $ENV{branch} CACHE INTERNAL "" FORCE)
 endif()
@@ -189,7 +193,20 @@ else()# a package deployment is required
 
 	# check in case when direct binary deployment asked
 	set(references_loaded FALSE)
+	set(deploy_mode "ANY")
 	if(NO_SOURCE STREQUAL "true" OR NO_SOURCE STREQUAL "TRUE")
+		if(USE_SOURCE STREQUAL "true" OR USE_SOURCE STREQUAL "TRUE")
+			message("[PID] ERROR : Cannot force use of deployment from sources and binaries at same time. Use either use_source or no_source but not both.")
+			return()
+		endif()
+	endif()
+	if(NO_SOURCE STREQUAL "true" OR NO_SOURCE STREQUAL "TRUE")
+		set(deploy_mode "BINARY")
+	elseif(USE_SOURCE STREQUAL "true" OR USE_SOURCE STREQUAL "TRUE")
+		set(deploy_mode "SOURCE")
+	endif()
+
+	if(deploy_mode STREQUAL "BINARY")
 		#if no source required then binary references must exist
 		load_Package_Binary_References(REFERENCES_OK ${DEPLOYED_PACKAGE})# now load the binary references of the package
 		if(NOT REFERENCES_OK)
@@ -204,9 +221,6 @@ else()# a package deployment is required
 				return()
 			endif()
 		endif()
-		set(can_use_source FALSE)
-	else()
-		set(can_use_source TRUE)
 	endif()
 
 	if(USE_BRANCH)
@@ -214,9 +228,11 @@ else()# a package deployment is required
 			message("[PID] ERROR : Cannot deploy a specific branch of ${DEPLOYED_PACKAGE} because it is an external package.")
 			return()
 		endif()
-		if(NOT can_use_source)#need to run the deployment from sources !!
+		if(deploy_mode STREQUAL "BINARY")#need to run the deployment from sources !!
 			message("[PID] ERROR : Cannot deploy a specific branch of ${DEPLOYED_PACKAGE} if no source deployment is required (using argument no_source=true).")
 			return()
+		elseif(deploy_mode STREQUAL "ANY")
+			set(deploy_mode "SOURCE")
 		endif()
 		if(TARGET_VERSION)
 			message("[PID] ERROR : Cannot deploy a specific branch of ${DEPLOYED_PACKAGE} if a specific version is required (using argument version=${TARGET_VERSION}).")
@@ -283,9 +299,9 @@ else()# a package deployment is required
 	message("${message_to_print}")
 	# now do the deployment
 	if(is_external)#external package is deployed
-		deploy_PID_External_Package(PACK_DEPLOYED ${DEPLOYED_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source} ${redeploy})
+		deploy_PID_External_Package(PACK_DEPLOYED ${DEPLOYED_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${deploy_mode} ${redeploy})
 	else()#native package is deployed
-		deploy_PID_Native_Package(PACK_DEPLOYED ${DEPLOYED_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${can_use_source} "${branch}" ${run_tests})
+		deploy_PID_Native_Package(PACK_DEPLOYED ${DEPLOYED_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${deploy_mode} "${branch}" ${run_tests})
 	endif()
 	if(NOT PACK_DEPLOYED)
 		message(SEND_ERROR "[PID] CRITICAL ERROR : there were errors during deployment of ${DEPLOYED_PACKAGE}")

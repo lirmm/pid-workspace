@@ -129,6 +129,7 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments for package argument [optional] ---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - version=*version number*: deploy a specific version, mandatory for an external package."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - no_source=true: force the download of an existing binary package version archive."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - use_source=true: force the compilation of package sources."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - force=true: force deployment even if the adequate version already lies in the workspace."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - verbose=true: get more debug information during the deployment process"
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments for native package only [optional] ---"
@@ -344,6 +345,7 @@ set(deploy_args "\
 	-DVERBOSE_MODE=\${verbose} \
 	-DFORCE_REDEPLOY=\${force} \
 	-DNO_SOURCE=\${no_source} \
+	-DUSE_SOURCE=\${use_source} \
 	-DUSE_BRANCH=\${branch} \
 	-DRUN_TESTS=\${test} ")
 add_PID_Command(deploy Deploy_PID_Deployment_Unit.cmake)
