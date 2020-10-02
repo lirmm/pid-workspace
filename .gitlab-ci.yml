@@ -1,5 +1,6 @@
 before_script:
     - . share/pid.sh
+    - pid configure -DIN_CI_PROCESS=ON -DADDITIONAL_DEBUG_INFO=ON
     - pid contributions cmd=add space=pid-tests update=git@gite.lirmm.fr:pid/tests/pid-tests.git -DADDITIONAL_DEBUG_INFO=ON
     - pid contributions cmd=prio_max space=pid-tests
 
@@ -10,7 +11,6 @@ stages:
  ############ generic jobs patterns #############
 
  ### configure (cmake configuration), build (compile/test/install), deploy (make interesting part of the result available wiki+doc, binaries)
-
 .create_and_build_: &create_and_build
    stage: create_and_build
    script:
