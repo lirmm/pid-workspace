@@ -327,6 +327,13 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	    COMMENT "[PID] memorizing new wrapper implementation ..."
 	  )
 
+		add_custom_target(list_versions
+			COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+							-DTARGET_PACKAGE=${PROJECT_NAME}
+							-P ${WORKSPACE_DIR}/cmake/commands/Listing_PID_Versions.cmake
+			COMMENT "[PID] ${PROJECT_NAME} versions:"
+		)
+
 	  # update target (update the framework from upstream git repository)
 	  add_custom_target(update
 	    COMMAND ${CMAKE_COMMAND}

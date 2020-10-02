@@ -872,6 +872,7 @@ function(print_Native_Package_Info package)
 	message("REPOSITORY: ${${package}_ADDRESS}")
 	load_Package_Binary_References(REFERENCES_OK ${package})
 	if(${package}_FRAMEWORK)
+		message("FRAMEWORK: ${${package}_FRAMEWORK} (${${${package}_FRAMEWORK}_SITE})")
 		message("DOCUMENTATION: ${${${package}_FRAMEWORK}_SITE}/packages/${package}")
 	elseif(${package}_SITE_GIT_ADDRESS)
 		message("DOCUMENTATION: ${${package}_SITE_GIT_ADDRESS}")
@@ -887,12 +888,46 @@ function(print_Native_Package_Info package)
 			message("	${category}")
 		endforeach()
 	endif()
-
+	get_Available_Versions(LIST_OF_VERSIONS ${package})
+	if(LIST_OF_VERSIONS)
+		fill_String_From_List(RES_STR  LIST_OF_VERSIONS " ")
+		message("AVAILABLE VERSIONS: ${RES_STR}")
+	else()
+		message("AVAILABLE VERSIONS: NONE")
+	endif()
 	if(REFERENCES_OK)
 		message("BINARY VERSIONS:")
 		print_Package_Binaries(${package})
 	endif()
 endfunction(print_Native_Package_Info)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Available_Versions| replace:: ``get_Available_Versions``
+#  .. get_Available_Versions:
+#
+#  get_Available_Versions
+#  ----------------------
+#
+#   .. command:: get_Available_Versions(LIST_OF_VERSIONS package)
+#
+#   return the list of available version for a given package.
+#
+#      :package: the name of the external package.
+#
+#      :LIST_OF_VERSIONS: the output variable containing the list of versions for package.
+#
+function(get_Available_Versions LIST_OF_VERSIONS package)
+	set(DO_NOT_FIND_${package} TRUE)
+	include_Find_File(${package})#just include the find file to get information about compatible versions, do not "find for real" in install tree
+	unset(DO_NOT_FIND_${package})
+	set(all_known_versions ${${package}_PID_KNOWN_VERSION})
+	list(REMOVE_ITEM all_known_versions 0.0.0)
+	sort_Version_List(all_known_versions)
+	set(${LIST_OF_VERSIONS} ${all_known_versions} PARENT_SCOPE)
+endfunction(get_Available_Versions)
 
 #.rst:
 #
@@ -922,6 +957,13 @@ function(print_External_Package_Info package)
 		foreach(category IN LISTS ${package}_CATEGORIES)
 			message("	${category}")
 		endforeach()
+	endif()
+	get_Available_Versions(LIST_OF_VERSIONS ${package})
+	if(LIST_OF_VERSIONS)
+		fill_String_From_List(RES_STR  LIST_OF_VERSIONS " ")
+		message("AVAILABLE VERSIONS: ${RES_STR}")
+	else()
+		message("AVAILABLE VERSIONS: NONE")
 	endif()
 	load_Package_Binary_References(REFERENCES_OK ${package})
 	if(REFERENCES_OK)

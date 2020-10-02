@@ -181,6 +181,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		VERBATIM
 	)
 
+
 	add_custom_target(integrate
 		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
@@ -422,6 +423,12 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			VERBATIM
 		)
 	endif()
+	add_custom_target(list_versions
+		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-P ${WORKSPACE_DIR}/cmake/commands/Listing_PID_Versions.cmake
+		COMMENT "[PID] ${PROJECT_NAME} versions:"
+	)
 	add_custom_target(workspace_path
 		COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} -P ${WORKSPACE_DIR}/cmake/commands/Print_Workspace_Path.cmake
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}

@@ -888,6 +888,40 @@ function(normalize_Version_String input_version NORMALIZED_VERSION_STRING)
 endfunction(normalize_Version_String)
 
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |sort_Version_List| replace:: ``sort_Version_List``
+#  .. _sort_Version_List:
+#
+#  sort_Version_List
+#  -----------------
+#
+#   .. command:: sort_Version_List(list_var)
+#
+#    Sort a list from lower to greater version.
+#
+#     :list_var: the input/output variable containing the list to sort.
+#
+function(sort_Version_List list_var)
+  if(NOT ${list_var})
+    return()#return if input list is empty
+  endif()
+  set(sorted_list)
+  while(${input_list_var})
+    list(GET elements_to_sort 0 curr_min_version)
+    foreach(comp_version IN LISTS ${input_list_var})
+      if(comp_version VERSION_LESS curr_min_version)
+        set(curr_min_version ${comp_version})
+      endif()
+    endforeach()
+    list(REMOVE_ITEM ${input_list_var} ${curr_min_version})
+    list(APPEND sorted_list ${curr_min_version})
+  endwhile()
+  set(${input_list_var} ${sorted_list} PARENT_SCOPE)#reset content of output
+endfunction(sort_Version_List)
+
 #############################################################
 ################ filesystem management utilities ############
 #############################################################
