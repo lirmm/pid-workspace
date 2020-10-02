@@ -582,17 +582,18 @@ function(get_Library_ELF_Symbol_Max_Version MAX_VERSION path_to_library symbol)
   set(ALL_SYMBOLS)
   usable_In_Regex(usable_symbol ${symbol})
   file(STRINGS ${path_to_library} ALL_SYMBOLS REGEX ".*${usable_symbol}.*")#extract ascii symbols from the library file
-  set(max_version "0.0.0")
-  foreach(version IN LISTS ALL_SYMBOLS)
-    extract_ELF_Symbol_Version(RES_VERSION "${usable_symbol}" ${version})#get the version from each found symbol
-    if(RES_VERSION VERSION_GREATER max_version)
-      set(max_version ${RES_VERSION})
-    endif()
-  endforeach()
-  if(max_version VERSION_EQUAL "0.0.0")
-    set(${MAX_VERSION} PARENT_SCOPE)#no result for that symbol
+  if(ALL_SYMBOLS)
+    set(max_version "0.0.0")
+    foreach(version IN LISTS ALL_SYMBOLS)
+      extract_ELF_Symbol_Version(RES_VERSION "${usable_symbol}" ${version})#get the version from each found symbol
+      if(RES_VERSION VERSION_GREATER max_version)
+        set(max_version ${RES_VERSION})
+      endif()
+    endforeach()
+    set(${MAX_VERSION} ${max_version} PARENT_SCOPE)
+    return()
   endif()
-  set(${MAX_VERSION} ${max_version} PARENT_SCOPE)
+  set(${MAX_VERSION} PARENT_SCOPE)#no result for that symbol
 endfunction(get_Library_ELF_Symbol_Max_Version)
 
 
