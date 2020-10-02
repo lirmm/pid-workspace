@@ -200,11 +200,17 @@ pid() {
     unset project_dir
     unset ws_dir
     unset project_name
+    #Note: need to set zsh the correct way to interpret lists
+    if [ "$ZSH_VERSION" ]; then
+        setopt shwordsplit
+    fi
     for var in $to_unexport; do
         local name=$(echo $var|sed -re "s:([^=]+)=.*:\1:g")
         unset $name
     done
-
+    if [ "$ZSH_VERSION" ]; then
+      unsetopt shwordsplit
+    fi
     return $pid_ws_res
 }
 
