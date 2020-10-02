@@ -17,10 +17,12 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-set(PID_KNOWN_PACKAGING_SYSTEMS APT PACMAN YUM BREW PORTS CHOCO CACHE INTERNAL "")
+set(PID_KNOWN_PACKAGING_SYSTEMS APT PACMAN YUM PKG BREW PORTS CHOCO CACHE INTERNAL "")
 set(CURRENT_PACKAGING_SYSTEM CACHE INTERNAL "")
 set(CURRENT_PACKAGING_SYSTEM_EXE CACHE INTERNAL "")
 set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS CACHE INTERNAL "")
+set(CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS CACHE INTERNAL "")
+set(CURRENT_PACKAGING_SYSTEM_EXE_UPGRADE_OPTIONS CACHE INTERNAL "")
 
 #try to detect available packaging system depending on operating system
 if(NOT PID_CROSSCOMPILATION) #there is a pâckaging system only if a distribution is defined
@@ -31,18 +33,24 @@ if(NOT PID_CROSSCOMPILATION) #there is a pâckaging system only if a distributio
       set(CURRENT_PACKAGING_SYSTEM APT CACHE INTERNAL "")#sudo apt install -y ...
       set(CURRENT_PACKAGING_SYSTEM_EXE apt-get CACHE INTERNAL "")
       set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS install -y CACHE INTERNAL "")
+      set(CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS update -y CACHE INTERNAL "")
+      set(CURRENT_PACKAGING_SYSTEM_EXE_UPGRADE_OPTIONS upgrade -y CACHE INTERNAL "")
     else()
       find_program(PATH_TO_PACMAN NAMES pacman NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)
       if(PATH_TO_PACMAN)
         set(CURRENT_PACKAGING_SYSTEM PACMAN  CACHE INTERNAL "")#sudo pacman -S ... --noconfirm
         set(CURRENT_PACKAGING_SYSTEM_EXE pacman  CACHE INTERNAL "")
         set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS -S --noconfirm CACHE INTERNAL "")
+        set(CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS -Syy --noconfirm CACHE INTERNAL "")
+        set(CURRENT_PACKAGING_SYSTEM_EXE_UPGRADE_OPTIONS -Syu --noconfirm CACHE INTERNAL "")
       else()
         find_program(PATH_TO_YUM NAMES yum NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)
         if(PATH_TO_YUM)
           set(CURRENT_PACKAGING_SYSTEM YUM  CACHE INTERNAL "")
           set(CURRENT_PACKAGING_SYSTEM_EXE yum  CACHE INTERNAL "")#sudo yum install -y ...
           set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS install -y CACHE INTERNAL "")
+          set(CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS updateinfo -y CACHE INTERNAL "")
+          set(CURRENT_PACKAGING_SYSTEM_EXE_UPGRADE_OPTIONS upgrade -y CACHE INTERNAL "")
         else()
           #TODO add more package management front end when necessary
         endif()
@@ -55,12 +63,16 @@ if(NOT PID_CROSSCOMPILATION) #there is a pâckaging system only if a distributio
       set(CURRENT_PACKAGING_SYSTEM BREW  CACHE INTERNAL "")#sudo brew install ...
       set(CURRENT_PACKAGING_SYSTEM_EXE brew  CACHE INTERNAL "")
       set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS install CACHE INTERNAL "")
+      set(CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS update CACHE INTERNAL "")
+      set(CURRENT_PACKAGING_SYSTEM_EXE_UPGRADE_OPTIONS upgrade CACHE INTERNAL "")
     else()
       find_program(PATH_TO_PORTS NAMES ports NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)
       if(PATH_TO_PORTS)
         set(CURRENT_PACKAGING_SYSTEM PORTS  CACHE INTERNAL "")#sudo ports install ...
         set(CURRENT_PACKAGING_SYSTEM_EXE ports  CACHE INTERNAL "")
         set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS install CACHE INTERNAL "")
+        set(CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS selfupdate CACHE INTERNAL "")
+        set(CURRENT_PACKAGING_SYSTEM_EXE_UPGRADE_OPTIONS upgrade outdated CACHE INTERNAL "")
       else()
         #TODO add more package manager when necessary
       endif()
@@ -72,6 +84,8 @@ if(NOT PID_CROSSCOMPILATION) #there is a pâckaging system only if a distributio
       set(CURRENT_PACKAGING_SYSTEM PKG  CACHE INTERNAL "")#sudo brew install ...
       set(CURRENT_PACKAGING_SYSTEM_EXE pkg  CACHE INTERNAL "")
       set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS install -y CACHE INTERNAL "")
+      set(CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS refresh CACHE INTERNAL "")
+      set(CURRENT_PACKAGING_SYSTEM_EXE_UPGRADE_OPTIONS update CACHE INTERNAL "")
     endif()
 
   elseif(CURRENT_PLATFORM_OS STREQUAL "windows") #only chocolatey for now
@@ -80,8 +94,18 @@ if(NOT PID_CROSSCOMPILATION) #there is a pâckaging system only if a distributio
       set(CURRENT_PACKAGING_SYSTEM CHOCO  CACHE INTERNAL "")#choco install -y ...
       set(CURRENT_PACKAGING_SYSTEM_EXE choco  CACHE INTERNAL "")
       set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS install -y CACHE INTERNAL "")
+      set(CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS CACHE INTERNAL "")
+      set(CURRENT_PACKAGING_SYSTEM_EXE_UPGRADE_OPTIONS upgrade all -y CACHE INTERNAL "")
     else()
       #TODO add more package manager when necessary
     endif()
   endif()
+endif()
+
+#Note: In CI update/upgrade operation is automatic
+if(IN_CI_PROCESS)
+  if(CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS)
+    execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS})
+  endif()
+  execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_UPGRADE_OPTIONS})
 endif()
