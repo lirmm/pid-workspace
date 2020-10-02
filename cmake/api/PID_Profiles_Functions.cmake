@@ -1286,10 +1286,10 @@ function(check_Extra_Tool_Configuration_With_Arguments CHECK_OK CONFIGS tool too
   # from here environment defining the toolset at least exists in workspace and provides a description
   # Note: it can be unused in current environment BUT it can also be IMPLICITLY used in the default host environment
   include(${WORKSPACE_DIR}/environments/${tool}/build/PID_Inputs.cmake)
-  prepare_Configuration_Expression_Arguments(${tool} ${tool_args} ${tool}_INPUTS)
+  prepare_Configuration_Expression_Arguments(${tool} ${tool_args_var} ${tool}_INPUTS)
 
-  evaluate_Extra_Tool_Configuration(RES RES_CONFIGS ${tool})
-  if(NOT RES)#language configuration cannot be satisfied
+  evaluate_Extra_Tool_Configuration(EVAL_OK RES_CONFIGS ${tool})
+  if(NOT EVAL_OK)#language configuration cannot be satisfied
     set_Configuration_Temporary_Optimization_Variables(${tool} ${mode} FALSE "${${tool_args_var}}" "")#remember that test failed with those constraints
     return()
   endif()
@@ -1324,7 +1324,7 @@ function(check_Tool_Expression COMPATIBLE tool tool_expression)
   set(${COMPATIBLE} FALSE PARENT_SCOPE)
   parse_Configuration_Expression(TOOL_NAME TOOL_ARGS "${tool_expression}")
   if(TOOL_NAME STREQUAL tool)
-    prepare_Configuration_Expression_Arguments(temp_${tool} ${TOOL_ARGS} ${tool}_INPUTS)
+    prepare_Configuration_Expression_Arguments(temp_${tool} TOOL_ARGS ${tool}_INPUTS)
     #getting toolset args coming from the local expression (i.e. package level constraint) into current context
     set(RESULT_VERS TRUE)# by default (no constraint required) result is OK
     set(RESULT_ARCH TRUE)# by default (no constraint required) result is OK
@@ -1367,7 +1367,7 @@ function(evaluate_Extra_Tool_In_Environment RESULT CONFIGS_TO_CHECK tool environ
   set(${CONFIGS_TO_CHECK} PARENT_SCOPE)
   foreach(extra IN LISTS ${environment}_EXTRA_TOOLS)
     if(tool STREQUAL extra)
-      check_Extra_Tool_Expression(EXPRESSION_MATCH_REQUIRED ${tool} ${${environment}_EXTRA_${tool}_CONSTRAINT_EXPRESSION})
+      check_Tool_Expression(EXPRESSION_MATCH_REQUIRED ${tool} ${${environment}_EXTRA_${tool}_CONSTRAINT_EXPRESSION})
       if(EXPRESSION_MATCH_REQUIRED)
         set(${CONFIGS_TO_CHECK} ${${environment}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS} PARENT_SCOPE)
         set(${RESULT} TRUE PARENT_SCOPE)
@@ -1387,22 +1387,22 @@ endfunction(evaluate_Extra_Tool_In_Environment)
 #  evaluate_Extra_Tool_Configuration
 #  ----------------------------------
 #
-#   .. command:: evaluate_Extra_Tool_Configuration(RES CONFIGS tool)
+#   .. command:: evaluate_Extra_Tool_Configuration(RESULT_OK CONFIGS tool)
 #
 #    Evaluate an extra tool, if it is provided in current profile.
 #
 #     :tool: the contraint expression
 #
-#     :RES: the output variable that is TRUE if extra tool constraints are satisfied by current profile.
+#     :RESULT_OK: the output variable that is TRUE if extra tool constraints are satisfied by current profile.
 #     :CONFIGS: the output variable that contains the list of configuration constraints to check when using this tool.
 #
-function(evaluate_Extra_Tool_Configuration RES CONFIGS tool)
-  set(${CHECK_OK} FALSE PARENT_SCOPE)
+function(evaluate_Extra_Tool_Configuration RESULT_OK CONFIGS tool)
+  set(${RESULT_OK} FALSE PARENT_SCOPE)
   set(${CONFIGS} PARENT_SCOPE)
   if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
     evaluate_Extra_Tool_In_Environment(IS_OK RES_CONFIGS ${tool} ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
     if(IS_OK)
-      set(${RESULT} TRUE PARENT_SCOPE)
+      set(${RESULT_OK} TRUE PARENT_SCOPE)
       set(${CONFIGS} ${RES_CONFIGS} PARENT_SCOPE)
       return()
     endif()
@@ -1410,7 +1410,7 @@ function(evaluate_Extra_Tool_Configuration RES CONFIGS tool)
   foreach(env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
     evaluate_Extra_Tool_In_Environment(IS_OK RES_CONFIGS ${tool} ${env})
     if(IS_OK)
-      set(${RESULT} TRUE PARENT_SCOPE)
+      set(${RESULT_OK} TRUE PARENT_SCOPE)
       set(${CONFIGS} ${RES_CONFIGS} PARENT_SCOPE)
       return()
     endif()
@@ -1422,9 +1422,8 @@ function(evaluate_Extra_Tool_Configuration RES CONFIGS tool)
   if(NOT EVAL_OK)
     return()
   endif()
-  evaluate_Extra_Tool_In_Environment(RESULT CONFIGS_TO_CHECK ${tool} ${tool})
-
-  set(${RESULT} ${RESULT} PARENT_SCOPE)
+  evaluate_Extra_Tool_In_Environment(RESULT_FROM_ENV CONFIGS_TO_CHECK ${tool} ${tool})
+  set(${RESULT_OK} ${RESULT_FROM_ENV} PARENT_SCOPE)
   set(${CONFIGS} ${CONFIGS_TO_CHECK} PARENT_SCOPE)
 endfunction(evaluate_Extra_Tool_Configuration)
 
