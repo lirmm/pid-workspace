@@ -144,7 +144,7 @@ function(reset_Wrapper_Version_Info version soname compatibility deploy_file_nam
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_ALIASES CACHE INTERNAL "")
 
 	#reset current version general information
-	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME ${soname} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME ${soname} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${compatibility} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT ${deploy_file_name} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT ${post_install_script} CACHE INTERNAL "")
