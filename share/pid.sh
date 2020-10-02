@@ -213,8 +213,10 @@ pid() {
 # Configure the given project
 #  $1: project dir, $2 cmake options
 _pid_ws_configure() {
-    cd $1/build && cmake $2 $1 && cd $1
+    cd $1/build
+    cmake $2 $1
     pid_ws_res=$?
+    cd $1
 }
 
 # Run the given target. (Re)configure the project
@@ -223,7 +225,9 @@ _pid_ws_configure() {
 _pid_ws_run() {
     # Configure the project a first time if necessary
     if [ ! -f $1/build/CMakeCache.txt ]; then
-        cd $1/build && cmake $1 && cd $1
+        cd $1/build
+        cmake $1
+        cd $1
     fi
     if [ "$3" ]; then
       _pid_ws_configure $1 "$3"
