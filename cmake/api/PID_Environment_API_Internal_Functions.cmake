@@ -430,6 +430,7 @@ macro(build_Environment_Project)
 		-DTARGET_DISTRIBUTION=\${distribution}
 		-DTARGET_DISTRIBUTION_VERSION=\${distrib_version}
 		-DIN_CI_PROCESS=${IN_CI_PROCESS}
+    -DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
     -P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Environment.cmake
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   )
