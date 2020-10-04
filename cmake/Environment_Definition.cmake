@@ -1642,7 +1642,16 @@ function(install_System_Packages)
   if(NOT use_packages)
     return()
   endif()
-  execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} ${use_packages})
+  # Note: install packages one by one to avoid install procedure to be broken by a non existing system package
+  # that provokes an exit of the install command
+  # this allows to define many variant names for the install of a unique package
+  # This is mandatory to easily adapt to all variations introduced by various distributions
+  foreach(pack IN LISTS use_packages)
+    if(ADDITIONAL_DEBUG_INFO)
+      message("[PID] INFO : ${PROJECT_NAME} is trying to install system package ${pack}...")
+    endif()
+    execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} ${pack})
+  endforeach()
   if(INSTALL_SYSTEM_PACKAGES_RESULT)
     set(${INSTALL_SYSTEM_PACKAGES_RESULT} TRUE PARENT_SCOPE)
   endif()
