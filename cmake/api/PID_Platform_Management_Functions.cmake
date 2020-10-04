@@ -1708,7 +1708,13 @@ macro(install_Platform_Configuration config path_to_config)
   if(INSTALLABLE)
     message("[PID] INFO : installing configuration ${config}...")
     if(${config}_INSTALL_PACKAGES)
-      execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} ${${config}_INSTALL_PACKAGES})
+      foreach(pack IN LISTS ${config}_INSTALL_PACKAGES)
+        # Note: install packages one by one to avoid install procedure to be broken by a non existing system package
+        # that provokes an exit of the install command
+        # this allows to define many variant names for the install of a unique package
+        # This is mandatory to easily adapt to all variations introduced by various distributions
+        execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} ${pack})
+      endforeach()
     else()
       include(Configuration_Definition NO_POLICY_SCOPE)
       set(DO_NOT_INSTALL FALSE)# apply installation instructions
