@@ -103,9 +103,11 @@ if(NOT PID_CROSSCOMPILATION) #there is a pâckaging system only if a distributio
 endif()
 
 #Note: In CI update/upgrade operation is automatic
-if(IN_CI_PROCESS)
-  if(CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS)
-    execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS})
+if(NOT EVALUATION_RUN)#no need to reupdate the system anytime an environment is evaluated
+  if(IN_CI_PROCESS)
+    if(CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS)
+      execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS})
+    endif()
+    execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_UPGRADE_OPTIONS})
   endif()
-  execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_UPGRADE_OPTIONS})
 endif()
