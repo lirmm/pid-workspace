@@ -1670,7 +1670,7 @@ function(is_Repository_Connected CONNECTED path_to_repo remote)
   if(RESULT)#the get-url approach is the best one
     execute_process(COMMAND git remote get-url ${remote}
                     WORKING_DIRECTORY ${path_to_repo}
-                    OUTPUT_VARIABLE out RESULT_VARIABLE res)
+                    ERROR_QUIET OUTPUT_VARIABLE out RESULT_VARIABLE res)
 		if(NOT res AND NOT out STREQUAL "")
 			set(${CONNECTED} TRUE PARENT_SCOPE)
 		else()
@@ -1679,7 +1679,7 @@ function(is_Repository_Connected CONNECTED path_to_repo remote)
 	else()
     execute_process(COMMAND git remote -v
                     WORKING_DIRECTORY ${path_to_repo}
-                    OUTPUT_VARIABLE out RESULT_VARIABLE res)
+                    ERROR_QUIET OUTPUT_VARIABLE out RESULT_VARIABLE res)
 
 		if(NOT res AND NOT out STREQUAL "")
 			string(REPLACE "${remote}" "found" IS_FOUND ${out})
@@ -1712,11 +1712,13 @@ endfunction(is_Repository_Connected)
 #
 function(clone_Contribution_Space_Repository IS_CLONED url)
   set(PATH_TO_CONTRIB ${WORKSPACE_DIR}/contributions)
-  execute_process(COMMAND git clone ${url} WORKING_DIRECTORY ${PATH_TO_CONTRIB})
+  execute_process(COMMAND git clone ${url}
+                  WORKING_DIRECTORY ${PATH_TO_CONTRIB}
+                  ERROR_QUIET OUTPUT_QUIET)#always quiet
   get_Repository_Name(RES_NAME ${url})
   if(NOT EXISTS ${PATH_TO_CONTRIB}/${RES_NAME} OR NOT IS_DIRECTORY ${PATH_TO_CONTRIB}/${RES_NAME})
     set(${IS_CLONED} FALSE PARENT_SCOPE)
-    message("[PID] ERROR : the url of the controntribution space repository (${url}) cannot be cloned.")
+    message("[PID] ERROR : the url of the contribution space repository (${url}) cannot be cloned.")
     return()
   endif()
   set(${IS_CLONED} TRUE PARENT_SCOPE)
@@ -1743,12 +1745,18 @@ endfunction(clone_Contribution_Space_Repository)
 #
 function(clone_Package_Repository IS_DEPLOYED package url)
   set(package_path ${WORKSPACE_DIR}/packages/${package})
+  set(clone_output OUTPUT_QUIET ERROR_QUIET)
+  if(ADDITIONAL_DEBUG_INFO)
+    set(clone_output)
+  endif()
   execute_process(COMMAND git clone ${url}
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/packages)
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/packages
+                  ${clone_output})
   if(EXISTS ${package_path} AND IS_DIRECTORY ${package_path})
   	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
   	execute_process(COMMAND git fetch origin
-                    WORKING_DIRECTORY ${package_path})
+                    WORKING_DIRECTORY ${package_path}
+                    OUTPUT_QUIET ERROR_QUIET)
   	execute_process(COMMAND git checkout integration
                     WORKING_DIRECTORY ${package_path}
                     OUTPUT_QUIET ERROR_QUIET)#go to integration to create the local branch
@@ -1759,9 +1767,11 @@ function(clone_Package_Repository IS_DEPLOYED package url)
   	# now adding reference to official remote with official == origin (default case)
   	execute_process(COMMAND git remote add official ${url}
                     WORKING_DIRECTORY ${package_path}
+                    OUTPUT_QUIET ERROR_QUIET
                   )
   	execute_process(COMMAND git fetch official
-                    WORKING_DIRECTORY ${package_path}) #updating remote branches for official remote
+                    WORKING_DIRECTORY ${package_path}
+                    OUTPUT_QUIET ERROR_QUIET) #updating remote branches for official remote
   else()
   	set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
   	message("[PID] ERROR : impossible to clone the repository of package ${package} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this package.")
@@ -1813,9 +1823,11 @@ endfunction(track_Repository_Branch)
 function(initialize_Git_Repository_Push_Address package url)
   set(package_path ${WORKSPACE_DIR}/packages/${package})
   execute_process(COMMAND git remote set-url --push origin ${url}
-                  WORKING_DIRECTORY ${package_path})
+                  WORKING_DIRECTORY ${package_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git remote set-url --push official ${url}
-                  WORKING_DIRECTORY ${package_path})
+                  WORKING_DIRECTORY ${package_path}
+                  OUTPUT_QUIET ERROR_QUIET)
 endfunction(initialize_Git_Repository_Push_Address)
 
 #.rst:
@@ -1841,11 +1853,15 @@ function(test_Package_Remote_Initialized package url INITIALIZED)
   if(EXISTS ${WORKSPACE_DIR}/build/${package})
     file(REMOVE_RECURSE ${WORKSPACE_DIR}/build/${package})
   endif()
-execute_process(COMMAND git clone ${url}
-                WORKING_DIRECTORY ${WORKSPACE_DIR}/build
-                OUTPUT_QUIET ERROR_QUIET) #cloning in a temporary area
+  set(clone_output OUTPUT_QUIET ERROR_QUIET)
+  if(ADDITIONAL_DEBUG_INFO)
+    set(clone_output)
+  endif()
+  execute_process(COMMAND git clone ${url}
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/build
+                  ${clone_output}) #cloning in a temporary area
 
-execute_process(COMMAND git branch -a
+  execute_process(COMMAND git branch -a
             		WORKING_DIRECTORY ${WORKSPACE_DIR}/build/${package}
             		OUTPUT_VARIABLE all_branches ERROR_QUIET)#getting all branches
 
@@ -1932,18 +1948,24 @@ function(init_Repository package)
                   WORKING_DIRECTORY ${package_path}
                   OUTPUT_QUIET ERROR_QUIET)#initialize the git repository
   execute_process(COMMAND git add -A
-                  WORKING_DIRECTORY ${package_path} OUTPUT_QUIET ERROR_QUIET)
+                  WORKING_DIRECTORY ${package_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git commit -m "initialization of package done"
-                  WORKING_DIRECTORY ${package_path} OUTPUT_QUIET ERROR_QUIET)
+                  WORKING_DIRECTORY ${package_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git tag -a v0.0.0 -m "creation of package"
-                  WORKING_DIRECTORY ${package_path} OUTPUT_QUIET ERROR_QUIET)#0.0.0 tag = creation of package
+                  WORKING_DIRECTORY ${package_path}
+                  OUTPUT_QUIET ERROR_QUIET)#0.0.0 tag = creation of package
   execute_process(COMMAND git checkout -b integration master
-                  WORKING_DIRECTORY ${package_path} OUTPUT_QUIET ERROR_QUIET)#going to master branch
+                  WORKING_DIRECTORY ${package_path}
+                  OUTPUT_QUIET ERROR_QUIET)#going to master branch
   set_Version_Number_To_Package(RESULT_OK ${package} "DOTTED_STRING" "ARG" 0 1 0)#(NEW WAY OF DOING) use dotted string in VERSION argument of declare_pid_package function
   execute_process(COMMAND git add -A
-                  WORKING_DIRECTORY ${package_path} OUTPUT_QUIET ERROR_QUIET)
+                  WORKING_DIRECTORY ${package_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git commit -m "starting work on package (version 0.1.0)"
-                  WORKING_DIRECTORY ${package_path} OUTPUT_QUIET ERROR_QUIET)
+                  WORKING_DIRECTORY ${package_path}
+                  OUTPUT_QUIET ERROR_QUIET)
 endfunction(init_Repository)
 
 #.rst:
@@ -1975,7 +1997,7 @@ function(connect_Package_Repository package url)
   execute_process(COMMAND git push origin integration
                   WORKING_DIRECTORY ${package_path} OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git fetch official
-                  WORKING_DIRECTORY ${package_path})
+                  WORKING_DIRECTORY ${package_path} OUTPUT_QUIET ERROR_QUIET)
 endfunction(connect_Package_Repository)
 
 #.rst:
@@ -2000,9 +2022,11 @@ function(reconnect_Repository package url)
   reconnect_Repository_Remote(${package_path} ${url} ${url} official)
   go_To_Master(${package})
   execute_process(COMMAND git pull official master
-                  WORKING_DIRECTORY ${package_path} )#updating master
+                  WORKING_DIRECTORY ${package_path}
+                  OUTPUT_QUIET ERROR_QUIET)#updating master
   execute_process(COMMAND git fetch official --tags
-                  WORKING_DIRECTORY ${package_path} OUTPUT_QUIET ERROR_QUIET)
+                  WORKING_DIRECTORY ${package_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   go_To_Integration(${package})
 endfunction(reconnect_Repository)
 
@@ -2028,12 +2052,15 @@ endfunction(reconnect_Repository)
 function(connect_Repository_Remote path_to_repo url public_url remote_name)
 	if(public_url) #if there is a public URL the package is clonable from a public address
 		execute_process(COMMAND git remote add ${remote_name} ${public_url}
-                    WORKING_DIRECTORY ${path_to_repo})
+                    WORKING_DIRECTORY ${path_to_repo}
+                    OUTPUT_QUIET ERROR_QUIET)
 		execute_process(COMMAND git remote set-url --push ${remote_name} ${url}
-                    WORKING_DIRECTORY ${path_to_repo})
+                    WORKING_DIRECTORY ${path_to_repo}
+                    OUTPUT_QUIET ERROR_QUIET)
 	else()#default case => same push and fetch address for remote
 		execute_process(COMMAND git remote add ${remote_name} ${url}
-                    WORKING_DIRECTORY ${path_to_repo})
+                    WORKING_DIRECTORY ${path_to_repo}
+                    OUTPUT_QUIET ERROR_QUIET)
 	endif()
 endfunction(connect_Repository_Remote)
 
@@ -2060,14 +2087,18 @@ endfunction(connect_Repository_Remote)
 function(reconnect_Repository_Remote path_to_repo url public_url remote_name)
 	if(public_url) #if there is a public URL, the repository is clonable from a public address
 		execute_process(COMMAND git remote set-url ${remote_name} ${public_url}
-                    WORKING_DIRECTORY ${path_to_repo})
+                    WORKING_DIRECTORY ${path_to_repo}
+                    OUTPUT_QUIET ERROR_QUIET)
 		execute_process(COMMAND git remote set-url --push ${remote_name} ${url}
-                    WORKING_DIRECTORY ${path_to_repo})
+                    WORKING_DIRECTORY ${path_to_repo}
+                    OUTPUT_QUIET ERROR_QUIET)
 	else()#default case => same push and fetch address for remote
 		execute_process(COMMAND git remote set-url ${remote_name} ${url}
-                    WORKING_DIRECTORY ${path_to_repo})
+                    WORKING_DIRECTORY ${path_to_repo}
+                    OUTPUT_QUIET ERROR_QUIET)
 		execute_process(COMMAND git remote set-url --push ${remote_name} ${url}
-                    WORKING_DIRECTORY ${path_to_repo})
+                    WORKING_DIRECTORY ${path_to_repo}
+                    OUTPUT_QUIET ERROR_QUIET)
 	endif()
 endfunction(reconnect_Repository_Remote)
 
@@ -2091,7 +2122,8 @@ endfunction(reconnect_Repository_Remote)
 #
 function(disconnect_Repository_Remote path_to_repo remote_name)
 	execute_process(COMMAND git remote remove ${remote_name}
-                  WORKING_DIRECTORY ${path_to_repo})
+                  WORKING_DIRECTORY ${path_to_repo}
+                  OUTPUT_QUIET ERROR_QUIET)
 endfunction(disconnect_Repository_Remote)
 
 #.rst:
@@ -2322,8 +2354,12 @@ endfunction(get_Remotes_Address)
 #     :publish: push address of the remote.
 #
 function(configure_Remote path remote_name update publish)
-  execute_process(COMMAND git remote set-url ${remote_name} ${update} WORKING_DIRECTORY ${path})
-  execute_process(COMMAND git remote set-url --push ${remote_name} ${publish} WORKING_DIRECTORY ${path})
+  execute_process(COMMAND git remote set-url ${remote_name} ${update}
+                  WORKING_DIRECTORY ${path}
+                  OUTPUT_QUIET ERROR_QUIET)
+  execute_process(COMMAND git remote set-url --push ${remote_name} ${publish}
+                  WORKING_DIRECTORY ${path}
+                  OUTPUT_QUIET ERROR_QUIET)
 endfunction(configure_Remote)
 
 ##############################################################################
@@ -2352,12 +2388,18 @@ endfunction(configure_Remote)
 #
 function(clone_Wrapper_Repository IS_DEPLOYED wrapper url)
   set(wrapper_path ${WORKSPACE_DIR}/wrappers/${wrapper})
+  set(clone_output OUTPUT_QUIET ERROR_QUIET)
+  if(ADDITIONAL_DEBUG_INFO)
+    set(clone_output)
+  endif()
   execute_process(COMMAND git clone ${url}
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers)
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers
+                  ${clone_output})
   if(EXISTS ${wrapper_path} AND IS_DIRECTORY ${wrapper_path})
   	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
     execute_process(COMMAND git fetch origin --tags
-                    WORKING_DIRECTORY ${wrapper_path}) #just in case of version were not updated
+                    WORKING_DIRECTORY ${wrapper_path}
+                    OUTPUT_QUIET ERROR_QUIET) #just in case of version were not updated
   else()
     set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
   	message("[PID] ERROR : impossible to clone the repository of external package wrapper ${wrapper} (bad repository address or you have no clone rights for this repository). Please contact the administrator of this wrapper.")
@@ -2383,13 +2425,17 @@ endfunction(clone_Wrapper_Repository)
 function(init_Wrapper_Repository wrapper)
   set(wrapper_path ${WORKSPACE_DIR}/wrappers/${wrapper})
   execute_process(COMMAND git init
-                  WORKING_DIRECTORY ${wrapper_path} )
+                  WORKING_DIRECTORY ${wrapper_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git add -A
-                  WORKING_DIRECTORY ${wrapper_path} )
+                  WORKING_DIRECTORY ${wrapper_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git commit -m "initialization of wrapper"
-                  WORKING_DIRECTORY ${wrapper_path} )
+                  WORKING_DIRECTORY ${wrapper_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git lfs track "*.tar.gz"
-                  WORKING_DIRECTORY ${wrapper_path} OUTPUT_QUIET ERROR_QUIET)
+                  WORKING_DIRECTORY ${wrapper_path}
+                  OUTPUT_QUIET ERROR_QUIET)
 endfunction(init_Wrapper_Repository)
 
 #.rst:
@@ -2411,9 +2457,11 @@ endfunction(init_Wrapper_Repository)
 function(register_Wrapper_Repository_Address wrapper)
   set(wrapper_path ${WORKSPACE_DIR}/wrappers/${wrapper})
   execute_process(COMMAND git add CMakeLists.txt
-                  WORKING_DIRECTORY ${wrapper_path}) # registering the address means registering the CMakelists.txt
+                  WORKING_DIRECTORY ${wrapper_path}
+                  OUTPUT_QUIET ERROR_QUIET) # registering the address means registering the CMakelists.txt
   execute_process(COMMAND git commit -m "adding repository address to the root CMakeLists.txt file"
-                  WORKING_DIRECTORY ${wrapper_path})
+                  WORKING_DIRECTORY ${wrapper_path}
+                  OUTPUT_QUIET ERROR_QUIET)
 endfunction(register_Wrapper_Repository_Address)
 
 #.rst:
@@ -2436,11 +2484,14 @@ endfunction(register_Wrapper_Repository_Address)
 function(connect_Wrapper_Repository wrapper url)
   set(wrapper_path ${WORKSPACE_DIR}/wrappers/${wrapper})
   execute_process(COMMAND git remote add origin ${url}
-                  WORKING_DIRECTORY ${wrapper_path} )
+                  WORKING_DIRECTORY ${wrapper_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git push origin master
-                  WORKING_DIRECTORY ${wrapper_path} OUTPUT_QUIET ERROR_QUIET)
+                  WORKING_DIRECTORY ${wrapper_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git fetch origin
-                  WORKING_DIRECTORY ${wrapper_path} )
+                  WORKING_DIRECTORY ${wrapper_path}
+                  OUTPUT_QUIET ERROR_QUIET)
 endfunction(connect_Wrapper_Repository)
 
 #.rst:
@@ -2463,9 +2514,11 @@ endfunction(connect_Wrapper_Repository)
 function(reconnect_Wrapper_Repository wrapper url)
   set(wrapper_path ${WORKSPACE_DIR}/wrappers/${wrapper})
   execute_process(COMMAND git remote set-url origin ${url}
-                  WORKING_DIRECTORY ${wrapper_path})
+                  WORKING_DIRECTORY ${wrapper_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git pull origin master
-                  WORKING_DIRECTORY ${wrapper_path})#updating master
+                  WORKING_DIRECTORY ${wrapper_path}
+                  OUTPUT_QUIET ERROR_QUIET)#updating master
 endfunction(reconnect_Wrapper_Repository)
 
 #.rst:
@@ -2487,7 +2540,8 @@ endfunction(reconnect_Wrapper_Repository)
 #
 function(initialize_Wrapper_Git_Repository_Push_Address wrapper url)
 execute_process(COMMAND git remote set-url --push origin ${url}
-                WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${wrapper})
+                WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${wrapper}
+                OUTPUT_QUIET ERROR_QUIET)
 endfunction(initialize_Wrapper_Git_Repository_Push_Address)
 
 #.rst:
@@ -2513,7 +2567,7 @@ function(update_Wrapper_Repository wrapper)
   execute_process(COMMAND git pull origin --tags
                   WORKING_DIRECTORY ${wrapper_path} OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
   execute_process(COMMAND git lfs pull origin master
-                  WORKING_DIRECTORY ${wrapper_path} )#fetching master branch to get most up to date archives
+                  WORKING_DIRECTORY ${wrapper_path})#fetching master branch to get most up to date archives
 endfunction(update_Wrapper_Repository)
 
 
@@ -2543,15 +2597,21 @@ endfunction(update_Wrapper_Repository)
 function(clone_Framework_Repository IS_DEPLOYED framework url)
   set(frameworks_folder ${WORKSPACE_DIR}/sites/frameworks)
   set(framework_path ${frameworks_folder}/${framework})
+  set(clone_output OUTPUT_QUIET ERROR_QUIET)
+  if(ADDITIONAL_DEBUG_INFO)
+    set(clone_output)
+  endif()
   execute_process(COMMAND git clone ${url}
-                  WORKING_DIRECTORY ${frameworks_folder})
+                  WORKING_DIRECTORY ${frameworks_folder}
+                  ${clone_output})
   #framework may be named by only by their name or with a -framework suffix
   if(EXISTS ${framework_path} AND IS_DIRECTORY ${framework_path})
   	set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
   else()
   	if(EXISTS ${framework_path}-framework AND IS_DIRECTORY ${framework_path}-framework)
   		execute_process(COMMAND ${CMAKE_COMMAND} -E rename ${framework_path}-framework ${framework_path}
-                      WORKING_DIRECTORY ${WORKSPACE_DIR}/build OUTPUT_QUIET ERROR_QUIET)
+                      WORKING_DIRECTORY ${WORKSPACE_DIR}/build
+                      OUTPUT_QUIET ERROR_QUIET)
   	  set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
   	else()
   		set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
@@ -2582,11 +2642,11 @@ endfunction(clone_Framework_Repository)
 function(init_Framework_Repository framework)
   set(framework_path ${WORKSPACE_DIR}/sites/frameworks/${framework})
   execute_process(COMMAND git init
-                  WORKING_DIRECTORY ${framework_path} )
+                  WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git add -A
-                  WORKING_DIRECTORY ${framework_path} )
+                  WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git commit -m "initialization of framework"
-                  WORKING_DIRECTORY ${framework_path} )
+                  WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git lfs track "*.tar.gz"
                   WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
 endfunction(init_Framework_Repository)
@@ -2612,7 +2672,7 @@ function(update_Framework_Repository framework)
   execute_process(COMMAND git pull origin master
                   WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
   execute_process(COMMAND git lfs pull origin master
-                  WORKING_DIRECTORY ${framework_path} )#fetching master branch to get most up to date archives
+                  WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)#fetching master branch to get most up to date archives
 endfunction(update_Framework_Repository)
 
 #.rst:
@@ -2641,19 +2701,22 @@ function(publish_Framework_Repository framework PUBLISHED)
   	execute_process(COMMAND git add -A
                     WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
   	execute_process(COMMAND git commit -m "publishing new version of framework"
-                    WORKING_DIRECTORY ${framework_path})
+                    WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
   else()
     message("[PID] INFO: nothing new to publish in ${framework}")
     set(${PUBLISHED} TRUE PARENT_SCOPE)
     return()
   endif()
   execute_process(COMMAND git pull --ff-only origin master
-                  WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+                  WORKING_DIRECTORY ${framework_path}
+                  OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
   if(PULL_RESULT EQUAL 0)#no conflict to manage
     execute_process(COMMAND git lfs pull origin master
-                    WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET) #fetching LFS content, if any new in the mean time
+                    WORKING_DIRECTORY ${framework_path}
+                    OUTPUT_QUIET ERROR_QUIET) #fetching LFS content, if any new in the mean time
     execute_process(COMMAND git push origin master
-                    WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
+                    WORKING_DIRECTORY ${framework_path}
+                    OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
     if(PUSH_RESULT EQUAL 0)
       set(${PUBLISHED} TRUE PARENT_SCOPE)
       return()
@@ -2706,9 +2769,11 @@ endfunction(merge_Framework_Repository)
 function(register_Framework_Repository_Address framework)
   set(framework_path ${WORKSPACE_DIR}/sites/frameworks/${framework})
   execute_process(COMMAND git add CMakeLists.txt
-                  WORKING_DIRECTORY ${framework_path})
+                  WORKING_DIRECTORY ${framework_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git commit -m "adding repository address to the root CMakeLists.txt file"
-                  WORKING_DIRECTORY ${framework_path})
+                  WORKING_DIRECTORY ${framework_path}
+                  OUTPUT_QUIET ERROR_QUIET)
 endfunction(register_Framework_Repository_Address)
 
 #.rst:
@@ -2732,11 +2797,11 @@ endfunction(register_Framework_Repository_Address)
 function(connect_Framework_Repository framework url)
   set(framework_path ${WORKSPACE_DIR}/sites/frameworks/${framework})
   execute_process(COMMAND git remote add origin ${url}
-                  WORKING_DIRECTORY ${framework_path} )
+                  WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git push origin master
                   WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git fetch origin
-                  WORKING_DIRECTORY ${framework_path} )
+                  WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
 endfunction(connect_Framework_Repository)
 
 #.rst:
@@ -2759,9 +2824,11 @@ endfunction(connect_Framework_Repository)
 function(reconnect_Framework_Repository framework url)
   set(framework_path ${WORKSPACE_DIR}/sites/frameworks/${framework})
   execute_process(COMMAND git remote set-url origin ${url}
-                  WORKING_DIRECTORY ${framework_path})
+                  WORKING_DIRECTORY ${framework_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git pull origin master
-                  WORKING_DIRECTORY ${framework_path})#updating master
+                  WORKING_DIRECTORY ${framework_path}
+                  OUTPUT_QUIET ERROR_QUIET)#updating master
 endfunction(reconnect_Framework_Repository)
 
 #.rst:
@@ -2784,11 +2851,14 @@ endfunction(reconnect_Framework_Repository)
 function(change_Origin_Framework_Repository framework url)
   set(framework_path ${WORKSPACE_DIR}/sites/frameworks/${framework})
   execute_process(COMMAND git remote set-url origin ${url}
-                  WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
+                  WORKING_DIRECTORY ${framework_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git pull origin master
-                  WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
+                  WORKING_DIRECTORY ${framework_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git push origin master
-                  WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
+                  WORKING_DIRECTORY ${framework_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   message("[PID] INFO: Origin remote has been changed to ${url}.")
 endfunction(change_Origin_Framework_Repository)
 
@@ -2818,8 +2888,13 @@ endfunction(change_Origin_Framework_Repository)
 #
 function(clone_Environment_Repository IS_DEPLOYED environment url)
   set(env_path ${WORKSPACE_DIR}/environments/${environment})
+  set(clone_output OUTPUT_QUIET ERROR_QUIET)
+  if(ADDITIONAL_DEBUG_INFO)
+    set(clone_output)
+  endif()
   execute_process(COMMAND git clone ${url}
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/environments)
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/environments
+                  ${clone_output})
 
   #environment may be named by only by their name or with a -framework suffix
   if(EXISTS ${env_path} AND IS_DIRECTORY ${env_path})
@@ -2828,7 +2903,8 @@ function(clone_Environment_Repository IS_DEPLOYED environment url)
     if(EXISTS ${env_path}-environment
       AND IS_DIRECTORY ${env_path}-environment)
   		execute_process(COMMAND ${CMAKE_COMMAND} -E rename ${env_path}-environment ${env_path}
-                      WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
+                      WORKING_DIRECTORY ${WORKSPACE_DIR}/build
+                      OUTPUT_QUIET ERROR_QUIET)
   		set(${IS_DEPLOYED} TRUE PARENT_SCOPE)
   	else()
   		set(${IS_DEPLOYED} FALSE PARENT_SCOPE)
@@ -2859,11 +2935,11 @@ endfunction(clone_Environment_Repository)
 function(init_Environment_Repository environment)
   set(env_path ${WORKSPACE_DIR}/environments/${environment})
   execute_process(COMMAND git init
-                  WORKING_DIRECTORY ${env_path} )
+                  WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git add -A
-                  WORKING_DIRECTORY ${env_path} )
+                  WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git commit -m "initialization of environment"
-                  WORKING_DIRECTORY ${env_path} )
+                  WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git lfs track "*.tar.gz"
                   WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)
 endfunction(init_Environment_Repository)
@@ -2916,13 +2992,14 @@ if(res)#there is something to commit !
 	execute_process(COMMAND git add -A
                   WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)
 	execute_process(COMMAND git commit -m "publishing new version of framework"
-                  WORKING_DIRECTORY ${env_path} )
+                  WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git pull origin master
                   WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
   execute_process(COMMAND git lfs pull origin master
                   WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
   execute_process(COMMAND git push origin master
-                  WORKING_DIRECTORY ${env_path} RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
+                  WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET
+                  RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
   if(PUSH_RESULT EQUAL 0)
     set(${PUBLISHED} TRUE PARENT_SCOPE)
     return()
@@ -2950,9 +3027,11 @@ endfunction(publish_Environment_Repository)
 function(register_Environment_Repository_Address environment)
   set(env_path ${WORKSPACE_DIR}/environments/${environment})
 execute_process(COMMAND git add CMakeLists.txt
-                WORKING_DIRECTORY ${env_path})
+                WORKING_DIRECTORY ${env_path}
+                OUTPUT_QUIET ERROR_QUIET)
 execute_process(COMMAND git commit -m "adding repository address to the root CMakeLists.txt file"
-                WORKING_DIRECTORY ${env_path})
+                WORKING_DIRECTORY ${env_path}
+                OUTPUT_QUIET ERROR_QUIET)
 endfunction(register_Environment_Repository_Address)
 
 #.rst:
@@ -2975,11 +3054,11 @@ endfunction(register_Environment_Repository_Address)
 function(connect_Environment_Repository environment url)
   set(env_path ${WORKSPACE_DIR}/environments/${environment})
   execute_process(COMMAND git remote add origin ${url}
-                  WORKING_DIRECTORY ${env_path} )
+                  WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git push origin master
                   WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git fetch origin
-                  WORKING_DIRECTORY ${env_path} )
+                  WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)
 endfunction(connect_Environment_Repository)
 
 #.rst:
@@ -3002,9 +3081,11 @@ endfunction(connect_Environment_Repository)
 function(reconnect_Environment_Repository environment url)
   set(env_path ${WORKSPACE_DIR}/environments/${environment})
   execute_process(COMMAND git remote set-url origin ${url}
-                  WORKING_DIRECTORY ${env_path})
+                  WORKING_DIRECTORY ${env_path}
+                  OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git pull origin master
-                  WORKING_DIRECTORY ${env_path})#updating master
+                  WORKING_DIRECTORY ${env_path}
+                  OUTPUT_QUIET ERROR_QUIET)#updating master
 endfunction(reconnect_Environment_Repository)
 
 #.rst:
@@ -3061,15 +3142,21 @@ endfunction(change_Origin_Environment_Repository)
 #
 function(clone_Static_Site_Repository IS_INITIALIZED BAD_URL package url)
   set(site_path ${WORKSPACE_DIR}/sites/packages/${package})
+  set(clone_output OUTPUT_QUIET ERROR_QUIET)
+  if(ADDITIONAL_DEBUG_INFO)
+    set(clone_output)
+  endif()
   execute_process(COMMAND git clone ${url}
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages)
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages
+                  ${clone_output})
 
   # the static sites may have a different name than its package
   extract_Package_Namespace_From_SSH_URL(${url} ${package} NAMESPACE SERVER_ADDRESS EXTENSION)
   if(EXTENSION AND NOT EXTENSION STREQUAL "") # there is an extension to the name of the package
   	if(EXISTS ${site_path}${EXTENSION} AND IS_DIRECTORY ${site_path}${EXTENSION})
   		execute_process(COMMAND ${CMAKE_COMMAND} -E rename ${site_path}${EXTENSION} ${site_path}
-                      WORKING_DIRECTORY ${WORKSPACE_DIR}/build OUTPUT_QUIET ERROR_QUIET)
+                      WORKING_DIRECTORY ${WORKSPACE_DIR}/build
+                      OUTPUT_QUIET ERROR_QUIET)
   	endif()
   endif()
 
@@ -3080,7 +3167,8 @@ function(clone_Static_Site_Repository IS_INITIALIZED BAD_URL package url)
   		set(${IS_INITIALIZED} TRUE PARENT_SCOPE)
   	else() # the site's repository appear to be non existing
   		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${site_path}
-                      WORKING_DIRECTORY ${WORKSPACE_DIR}/build OUTPUT_QUIET ERROR_QUIET) #just in case of
+                      WORKING_DIRECTORY ${WORKSPACE_DIR}/build
+                      OUTPUT_QUIET ERROR_QUIET) #just in case of
   		set(${IS_INITIALIZED} FALSE PARENT_SCOPE)
       return()
   	endif()
@@ -3197,12 +3285,14 @@ function(publish_Static_Site_Repository package PUBLISHED)
                     WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET)
   endif()
   execute_process(COMMAND git pull --ff-only  origin master
-                  WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+                  WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET
+                  RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
   if(PULL_RESULT EQUAL 0)
     execute_process(COMMAND git lfs pull origin master
                     WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
     execute_process(COMMAND git push origin master
-                    WORKING_DIRECTORY ${site_path} RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
+                    WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET
+                    RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
     if(PUSH_RESULT EQUAL 0)
       set(${PUBLISHED} TRUE PARENT_SCOPE)
       return()
@@ -3229,5 +3319,6 @@ endfunction(publish_Static_Site_Repository)
 #
 function(merge_Static_Site_Repository package)
   execute_process(COMMAND git pull -f origin master
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package} OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}
+                  OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
 endfunction(merge_Static_Site_Repository)

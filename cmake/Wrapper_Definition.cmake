@@ -2783,7 +2783,8 @@ function(build_Autotools_External_Project)
   set(ENV{AR} ${RES_AR})
 
   execute_process(COMMAND ./configure --prefix=${TARGET_INSTALL_DIR} ${BUILD_AUTOTOOLS_EXTERNAL_PROJECT_OPTIONS}
-                  WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}
+                  WORKING_DIRECTORY ${project_dir}
+                  ${OUTPUT_MODE}
                   RESULT_VARIABLE result)
   #give back initial values to environment variables
   set(ENV{CFLAGS} ${TEMP_CFLAGS})
