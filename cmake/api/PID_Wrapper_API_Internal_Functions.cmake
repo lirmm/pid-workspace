@@ -1180,16 +1180,17 @@ endfunction(add_External_Package_Dependency_To_Wrapper)
 #  declare_Wrapped_External_Dependency
 #  -----------------------------------
 #
-#   .. command:: declare_Wrapped_External_Dependency(external_version dep_package list_of_versions exact_versions list_of_components)
+#   .. command:: declare_Wrapped_External_Dependency(dep_package optional list_of_versions exact_versions list_of_components)
 #
 #    Define a dependency between the currenlty defined version of the external package and another external package. Internal counterpart of declare_PID_Wrapper_External_Dependency.
 #
 #      :dep_package: the name of external package that is the dependency.
+#      :optional: if TRUE the dependency is optional.
 #      :list_of_versions: the list of possible version for the dependency.
 #      :exact_versions: the list of exact versions among possible ones for the dependency.
 #      :list_of_components: the list of components that must exist in dependency.
 #
-function(declare_Wrapped_External_Dependency dep_package list_of_versions exact_versions list_of_components)
+function(declare_Wrapped_External_Dependency dep_package optional list_of_versions exact_versions list_of_components)
 if(NOT CURRENT_MANAGED_VERSION)#may be necessary to avoid errors at first configuration
 	return()
 endif()
@@ -3490,7 +3491,6 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 		#set the variables used at build time
 		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD ${${dep_package}_VERSION_STRING} CACHE INTERNAL "")
 		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD_IS_SYSTEM ${${dep_package}_REQUIRED_VERSION_SYSTEM} CACHE INTERNAL "")
-
 		if(NOT IS_ABI_COMPATIBLE)#need to force reinstall if binary package ABI is not compatible with current platform ones
 			#from here we can add it to versions to install to force reinstall
 			add_To_Install_External_Package_Specification(${dep_package} "${${dep_package}_VERSION_STRING}" ${${dep_package}_REQUIRED_VERSION_EXACT} ${${dep_package}_REQUIRED_VERSION_SYSTEM})

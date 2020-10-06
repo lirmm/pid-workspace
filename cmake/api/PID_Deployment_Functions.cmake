@@ -1017,7 +1017,6 @@ select_Last_Version(RES_VERSION "${VERSION_NUMBERS}")
 if(NOT RES_VERSION)
 	message("[PID] WARNING : no adequate version found for source package ${package} !! Maybe this is due to a malformed package (contact the administrator of this package). Otherwise that may mean you use a non released version of ${package} (in development version).")
 	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
-
 	return()
 endif()
 list(FIND already_installed_versions ${RES_VERSION} INDEX)

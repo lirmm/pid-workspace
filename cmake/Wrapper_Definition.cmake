@@ -762,8 +762,9 @@ endmacro(PID_Wrapper_Environment)
 
 macro(declare_PID_Wrapper_Environment)
 set(options OPTIONAL)
+set(mono_value_args)
 set(multiValueArgs TOOL LANGUAGE TOOLSET)
-cmake_parse_arguments(DECLARE_PID_WRAPPER_ENVIRONMENT "${options}" "" "${multiValueArgs}" ${ARGN} )
+cmake_parse_arguments(DECLARE_PID_WRAPPER_ENVIRONMENT "${options}" "${mono_value_args}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_ENVIRONMENT_TOOL AND NOT DECLARE_PID_WRAPPER_ENVIRONMENT_LANGUAGE)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, PID_Wrapper_Environment requires at least to define a tool (using TOOL keyword) or aconstraint on language in use (using LANGUAGE ketword).")
@@ -793,6 +794,7 @@ if(DO_EXIT)
   return()
 endif()
 unset(DO_EXIT)
+unset(optional)#avoid propagating this variable to other functions
 endmacro(declare_PID_Wrapper_Environment)
 
 #.rst:
@@ -914,12 +916,12 @@ macro(PID_Wrapper_Dependency)
 endmacro(PID_Wrapper_Dependency)
 
 macro(declare_PID_Wrapper_External_Dependency)
-set(options )
+set(options OPTIONAL)
 set(oneValueArgs PACKAGE)
 set(multiValueArgs) #known versions of the external package that can be used to build/run it
 cmake_parse_arguments(DECLARE_PID_WRAPPER_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_DEPENDENCY_PACKAGE)
-  if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^EXACT|VERSION$")
+  if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^EXACT|VERSION|OPTIONAL$")
     finish_Progress(${GLOBAL_PROGRESS_VAR})
   	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, declare_PID_Wrapper_External_Dependency requires to define the name of the dependency by using PACKAGE keyword.")
   	return()
@@ -966,7 +968,11 @@ if(REMAINING_TO_PARSE) #there are still expression to parse
 	endif()
 endif()
 
-declare_Wrapped_External_Dependency("${package_name}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
+declare_Wrapped_External_Dependency("${package_name}" "${DECLARE_PID_WRAPPER_DEPENDENCY_OPTIONAL}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
+#avoid propagating variables to other functions
+unset(list_of_components)
+unset(list_of_versions)
+unset(exact_versions)
 endmacro(declare_PID_Wrapper_External_Dependency)
 
 #.rst:
