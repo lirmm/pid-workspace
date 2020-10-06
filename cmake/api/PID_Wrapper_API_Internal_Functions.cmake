@@ -3390,7 +3390,7 @@ endfunction(resolve_Wrapper_Language_Configuration)
 #  resolve_Wrapper_Platform_Configuration
 #  --------------------------------------
 #
-#   .. command:: resolve_Wrapper_Platform_Configuration(RESULT_OK package version)
+#   .. command:: resolve_Wrapper_Platform_Configuration(CONFIGURED package version)
 #
 #    Resolve platform configuration constraints for a given external package version. The constraints will be checked to ensure the external package wrapper description is consistent.
 #

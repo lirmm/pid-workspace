@@ -3410,3 +3410,27 @@ function(get_Current_External_Version VERSION_RESULT)
     set(${VERSION_RESULT} ${ret_version} PARENT_SCOPE)
   endif()
 endfunction(get_Current_External_Version)
+
+
+#.rst:
+#
+# .. ifmode:: script
+#
+#  .. |check_External_Project_Required_CMake_Version| replace:: ``check_External_Project_Required_CMake_Version``
+#  .. _check_External_Project_Required_CMake_Version:
+#
+#  check_External_Project_Required_CMake_Version
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: check_External_Project_Required_CMake_Version(version)
+#
+#     check that current version of CMake is greater than minimum version required by deployment script
+#
+macro(check_External_Project_Required_CMake_Version min_version)
+
+if(CMAKE_VERSION VERSION_LESS "${min_version}")
+  set(ERROR_IN_SCRIPT TRUE)
+  message("[PID] ERROR: cannot execute the deployment script for ${TARGET_EXTERNAL_PACKAGE} because cmake version required by this project (${min_version}) is greater than current cmake version (${CMAKE_VERSION}). Update to a more recent version of cmake.")
+  return()
+endif()
+endmacro(check_External_Project_Required_CMake_Version)
