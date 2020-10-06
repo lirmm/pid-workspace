@@ -16,4 +16,5 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-set(LANG_C_IN_BINARY_CONSTRAINTS soname symbol optimization)
+set(LANG_C_OPTIONAL_CONSTRAINTS optimization)#optimization used only to configrue CXX flags
+set(LANG_C_IN_BINARY_CONSTRAINTS soname symbol proc_optimization)

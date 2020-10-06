@@ -103,7 +103,7 @@ set(LANG_CXX_PLATFORM_CONSTRAINTS)
 set(CXX_EVAL_RESULT FALSE)
 
 if(CMAKE_CXX_COMPILER)
-  if(CXX_optimization)
+  if(CXX_optimization)#requied optimizations for build
     if(CXX_optimization STREQUAL "all" OR CXX_optimization STREQUAL "native")
     	#nothing to check just provide the exact list in binary constraints
     	set(CXX_optimization ${CURRENT_SPECIFIC_INSTRUCTION_SET})
@@ -123,7 +123,16 @@ if(CMAKE_CXX_COMPILER)
         endif()
       endforeach()
     endforeach()
+    #if optimizations are required then add the flags to the cxx flags
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_FOR_OPTIMS}" CACHE STRING "" FORCE)
+  endif()
+  if(CXX_proc_optimization)#just check that optimization are available for the proc
+    foreach(opt IN LISTS CXX_proc_optimization)
+      list(FIND CURRENT_SPECIFIC_INSTRUCTION_SET ${opt} INDEX)
+      if(INDEX EQUAL -1)
+        return()
+      endif()
+    endforeach()
   endif()
   if(CXX_std)
     #1) get supported standards
@@ -136,10 +145,14 @@ if(CMAKE_CXX_COMPILER)
     endif()
     #3) set options depending on compiler and required support
     get_Platform_Configurations_To_Check(${CXX_std})
-
   endif()
   set(CXX_soname ${CXX_STANDARD_LIBRARIES})
   set(CXX_symbol ${CXX_STD_SYMBOLS})
+  set(list_of_optims ${CXX_proc_optimization} ${CXX_optimization})
+  if(list_of_optims)
+    list(REMOVE_DUPLICATES list_of_optims)
+  endif()
+  set(CXX_proc_optimization ${list_of_optims})
   if(NOT CXX_std)#no standard support required at package level
     set(CXX_std 98)#use minimum standard
   endif()
