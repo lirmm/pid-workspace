@@ -257,6 +257,10 @@ endfunction(resolve_PID_System_Libraries_From_Path)
 #
 function(find_PID_Library_In_Linker_Order possible_library_names_or_path search_folders_type LIBRARY_PATH LIB_SONAME)
   #0)extract name from full path, is any
+  set(out_var_link)
+  if(NOT "${ARGN}" STREQUAL "")
+    set(out_var_link ${ARGN})
+  endif()
   set(IS_PATH FALSE)
   set(IS_NAME FALSE)
   foreach(name_or_path IN LISTS possible_library_names_or_path)
@@ -293,15 +297,21 @@ function(find_PID_Library_In_Linker_Order possible_library_names_or_path search_
     get_Soname_Info_From_Library_Path(LIB_PATH SONAME SOVERSION ${lib_name} ${the_path})
     set(${LIBRARY_PATH} ${LIB_PATH} PARENT_SCOPE)
     set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
+    if(out_var_link)#if a path is given directly return the library path when the link path name is required
+      set(${out_var_link} ${LIB_PATH} PARENT_SCOPE)
+    endif()
     return()
   endif()
   #1) search in implicit system folders
   if(NOT search_folders_type STREQUAL "USER")
     foreach(lib IN LISTS possible_library_names_or_path)
-      find_Library_In_Implicit_System_Dir(IMPLICIT_LIBRARY_PATH RET_SONAME LIB_SOVERSION ${lib})
+      find_Library_In_Implicit_System_Dir(IMPLICIT_LIBRARY_PATH LINK_PATH RET_SONAME LIB_SOVERSION ${lib})
       if(IMPLICIT_LIBRARY_PATH)#found
         set(${LIBRARY_PATH} ${IMPLICIT_LIBRARY_PATH} PARENT_SCOPE)
         set(${LIB_SONAME} ${RET_SONAME} PARENT_SCOPE)
+        if(out_var_link)#return the link path when required
+          set(${out_var_link} ${LINK_PATH} PARENT_SCOPE)
+        endif()
         return()
       endif()
     endforeach()
@@ -316,12 +326,18 @@ function(find_PID_Library_In_Linker_Order possible_library_names_or_path search_
 
       extract_Soname_From_PID_Libraries(lib_path RET_SONAME)
       set(${LIB_SONAME} ${RET_SONAME} PARENT_SCOPE)
+      if(out_var_link)#return the link path when required
+        set(${out_var_link} ${lib_path} PARENT_SCOPE)
+      endif()
       return()
     endif()
   endif()
 
   set(${LIBRARY_PATH} PARENT_SCOPE)
   set(${LIB_SONAME} PARENT_SCOPE)
+  if(out_var_link)
+    set(${out_var_link} PARENT_SCOPE)
+  endif()
 endfunction(find_PID_Library_In_Linker_Order)
 
 #.rst:

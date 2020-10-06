@@ -232,7 +232,7 @@ endif()
 # detect current C library ABI in use
 foreach(lib IN LISTS IMPLICIT_C_LIBS)
 	#lib is the short name of the library
-	find_Library_In_Implicit_System_Dir(VALID_PATH LIB_SONAME LIB_SOVERSION ${lib})
+	find_Library_In_Implicit_System_Dir(VALID_PATH LINK_PATH LIB_SONAME LIB_SOVERSION ${lib})
 	if(VALID_PATH)
 		#getting symbols versions from the implicit library
 		get_C_Standard_Library_Symbols_Version(RES_SYMBOL_VERSIONS ${CURRENT_PLATFORM_OS} ${lib} ${VALID_PATH})
@@ -254,7 +254,7 @@ set(CURRENT_CXX_ABI CACHE INTERNAL "")#reset value of current ABI
 
 foreach(lib IN LISTS IMPLICIT_CXX_LIBS)
 	#lib is the short name of the library
-	find_Library_In_Implicit_System_Dir(VALID_PATH LIB_SONAME LIB_SOVERSION ${lib})
+	find_Library_In_Implicit_System_Dir(VALID_PATH LINK_PATH LIB_SONAME LIB_SOVERSION ${lib})
 	if(VALID_PATH)
 		#getting symbols versions from the implicit library
 		get_CXX_Standard_Library_Symbols_Version(RES_NAME RES_VERSION RES_SYMBOL_VERSIONS RES_STD_ABI RES_FLAGS ${CURRENT_PLATFORM_OS} ${lib} ${VALID_PATH})

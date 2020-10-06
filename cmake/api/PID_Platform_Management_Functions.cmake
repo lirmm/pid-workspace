@@ -374,16 +374,16 @@ function(find_Possible_Library_Path REAL_PATH LINK_PATH LIB_SONAME folder librar
   set(${LIB_SONAME} PARENT_SCOPE)
   get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSIONS "SHARED")
   set(prefixed_name ${PREFIX}${library_name})
-  file(GLOB POSSIBLE_NAMES RELATIVE ${folder} "${folder}/${PREFIX}${library_name}*" )
+  file(GLOB POSSIBLE_NAMES RELATIVE ${folder} "${folder}/${prefixed_name}*" )
   if(NOT POSSIBLE_NAMES)
     return()
   endif()
   #first check for the complete name without soversion
   set(possible_path)
   foreach(ext IN LISTS EXTENSIONS)
-    list(FIND POSSIBLE_NAMES ${PREFIX}${library_name}${ext} INDEX)
+    list(FIND POSSIBLE_NAMES ${prefixed_name}${ext} INDEX)
     if(NOT INDEX EQUAL -1)#found "as is"
-      set(possible_path ${folder}/${PREFIX}${library_name}${ext})#direct name has the priority over the others
+      set(possible_path ${folder}/${prefixed_name}${ext})#direct name has the priority over the others
       break()
     endif()
   endforeach()
@@ -488,10 +488,11 @@ endfunction(extract_Library_Path_From_Linker_Script)
 #     :library_name: the name of the library (without any prefix or postfix specific to system).
 #
 #     :LIBRARY_PATH: the output variable that contains the full path to library, empty if no path found.
+#     :LIB_LINK_PATH: the output variable that contains only the path to the link, may be path to real soname or path to symlink.
 #     :LIB_SONAME: the output variable that contains only the name of the library if path has been found, empty otherwise.
 #     :LIB_SOVERSION: the output variable that contains only the SOVERSION of the library if LIB_SONAME has been found, empty otherwise.
 #
-function(find_Library_In_Implicit_System_Dir LIBRARY_PATH LIB_SONAME LIB_SOVERSION library_name)
+function(find_Library_In_Implicit_System_Dir LIBRARY_PATH LIB_LINK_PATH LIB_SONAME LIB_SOVERSION library_name)
   set(IMPLICIT_DIRS ${CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES})
   foreach(dir IN LISTS IMPLICIT_DIRS)#searching for library name in same order as specified by the path to ensure same resolution as the linker
   	find_Possible_Library_Path(REAL_PATH LINK_PATH LIBSONAME ${dir} ${library_name})
@@ -501,6 +502,7 @@ function(find_Library_In_Implicit_System_Dir LIBRARY_PATH LIB_SONAME LIB_SOVERSI
         set(${LIBRARY_PATH} ${LIB_PATH} PARENT_SCOPE)
         set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
         set(${LIB_SOVERSION} ${SOVERSION} PARENT_SCOPE)
+        set(${LIB_LINK_PATH} ${LINK_PATH} PARENT_SCOPE)
         return()#solution has been found
       endif()
     endif()
@@ -508,6 +510,7 @@ function(find_Library_In_Implicit_System_Dir LIBRARY_PATH LIB_SONAME LIB_SOVERSI
   set(${LIBRARY_PATH} PARENT_SCOPE)
   set(${LIB_SONAME} PARENT_SCOPE)
   set(${LIB_SOVERSION} PARENT_SCOPE)
+  set(${LIB_LINK_PATH} PARENT_SCOPE)
 endfunction(find_Library_In_Implicit_System_Dir)
 
 #.rst:

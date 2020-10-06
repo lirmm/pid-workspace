@@ -54,7 +54,7 @@ set(Fortran_STD_ABI_SYMBOLS)
 # detect current C++ library ABI in use
 foreach(lib IN LISTS IMPLICIT_Fortran_LIBS)
 	#lib is the short name of the library
-	find_Library_In_Implicit_System_Dir(VALID_PATH LIB_SONAME LIB_SOVERSION ${lib})
+	find_Library_In_Implicit_System_Dir(VALID_PATH LINK_PATH LIB_SONAME LIB_SOVERSION ${lib})
 	if(VALID_PATH)
 		#getting symbols versions from the implicit library
 		get_Fortran_Standard_Library_Symbols_Version(RES_SYMBOL_VERSIONS ${CURRENT_PLATFORM_OS} ${lib} ${VALID_PATH})
