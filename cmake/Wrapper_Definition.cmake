@@ -2391,9 +2391,9 @@ endfunction(install_External_Project)
 #
 #         return_External_Project_Error()
 #
-function(return_External_Project_Error)
-  set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
-endfunction(return_External_Project_Error)
+macro(return_External_Project_Error)
+  set(ERROR_IN_SCRIPT TRUE)
+endmacro(return_External_Project_Error)
 
 #.rst:
 #
