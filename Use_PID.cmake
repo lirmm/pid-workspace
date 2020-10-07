@@ -108,7 +108,7 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release CACHE STRING "build mode (Release or Debug)" FORCE)
 endif()
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.1)#just to ensure that version of CMake tool used in external projects if high enough (supports language standards)
+cmake_minimum_required(VERSION 3.8.2)#just to ensure that version of CMake tool used in external projects if high enough (supports language standards)
 
 set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-I")
 
