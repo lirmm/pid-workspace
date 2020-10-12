@@ -2626,13 +2626,13 @@ foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX})
   endif()
 endforeach()
 #call on external dependencies
-set(ALREADY_MANAGED ${PACKAGES_ALREADY_MANAGED} ${package})
+set(ALREADY_MANAGED ${packages_already_managed} ${package})
 set(NEWLY_MANAGED ${package})
 
 foreach(a_used_package IN LISTS ${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX})
 	list(FIND ALREADY_MANAGED ${a_used_package} INDEX)
 	if(INDEX EQUAL -1) #not managed yet
-		current_External_Dependencies_For_Package(${a_used_package} ${depfile} NEW_LIST)
+		current_External_Dependencies_For_Package(${a_used_package} ${depfile} "${ALREADY_MANAGED}" NEW_LIST)
 		list(APPEND ALREADY_MANAGED ${NEW_LIST})
 		list(APPEND NEWLY_MANAGED ${NEW_LIST})
 	endif()
@@ -2667,21 +2667,39 @@ endfunction(current_Native_Dependencies_For_Package)
 #
 #     :package: the name of the package.
 #     :file: the path to file to write in.
+#     :packages_already_managed: the list of packages already managed in the process of writing dependency file.
 #
 #     :PACKAGES_NEWLY_MANAGED: the output variable containing the list of external package newly managed after this call.
 #
-function(current_External_Dependencies_For_Package package depfile PACKAGES_NEWLY_MANAGED)
+function(current_External_Dependencies_For_Package package depfile packages_already_managed PACKAGES_NEWLY_MANAGED)
 get_Mode_Variables(TARGET_SUFFIX MODE_SUFFIX ${CMAKE_BUILD_TYPE})
 #information on package to register
 file(APPEND ${depfile} "set(CURRENT_EXTERNAL_DEPENDENCY_${package}_VERSION${MODE_SUFFIX} ${${package}_VERSION_STRING} CACHE INTERNAL \"\")\n")
 file(APPEND ${depfile} "set(CURRENT_EXTERNAL_DEPENDENCY_${package}_VERSION_EXACT${MODE_SUFFIX} ${${package}_REQUIRED_VERSION_EXACT} CACHE INTERNAL \"\")\n")
 file(APPEND ${depfile} "set(CURRENT_EXTERNAL_DEPENDENCY_${package}_VERSION_SYSTEM${MODE_SUFFIX} ${${package}_REQUIRED_VERSION_SYSTEM} CACHE INTERNAL \"\")\n")
 file(APPEND ${depfile} "set(CURRENT_EXTERNAL_DEPENDENCY_${package}_ALL_VERSION${MODE_SUFFIX} ${${package}_ALL_REQUIRED_VERSIONS} CACHE INTERNAL \"\")\n")
+file(APPEND ${depfile} "set(CURRENT_EXTERNAL_DEPENDENCY_${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${CURRENT_EXTERNAL_DEPENDENCY_${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 
 # platform configuration info for external libraries
 file(APPEND ${depfile} "set(CURRENT_EXTERNAL_DEPENDENCY_${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${MODE_SUFFIX})
+  if(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX})#there are arguments to pass to that constraint
+    file(APPEND ${depfile} "set(CURRENT_NATIVE_DEPENDENCY_${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX} ${${package}_PLATFORM_CONFIGURATION_${config}_ARGS${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
+  endif()
+endforeach()
 
+set(ALREADY_MANAGED ${packages_already_managed} ${package})
 set(NEWLY_MANAGED ${package})
+
+foreach(a_used_package IN LISTS ${package}_EXTERNAL_DEPENDENCIES${MODE_SUFFIX})
+	list(FIND ALREADY_MANAGED ${a_used_package} INDEX)
+	if(INDEX EQUAL -1) #not managed yet
+		current_External_Dependencies_For_Package(${a_used_package} ${depfile} "${ALREADY_MANAGED}" NEW_LIST)
+		list(APPEND ALREADY_MANAGED ${NEW_LIST})
+		list(APPEND NEWLY_MANAGED ${NEW_LIST})
+	endif()
+endforeach()
+
 set(${PACKAGES_NEWLY_MANAGED} ${NEWLY_MANAGED} PARENT_SCOPE)
 endfunction(current_External_Dependencies_For_Package)
 
@@ -2761,7 +2779,7 @@ set(ALREADY_MANAGED)
 file(APPEND ${file} "set(CURRENT_EXTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES} CACHE INTERNAL \"\")\n")
 if(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES)
 	foreach(a_used_package IN LISTS ${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES)
-		current_External_Dependencies_For_Package(${a_used_package} ${file} NEWLY_MANAGED)
+		current_External_Dependencies_For_Package(${a_used_package} ${file} "${ALREADY_MANAGED}" NEWLY_MANAGED)
 		list(APPEND ALREADY_MANAGED ${NEWLY_MANAGED})
 	endforeach()
 endif()
