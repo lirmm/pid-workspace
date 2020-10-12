@@ -2124,7 +2124,7 @@ else()#classical build => perform only corrective actions if cache variable is n
 			set(${dep_package}_ALTERNATIVE_VERSION_USED "ANY" CACHE STRING "${message_str}" FORCE)
 		endif()
 
-	else()#OK the variable has a value
+	else()#OK the variable ${dep_package}_ALTERNATIVE_VERSION_USED has a value
 		if(list_of_possible_versions)#there is a constraint on usable versions
 			if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#the value in cache was previously ANY but user added a list of versions in the meantime
 				if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
@@ -2133,23 +2133,31 @@ else()#classical build => perform only corrective actions if cache variable is n
 					set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
 				endif()
 			else()#the value is a version, check if this version is allowed
-				list(FIND list_of_possible_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-				if(INDEX EQUAL -1 )#no possible version found -> bad input of the user
-					#simply reset the description to first found
-					if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
-						set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
-					else()#many possible versions now !!
-						set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
+				if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")#check version specified by user except if system is required
+					list(FIND list_of_possible_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+					if(INDEX EQUAL -1)#no possible version found -> bad input of the user
+						message("[PID] WARNING: version constraint given by user for dependency boost (${${dep_package}_ALTERNATIVE_VERSION_USED}) is not possible ... fixing to default version (${default_version}).")
+						#simply reset the description to first found
+						if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
+							set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
+						else()#many possible versions now !!
+							set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
+						endif()
 					endif()
 				endif()
 			endif()
 		endif()
 	endif()
-	if(list_of_exact_versions)
-		list(FIND list_of_exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-		if(NOT INDEX EQUAL -1 )
-			set(USE_EXACT TRUE)
+	#now checking if the selected version is forced to be exact
+	if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")
+		if(list_of_exact_versions)
+			list(FIND list_of_exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+			if(NOT INDEX EQUAL -1 )
+				set(USE_EXACT TRUE)
+			endif()
 		endif()
+	else()#if system it is always exact
+		set(USE_EXACT TRUE)
 	endif()
 endif()
 ### 3) setting internal cache variable used to generate the use file and to resolve find operations
