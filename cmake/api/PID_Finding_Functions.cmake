@@ -1048,9 +1048,12 @@ endfunction(get_Compatible_Version)
 function(find_Best_Compatible_Version BEST_VERSION_IN_LIST external package version_in_use version_in_use_exact version_in_use_is_system list_of_versions exact_versions)
   set(${BEST_VERSION_IN_LIST} PARENT_SCOPE)
   if(external AND version_in_use_is_system)#specific case: a system version is used and it is the only possible version
-    list(FIND list_of_versions "SYSTEM" INDEX)#searching for a SYSTEM version among possible versions
+    list(FIND list_of_versions "SYSTEM" INDEX)#specific : searching for an explicit SYSTEM version among possible versions
     if(INDEX EQUAL -1)#not found !!
-      return()#no compatible version can be found if already required version is not strucly equal to OS installed version
+      list(FIND list_of_versions ${version_in_use} INDEX)#searching for a possible version that matches the version of the system wide package
+      if(INDEX EQUAL -1)#not found !!
+        return()#no compatible version  can be found if already required version is not strucly equal to OS installed version
+      endif()
     endif()
     #simply returning THE GIVEN VERSION to indicate that the OS version is in use
     set(${BEST_VERSION_IN_LIST} ${version_in_use} PARENT_SCOPE)
