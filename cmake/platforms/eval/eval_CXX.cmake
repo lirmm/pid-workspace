@@ -140,7 +140,9 @@ if(CMAKE_CXX_COMPILER)
     #2) check that required standard is supported
     list(FIND POSSIBLE_STDS ${CXX_std} INDEX)
     if(INDEX EQUAL -1)
-      message("[PID] WARNING: required c++ standard ${CXX_std} is not supported by current toolset !")
+      if(ADDITIONAL_DEBUG_INFO)
+        message("[PID] WARNING: required c++ standard ${CXX_std} is not supported by current toolset !")
+      endif()
       return()
     endif()
     #3) set options depending on compiler and required support
