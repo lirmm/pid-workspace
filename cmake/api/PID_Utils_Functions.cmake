@@ -4783,7 +4783,8 @@ if(NOT first) #first is not set so true anytime
 	set(${IS_LESS} TRUE PARENT_SCOPE)
 	return()
 endif()
-get_CXX_Existing_Standards(ALL_C_STDS)
+
+get_C_Existing_Standards(ALL_C_STDS)
 list(FIND ALL_C_STDS ${first} INDEX_FIRST)
 list(FIND ALL_C_STDS ${second} INDEX_SECOND)
 if(INDEX_FIRST LESS INDEX_SECOND)
