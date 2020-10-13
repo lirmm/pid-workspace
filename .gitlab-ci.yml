@@ -27,6 +27,7 @@ stages:
         - pid deploy package=mytestpackage
         - pid deploy package=open-phri version=1.0.0
         - pid deploy package=opencv version=4.0.1
+        - pid deploy package=cooperative-task-controller branch=integration
 
 
 ############ patterns for platforms selection #############
