@@ -1191,7 +1191,7 @@ endfunction(publish_Package_Temporary_Branch)
 function(delete_Package_Temporary_Branch package branch)
 execute_process(COMMAND git push --delete official ${branch}
                 WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
-                OUTPUT_QUIET ERROR_QUIET)#try pushing on branch
+                OUTPUT_QUIET ERROR_QUIET)
 endfunction(delete_Package_Temporary_Branch)
 
 #.rst:

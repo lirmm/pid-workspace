@@ -2272,7 +2272,7 @@ endfunction(remove_PID_Environment)
 #      :package: the name of the package to register.
 #
 function(register_PID_Package package)
-execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} install WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
+execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} installing WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
 #only publish if the package has an address and/or a public address
 include_Package_Reference_File(PATH_TO_FILE ${package})
@@ -2532,8 +2532,8 @@ if(branch)#if we use a specific branch for patching then do not merge into maste
 	endif()
 	tag_Version(${package} ${STRING} TRUE)#create the version tag
 	publish_Repository_Version(RESULT_OK ${package} FALSE ${STRING} TRUE)
-	delete_Package_Temporary_Branch(${package} ${CURRENT_BRANCH})#always delete the temporary branch whether the push succeeded or failed
 	if(NOT RESULT_OK)#the user has no sufficient push rights
+		delete_Package_Temporary_Branch(${package} ${CURRENT_BRANCH})#delete the temporary branch in official remote when the push failed
 		tag_Version(${package} ${STRING} FALSE)#remove local tag
 		message("[PID] ERROR : cannot release package ${package}, because your are not allowed to push version to its official remote !")
 		return()
