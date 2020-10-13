@@ -1330,6 +1330,7 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
   set(${config_name}_VERSION_STRING ${${config_name}_VERSION} CACHE INTERNAL "")
   set(${config_name}_REQUIRED_VERSION_EXACT ${${config_name}_VERSION} CACHE INTERNAL "")
   set(${config_name}_REQUIRED_VERSION_SYSTEM TRUE CACHE INTERNAL "")
+  set(${config_name}_REQUIRED_VERSION_FORCE_FIND TRUE CACHE INTERNAL "")#force a local find even if already found
   add_Chosen_Package_Version_In_Current_Process(${config_name})#force the use of an os variant
 
   #return the complete set of binary contraints
