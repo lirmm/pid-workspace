@@ -209,6 +209,10 @@ foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 		# list(APPEND TO_INSTALL_EXTERNAL_DEPS ${dep_ext_pack})
     if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #download or clone of dependencies is automatic
       install_External_Package(INSTALL_OK ${dep_ext_pack} FALSE FALSE)
+      # Note: the install process adapts to requirements of current platform settings and packages dependencies versions
+      # So consequently only a compatible binary package (if any) will be installed
+      # OR the source package will be rebuild taking into account these requirements, so if the build succeed
+      # the resulting binary must match all constraints in next resolve_External_Package_Dependency
       if(NOT INSTALL_OK)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external package: ${dep_ext_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace's contributions folder and try to find ReferExternal${dep_ext_pack}.cmake file.")

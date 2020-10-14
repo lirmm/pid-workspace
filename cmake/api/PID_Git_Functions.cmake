@@ -320,6 +320,50 @@ function(restore_Untracked_Files path var_list_of_files)
     execute_process(COMMAND git reset WORKING_DIRECTORY ${path})
 endfunction(restore_Untracked_Files)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |checkout_From_Master_To_Commit| replace:: ``checkout_From_Master_To_Commit``
+#  .. _checkout_From_Master_To_Commit:
+#
+#  checkout_From_Master_To_Commit
+#  -------------------------------
+#
+#   .. command:: checkout_From_Master_To_Commit(repo target_commit ignored_on_target_commit)
+#
+#    Checkout from master branch to a target commit and manage untracked files that could be ignored by target commit
+#
+#     :repo: path to the target repository
+#     :target_commit: target commit we want to checkout to
+#     :ignored_on_target_commit: input variable that contains the list of files ignored on target commit
+#
+function(checkout_From_Master_To_Commit repo target_commit ignored_on_target_commit)
+  # here there may have newly untracked files in master that are newly ignored files on commit or branch
+  # these files should be preserved
+  if(target_commit STREQUAL "master")
+    return()#nothing to be done
+  endif()
+  set(list_of_stashed_files)
+  if(${ignored_on_target_commit})
+  	list_Untracked_Files(UNTRACKED_ON_MASTER ${repo})
+  	foreach(a_file IN LISTS UNTRACKED_ON_MASTER)
+  		list(FIND ${ignored_on_target_commit} "${a_file}" INDEX)
+  		if(NOT INDEX EQUAL -1)#ignored file on dev branch is untracked on master branch
+  			list(APPEND list_of_stashed_files ${a_file})
+  		endif()
+  	endforeach()
+  	if(list_of_stashed_files)
+  		save_Untracked_Files(${repo} list_of_stashed_files)
+  	endif()
+  endif()
+  go_To_Commit(${repo} ${target_commit}) #always release from the development branch (integration by default)
+  if(list_of_stashed_files)
+  	restore_Untracked_Files(${repo} list_of_stashed_files)
+  endif()
+endfunction(checkout_From_Master_To_Commit)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -1861,28 +1905,54 @@ function(test_Package_Remote_Initialized package url INITIALIZED)
                   WORKING_DIRECTORY ${WORKSPACE_DIR}/build
                   ${clone_output}) #cloning in a temporary area
 
-  execute_process(COMMAND git branch -a
-            		WORKING_DIRECTORY ${WORKSPACE_DIR}/build/${package}
-            		OUTPUT_VARIABLE all_branches ERROR_QUIET)#getting all branches
-
-if(all_branches)
-	string(REPLACE "\n" ";" GIT_BRANCHES ${all_branches})
-	set(INTEGRATION_FOUND FALSE)
-	foreach(branch IN LISTS GIT_BRANCHES)#checking that the origin/integration branch exists
-		if(branch MATCHES "^[ \t]*remotes/(origin/integration)[ \t]*$")
-			set(INTEGRATION_FOUND TRUE)
-			break()
-		endif()
-	endforeach()
-
-	set(${INITIALIZED} ${INTEGRATION_FOUND} PARENT_SCOPE)
-else()
-	set(${INITIALIZED} FALSE PARENT_SCOPE)
-endif()
-	execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/build/${package}
+  #testing if origin remote defines an integration branch
+  test_Branch_Exists(BRANCH_EXISTS ${WORKSPACE_DIR}/build/${package} "remotes/origin/integration)")
+  set(${INITIALIZED} ${BRANCH_EXISTS} PARENT_SCOPE)
+  #always remove the local repository
+  execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/build/${package}
                   WORKING_DIRECTORY ${WORKSPACE_DIR}/build
                   OUTPUT_QUIET ERROR_QUIET)
 endfunction(test_Package_Remote_Initialized)
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |test_Branch_Exists| replace:: ``test_Branch_Exists``
+#  .. _test_Branch_Exists:
+#
+#  test_Branch_Exists
+#  ------------------------
+#
+#   .. command:: test_Branch_Exists(EXIST path_to_repo branch_name_pattern)
+#
+#     Test if a branch with a given pattern name exists for a repository
+#
+#     :path_to_repo: the path to the repository
+#     :branch_name_pattern: the regular expresion defining branch pattern name
+#
+#     :EXIST: the output variable that is TRUE if a branch with matching name exists, FALSE otherwise
+#
+function(test_Branch_Exists EXIST path_to_repo branch_name_pattern)
+  set(${EXIST} PARENT_SCOPE)
+  execute_process(COMMAND git branch -a
+            		WORKING_DIRECTORY ${path_to_repo}
+            		OUTPUT_VARIABLE all_branches ERROR_QUIET)#getting all branches
+
+  if(all_branches)
+  	string(REPLACE "\n" ";" GIT_BRANCHES ${all_branches})
+  	set(BRANCH_FOUND FALSE)
+  	foreach(branch IN LISTS GIT_BRANCHES)#checking that the origin/integration branch exists
+  		if(branch MATCHES "^[ \t]*${branch_name_pattern}[ \t]*$")
+        set(${EXIST} TRUE PARENT_SCOPE)
+  			return()
+  		endif()
+  	endforeach()
+ endif()
+endfunction(test_Branch_Exists)
+
 
 #.rst:
 #
@@ -1967,6 +2037,56 @@ function(init_Repository package)
                   WORKING_DIRECTORY ${package_path}
                   OUTPUT_QUIET ERROR_QUIET)
 endfunction(init_Repository)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |start_Patching_Version| replace:: ``start_Patching_Version``
+#  .. _start_Patching_Version:
+#
+#  start_Patching_Version
+#  -----------------------
+#
+#   .. command:: start_Patching_Version(BRANCH_CREATED package patch_branch_name starting_version)
+#
+#     Initialize a package folder as a git repository (with no official remote).
+#
+#     :package: the name of the package to patch
+#     :patch_branch_name: the name of the branch used to produce patch
+#     :starting_version: version patched
+#
+#     :BRANCH_CREATED: output variable that is TRU if a branch has been created or FALSE if already existing
+#
+function(start_Patching_Version BRANCH_CREATED package patch_branch_name starting_version)
+  set(${BRANCH_CREATED} FALSE PARENT_SCOPE)
+  set(package_path ${WORKSPACE_DIR}/packages/${package})
+  #test if a branch with same name exist locally or in remote
+  test_Branch_Exists(EXIST_LOCALLY ${package_path} "${patch_branch_name}")
+  if(EXIST_LOCALLY)
+    if(ADDITIONAL_DEBUG_INFO)
+      message("[PID] WARNING: branch ${patch_branch_name} already lies in package ${package}.")
+    endif()
+    go_To_Commit(${package_path} ${patch_branch_name})
+    return()
+  endif()
+  test_Branch_Exists(EXIST_REMOTELY ${package_path} "remote/official/${patch_branch_name}")
+  if(EXIST_REMOTELY)
+    if(ADDITIONAL_DEBUG_INFO)
+      message("[PID] WARNING: branch ${patch_branch_name} already lies in official repository of package ${package}.")
+    endif()
+
+    execute_process(COMMAND git checkout -b ${patch_branch_name} official/${patch_branch_name}
+                    WORKING_DIRECTORY ${package_path}
+                    OUTPUT_QUIET ERROR_QUIET)#going to master branch
+    return()
+  endif()
+
+  execute_process(COMMAND git checkout -b ${patch_branch_name} v${starting_version}
+                  WORKING_DIRECTORY ${package_path}
+                  OUTPUT_QUIET ERROR_QUIET)#going to master branch
+  set(${BRANCH_CREATED} TRUE PARENT_SCOPE)
+endfunction(start_Patching_Version)
 
 #.rst:
 #

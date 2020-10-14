@@ -311,6 +311,19 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		VERBATIM
 	)
 
+
+	# reference file generation target
+	add_custom_target(patching
+		COMMAND ${CMAKE_COMMAND}
+						-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
+						-DTARGET_VERSION=\${version}
+						-P ${WORKSPACE_DIR}/cmake/commands/Patch_PID_Package.cmake
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+		COMMENT "[PID] Patching package ${PROJECT_NAME} ..."
+	)
+
 	# redefinition of install target
 	add_custom_target(installing
 		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Debug artefacts

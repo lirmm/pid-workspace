@@ -2423,23 +2423,7 @@ endif() #from here graph of commits and version tags are OK
 
 # here there may have newly untracked files in master that are newly ignored files on dev branch
 # these files should be preserved
-set(list_of_stashed_files)
-if(IGNORED_ON_DEV_BRANCH)
-	list_Untracked_Files(UNTRACKED_ON_MASTER ${WORKSPACE_DIR}/packages/${package})
-	foreach(a_file IN LISTS UNTRACKED_ON_MASTER)
-		list(FIND IGNORED_ON_DEV_BRANCH "${a_file}" INDEX)
-		if(NOT INDEX EQUAL -1)#ignored file on dev branch is untracked on master branch
-			list(APPEND list_of_stashed_files ${a_file})
-		endif()
-	endforeach()
-	if(list_of_stashed_files)
-		save_Untracked_Files(${WORKSPACE_DIR}/packages/${package} list_of_stashed_files)
-	endif()
-endif()
-go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${CURRENT_BRANCH}) #always release from the development branch (integration by default)
-if(list_of_stashed_files)
-	restore_Untracked_Files(${WORKSPACE_DIR}/packages/${package} list_of_stashed_files)
-endif()
+checkout_From_Master_To_Commit(${WORKSPACE_DIR}/packages/${package} ${CURRENT_BRANCH} IGNORED_ON_DEV_BRANCH)
 
 # registering current version
 get_Version_Number_And_Repo_From_Package(${package} DIGITS STRING FORMAT METHOD ADDRESS)

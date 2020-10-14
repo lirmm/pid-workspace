@@ -3849,7 +3849,7 @@ foreach(line IN LISTS PACKAGE_METADATA)
         set(WITH_ARG TRUE)
       endif()
     elseif(IN_DECLARE AND (NOT WITH_ARG) #still after declare call but not found any VERSION argument yet
-      AND (line MATCHES "^.*${version_function_regex_pattern}[ \t]*\\(([0-9][0-9\\. \t]+)\\).*$"))#this is a call to set_PID_Package_Version function
+      AND (line MATCHES "^[^#]*${version_function_regex_pattern}[ \t]*\\(([0-9][0-9\\. \t]+)\\).*$"))#this is a call to set_PID_Package_Version function
       set(IN_DECLARE FALSE)# call to set_pid_package means we are outside of the declare function
       parse_Version_Argument("${CMAKE_MATCH_1}" VERSION_DIGITS VERSION_FORMAT)
       set(WITH_FUNCTION TRUE)
