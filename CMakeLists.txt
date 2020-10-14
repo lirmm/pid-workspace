@@ -133,7 +133,7 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "             - force=true: force deployment even if the adequate version already lies in the workspace."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - verbose=true: get more debug information during the deployment process"
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments for native package only [optional] ---"
-	COMMAND ${CMAKE_COMMAND} -E echo "             - branch=*name of a branch*: deploy a package reposiotry from a specific branch."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - branch=*name of a branch*: deploy a package repository from a specific branch."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - test=true: run tests to complete the deployment."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
 	COMMAND ${CMAKE_COMMAND} -E echo " resolve:    resolve runtime dependencies of an already installed native package. Used to fix missing"
@@ -204,6 +204,8 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "               not been released yet, they are released before starting target package release."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - branch=*branch name*: perform the release from another branch than default integration"
 	COMMAND ${CMAKE_COMMAND} -E echo "               branch. This allows to release patches for previous version than current one in git history."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - patch=*patch version*: alternative to branch argument. Perform the release from a patch branch"
+	COMMAND ${CMAKE_COMMAND} -E echo "               that has been created using patching command -e.g. with name patch-0.5.4."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
 	COMMAND ${CMAKE_COMMAND} -E echo " build:      build target native package."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [mandatory] ---"
@@ -421,6 +423,7 @@ set(release_args "\
 	-DTARGET_PACKAGE=\${package} \
 	-DNEXT_VERSION=\${nextversion} \
 	-DFROM_BRANCH=\${branch} \
+	-DFROM_PATCH=\${patch} \
 	-DAUTOMATIC_RELEASE=\${recursive} ")
 add_PID_Command(release Release_PID_Package.cmake)
 

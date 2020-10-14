@@ -39,7 +39,18 @@ endif()
 if(NOT FROM_BRANCH AND DEFINED ENV{branch})
 	set(FROM_BRANCH $ENV{branch} CACHE INTERNAL "" FORCE)
 endif()
+if(NOT FROM_PATCH AND DEFINED ENV{patch})
+	set(FROM_PATCH $ENV{patch} CACHE INTERNAL "" FORCE)
+endif()
 
+set(branch_name)
+if(FROM_PATCH AND FROM_BRANCH)
+	message(FATAL_ERROR "[PID] ERROR: you can use either branch or patch argument but not both at same time.")
+elseif(FROM_PATCH)
+	set(branch_name "patch-${FROM_PATCH}")
+elseif(FROM_BRANCH)
+	set(branch_name "${FROM_BRANCH}")
+endif()
 #do the check of argument values
 if(	AUTOMATIC_RELEASE STREQUAL "true"
 		OR AUTOMATIC_RELEASE STREQUAL "TRUE"
@@ -51,7 +62,7 @@ endif()
 
 if(TARGET_PACKAGE)
 	if(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
-		release_PID_Package(RESULT_VERSION ${TARGET_PACKAGE} "${NEXT_VERSION}" "${FROM_BRANCH}" ${manage_dependencies})
+		release_PID_Package(RESULT_VERSION ${TARGET_PACKAGE} "${NEXT_VERSION}" "${branch_name}" ${manage_dependencies})
 		if(NOT RESULT_VERSION)
 			message(FATAL_ERROR "[PID] ERROR : release of package ${TARGET_PACKAGE} failed !")
 		else()
