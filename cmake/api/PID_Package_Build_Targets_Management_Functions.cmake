@@ -852,6 +852,7 @@ evaluate_Variables_In_List(EVAL_MAX_CSTD c_max_standard)
 evaluate_Variables_In_List(EVAL_CXXSTD cxx_standard)
 evaluate_Variables_In_List(EVAL_MAX_CXXSTD cxx_max_standard)
 
+set(NEW_C_STD)
 if(EVAL_CSTD OR EVAL_MAX_CSTD)
   get_target_property(CURR_C_STD ${PROJECT_NAME}_${component}${INSTALL_NAME_SUFFIX} C_STANDARD)
   #adjust languages standards version, also check adjustment considering max standard, if any
@@ -866,15 +867,12 @@ if(EVAL_CSTD OR EVAL_MAX_CSTD)
       message("[PID] WARNING: in ${PROJECT_NAME}, when configuring target for component ${component} : ${MESSAGE}")
     endif()
   endif()
-  if(NEW_C_STD)
-    set(EVAL_CSTD ${NEW_C_STD})
-  endif()
   if(NEW_C_MAX_STD)
     set(${PROJECT_NAME}_${component}_C_MAX_STANDARD${USE_MODE_SUFFIX} ${NEW_C_MAX_STD} CACHE INTERNAL "")
   endif()
 endif()
 
-
+set(NEW_CXX_STD)
 if(EVAL_CXXSTD OR EVAL_MAX_CXXSTD)
   get_target_property(CURR_CXX_STD ${PROJECT_NAME}_${component}${INSTALL_NAME_SUFFIX} CXX_STANDARD)
   #adjust languages standards version, also check adjustment considering max standard, if any
@@ -889,9 +887,6 @@ if(EVAL_CXXSTD OR EVAL_MAX_CXXSTD)
       message("[PID] WARNING: in ${PROJECT_NAME}, when configuring target for component ${component} : ${MESSAGE}")
     endif()
   endif()
-  if(NEW_CXX_STD)
-    set(EVAL_CXXSTD ${NEW_CXX_STD})
-  endif()
   if(NEW_CXX_MAX_STD)
     set(${PROJECT_NAME}_${component}_CXX_MAX_STANDARD${USE_MODE_SUFFIX} ${NEW_CXX_MAX_STD} CACHE INTERNAL "")
   endif()
@@ -901,14 +896,14 @@ endif()
 if(export)
 	if(NOT ${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")#if component is a not header, everything is used to build
 		set(INTERNAL_DEFS ${comp_exp_defs} ${EVAL_DEFS} ${comp_defs})
-    manage_Additional_Component_Internal_Flags(${component} "${EVAL_CSTD}" "${EVAL_CXXSTD}" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${COMPLETE_LIB_DIRS_PATH}" "${INTERNAL_DEFS}" "${EVAL_OPTS}" "${EXT_LINKS}")
+    manage_Additional_Component_Internal_Flags(${component} "${NEW_C_STD}" "${NEW_CXX_STD}" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${COMPLETE_LIB_DIRS_PATH}" "${INTERNAL_DEFS}" "${EVAL_OPTS}" "${EXT_LINKS}")
 	endif()
 	set(EXPORTED_DEFS ${comp_exp_defs} ${EVAL_DEFS})#only definitions belonging to interfaces are exported (interface of current component + interface of exported component) also all linker options are exported
 	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${COMPLETE_LIB_DIRS_PATH}" "${EXPORTED_DEFS}" "${EVAL_OPTS}" "${EXT_LINKS}")
 
 else()#otherwise only definitions for interface of the current component is exported
 	set(INTERNAL_DEFS ${comp_defs} ${EVAL_DEFS} ${comp_defs})#everything define for building current component
-	manage_Additional_Component_Internal_Flags(${component} "${EVAL_CSTD}" "${EVAL_CXXSTD}" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${COMPLETE_LIB_DIRS_PATH}" "${INTERNAL_DEFS}" "${EVAL_OPTS}" "${EXT_LINKS}")
+	manage_Additional_Component_Internal_Flags(${component} "${NEW_C_STD}" "${NEW_CXX_STD}" "${INSTALL_NAME_SUFFIX}" "${COMPLETE_INCLUDES_PATH}" "${COMPLETE_LIB_DIRS_PATH}" "${INTERNAL_DEFS}" "${EVAL_OPTS}" "${EXT_LINKS}")
 	manage_Additional_Component_Exported_Flags(${component} "${INSTALL_NAME_SUFFIX}" "" "${COMPLETE_LIB_DIRS_PATH}" "${comp_exp_defs}" "" "${EXT_LINKS}")#only linker options and exported definitions are in the public interface
 endif()
 endfunction(fill_Component_Target_With_External_Dependency)
