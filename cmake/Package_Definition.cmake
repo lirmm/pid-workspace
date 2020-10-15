@@ -774,7 +774,7 @@ endmacro(check_PID_Environment)
 #   These parameters can be used to refine the configuration check.
 #
 #   :TYPE <list of arch>: Constraint on the processor type.
-#   :OS <list of os name>: Constraint on the operating system. For instance the list "linux freebsd" can be used. 
+#   :OS <list of os name>: Constraint on the operating system. For instance the list "linux freebsd" can be used.
 #   :ARCH <32|64>: Constraint on the processor architecture.
 #   :ABI <list of standard libraries abi>: Constraint on the ABI given by the standard c++ library in use.
 #

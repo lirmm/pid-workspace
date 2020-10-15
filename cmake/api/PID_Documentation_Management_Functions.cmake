@@ -508,16 +508,16 @@ endfunction(generate_Package_Static_Site_Page_Introduction)
 function(generate_Package_Static_Site_Page_Install generated_pages_folder)
 
 #getting git references of the project (for manual installation explanation)
-if(NOT ${PROJECT_NAME}_ADDRESS)
-	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_SITE_GIT_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS EXTENSION)
-	if(GIT_NAMESPACE AND SERVER_ADDRESS)
-		set(OFFICIAL_REPOSITORY_ADDRESS "${SERVER_ADDRESS}:${GIT_NAMESPACE}/${PROJECT_NAME}.git")
-		set(GIT_SERVER ${SERVER_ADDRESS})
-	else()	#no info about the git namespace => generating a bad address
-		set(OFFICIAL_REPOSITORY_ADDRESS "unknown_server:unknown_namespace/${PROJECT_NAME}.git")
-		set(GIT_SERVER unknown_server)
-	endif()
-
+if(NOT ${PROJECT_NAME}_ADDRESS)#no repository known by default we have no information about it
+  set(OFFICIAL_REPOSITORY_ADDRESS "unknown_server:unknown_namespace/${PROJECT_NAME}.git")
+  set(GIT_SERVER unknown_server)
+  if(${PROJECT_NAME}_SITE_GIT_ADDRESS)
+    extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_SITE_GIT_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS EXTENSION)
+  	if(GIT_NAMESPACE AND SERVER_ADDRESS)#OK we can generate a git address
+  		set(OFFICIAL_REPOSITORY_ADDRESS "${SERVER_ADDRESS}:${GIT_NAMESPACE}/${PROJECT_NAME}.git")
+  		set(GIT_SERVER ${SERVER_ADDRESS})
+  	endif()
+  endif()
 else()
 	set(OFFICIAL_REPOSITORY_ADDRESS ${${PROJECT_NAME}_ADDRESS})
 	extract_Package_Namespace_From_SSH_URL(${${PROJECT_NAME}_ADDRESS} ${PROJECT_NAME} GIT_NAMESPACE SERVER_ADDRESS EXTENSION)
@@ -1162,7 +1162,7 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the package is outside any framework
 else() #${PROJECT_NAME}_FRAMEWORK is defining a framework for the package
 	#find the framework in workspace
 	check_Framework_Exists(FRAMEWORK_OK ${${PROJECT_NAME}_FRAMEWORK})
-	if(NOT FRAMEWORK_OK)
+  if(NOT FRAMEWORK_OK)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] ERROR : the framework you specified (${${PROJECT_NAME}_FRAMEWORK}) is unknown in the workspace.")
 		return()
