@@ -189,17 +189,63 @@ endfunction(generate_Wrapper_Reference_File)
 function(resolve_Package_Dependencies package mode first_time)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 ################## management of configuration : for both external and native packages ##################
+set(list_of_unresolved_configs)
 foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX}) ## all configuration constraints must be satisfied
   parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
   check_Platform_Configuration_With_Arguments(SYSCHECK_RESULT BINARY_CONTRAINTS ${config} args_as_list ${mode})
   if(NOT SYSCHECK_RESULT)
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to resolve configuration ${config} required by package ${package}.")
+    if(NOT first_time)# we are currently trying to reinstall the same package !!
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to resolve configuration ${config} required by package ${package}.")
+    else()
+      list(APPEND list_of_unresolved_configs ${config})
+    endif()
   endif()
 endforeach()
+if(list_of_unresolved_configs)
+  fill_String_From_List(IN_CONFLICT list_of_unresolved_configs " ")
+  message("[PID] WARNING : package ${package} has unresolved platform requirements: ${IN_CONFLICT}")
+  if(NOT first_time)# we are currently trying to reinstall the same package !!
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to resolve platform requirements of package ${package}.")
+  else()
+    message("[PID] INFO: rebuild package ${package} version ${${package}_VERSION_STRING}...")
+    get_Package_Type(${package} PACK_TYPE)
+    set(INSTALL_OK)
+    # reinstall by forcing rebuild of the package => the rebuild will automatically manage
+    # and resolve dependencies with current global build constraints
+    if(PACK_TYPE STREQUAL "EXTERNAL")
+      install_External_Package(INSTALL_OK ${package} TRUE TRUE)
+    elseif(PACK_TYPE STREQUAL "NATIVE")
+      install_Native_Package(INSTALL_OK ${package} TRUE)
+    endif()
+    if(INSTALL_OK)
+      set(${package}_FIND_VERSION_SYSTEM ${${package}_REQUIRED_VERSION_SYSTEM})#using the memorized contraint on version to set adeqautely which variant (OS or PID) to use
+      if(${package}_REQUIRED_VERSION_EXACT)
+        set(exact_str "EXACT")
+      else()
+        set(exact_str "")
+      endif()
+      find_package_resolved(${package} ${${package}_VERSION_STRING} ${exact_str} REQUIRED)#find again the package but this time we impose as constraint the specific version searched
+      #TODO maybe use the ${package}_FIND_VERSION_EXACT variable instead of directly EXACT ?
+      if(NOT ${package}_FOUND${VAR_SUFFIX})
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
+        if(${package}_REQUIRED_VERSION_SYSTEM)
+          set(os_str "OS ")
+        endif()
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} with ${os_str}version ${${package}_VERSION_STRING} cannot be found after its redeployment ! No known solution can automatically be found to this problem. Aborting.")
+      endif()
+      resolve_Package_Dependencies(${package} ${mode} FALSE)#resolving again the dependencies on same package
+    else()# cannot do much more about that !!
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} has unresolved platform requirements and its target version ${${package}_VERSION_STRING} cannot be rebuilt (see previous outputs) !")
+    endif()
+  endif()
+endif()
 
 ################## management of external packages : for both external and native packages ##################
 set(list_of_conflicting_dependencies)
+
 # 1) managing external package dependencies (the list of dependent packages is defined as ${package}_EXTERNAL_DEPENDENCIES)
 # - locating dependent external packages in the workspace and configuring their build variables recursively
 foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
