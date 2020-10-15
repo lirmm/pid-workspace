@@ -1324,12 +1324,12 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
   #extracting variables to make them usable in calling context
   extract_Platform_Configuration_Resulting_Variables(${config_name})
 
-  if(${config_name}_VERSION_STRING)
+  if(${config_name}_FOUND${USE_MODE_SUFFIX})#corresponding external package version has already been found
     #WARNING: the corresponding external package version has already been chosen in local process
     if(NOT ${config_name}_VERSION_STRING VERSION_EQUAL ${config_name}_VERSION
       OR NOT ${config_name}_REQUIRED_VERSION_SYSTEM)#version in use must be same system version
       #ERROR: this configuration simply cannot be used
-      message("[PID] WARNING: configuration ${config_name} cannot be used since it matches an external dependency whose version (${${config_name}_VERSION_STRING}) is not compliant with system version required (${${config_name}_VERSION}).")
+      message("[PID] WARNING: configuration ${config_name} cannot be used since it matches an external dependency whose version (${${config_name}_VERSION_STRING}) is not compliant with system version required (${${config_name}_VERSION}). If versions are equal it means that the package has been built with a NON OS variant version of ${config_name}.")
       set(${CHECK_OK} FALSE PARENT_SCOPE)
       set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} FALSE "${${config_args_var}}" "")
       return()
