@@ -1980,11 +1980,7 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 	elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")# any version can be used so for now no contraint
 		add_Package_Dependency_To_Cache(${dep_package} "" FALSE "${list_of_components}")
 	else()#a version is specified by the user OR the dependent build process has automatically set it
-		if(USE_EXACT)
-			add_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" TRUE "${list_of_components}") #set the dependency
-		else()#if the target version belong to the list of exact version then ... it is exact ^^
-			add_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" FALSE "${list_of_components}") #set the dependency
-		endif()
+		add_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_ALTERNATIVE_VERSION_USED}" "${USE_EXACT}" "${list_of_components}") #set the dependency
 	endif()
 
 	# 4) resolve the package dependency according to memorized internal variables
@@ -2011,11 +2007,11 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 						message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding its ABI constraints. You can activate the option REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD to try reinstalling it.")
 						return()
 					endif()
-					#from here we can add it to versions to install to force reinstall
+					#from here we can add it to versions to install (force reinstall)
 					add_To_Install_Package_Specification(${dep_package} "${${dep_package}_VERSION_STRING}" ${USE_EXACT})
 				endif()
 			endif()#if not found after resolution simply wait it to be installed automatically
-		else()#if found before this call
+		else()#if found before this call (security when a basic find_package has been used previously)
 			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#do not propagate choice if none made
 				add_Chosen_Package_Version_In_Current_Process(${dep_package})#FOR compatibility: report the choice made to global build process
 			endif()

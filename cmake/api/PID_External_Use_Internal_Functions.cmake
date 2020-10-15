@@ -98,7 +98,6 @@ function(reset_Local_Components_Info path mode)
     set(${config}_VERSION_STRING CACHE INTERNAL "")
     set(${config}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
     set(${config}_REQUIRED_VERSION_SYSTEM CACHE INTERNAL "")
-    set(${config}_REQUIRED_VERSION_FORCE_FIND CACHE INTERNAL "")
   endforeach()
   set(DECLARED_SYSTEM_DEPENDENCIES CACHE INTERNAL "")
   #do not manage automatic install since outside from a PID workspace

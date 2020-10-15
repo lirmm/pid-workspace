@@ -922,7 +922,7 @@ endfunction(is_Compatible_External_Version)
 #
 #   .. command:: get_Compatible_Version(RES_VERSION_TO_USE external package version_in_use version_in_use_is_exact version_in_use_is_system version_to_test version_to_test_is_exact version_to_test_is_system)
 #
-#    From a version constraint of a given package already used in the build process, test if another version version constraint is compatible with this one.
+#    From a version constraint of a given package already used in the build process, test if another version constraint is compatible with this one.
 #
 #     :external: if TRUE the package to check is an external package.
 #     :package: the name of package to check.
@@ -999,20 +999,23 @@ else()#native package
     else()#none of the version constraints is exact
       # so in the end the global build process using current project as a dependency can be adapted to use the "most compatible" version
       # there is no problem to build the current project with this "most compatible version"
-      get_Version_String_Numbers("${version_in_use}.0" exact_major exact_minor exact_patch)
-      if(NOT DEFINED exact_major)#not a valid version string
+      get_Version_String_Numbers("${version_in_use}.0" major minor patch)
+      if(NOT DEFINED major)#not a valid version string
         return()
       endif()
-      is_Compatible_Version(IS_COMPATIBLE ${exact_major} ${exact_minor} ${version_to_test})
+      is_Compatible_Version(IS_COMPATIBLE ${major} ${minor} ${version_to_test})
+      message("${version_in_use} compatible with ${version_to_test} = ${IS_COMPATIBLE}")
       if(IS_COMPATIBLE)
         set(${RES_VERSION_TO_USE} ${version_in_use} PARENT_SCOPE)#use previously required version
-      else()
-        get_Version_String_Numbers("${version_to_test}.0" exact_major exact_minor exact_patch)
-        if(NOT DEFINED exact_major)#not a valid version string
+      else()# the version in use may be less than version to test
+        #test if version to test can be used instead (reverse comparison)
+        get_Version_String_Numbers("${version_to_test}.0" major minor patch)
+        if(NOT DEFINED major)#not a valid version string
           return()
         endif()
-        is_Compatible_Version(IS_COMPATIBLE ${exact_major} ${exact_minor} ${version_in_use})
+        is_Compatible_Version(IS_COMPATIBLE ${major} ${minor} ${version_in_use})
         if(IS_COMPATIBLE)
+          #OK so version_to_test (constraint) must be used instead of version selected
           set(${RES_VERSION_TO_USE} ${version_to_test} PARENT_SCOPE)#use currenlty required version
         endif()
       endif()
@@ -1068,12 +1071,12 @@ function(find_Best_Compatible_Version BEST_VERSION_IN_LIST external package vers
       else()
         set(version_to_test_is_exact TRUE)
       endif()
-      get_Compatible_Version(IS_COMPATIBLE "${external}" ${package} "${version_in_use}" "${version_in_use_exact}" "${version_in_use_is_system}" "${version}" "${version_to_test_is_exact}" FALSE)
-      if(IS_COMPATIBLE)
+      get_Compatible_Version(COMPATIBLE_VERSION "${external}" ${package} "${version_in_use}" "${version_in_use_exact}" "${version_in_use_is_system}" "${version}" "${version_to_test_is_exact}" FALSE)
+      if(COMPATIBLE_VERSION)
         if(version_to_test_is_exact)
-          list(APPEND list_of_compatible_exact_versions ${version})
+          list(APPEND list_of_compatible_exact_versions ${COMPATIBLE_VERSION})
         else()
-          list(APPEND list_of_compatible_versions ${version})
+          list(APPEND list_of_compatible_versions ${COMPATIBLE_VERSION})
         endif()
       endif()
     endforeach()
@@ -1127,12 +1130,6 @@ if(${package}_REQUIRED_VERSION_EXACT)
 		return()
 	endif()
 	set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)#otherwise same version so exactly compatible
-  if(${package}_REQUIRED_VERSION_FORCE_FIND)
-    # specific case that appears when no constraint was imposed initially at first find (ANY)
-    # but modified due to the use of a system configuration (now system version must be used)
-    set(${package}_REQUIRED_VERSION_FORCE_FIND CACHE INTERNAL "")#reset to avoid refind anytime
-    set(${NEED_FINDING} TRUE PARENT_SCOPE)
-  endif()
 	return()
 endif()
 #from here, no exact version already required
@@ -1443,7 +1440,6 @@ foreach(a_used_package IN LISTS ${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES)
 	set(${a_used_package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "")
 	set(${a_used_package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
 	set(${a_used_package}_REQUIRED_VERSION_SYSTEM CACHE INTERNAL "")
-  set(${a_used_package}_REQUIRED_VERSION_FORCE_FIND CACHE INTERNAL "")
 endforeach()
 set(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES CACHE INTERNAL "")
 endfunction(reset_Found_External_Packages)
@@ -1563,7 +1559,9 @@ endfunction(reset_Packages_Finding_Variables)
 #
 #   .. command:: resolve_Native_Package_Dependency(VERSION_COMPATIBLE ABI_COMPATIBLE package dependency mode)
 #
-#    Find the best version of a dependency for a given package (i.e. another package). It takes into account the previous constraints that apply to this dependency to find a version that satisfy all constraints (if possible).
+#    Find the best version of a dependency for a given package (i.e. another package) locally.
+#    It takes into account the previous constraints that apply to this dependency to find a version
+#    that satisfies all constraints (if possible).
 #    each dependent package version is defined as ${package}_DEPENDENCY_${dependency}_VERSION
 #    other variables set by the package version use file
 #    ${package}_DEPENDENCY_${dependency}_REQUIRED		# TRUE if package is required FALSE otherwise (QUIET MODE)
@@ -1679,7 +1677,7 @@ endfunction(resolve_Native_Package_Dependency)
 #
 #   .. command:: resolve_External_Package_Dependency(VERSION_COMPATIBLE ABI_COMPATIBLE package external_dependency mode)
 #
-#    Find the best version of an external dependency for a given package. It takes into account the previous constraints that apply to this dependency to find a version that satisfy all constraints (if possible).
+#    Find the best version of an external dependency for a given package for a local build. It takes into account the previous constraints that apply to this dependency to find a version that satisfy all constraints (if possible).
 #
 #     :package: the name of package that has dependencies.
 #     :external_dependency: the name of the external package that is a dependency of package.

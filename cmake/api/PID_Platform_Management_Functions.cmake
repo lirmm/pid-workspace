@@ -1324,13 +1324,23 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
   #extracting variables to make them usable in calling context
   extract_Platform_Configuration_Resulting_Variables(${config_name})
 
-  #now enforce constraint of using the OS variant of an external package
+  if(${config_name}_VERSION_STRING)
+    #WARNING: the corresponding external package version has already been chosen in local process
+    if(NOT ${config_name}_VERSION_STRING VERSION_EQUAL ${config_name}_VERSION
+      OR NOT ${config_name}_REQUIRED_VERSION_SYSTEM)#version in use must be same system version
+      #ERROR: this configuration simply cannot be used
+      message("[PID] WARNING: configuration ${config_name} cannot be used since it matches an external dependency whose version (${${config_name}_VERSION_STRING}) is not compliant with system version required (${${config_name}_VERSION}).")
+      set(${CHECK_OK} FALSE PARENT_SCOPE)
+      set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} FALSE "${${config_args_var}}" "")
+      return()
+    endif()
+  endif()
+  # now enforce constraint of using the OS variant of an external package
   # predefine the use of the external package version with its os variant
   # no other choice to ensure compatibility with any package using this external package
   set(${config_name}_VERSION_STRING ${${config_name}_VERSION} CACHE INTERNAL "")
   set(${config_name}_REQUIRED_VERSION_EXACT ${${config_name}_VERSION} CACHE INTERNAL "")
   set(${config_name}_REQUIRED_VERSION_SYSTEM TRUE CACHE INTERNAL "")
-  set(${config_name}_REQUIRED_VERSION_FORCE_FIND TRUE CACHE INTERNAL "")#force a local find even if already found
   add_Chosen_Package_Version_In_Current_Process(${config_name})#force the use of an os variant
 
   #return the complete set of binary contraints
