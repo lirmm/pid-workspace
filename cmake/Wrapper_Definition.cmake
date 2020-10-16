@@ -2393,6 +2393,7 @@ endfunction(install_External_Project)
 #
 macro(return_External_Project_Error)
   set(ERROR_IN_SCRIPT TRUE)
+  return()
 endmacro(return_External_Project_Error)
 
 #.rst:
