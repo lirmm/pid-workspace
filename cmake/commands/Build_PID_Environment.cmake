@@ -106,7 +106,7 @@ evaluate_Environment_From_Script(EVAL_OK ${TARGET_ENVIRONMENT}
 				"${TARGET_DISTRIBUTION}"
 				"${TARGET_DISTRIBUTION_VERSION}")
 if(NOT EVAL_OK)
-  message(FATAL_ERROR "[PID] ERROR : cannot evaluate environment ${TARGET_ENVIRONMENT} on current host.")
+  message(FATAL_ERROR "[PID] CRITICAL ERROR : cannot evaluate environment ${TARGET_ENVIRONMENT} on current host.")
   return()
 endif()
 

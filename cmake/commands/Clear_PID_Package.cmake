@@ -46,7 +46,7 @@ if(TARGET_PACKAGE STREQUAL "all")#cleaning all packages and wrappers, all of the
 else()
 	if(	NOT EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE}
 			OR NOT IS_DIRECTORY ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${TARGET_PACKAGE})
-		message(FATAL_ERROR "[PID] ERROR : there is no package named ${TARGET_PACKAGE} installed in ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : there is no package named ${TARGET_PACKAGE} installed in ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}.")
 	endif()
 	if(NOT TARGET_VERSION)
 		set(TARGET_VERSION "all" CACHE INTERNAL "" FORCE)

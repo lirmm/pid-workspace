@@ -674,7 +674,7 @@ function(get_Category_Names root_category category_full_string RESULTING_SHORT_N
 		set(${RESULTING_SHORT_NAME} ${CATEGORY_STRING_CONTENT} PARENT_SCOPE) #
 		set(${RESULTING_LONG_NAME} "${root_category}/${CATEGORY_STRING_CONTENT}" PARENT_SCOPE)
 	else()
-		message("[PID] Error : internal BUG.")
+		message("[PID] DEBUG : internal bug in get_Category_Names.")
 	endif()
 endfunction(get_Category_Names)
 
@@ -2470,7 +2470,7 @@ if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
 			extract_All_Words(${dep} "#" RES_LIST)#extract with # because this is the separator used in check_For_Dependencies_Version
 			list(GET RES_LIST 0 DEP_PACKAGE)
 			list(GET RES_LIST 1 DEP_VERSION)
-			message("[PID] releasing dependency ${DEP_PACKAGE} of ${package}...")
+			message("[PID] INFO : releasing dependency ${DEP_PACKAGE} of ${package}...")
 			release_PID_Package(DEP_RESULT ${DEP_PACKAGE} "${next}" "" TRUE)#do not use a specific branch as we do not know it (integration is used)
 			if(NOT DEP_RESULT)
 				list(APPEND unreleased_dependencies ${dep})
@@ -2482,7 +2482,7 @@ if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
 				extract_All_Words(${unreleased_dep} "#" RES_LIST)#extract with # because this is the separator used in check_For_Dependencies_Version
 				list(GET RES_LIST 0 DEP_PACKAGE)
 				list(GET RES_LIST 1 DEP_VERSION)
-				message("- dependency ${DEP_PACKAGE} version ${DEP_VERSION}")
+				message("[PID] ERROR : - dependency ${DEP_PACKAGE} version ${DEP_VERSION}")
 			endforeach()
 		else()
 			check_For_Dependencies_Version(BAD_VERSION_OF_DEPENDENCIES ${package})
@@ -2495,7 +2495,7 @@ if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
 			extract_All_Words(${dep} "#" RES_LIST)#extract with # because this is the separator used in check_For_Dependencies_Version
 			list(GET RES_LIST 0 DEP_PACKAGE)
 			list(GET RES_LIST 1 DEP_VERSION)
-			message("- dependency ${DEP_PACKAGE} has unknown version ${DEP_VERSION}")
+			message("[PID] ERROR : - dependency ${DEP_PACKAGE} has unknown version ${DEP_VERSION}")
 		endforeach()
 		return()
 	endif()
@@ -2769,7 +2769,7 @@ restore_Workspace_Repository_Context(${CURRENT_COMMIT} ${SAVED_CONTENT})
 message("[PID] WARNING: You may have to resolve some conflicts in your source packages ! Check in previous logs if a CONFLICT has been detected by git.")
 execute_process(COMMAND ${CMAKE_COMMAND} .. WORKING_DIRECTORY ${WORKSPACE_DIR}/build RESULT_VARIABLE res)
 if(NOT res EQUAL 0)
-	message("[PID] CRITICAL ERROR : problem when reconfiguring the workspace. This is probably due to conflicts between your local modifications and those coming from the official workspace.")
+	message("[PID] ERROR : problem when reconfiguring the workspace. This is probably due to conflicts between your local modifications and those coming from the official workspace.")
 endif()
 if(update)
 	update_PID_All_Packages()

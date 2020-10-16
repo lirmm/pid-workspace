@@ -51,7 +51,7 @@ endif()
 if(TARGET_ENVIRONMENT)
 	if(TARGET_ENVIRONMENT STREQUAL "all")#listing all environments
 		get_All_Available_References(ENV_REFS Environment)
-		message("[PID] Available environments:")
+		message("[PID] INFO : Available environments:")
 		foreach(ref_to_env IN LISTS ENV_REFS)
 			string(REGEX REPLACE "ReferEnvironment([^.]+)\\.cmake" "\\1" env_name ${ref_to_env})
 			list(APPEND to_list ${env_name})

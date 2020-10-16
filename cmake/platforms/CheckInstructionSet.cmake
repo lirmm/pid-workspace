@@ -119,7 +119,7 @@ if(CURRENT_PLATFORM_TYPE STREQUAL "x86")
     endif()
     # Other instruction sets are supported by default since MSVC 2008 at least
   else()
-    message(WARNING "[PID] WARNING: Unsupported compiler when trying to detect processor optimizations")
+    message("[PID] WARNING: Unsupported compiler when trying to detect processor optimizations")
   endif()
 elseif(CURRENT_PLATFORM_TYPE STREQUAL "arm")
   if(NOT CURRENT_PLATFORM_ARCH EQUAL 64)

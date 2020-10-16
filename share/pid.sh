@@ -156,7 +156,7 @@ pid() {
         else
             local program_specific_args=""
             local current_arg=0
-            if [ "$ZSH_VERSION" ]; then setopt shwordsplit; fi
+            if [ "$ZSH_VERSION" ]; then set -o shwordsplit; fi
             for arg in $fake_target_args; do
                 if [ $current_arg -eq 0 ]; then
                   mode=$arg
@@ -167,7 +167,7 @@ pid() {
                 fi
                 current_arg=$((current_arg+1))
             done
-            if [ "$ZSH_VERSION" ]; then unsetopt shwordsplit; fi
+            if [ "$ZSH_VERSION" ]; then set +o shwordsplit; fi
             if [ -z "$project_name" ]; then
                 echo "The run_build target requires to be launched from a package"
             fi
@@ -202,14 +202,14 @@ pid() {
     unset project_name
     #Note: need to set zsh the correct way to interpret lists
     if [ "$ZSH_VERSION" ]; then
-        setopt shwordsplit
+        set -o shwordsplit
     fi
     for var in $to_unexport; do
         local name=$(echo $var|sed -re "s:([^=]+)=.*:\1:g")
         unset $name
     done
     if [ "$ZSH_VERSION" ]; then
-      unsetopt shwordsplit
+      set +o shwordsplit
     fi
     return $pid_ws_res
 }
@@ -220,9 +220,66 @@ pid() {
 #  $1: project dir, $2 cmake options
 _pid_ws_configure() {
     cd $1/build
-    cmake $2 $1
+    _pid_launch_cmake_command "$2" $1
     pid_ws_res=$?
     cd $1
+}
+
+
+
+_pid_launch_cmake_command() {
+  #for PID specific info
+  local INFO_HIGHLIGHT='\x1b[32m\1\x1b[m\2'
+  local WARN_HIGHLIGHT='\x1b[33m\1\x1b[m\2'
+  local ERR_HIGHLIGHT='\x1b[31m\1\x1b[m\2'
+  local DEB_HIGHLIGHT='\x1b[34;43m\1\x1b[m\2'
+  local CRIT_HIGHLIGHT='\x1b[33;41m\1\x1b[m\2'
+
+  #for build elements
+  local BUILDING_HIGHLIGHT='\1\x1b[32m\2\x1b[m'
+  local LINKING_HIGHLIGHT='\1\x1b[92m\2\x1b[m'
+  local BUILD_ERR_HIGHLIGHT='\1\x1b[31m\2\x1b[m\3'
+  local BUILD_WARN_HIGHLIGHT='\1\x1b[33m\2\x1b[m\3'
+
+  #for progress highlight
+  local PROGRESS_HIGHLIGHT='\x1b[37m\1\x1b[m\2'
+  #Note: provide a colored output for evolved shells
+  #Those shell support a way to check is a pipe expression has failed
+  local color_output=0
+  if [ "$ZSH_VERSION" ]; then
+    set -o pipefail
+    color_output=1
+  elif [ "$BASH_VERSION" ]; then
+    set -o pipefail
+    color_output=1
+  fi
+  #if coloured output possible
+  if [ $color_output -eq 1 ]; then
+
+    cmake $@ 2>&1 | sed -e "s/\(\[PID\][ |\t]*INFO\)\(.*\)$/$INFO_HIGHLIGHT/" \
+                        -e "s/\(\[PID\][ |\t]*ERROR\)\(.*\)$/$ERR_HIGHLIGHT/" \
+                        -e "s/\(\[PID\][ |\t]*CRITICAL ERROR\)\(.*\)$/$CRIT_HIGHLIGHT/" \
+                        -e "s/\(\[PID\][ |\t]*WARNING\)\(.*\)$/$WARN_HIGHLIGHT/" \
+                        -e "s/\(\[PID\][ |\t]*DEBUG\)\(.*\)$/$DEB_HIGHLIGHT/" \
+                        -e "s/^\(\[ *[0-9][0-9]*%\]\)\(.*[b|B]uilding.*\)$/$BUILDING_HIGHLIGHT/" \
+                        -e "s/^\(\[ *[0-9][0-9]*%\]\)\(.*[l|L]inking.*\)$/$LINKING_HIGHLIGHT/" \
+                        -e "s/^\(.*\)\([e|E]rror\)\(.*\)$/$BUILD_ERR_HIGHLIGHT/" \
+                        -e "s/^\(.*\)\([w|W]arning\)\(.*\)$/$BUILD_WARN_HIGHLIGHT/" \
+                  | sed -e "s/^\(\[ *[0-9][0-9]*%\]\)\(.*\)$/$PROGRESS_HIGHLIGHT/"
+
+  else
+    cmake $@
+  fi
+  res=$?
+  if [ $color_output -eq 1 ]; then
+    if [ "$ZSH_VERSION" ]; then
+      set +o pipefail
+    elif [ "$BASH_VERSION" ]; then
+      set +o pipefail
+    fi
+  fi
+  unset color_output
+  return $res
 }
 
 # Run the given target. (Re)configure the project
@@ -232,17 +289,17 @@ _pid_ws_run() {
     # Configure the project a first time if necessary
     if [ ! -f $1/build/CMakeCache.txt ]; then
         cd $1/build
-        cmake $1
+        _pid_launch_cmake_command $1
         cd $1
     fi
     if [ "$3" ]; then
       _pid_ws_configure $1 "$3"
     fi
     if [ -z "$2" ]; then
-        cmake --build $1/build
+        _pid_launch_cmake_command --build $1/build
         pid_ws_res=$?
     else
-        cmake --build $1/build --target $2
+        _pid_launch_cmake_command --build $1/build --target $2
         pid_ws_res=$?
     fi
 }

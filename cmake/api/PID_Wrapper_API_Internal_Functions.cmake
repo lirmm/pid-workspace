@@ -278,7 +278,7 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 					 	 -DUSE_SYSTEM_VARIANT=\${os_variant}
 						 -DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
 						 -P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Wrapper.cmake
-	    COMMENT "[PID] Building external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+	    COMMENT "[PID] INFO : Building external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	  )
 
@@ -300,7 +300,7 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	           -DTARGET_EXTERNAL_VERSION=\${version}
 						 -P ${WORKSPACE_DIR}/cmake/commands/Uninstall_PID_Wrapper.cmake
 			COMMAND ${CMAKE_COMMAND} -E  echo Uninstalling ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}
-			COMMENT "[PID] Uninstalling external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} ..."
+			COMMENT "[PID] INFO : Uninstalling external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} ..."
 		)
 
 		# reference file generation target
@@ -324,14 +324,14 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			-DREMOTE_ADDR=${address}
 			-P ${WORKSPACE_DIR}/cmake/commands/Memorizing_PID_Version.cmake
 	  	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-	    COMMENT "[PID] memorizing new wrapper implementation ..."
+	    COMMENT "[PID] INFO : memorizing new wrapper implementation ..."
 	  )
 
 		add_custom_target(list_versions
 			COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
 							-DTARGET_PACKAGE=${PROJECT_NAME}
 							-P ${WORKSPACE_DIR}/cmake/commands/Listing_PID_Versions.cmake
-			COMMENT "[PID] ${PROJECT_NAME} versions:"
+			COMMENT "[PID] INFO : ${PROJECT_NAME} versions:"
 		)
 
 	  # update target (update the framework from upstream git repository)
@@ -341,7 +341,7 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	            -DTARGET_PACKAGE=${PROJECT_NAME}
 	            -DFORCE_SOURCE=TRUE
 	            -P ${WORKSPACE_DIR}/cmake/commands/Update_PID_Deployment_Unit.cmake
-	    COMMENT "[PID] Updating the external package ${PROJECT_NAME} ..."
+	    COMMENT "[PID] INFO : Updating the external package ${PROJECT_NAME} ..."
 	    VERBATIM
 	  )
   begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
@@ -1121,7 +1121,7 @@ function(declare_Wrapped_Platform_Configuration NEED_EXIT platform configuration
 			parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
 			if(NOT CONFIG_NAME)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] ERROR : configuration check ${config} is ill formed. Configuration being optional it is skipped automatically.")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed. Configuration being optional it is skipped automatically.")
 			endif()
 			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
 			if(RESULT_OK)

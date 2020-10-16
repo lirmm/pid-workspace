@@ -3518,7 +3518,7 @@ function(get_Deployment_Unit_Reference_Info path_to_repo REF_EXISTS RES_URL RES_
   elseif(DU_TYPE MATCHES "environments$")
     get_Path_To_Environment_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
   else()
-    message("[PID] INTERNAL ERROR: Bad path given to get_Deployment_Unit_Reference_Info: ${path_to_repo}")
+    message("[PID] DEBUG: Bad path given to get_Deployment_Unit_Reference_Info: ${path_to_repo}")
     return()
   endif()
 

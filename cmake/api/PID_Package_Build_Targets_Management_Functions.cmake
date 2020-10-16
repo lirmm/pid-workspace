@@ -245,7 +245,7 @@ if(gen_install)
 	endif()
 else()
 	add_custom_target(build
-		COMMAND ${CMAKE_COMMAND} -E echo "[PID] Nothing to be done. Build process aborted."
+		COMMAND ${CMAKE_COMMAND} -E echo "[PID] WARNING : Nothing to be done. Build process aborted."
 	)
 endif()
 endfunction(create_Global_Build_Command)

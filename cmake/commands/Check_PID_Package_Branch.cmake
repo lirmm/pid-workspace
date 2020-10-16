@@ -36,6 +36,6 @@ if(	NOT FORCE_RELEASE_BUILD OR
 	)
 	get_Repository_Current_Branch(BRANCH_NAME ${GIT_REPOSITORY})
 	if(NOT BRANCH_NAME OR BRANCH_NAME STREQUAL "master")
-		message(FATAL_ERROR "[PID] ERROR : ${TARGET_PACKAGE} must be built on a development branch (integration or feature specific branch).")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : ${TARGET_PACKAGE} must be built on a development branch (integration or feature specific branch).")
 	endif()
 endif()
