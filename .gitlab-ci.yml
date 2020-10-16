@@ -7,6 +7,8 @@ before_script:
 stages:
  - create_and_build
  - deploy
+ - external_use
+ - external_use_ros
 
  ############ generic jobs patterns #############
 
@@ -27,8 +29,23 @@ stages:
         - pid deploy package=mytestpackage
         - pid deploy package=open-phri version=1.0.0
         - pid deploy package=opencv version=4.0.1
-        - pid deploy package=cooperative-task-controller branch=integration
 
+.external_use_: &external_use
+   stage: external_use
+   script:
+        - pid deploy package=cooperative-task-controller branch=integration
+        - mkdir tmp && cd tmp && git clone git@gite.lirmm.fr:pid/tests/test_external_use.git
+        - cd test_external_use/build
+        - cmake -DWORKSPACE_DIR="../../.." ..
+        - make
+
+.external_use_ros: &external_use_ros
+   stage: external_use
+   script:
+        - mkdir tmp && cd tmp && git clone git@gite.lirmm.fr:pid/tests/test_external_use_deploy.git
+        - cd test_external_use_deploy/build
+        - cmake ..
+        - make
 
 ############ patterns for platforms selection #############
 # here the project generates patterns for runner selection according for all platforms defined in the workspace
@@ -87,6 +104,10 @@ stages:
 
 ############ jobs description #############
 
+ubuntu16 external_use:
+  <<: *external_use
+  <<: *selection_ubuntu16
+
 ubuntu16 deploy:
   <<: *deploy
   <<: *selection_ubuntu16
@@ -94,6 +115,10 @@ ubuntu16 deploy:
 ubuntu16 create_and_build:
   <<: *create_and_build
   <<: *selection_ubuntu16
+
+ubuntu18 external_use:
+  <<: *external_use_ros
+  <<: *selection_ubuntu18
 
 ubuntu18 deploy:
   <<: *deploy
@@ -111,6 +136,10 @@ ubuntu20 create_and_build:
   <<: *create_and_build
   <<: *selection_ubuntu20
 
+archlinux external_use:
+  <<: *external_use
+  <<: *selection_archlinux
+
 archlinux deploy:
   <<: *deploy
   <<: *selection_archlinux
@@ -119,6 +148,10 @@ archlinux create_and_build:
   <<: *create_and_build
   <<: *selection_archlinux
 
+fedora external_use:
+  <<: *external_use
+  <<: *selection_fedora
+
 fedora deploy:
   <<: *deploy
   <<: *selection_fedora
@@ -126,6 +159,10 @@ fedora deploy:
 fedora create_and_build:
   <<: *create_and_build
   <<: *selection_fedora
+
+debian external_use:
+  <<: *external_use
+  <<: *selection_debian
 
 debian deploy:
   <<: *deploy
