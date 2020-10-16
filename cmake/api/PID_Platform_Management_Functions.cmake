@@ -1324,7 +1324,9 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
   #extracting variables to make them usable in calling context
   extract_Platform_Configuration_Resulting_Variables(${config_name})
 
-  if(${config_name}_FOUND${USE_MODE_SUFFIX})#corresponding external package version has already been found
+  if(${config_name}_FOUND OR ${config_name}_FOUND_DEBUG)
+    #corresponding external package version has already been found
+    #Note: use both modes signatures to allow the test to work in any situation (if its is undirectly called from a script)
     #WARNING: the corresponding external package version has already been chosen in local process
     if(NOT ${config_name}_VERSION_STRING VERSION_EQUAL ${config_name}_VERSION
       OR NOT ${config_name}_REQUIRED_VERSION_SYSTEM)#version in use must be same system version
