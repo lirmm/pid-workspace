@@ -2992,7 +2992,6 @@ endfunction(is_Application_Type)
 #     :PACK_TYPE: the output variable that contains the package type (NATIVE or EXTERNAL) if detected, UNKNOWN otherwise.
 #
 function(get_Package_Type package PACK_TYPE)
-  get_Platform_Variables(BASENAME curr_platform_str)
   #try to find it in source tree
   if(EXISTS ${WORKSPACE_DIR}/wrappers/${package} AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package})
   	set(${PACK_TYPE} "EXTERNAL" PARENT_SCOPE)
