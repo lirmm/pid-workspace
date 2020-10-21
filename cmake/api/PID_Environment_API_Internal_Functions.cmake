@@ -1050,7 +1050,7 @@ function(import_Solution_From_Dependency environment)
                           "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_ID}"
                           "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_AR}"
                           "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB}"
-                          "\"${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS}\""
+                          "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS}"
                           "${${environment}_${lang}_TOOLSET_${toolset}_INTERPRETER}"
                           "${${environment}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS}"
                           "${${environment}_${lang}_TOOLSET_${toolset}_LIBRARY}"
@@ -1964,7 +1964,7 @@ function(set_Language_Toolset lang toolset expression script compiler comp_id co
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_ID ${comp_id} CACHE INTERNAL "")
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_AR ${comp_ar} CACHE INTERNAL "")
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB ${comp_ranlib} CACHE INTERNAL "")
-  set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS ${comp_flags} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS "${comp_flags}" CACHE INTERNAL "")
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER ${interp} CACHE INTERNAL "")
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS ${includes} CACHE INTERNAL "")
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_LIBRARY ${library} CACHE INTERNAL "")
@@ -2268,7 +2268,7 @@ function(write_Language_Toolset file lang toolset)
     file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_ID ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_ID} CACHE INTERNAL \"\")\n")
   endif()
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS)
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS \"${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS}\" CACHE INTERNAL \"\")\n")
   endif()
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS)
     file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS} CACHE INTERNAL \"\")\n")
