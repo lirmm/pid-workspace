@@ -3506,38 +3506,64 @@ endfunction(get_Deployment_Unit_Repository_Address_In_Description)
 #     :RES_PUBLIC_URL: the output variable that contains the public counterpart URL of package respotiry.
 #
 function(get_Deployment_Unit_Reference_Info path_to_repo REF_EXISTS RES_URL RES_PUBLIC_URL)
+  set(${RES_URL} PARENT_SCOPE)
+  set(${RES_PUBLIC_URL} PARENT_SCOPE)
+  set(${REF_EXISTS} FALSE PARENT_SCOPE)
 
-  get_filename_component(DU_TYPE ${path_to_repo} DIRECTORY)#type can be deduced from containing folder
+  get_filename_component(DU_PATH ${path_to_repo} DIRECTORY)#type can be deduced from containing folder
   get_filename_component(DU_NAME ${path_to_repo} NAME)#DUname is the name of the folder (last element of the path)
-  if(DU_TYPE MATCHES "packages$")
-    get_Path_To_Package_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
-  elseif(DU_TYPE MATCHES "wrappers$")
-    get_Path_To_External_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
-  elseif(DU_TYPE MATCHES "sites/frameworks$")
-    get_Path_To_Framework_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
-  elseif(DU_TYPE MATCHES "environments$")
-    get_Path_To_Environment_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
+
+  set(DU_TYPE)
+
+  if(DU_PATH MATCHES "packages$")
+    set(DU_TYPE "package")
+  elseif(DU_PATH MATCHES "wrappers$")
+    set(DU_TYPE "wrapper")
+  elseif(DU_PATH MATCHES "sites/frameworks$")
+    set(DU_TYPE "framework")
+  elseif(DU_PATH MATCHES "environments$")
+    set(DU_TYPE "environment")
   else()
-    message("[PID] INTERNAL ERROR: Bad path given to get_Deployment_Unit_Reference_Info: ${path_to_repo}")
-    return()
+    #we are in a context of a standalone install or CI build,
+    # so path_to_repo is not located into the workspace
+    #trying to find adequate name in workspace
+    if(EXISTS ${WORKSPACE_DIR}/packages/${DU_NAME})
+      set(DU_TYPE "package")
+    elseif(${WORKSPACE_DIR}/wrappers/${DU_NAME})
+      set(DU_TYPE "wrapper")
+    elseif(${WORKSPACE_DIR}/sites/frameworks/${DU_NAME})
+      set(DU_TYPE "framework")
+    elseif(${WORKSPACE_DIR}/environments/${DU_NAME})
+      set(DU_TYPE "environment")
+    else()
+      message("[PID] INTERNAL ERROR: Bad path given to get_Deployment_Unit_Reference_Info: ${path_to_repo}")
+      return()
+    endif()
+  endif()
+
+  if(DU_TYPE STREQUAL "package")
+    get_Path_To_Package_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
+  elseif(DU_TYPE STREQUAL "wrapper")
+    get_Path_To_External_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
+  elseif(DU_TYPE STREQUAL "framework")
+    get_Path_To_Framework_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
+  elseif(DU_TYPE STREQUAL "environment")
+    get_Path_To_Environment_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
   endif()
 
   if(NOT PATH_TO_FILE)
     update_Contribution_Spaces(UPDATED)
     if(UPDATED)
-      if(DU_TYPE MATCHES "packages$")
+      if(DU_TYPE STREQUAL "package")
         get_Path_To_Package_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
-      elseif(DU_TYPE MATCHES "wrappers$")
+      elseif(DU_TYPE STREQUAL "wrapper")
         get_Path_To_External_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
-      elseif(DU_TYPE MATCHES "sites/frameworks$")
+      elseif(DU_TYPE STREQUAL "framework")
         get_Path_To_Framework_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
-      elseif(DU_TYPE MATCHES "environments$")
+      elseif(DU_TYPE STREQUAL "environment")
         get_Path_To_Environment_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
       endif()
     else()
-      set(${RES_URL} PARENT_SCOPE)
-      set(${RES_PUBLIC_URL} PARENT_SCOPE)
-      set(${REF_EXISTS} FALSE PARENT_SCOPE)
       return()
     endif()
   endif()
@@ -3555,9 +3581,9 @@ function(get_Deployment_Unit_Reference_Info path_to_repo REF_EXISTS RES_URL RES_
   set(TEMP_${DU_NAME}_ADDRESS ${${DU_NAME}_ADDRESS})
   set(TEMP_${DU_NAME}_PUBLIC_ADDRESS ${${DU_NAME}_PUBLIC_ADDRESS})
   set(TEMP_${DU_NAME}_PROJECT_PAGE ${${DU_NAME}_PROJECT_PAGE})
-  if(NOT DU_TYPE MATCHES "environments$")#common to all except environments
+  if(NOT DU_TYPE STREQUAL "environment")#common to all except environments
     set(TEMP_${DU_NAME}_CATEGORIES ${${DU_NAME}_CATEGORIES})
-    if(DU_TYPE MATCHES "sites/frameworks$")#specific to frameworks: generated site
+    if(DU_TYPE STREQUAL "framework")#specific to frameworks: generated site
       set(TEMP_${DU_NAME}_SITE ${${DU_NAME}_SITE})
     else()#common to wrappers and packages
       set(TEMP_${DU_NAME}_FRAMEWORK ${${DU_NAME}_FRAMEWORK})
@@ -3565,7 +3591,7 @@ function(get_Deployment_Unit_Reference_Info path_to_repo REF_EXISTS RES_URL RES_
       set(TEMP_${DU_NAME}_SITE_GIT_ADDRESS ${${DU_NAME}_SITE_GIT_ADDRESS})
       set(TEMP_${DU_NAME}_SITE_INTRODUCTION ${${DU_NAME}_SITE_INTRODUCTION})
       set(TEMP_${DU_NAME}_REFERENCES ${${DU_NAME}_REFERENCES})
-      if(DU_TYPE MATCHES "wrappers$")#specific to wrappers: description of original project
+      if(DU_TYPE STREQUAL "wrapper")#specific to wrappers: description of original project
         set(TEMP_${DU_NAME}_ORIGINAL_PROJECT_AUTHORS ${${DU_NAME}_ORIGINAL_PROJECT_AUTHORS})
         set(TEMP_${DU_NAME}_ORIGINAL_PROJECT_SITE ${${DU_NAME}_ORIGINAL_PROJECT_SITE})
         set(TEMP_${DU_NAME}_ORIGINAL_PROJECT_LICENSES ${${DU_NAME}_ORIGINAL_PROJECT_LICENSES})
@@ -3591,9 +3617,9 @@ function(get_Deployment_Unit_Reference_Info path_to_repo REF_EXISTS RES_URL RES_
   set(${DU_NAME}_ADDRESS ${TEMP_${DU_NAME}_ADDRESS} CACHE INTERNAL "")
   set(${DU_NAME}_PUBLIC_ADDRESS ${TEMP_${DU_NAME}_PUBLIC_ADDRESS} CACHE INTERNAL "")
   set(${DU_NAME}_PROJECT_PAGE ${TEMP_${DU_NAME}_PROJECT_PAGE} CACHE INTERNAL "")
-  if(NOT DU_TYPE MATCHES "environments$")#common to all except environments
+  if(NOT DU_TYPE STREQUAL "environment")#common to all except environments
     set(${DU_NAME}_CATEGORIES ${TEMP_${DU_NAME}_CATEGORIES} CACHE INTERNAL "")
-    if(DU_TYPE MATCHES "sites/frameworks$")#specific to frameworks: generated site
+    if(DU_TYPE STREQUAL "framework")#specific to frameworks: generated site
       set(${DU_NAME}_SITE ${TEMP_${DU_NAME}_SITE} CACHE INTERNAL "")
     else()#common to wrapper and packages
       set(${DU_NAME}_FRAMEWORK ${TEMP_${DU_NAME}_FRAMEWORK} CACHE INTERNAL "")
@@ -3601,7 +3627,7 @@ function(get_Deployment_Unit_Reference_Info path_to_repo REF_EXISTS RES_URL RES_
       set(${DU_NAME}_SITE_GIT_ADDRESS ${TEMP_${DU_NAME}_SITE_GIT_ADDRESS} CACHE INTERNAL "")
       set(${DU_NAME}_SITE_INTRODUCTION ${TEMP_${DU_NAME}_SITE_INTRODUCTION} CACHE INTERNAL "")
       set(${DU_NAME}_REFERENCES ${TEMP_${DU_NAME}_REFERENCES} CACHE INTERNAL "")
-      if(DU_TYPE MATCHES "wrappers$")#specific to wrappers: description of original project
+      if(DU_TYPE STREQUAL "wrapper")#specific to wrappers: description of original project
         set(${DU_NAME}_ORIGINAL_PROJECT_AUTHORS ${TEMP_${DU_NAME}_ORIGINAL_PROJECT_AUTHORS} CACHE INTERNAL "")
         set(${DU_NAME}_ORIGINAL_PROJECT_SITE ${TEMP_${DU_NAME}_ORIGINAL_PROJECT_SITE} CACHE INTERNAL "")
         set(${DU_NAME}_ORIGINAL_PROJECT_LICENSES ${TEMP_${DU_NAME}_ORIGINAL_PROJECT_LICENSES} CACHE INTERNAL "")
