@@ -413,23 +413,22 @@ endfunction(add_Environment_Solution_Procedure)
 #  Finalize the build process configuration of the current environment project.
 #
 macro(build_Environment_Project)
-
   # build command simply relaunch configuration with parameters managed
   add_custom_target(build
     COMMAND ${CMAKE_COMMAND}
     -DWORKSPACE_DIR=${WORKSPACE_DIR}
     -DTARGET_ENVIRONMENT=${PROJECT_NAME}
-		-DTARGET_INSTANCE=\${instance}
-		-DTARGET_SYSROOT=\${sysroot}
-		-DTARGET_STAGING=\${staging}
-		-DTARGET_PLATFORM=\${platform}
-		-DTARGET_PROC_TYPE=\${type}
-		-DTARGET_PROC_ARCH=\${arch}
-		-DTARGET_OS=\${os}
-		-DTARGET_ABI=\${abi}
-		-DTARGET_DISTRIBUTION=\${distribution}
-		-DTARGET_DISTRIBUTION_VERSION=\${distrib_version}
-		-DIN_CI_PROCESS=${IN_CI_PROCESS}
+    -DTARGET_INSTANCE=\${instance}
+    -DTARGET_SYSROOT=\${sysroot}
+    -DTARGET_STAGING=\${staging}
+    -DTARGET_PLATFORM=\${platform}
+    -DTARGET_PROC_TYPE=\${type}
+    -DTARGET_PROC_ARCH=\${arch}
+    -DTARGET_OS=\${os}
+    -DTARGET_ABI=\${abi}
+    -DTARGET_DISTRIBUTION=\${distribution}
+    -DTARGET_DISTRIBUTION_VERSION=\${distrib_version}
+    -DIN_CI_PROCESS=${IN_CI_PROCESS}
     -DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
     -P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Environment.cmake
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -439,9 +438,9 @@ macro(build_Environment_Project)
   COMMAND ${CMAKE_COMMAND}
             -DWORKSPACE_DIR=${WORKSPACE_DIR}
             -DTARGET_ENVIRONMENT=${PROJECT_NAME}
-  					-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
-  					-P ${WORKSPACE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
-  	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            -DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
+            -P ${WORKSPACE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   )
 
   # update target (update the environment from upstream git repository)
@@ -481,9 +480,12 @@ macro(build_Environment_Project)
     message("[PID] INFO: evaluating environment ${PROJECT_NAME} ...")
   endif()
 
-  set(EVALUATION_RUN FALSE CACHE INTERNAL "" FORCE)#reset so that new cmake run will not be an evaluation run
   detect_Current_Platform()
-  evaluate_Environment_Constraints() #get the parameters passed to the environment
+  evaluate_Environment_Constraints(CONSTRAINTS_OK) #get the parameters passed to the environment
+  if(NOT CONSTRAINTS_OK)
+    set(EVALUATION_RUN FALSE CACHE INTERNAL "" FORCE)#reset so that new cmake run will not be an evaluation run
+    message(FATAL_ERROR "[PID] CRITICAL ERROR: environment ${PROJECT_NAME} cannot fulfill some constraints (see previous logs).")
+  endif()
   evaluate_Generator()
 
   evaluate_Environment_Platform(HOST_MATCHES_TARGET)
@@ -492,6 +494,7 @@ macro(build_Environment_Project)
   endif()
   evaluate_Environment_Dependencies(EVAL_DEPS)
   if(NOT EVAL_DEPS)
+    set(EVALUATION_RUN FALSE CACHE INTERNAL "" FORCE)#reset so that new cmake run will not be an evaluation run
     message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot configure host with environment ${PROJECT_NAME} because there is no valid solution for its dependencies.")
   endif()
   #now evaluate current environment regarding available solutions
@@ -509,6 +512,7 @@ macro(build_Environment_Project)
       endif()
     endforeach()
     if(NOT valid_soution)
+      set(EVALUATION_RUN FALSE CACHE INTERNAL "" FORCE)#reset so that new cmake run will not be an evaluation run
       message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot configure host with environment ${PROJECT_NAME}. No valid solution found.")
     endif()
   endif()
@@ -519,6 +523,7 @@ macro(build_Environment_Project)
   adjust_Environment_Binary_Variables()#need to set the previously computed expression where it is required
   generate_Environment_Solution_File()#generate the global solution file
   generate_Environment_Toolchain_File()#from global solution generate the toolchain file
+  set(EVALUATION_RUN FALSE CACHE INTERNAL "" FORCE)#reset so that new cmake run will not be an evaluation run
 endmacro(build_Environment_Project)
 
 #.rst:
@@ -1537,23 +1542,26 @@ endmacro(evaluate_Environment_Solution)
 #
 #   Evaluate the constraints in order to create adequate variables usable in environment script files.
 #
-function(evaluate_Environment_Constraints)
-foreach(opt IN LISTS ${PROJECT_NAME}_OPTIONAL_CONSTRAINTS ${PROJECT_NAME}_IN_BINARY_CONSTRAINTS)
-  if(opt AND DEFINED VAR_${opt}) #cmake variable containing the input variable exist => input variable passed by the user
-    parse_Configuration_Expression_Argument_Value(VAL_LIST "${VAR_${opt}}")
-    set(${PROJECT_NAME}_${opt} ${VAL_LIST} PARENT_SCOPE)#create the local variable used in scripts
-  endif()
-endforeach()
+#     :EVAL_RESULT: the parent scope variable that is TRUE if any constraints is violated, FALSE otherwise.
+#
+function(evaluate_Environment_Constraints EVAL_RESULT)
+  set(${EVAL_RESULT} FALSE PARENT_SCOPE)
+  foreach(opt IN LISTS ${PROJECT_NAME}_OPTIONAL_CONSTRAINTS ${PROJECT_NAME}_IN_BINARY_CONSTRAINTS)
+    if(opt AND DEFINED VAR_${opt}) #cmake variable containing the input variable exist => input variable passed by the user
+      parse_Configuration_Expression_Argument_Value(VAL_LIST "${VAR_${opt}}")
+      set(${PROJECT_NAME}_${opt} ${VAL_LIST} PARENT_SCOPE)#create the local variable used in scripts
+    endif()
+  endforeach()
 
-foreach(req IN LISTS ${PROJECT_NAME}_REQUIRED_CONSTRAINTS)
-  if(NOT DEFINED VAR_${req}) #cmake variable containing the input variable exist => input variable passed by the user
-    message(FATAL_ERROR "[PID] CRITICAL ERROR: environment ${PROJECT_NAME} requires ${req} to be defined.")
-    return()
-  endif()
-  parse_Configuration_Expression_Argument_Value(VAL_LIST "${VAR_${req}}")
-  set(${PROJECT_NAME}_${req} ${VAL_LIST} PARENT_SCOPE)#create the local variable used in scripts
-endforeach()
-#also evaluate constraints coming from dependent environment or configuration script
+  foreach(req IN LISTS ${PROJECT_NAME}_REQUIRED_CONSTRAINTS)
+    if(NOT DEFINED VAR_${req}) #cmake variable containing the input variable exist => input variable passed by the user
+      message("[PID] ERROR: environment ${PROJECT_NAME} requires ${req} to be defined.")
+      return()
+    endif()
+    parse_Configuration_Expression_Argument_Value(VAL_LIST "${VAR_${req}}")
+    set(${PROJECT_NAME}_${req} ${VAL_LIST} PARENT_SCOPE)#create the local variable used in scripts
+  endforeach()
+  #also evaluate constraints coming from dependent environment or configuration script
 
 if(FORCE_${PROJECT_NAME}_TARGET_SYSROOT)
   set(${PROJECT_NAME}_TARGET_SYSROOT ${FORCE_${PROJECT_NAME}_TARGET_SYSROOT} CACHE INTERNAL "")# higher level specified sysroot always takes precedence
@@ -1567,7 +1575,7 @@ endif()
 
 if(FORCE_${PROJECT_NAME}_ARCH_CONSTRAINT) #arch constraint has been forced
   if(${PROJECT_NAME}_ARCH_CONSTRAINT AND (NOT ${PROJECT_NAME}_ARCH_CONSTRAINT STREQUAL FORCE_${PROJECT_NAME}_ARCH_CONSTRAINT))
-    message(FATAL_ERROR "[PID] CRITICAL ERROR: environment ${PROJECT_NAME} defines a constraint on processor architecture (${${PROJECT_NAME}_ARCH_CONSTRAINT}) but a dependent environment imposes a different one (${FORCE_${PROJECT_NAME}_ARCH_CONSTRAINT}).")
+    message("[PID] ERROR: environment ${PROJECT_NAME} defines a constraint on processor architecture (${${PROJECT_NAME}_ARCH_CONSTRAINT}) but a dependent environment imposes a different one (${FORCE_${PROJECT_NAME}_ARCH_CONSTRAINT}).")
     return()
   else()
     set(${PROJECT_NAME}_ARCH_CONSTRAINT ${FORCE_${PROJECT_NAME}_ARCH_CONSTRAINT} CACHE INTERNAL "")#set its value
@@ -1575,7 +1583,7 @@ if(FORCE_${PROJECT_NAME}_ARCH_CONSTRAINT) #arch constraint has been forced
 endif()
 if(FORCE_${PROJECT_NAME}_TYPE_CONSTRAINT)
   if(${PROJECT_NAME}_TYPE_CONSTRAINT AND (NOT ${PROJECT_NAME}_TYPE_CONSTRAINT STREQUAL FORCE_${PROJECT_NAME}_TYPE_CONSTRAINT))
-    message(FATAL_ERROR "[PID] CRITICAL ERROR: environment ${PROJECT_NAME} defines a constraint on processor architecture size (${${PROJECT_NAME}_TYPE_CONSTRAINT}) but a dependent environment imposes a different one (${FORCE_${PROJECT_NAME}_TYPE_CONSTRAINT}).")
+    message("[PID] ERROR: environment ${PROJECT_NAME} defines a constraint on processor architecture size (${${PROJECT_NAME}_TYPE_CONSTRAINT}) but a dependent environment imposes a different one (${FORCE_${PROJECT_NAME}_TYPE_CONSTRAINT}).")
     return()
   else()
     set(${PROJECT_NAME}_TYPE_CONSTRAINT ${FORCE_${PROJECT_NAME}_TYPE_CONSTRAINT} CACHE INTERNAL "")#set its value
@@ -1583,7 +1591,7 @@ if(FORCE_${PROJECT_NAME}_TYPE_CONSTRAINT)
 endif()
 if(FORCE_${PROJECT_NAME}_OS_CONSTRAINT)
   if(${PROJECT_NAME}_OS_CONSTRAINT AND (NOT ${PROJECT_NAME}_OS_CONSTRAINT STREQUAL FORCE_${PROJECT_NAME}_OS_CONSTRAINT))
-    message(FATAL_ERROR "[PID] CRITICAL ERROR: environment ${PROJECT_NAME} defines a constraint on operating system (${${PROJECT_NAME}_OS_CONSTRAINT}) but a dependent environment imposes a different one (${FORCE_${PROJECT_NAME}_OS_CONSTRAINT}).")
+    message("[PID] ERROR: environment ${PROJECT_NAME} defines a constraint on operating system (${${PROJECT_NAME}_OS_CONSTRAINT}) but a dependent environment imposes a different one (${FORCE_${PROJECT_NAME}_OS_CONSTRAINT}).")
     return()
   else()
     set(${PROJECT_NAME}_OS_CONSTRAINT ${FORCE_${PROJECT_NAME}_OS_CONSTRAINT} CACHE INTERNAL "")#set its value
@@ -1591,7 +1599,7 @@ if(FORCE_${PROJECT_NAME}_OS_CONSTRAINT)
 endif()
 if(FORCE_${PROJECT_NAME}_ABI_CONSTRAINT)
   if(${PROJECT_NAME}_ABI_CONSTRAINT AND (NOT ${PROJECT_NAME}_ABI_CONSTRAINT STREQUAL FORCE_${PROJECT_NAME}_ABI_CONSTRAINT))
-    message(FATAL_ERROR "[PID] CRITICAL ERROR: environment ${PROJECT_NAME} defines a constraint on C++ ABI (${${PROJECT_NAME}_ABI_CONSTRAINT}) but a dependent environment imposes a different one (${FORCE_${PROJECT_NAME}_ABI_CONSTRAINT}).")
+    message("[PID] ERROR: environment ${PROJECT_NAME} defines a constraint on C++ ABI (${${PROJECT_NAME}_ABI_CONSTRAINT}) but a dependent environment imposes a different one (${FORCE_${PROJECT_NAME}_ABI_CONSTRAINT}).")
     return()
   else()
     set(${PROJECT_NAME}_ABI_CONSTRAINT ${FORCE_${PROJECT_NAME}_ABI_CONSTRAINT} CACHE INTERNAL "")#set its value
@@ -1599,20 +1607,22 @@ if(FORCE_${PROJECT_NAME}_ABI_CONSTRAINT)
 endif()
 if(FORCE_${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT)
   if(${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT AND (NOT ${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT STREQUAL FORCE_${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT))
-    message(FATAL_ERROR "[PID] CRITICAL ERROR: environment ${PROJECT_NAME} defines a constraint on OS distribution (${${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT}) but a dependent environment imposes a different one (${FORCE_${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT}).")
+    message("[PID] ERROR: environment ${PROJECT_NAME} defines a constraint on OS distribution (${${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT}) but a dependent environment imposes a different one (${FORCE_${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT}).")
     return()
   else()
     set(${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT ${FORCE_${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT} CACHE INTERNAL "")#set its value
   endif()
   if(FORCE_${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT)
     if(${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT AND (NOT ${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT STREQUAL FORCE_${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT))
-      message(FATAL_ERROR "[PID] CRITICAL ERROR: environment ${PROJECT_NAME} defines a constraint on OS distribution version (${${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT}) but a dependent environment imposes a different one (${FORCE_${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT}).")
+      message("[PID] ERROR: environment ${PROJECT_NAME} defines a constraint on OS distribution version (${${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT}) but a dependent environment imposes a different one (${FORCE_${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT}).")
       return()
     else()
       set(${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT ${FORCE_${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT} CACHE INTERNAL "")#set its value
     endif()
   endif()
 endif()
+set(${EVAL_RESULT} TRUE PARENT_SCOPE)
+
 endfunction(evaluate_Environment_Constraints)
 
 
