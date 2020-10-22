@@ -34,7 +34,7 @@ cd binaries/pid-workspace/wrappers && ln -s $dir_path $dir_name && cd ../../..
 
 #getting the current platform and instance (if any) of the current runner
 platform=$1
-# 1 extract target platform information from runner targs
+# 1 extract target platform information from runner tags
 platform=${platform/pid/""}
 platform=${platform/","/""}
 platform=${platform/" "/""}
@@ -52,7 +52,7 @@ if [[ $platform =~ $reg_expr ]]; then
 fi
 
 if [  "$instance" != "" ]; then
-  using_profile=use_$1
+  using_profile=use_$instance
   echo "[PID] CI : configuring environment $instance on platform $platform ..."
   cd binaries/pid-workspace/build
   cmd=mk profile=$using_profile env=$instance instance=$instance platform=$platform cmake --build . --target profiles
