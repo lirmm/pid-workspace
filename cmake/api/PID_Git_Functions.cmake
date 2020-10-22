@@ -1427,7 +1427,7 @@ endfunction(update_Package_Repository_Versions)
 function(adjust_Official_Remote_Address OFFICIAL_REMOTE_CONNECTED path_to_repo verbose)
 set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE)
 
-is_Repository_Connected(CONNECTED ${path_to_repo} official) #check if the repository has a fetch URL defined
+is_Repository_Remote_Defined(CONNECTED ${path_to_repo} official) #check if the repository has a fetch URL defined
 get_Deployment_Unit_Repository_Address_In_Description(${path_to_repo} URL PUBLIC_URL) #get addresses of official remote from deployment unit description
 if(NOT CONNECTED)#no official remote (due to old deployment unit style or due to a misuse of git command within a deployment unit)
   if(URL)#the deployment unit has an official repository declared
@@ -1693,22 +1693,22 @@ endfunction(check_For_New_Commits_To_Release)
 #
 # .. ifmode:: internal
 #
-#  .. |is_Repository_Connected| replace:: ``is_Repository_Connected``
-#  .. _is_Repository_Connected:
+#  .. |is_Repository_Remote_Defined| replace:: ``is_Repository_Remote_Defined``
+#  .. _is_Repository_Remote_Defined:
 #
-#  is_Repository_Connected
-#  -----------------------
+#  is_Repository_Remote_Defined
+#  ----------------------------
 #
-#   .. command:: is_Repository_Connected(CONNECTED path_to_repo remote)
+#   .. command:: is_Repository_Remote_Defined(CONNECTED path_to_repo remote)
 #
-#     Tell wether a delpoyment unit's repository (native or external package, framework, environment) is connected with a given remote (only fetch address is tested).
+#     Tell wether a delpoyment unit's repository (native or external package, framework, environment) is defined with a given remote (only fetch address is tested).
 #
 #     :path_to_repo: the path to target deployment_unit's repository
 #     :remote: the name of the remote
 #
 #     :CONNECTED: the output variable that is TRUE if deployment_unit is connected to the remote, FALSE otherwise (including if the remote does not exist)
 #
-function(is_Repository_Connected CONNECTED path_to_repo remote)
+function(is_Repository_Remote_Defined CONNECTED path_to_repo remote)
 	git_Provides_GETURL(RESULT)#depending on the version of git we can use the get-url command or not
 
   if(RESULT)#the get-url approach is the best one
@@ -1734,7 +1734,7 @@ function(is_Repository_Connected CONNECTED path_to_repo remote)
 		endif()
 		set(${CONNECTED} FALSE PARENT_SCOPE)
 	endif()
-endfunction(is_Repository_Connected)
+endfunction(is_Repository_Remote_Defined)
 
 #.rst:
 #
@@ -2336,7 +2336,7 @@ else()#there is a connected remote after adjustment
   else()#a public address is defined !
     set(ADDR_OK TRUE)
     if(NOT ${PROJECT_NAME}_ADDRESS STREQUAL RES_OFFICIAL_PUSH)
-      message("[PID] WARNING: the address used in package description (${${PROJECT_NAME}_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (${RES_OFFICIAL_PUSH}). Using the current remote by default. You should change the address in package description.")
+      message("[PID] WARNING: the address used in package description (${${PROJECT_NAME}_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (${RES_OFFICIAL_PUSH}). Using the current git remote (${RES_OFFICIAL_PUSH}).")
       set(ADDR_OK FALSE)#means that we keep official "as is"
     endif()
     if(NOT ${PROJECT_NAME}_PUBLIC_ADDRESS STREQUAL RES_OFFICIAL_FETCH)
@@ -2344,7 +2344,7 @@ else()#there is a connected remote after adjustment
         #we know that the address is correct so we simply need to reconnect the public address
         reconnect_Repository_Remote(${CMAKE_SOURCE_DIR} ${${PROJECT_NAME}_ADDRESS} ${${PROJECT_NAME}_PUBLIC_ADDRESS} official)
       else()
-        message("[PID] WARNING: the public address used in package description (${${PROJECT_NAME}_PUBLIC_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (${RES_OFFICIAL_FETCH}). Using the current remote by default. You should change the address in package description.")
+        message("[PID] WARNING: the public address used in package description (${${PROJECT_NAME}_PUBLIC_ADDRESS}) seems to be pointing to an invalid repository while the corresponding git remote targets another remote repository (${RES_OFFICIAL_FETCH}). Using the current git remote (${RES_OFFICIAL_FETCH}) by default.")
       endif()
     endif()
   endif()
@@ -2352,13 +2352,24 @@ else()#there is a connected remote after adjustment
   execute_process(COMMAND git fetch official --tags
                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
   # now checking that there is an origin remote
-  is_Repository_Connected(CONNECTED ${CMAKE_SOURCE_DIR} origin)
-  if(NOT CONNECTED) #the package has no origin remote => create it and set it to the same address as official
+  is_Repository_Remote_Defined(DEFINED ${CMAKE_SOURCE_DIR} origin)
+  if(NOT DEFINED) #the package has no origin remote => create it and set it to the same address as official
   	execute_process(COMMAND git remote add origin ${${PROJECT_NAME}_ADDRESS}
                     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
   	execute_process(COMMAND git fetch origin
                     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
-  #else we cannot conclude if origin is OK or not as the user may have forked the official project (and so may want to keep another address than official)
+  else()
+    test_Remote_Connection(CONNECTED ${CMAKE_SOURCE_DIR} origin)
+    if(NOT CONNECTED)#the origin is no mroe pointing to a valid repository
+      message("[PID] WARNING: your origin remote is no more valid (it has probably been removed online). Setting it to ${${PROJECT_NAME}_ADDRESS}.")
+      execute_process(COMMAND git remote remove origin
+                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
+    	execute_process(COMMAND git remote add origin ${${PROJECT_NAME}_ADDRESS}
+                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
+    	execute_process(COMMAND git fetch origin
+                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
+    endif()
+    #else we cannot conclude if origin is OK or not as the user may have forked the official project (and so may want to keep another address than official)
   endif()
 endif()
 endfunction(check_For_Remote_Respositories)
