@@ -9,6 +9,9 @@ platform=$2
 platform=${platform/pid/""}
 platform=${platform/","/""}
 platform=${platform/" "/""}
+platform=${platform/site/""}
+platform=${platform/","/""}
+platform=${platform/" "/""}
 
 runner_only_binaries="true"
 if [ "$platform" = "$PACKAGE_MAIN_PLATFORM" ]; then
