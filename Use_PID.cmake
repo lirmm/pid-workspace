@@ -122,8 +122,8 @@ include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_External_Use_Internal_Functions NO_POLICY_SCOPE)
 
-execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR} -B ${WORKSPACE_DIR}/build
-								WORKING_DIRECTORY ${WORKSPACE_DIR}/build)#force reconfiguration (in case workspace was deployed as a submodule and never configured)
+execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}
+						WORKING_DIRECTORY ${WORKSPACE_DIR}/build)#force reconfiguration (in case workspace was deployed as a submodule and never configured)
 
 load_Platform_Info()
 #need to reset the variables used to describe dependencies
@@ -160,7 +160,7 @@ endmacro(import_PID_Workspace)
 #
 #   .. rubric:: Optional parameters
 #
-#   :PRIORITY <DEFAULT/MIN/MAX>: specify the priority to give to the contribution space.
+#   :PRIORITY <MIN/MAX>: specify the priority to give to the contribution space. Default is MIN.
 #
 #   .. admonition:: Constraints
 #     :class: important
@@ -201,16 +201,14 @@ macro(add_PID_Contribution_Space)
 			set(temp_list ${CONTRIBUTION_SPACES})
 			list(REMOVE_ITEM temp_list ${ADD_PID_CONTRIBUTION_SPACE_NAME})
 			
-			if(ADD_PID_CONTRIBUTION_SPACE_PRIORITY STREQUAL DEFAULT)
-				message("[PID] INFO : leaving the contribution space ${ADD_PID_CONTRIBUTION_SPACE_NAME} to its default priority")
-			elseif(ADD_PID_CONTRIBUTION_SPACE_PRIORITY STREQUAL MIN)
+			if(ADD_PID_CONTRIBUTION_SPACE_PRIORITY STREQUAL MIN)
 				message("[PID] INFO : setting the contribution space ${ADD_PID_CONTRIBUTION_SPACE_NAME} priority to the minimum")
 				list(APPEND temp_list ${ADD_PID_CONTRIBUTION_SPACE_NAME}) # Put the CS at the end
 			elseif(ADD_PID_CONTRIBUTION_SPACE_PRIORITY STREQUAL MAX)
 				message("[PID] INFO : setting the contribution space ${ADD_PID_CONTRIBUTION_SPACE_NAME} priority to the maximum")
 				set(temp_list ${ADD_PID_CONTRIBUTION_SPACE_NAME} ${temp_list}) # Put the CS in front
 			else()
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling add_PID_Contribution_Space, the priority can only take one of the following values: DEFAULT, MIN, MAX.")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling add_PID_Contribution_Space, the priority can only take one of the following values: MIN, MAX.")
 			endif()
 
 			set(CONTRIBUTION_SPACES ${temp_list} CACHE INTERNAL "") # Save the new CS order
@@ -219,8 +217,7 @@ macro(add_PID_Contribution_Space)
 		write_Contribution_Spaces_Description_File()
 
 		# Reconfigure the workspace
-		execute_process(COMMAND ${CMAKE_COMMAND} 
-								-S ${WORKSPACE_DIR} -B ${WORKSPACE_DIR}/build
+		execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}
 						WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
 
 		# Force a reload to make new references available
