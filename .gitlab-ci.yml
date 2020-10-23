@@ -36,7 +36,7 @@ stages:
         - pid deploy package=cooperative-task-controller branch=integration
         - echo "[PID] Testing external use of a collection of PID packages using dedicated cmake API"
         - mkdir tmp && cd tmp && git clone git@gite.lirmm.fr:pid/tests/test_external_use.git
-        - cd test_external_use/build && cmake -DWORKSPACE_DIR="../../.." .. && make
+        - cd test_external_use/build && cmake -DPATH_TO_PID_WS="../../.." .. && make
         - cd ../../..
         - echo "[PID] Testing external use of a collection of PID packages using system install"
         - pid deploy package=pid-log version=3.1.0
