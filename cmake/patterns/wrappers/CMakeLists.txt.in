@@ -12,5 +12,6 @@ PID_Wrapper(
     DESCRIPTION       @WRAPPER_DESCRIPTION@
 )
 
+# add dependencies with PID_Wrapper_Dependency here
 
 build_PID_Wrapper()

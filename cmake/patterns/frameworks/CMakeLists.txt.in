@@ -12,5 +12,6 @@ PID_Framework(
     DESCRIPTION       @FRAMEWORK_DESCRIPTION@
 )
 
+# input framework description here
 
 build_PID_Framework()

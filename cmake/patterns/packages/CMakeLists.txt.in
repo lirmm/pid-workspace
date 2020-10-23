@@ -13,4 +13,6 @@ PID_Package(
     VERSION           0.0.0
 )
 
+# add dependencies with PID_Dependency here
+
 build_PID_Package()
