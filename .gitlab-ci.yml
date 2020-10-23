@@ -41,7 +41,7 @@ stages:
         - echo "[PID] Testing external use of a collection of PID packages using system install"
         - pid deploy package=pid-log version=3.1.0
         - cd tmp && git clone git@gite.lirmm.fr:pid/tests/test_system_install.git && cd ..
-        - pid sysinstall package=pid-log version=3.1.0 folder=`pwd`/tmp/test_system_install/install
+        - pid sysinstall package=pid-log version=3.1.1 folder=`pwd`/tmp/test_system_install/install
         - export LD_LIBRARY_PATH=`pwd`/tmp/test_system_install/install/lib
         - export PATH=`pwd`/tmp/test_system_install/install/bin:$PATH
         - export RUNTIME_RESOURCE_PATH=`pwd`/tmp/test_system_install/install/share/pid_resources
