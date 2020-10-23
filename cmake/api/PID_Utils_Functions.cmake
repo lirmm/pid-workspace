@@ -3318,7 +3318,6 @@ foreach(resource IN LISTS ext_resources)
   set(CMAKE_MATCH_2)
 	if(resource MATCHES "^<[^>]+>(.*)")# a replacement has taken place => this is a relative path to an external package resource
 		list(APPEND res_resources ${CMAKE_MATCH_1})
-		endif()
   elseif(resource AND DEFINED ${resource})#the resource is not a path but a variable => need to interpret it !
     list(APPEND res_resources ${${resource}})	# evaluate the variable to get the system path
   else()#this is a relative path (relative to an external package or an absolute path
