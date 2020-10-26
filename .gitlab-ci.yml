@@ -8,7 +8,6 @@ stages:
  - create_and_build
  - deploy
  - external_use
- - external_use_ros
 
  ############ generic jobs patterns #############
 
