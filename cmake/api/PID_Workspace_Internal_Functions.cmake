@@ -3281,7 +3281,7 @@ if(NOT IS_SYSTEM_DEPENDENCY_WRAPPER)#for OS variant version of external packages
 		if(ext_res)
 			resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH "${ext_res}" ${CMAKE_BUILD_TYPE})
 			if(COMPLETE_RESOURCES_PATH)
-				file(COPY ${COMPLETE_RESOURCES_PATH} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_resources)#putting all runtime resource directly in the folder pid_resources
+				file(COPY ${COMPLETE_RESOURCES_PATH} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/runtime_resources)#putting all runtime resource directly in the folder runtime_resources
 			endif()
 		endif()
 	else()#it is a native package
@@ -3289,7 +3289,7 @@ if(NOT IS_SYSTEM_DEPENDENCY_WRAPPER)#for OS variant version of external packages
 		if(EXISTS ${package_workspace_path}/share/resources AND IS_DIRECTORY ${package_workspace_path}/share/resources)
 			file(GLOB runres ${package_workspace_path}/share/resources/*)
 			if(runres)
-				file(COPY ${runres} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_resources)#putting all runtime resource directly in the folder pid_resources
+				file(COPY ${runres} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/runtime_resources)#putting all runtime resource directly in the folder runtime_resources
 			endif()
 		endif()
 	endif()
@@ -3427,8 +3427,8 @@ function(install_Package_In_System IS_INSTALLED package version)
 	if(NOT EXISTS ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
 		file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR} )
 	endif()
-	if(NOT EXISTS ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_resources)
-		file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_resources)
+	if(NOT EXISTS ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/runtime_resources)
+		file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/runtime_resources)
 	endif()
 	if(NOT EXISTS ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_cmake)#where generated find scripts will be put
 		file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_cmake)

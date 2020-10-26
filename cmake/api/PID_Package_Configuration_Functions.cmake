@@ -413,7 +413,7 @@ if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported
       if(IS_ABSOLUTE ${path})#path to a system folder are absolute
         list(APPEND result ${path})#the direct path to the dependency (absolute) : will be the case anytime for external packages
       else()
-        list(APPEND result ${CMAKE_INSTALL_DIR}/${CMAKE_INSTALL_DATAROOTDIR}/pid_resources/${path})#external project runtime resources have been put into specific share/pid_resource install folder
+        list(APPEND result ${CMAKE_INSTALL_DIR}/${CMAKE_INSTALL_DATAROOTDIR}/runtime_resources/${path})#external project runtime resources have been put into specific share/pid_resource install folder
       endif()
     endforeach()
   else()
@@ -455,7 +455,7 @@ if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})#if there are exported
 	foreach(path IN LISTS COMPLETE_RESOURCES_PATH)
 		if(NOT IS_ABSOLUTE ${path}) #relative path => this a native package resource
       if(insystempath)
-        list(APPEND result ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_resources/${path})#targetting the system install folder instead of workspace folder
+        list(APPEND result ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/runtime_resources/${path})#targetting the system install folder instead of workspace folder
       else()
          list(APPEND result ${${package}_ROOT_DIR}/share/resources/${path})#the path contained by the link
       endif()
