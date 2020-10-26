@@ -51,7 +51,7 @@ stages:
    stage: external_use
    script:
         - mkdir tmp && cd tmp && git clone git@gite.lirmm.fr:pid/tests/test_external_use_deploy.git
-        - cd test_external_use_deploy/build && cmake .. && make
+        - cd test_external_use_deploy/build && cmake -DPATH_TO_PID_WS="../../.." -DTEST_DIRECT_SYSTEM_DEPLOYMENT=ON .. && make
 
 ############ patterns for platforms selection #############
 # here the project generates patterns for runner selection according for all platforms defined in the workspace
