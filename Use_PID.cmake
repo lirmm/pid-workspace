@@ -122,8 +122,8 @@ include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_External_Use_Internal_Functions NO_POLICY_SCOPE)
 
-execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR} -B ${WORKSPACE_DIR}/build
-								WORKING_DIRECTORY ${WORKSPACE_DIR}/build)#force reconfiguration (in case workspace was deployed as a submodule and never configured)
+execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}
+						WORKING_DIRECTORY ${WORKSPACE_DIR}/build)#force reconfiguration (in case workspace was deployed as a submodule and never configured)
 
 load_Platform_Info()
 #need to reset the variables used to describe dependencies
@@ -138,6 +138,95 @@ if(IMPORT_PID_WORKSPACE_SYSTEM_DEPENDENCIES)
 	endif()
 endif()
 endmacro(import_PID_Workspace)
+
+#.rst:
+# .. ifmode:: user
+#
+#  .. |add_PID_Contribution_Space| replace:: ``add_PID_Contribution_Space``
+#  .. _add_PID_Contribution_Space:
+#
+#  add_PID_Contribution_Space
+#  ------------------
+#
+#  .. command:: add_PID_Contribution_Space(NAME ... URL .. [PRIORITY ...])
+#
+#   Add a new contribution to be used by PID workspace.
+#
+#   .. rubric:: Required parameters
+#
+#   :NAME <string>: the name of the contribution space to add
+#
+#   :URL <string>: the Git url of the contribution space to add
+#
+#   .. rubric:: Optional parameters
+#
+#   :PRIORITY <MIN/MAX>: specify the priority to give to the contribution space. Default is MIN.
+#
+#   .. admonition:: Constraints
+#     :class: important
+#
+#     Must be called AFTER import_PID_Workspace.
+#
+#   .. admonition:: Effects
+#     :class: important
+#
+#     After the call, the contribution space provided references can be used in the local project.
+#
+#   .. rubric:: Example
+#
+#   .. code-block:: cmake
+#
+#      add_PID_Contribution_Space(NAME mycs URL https://gite.lirmm.fr/user/mycs.git PRIORITY MAX)
+#
+macro(add_PID_Contribution_Space)
+	# Interpret user arguments
+	set(oneValueArgs NAME URL PRIORITY)
+	cmake_parse_arguments(ADD_PID_CONTRIBUTION_SPACE "" "${oneValueArgs}" "" ${ARGN})
+
+	# Check required arguments presence
+	if(NOT ADD_PID_CONTRIBUTION_SPACE_NAME)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling add_PID_Contribution_Space, a name must be given for the contribution space to add.")
+	endif()
+
+	if(NOT ADD_PID_CONTRIBUTION_SPACE_URL)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling add_PID_Contribution_Space, an url must be given for the contribution space to add.")
+	endif()
+
+	# Don't do anything if the CS already exists to improve configuration times
+	list(FIND CONTRIBUTION_SPACES ${ADD_PID_CONTRIBUTION_SPACE_NAME} INDEX)
+	if(INDEX EQUAL -1)
+		add_Contribution_Space(${ADD_PID_CONTRIBUTION_SPACE_NAME} "${ADD_PID_CONTRIBUTION_SPACE_URL}" "${ADD_PID_CONTRIBUTION_SPACE_URL}")
+		
+		if(ADD_PID_CONTRIBUTION_SPACE_PRIORITY)
+			set(temp_list ${CONTRIBUTION_SPACES})
+			list(REMOVE_ITEM temp_list ${ADD_PID_CONTRIBUTION_SPACE_NAME})
+			
+			if(ADD_PID_CONTRIBUTION_SPACE_PRIORITY STREQUAL MIN)
+				message("[PID] INFO : setting the contribution space ${ADD_PID_CONTRIBUTION_SPACE_NAME} priority to the minimum")
+				list(APPEND temp_list ${ADD_PID_CONTRIBUTION_SPACE_NAME}) # Put the CS at the end
+			elseif(ADD_PID_CONTRIBUTION_SPACE_PRIORITY STREQUAL MAX)
+				message("[PID] INFO : setting the contribution space ${ADD_PID_CONTRIBUTION_SPACE_NAME} priority to the maximum")
+				set(temp_list ${ADD_PID_CONTRIBUTION_SPACE_NAME} ${temp_list}) # Put the CS in front
+			else()
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling add_PID_Contribution_Space, the priority can only take one of the following values: MIN, MAX.")
+			endif()
+
+			set(CONTRIBUTION_SPACES ${temp_list} CACHE INTERNAL "") # Save the new CS order
+		endif()
+
+		write_Contribution_Spaces_Description_File()
+
+		# Reconfigure the workspace
+		execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}
+						WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
+
+		# Force a reload to make new references available
+		load_Platform_Info()
+	else()
+		message("[PID] INFO : contribution space ${ADD_PID_CONTRIBUTION_SPACE_NAME} already exists, doing nothing")						
+	endif()
+endmacro(add_PID_Contribution_Space)
+
 
 #.rst:
 # .. ifmode:: user
