@@ -51,7 +51,6 @@ macro(manage_Plugins_In_Wrapper filename package version)
   #only manage on demand plugins for wrappers
   #Note: if they are part of _EXTRA_TOOLS_REQUIRED variable this means they have been required
   foreach(tool IN LISTS ${package}_KNOWN_VERSION_${version}_EXTRA_TOOLS)
-    message("wrapper checking for ${plugins_path}/${tool}/${filename}.cmake")
     if(EXISTS ${plugins_path}/${tool}/${filename}.cmake)
       include(${plugins_path}/${tool}/${filename}.cmake)
     endif()
@@ -132,7 +131,6 @@ macro(manage_Plugins_In_Package filename)
   #also manage on demand plugins
   #Note: if they are part of _EXTRA_TOOLS_REQUIRED variable this means they have been required
   foreach(tool IN LISTS ${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED)
-    message("checking for ${plugins_path}/${tool}/${filename}.cmake")
     if(EXISTS ${plugins_path}/${tool}/${filename}.cmake)
       include(${plugins_path}/${tool}/${filename}.cmake)
     endif()
