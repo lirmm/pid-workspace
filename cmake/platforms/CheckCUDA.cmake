@@ -74,7 +74,9 @@ set(CUDA_Language_AVAILABLE TRUE CACHE INTERNAL "")
 #memorizing build variables
 set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE INTERNAL "" FORCE)
 set(CMAKE_CUDA_FLAGS CACHE INTERNAL "" FORCE) #for security, avoid setting flags when language is checked (otherwise if errors occurs they will be persistent)
-check_language(CUDA)
+if(NOT PID_CROSSCOMPILATION)
+  check_language(CUDA)#only check for language if crosscompilation is not active
+endif()
 if(CMAKE_CUDA_COMPILER)
   enable_language(CUDA)
 else()#create the variable from the one created by find_package(CUDA)

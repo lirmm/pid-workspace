@@ -42,27 +42,32 @@ endfunction(check_Current_Standard_Library_Is_CXX11_ABI_Compatible)
 function(get_Current_Standard_Library_Version VERSION NAME)
 set(${VERSION} PARENT_SCOPE)
 set(${NAME} PARENT_SCOPE)
+if(PID_CROSSCOMPILATION)
+	#by default we set the version of the c++ standard library to same version as compiler when crosscompiling
+	set(${VERSION} ${CMAKE_CXX_COMPILER_VERSION} PARENT_SCOPE)
+	return()#cannot set the name
+else()
+	if(CURRENT_PLATFORM_OS STREQUAL "windows")
+		#probably need to do some specific things in windows
+		return ()
+	else()#other systems
+		#from here we will look into the symbols
+		#first compiling with default
+		try_compile(RES ${CMAKE_BINARY_DIR}
+			SOURCES ${WORKSPACE_DIR}/cmake/platforms/checks/std_lib_version.cpp
+			COPY_FILE std_lib_version
+			OUTPUT_VARIABLE out)
+		execute_process(COMMAND ${CMAKE_BINARY_DIR}/std_lib_version OUTPUT_VARIABLE name_version)
 
-if(CURRENT_PLATFORM_OS STREQUAL "windows")
-	#probably need to do some specific things in windows
-	return ()
-else()#other systems
-	#from here we will look into the symbols
-	#first compiling with default
-	try_compile(RES ${CMAKE_BINARY_DIR}
-		SOURCES ${WORKSPACE_DIR}/cmake/platforms/checks/std_lib_version.cpp
-		COPY_FILE std_lib_version
-		OUTPUT_VARIABLE out)
-	execute_process(COMMAND ${CMAKE_BINARY_DIR}/std_lib_version OUTPUT_VARIABLE name_version)
-
-	if(name_version)
-		list(GET name_version 0 lib_name)
-		set(${NAME} ${lib_name} PARENT_SCOPE)
-		list(GET name_version 1 version)
-		if(version MATCHES "^([0-9]+)([0-9][0-9][0-9])$")#VERSION + REVISION
-			set(${VERSION} ${CMAKE_MATCH_1}.${CMAKE_MATCH_2} PARENT_SCOPE)
-		else()#only VERSION
-			set(${VERSION} ${version} PARENT_SCOPE)
+		if(name_version)
+			list(GET name_version 0 lib_name)
+			set(${NAME} ${lib_name} PARENT_SCOPE)
+			list(GET name_version 1 version)
+			if(version MATCHES "^([0-9]+)([0-9][0-9][0-9])$")#VERSION + REVISION
+				set(${VERSION} ${CMAKE_MATCH_1}.${CMAKE_MATCH_2} PARENT_SCOPE)
+			else()#only VERSION
+				set(${VERSION} ${version} PARENT_SCOPE)
+			endif()
 		endif()
 	endif()
 endif()
@@ -104,15 +109,25 @@ function(get_CXX_Standard_Library_Symbols_Version RES_NAME RES_VERSION RES_SYMBO
 	set(${RES_SYMBOL_VERSIONS} PARENT_SCOPE)
 	set(${RES_FLAGS} PARENT_SCOPE)
 	#symbols name depends on the standard library implementation...
-	if(library_name MATCHES "msvcprt")
+	if(library_name MATCHES "msvc")
 		get_Current_Standard_Library_Version(STD_VERSION STD_NAME)
+		if(NOT STD_NAME)#possible when crosscompiling
+			set(STD_NAME "msvc")
+		endif()
 		set(STD_ABI "msvc" PARENT_SCOPE)
 		# adding a generic fake symbol representing the version of the library
 		# make it generic for every standard library in use
-		set(STD_SYMBOLS "<VERSION_/${STD_VERSION}>")#will be used to check std lib compatibility
+		set(STD_SYMBOLS "VERSION_;${STD_VERSION}")#will be used to check std lib compatibility
 	elseif(library_name MATCHES "stdc\\+\\+")#gnu c++ library (may be named stdc++11 as well)
 		get_Current_Standard_Library_Version(STD_VERSION STD_NAME)
-		get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "GLIBCXX_;CXXABI_")
+		if(NOT STD_NAME)#possible when crosscompiling
+			set(STD_NAME "stdc++")
+		endif()
+		if(PID_CROSSCOMPILATION)
+			set(STD_SYMBOLS "VERSION_;${STD_VERSION}")#will be used to simulate std lib compatibility
+		else()#cannot check the symbols when crosscompiling
+			get_Library_ELF_Symbols_Max_Versions(STD_SYMBOLS ${path_to_library} "GLIBCXX_;CXXABI_")
+		endif()
 		# specific action for the stdc++ library as it support a dual ABI that can be viewed as 2 different implementations of the stabdard library
 		#NOW check the C++ compiler ABI used to build the c++ standard library
 		set(USE_ABI)
@@ -151,6 +166,15 @@ function(get_CXX_Standard_Library_Symbols_Version RES_NAME RES_VERSION RES_SYMBO
 						else()
 							set(glibcxx_is_cxx11_capable FALSE)
 						endif()
+					elseif(symb MATCHES "VERSION_")
+						if(version VERSION_GREATER_EQUAL 5.1) #build from gcc 5.1 or more (or equivalent compiler ABI settings for clang)
+							set(glibcxx_is_cxx11_capable TRUE)
+							set(cxxabi_is_cxx11_capable TRUE)
+						else()
+							set(glibcxx_is_cxx11_capable FALSE)
+							set(cxxabi_is_cxx11_capable FALSE)
+						endif()
+						break()
 					endif()
 				endwhile()
 				if(NOT cxxabi_is_cxx11_capable OR NOT glibcxx_is_cxx11_capable)
@@ -194,12 +218,14 @@ function(get_CXX_Standard_Library_Symbols_Version RES_NAME RES_VERSION RES_SYMBO
 
 	elseif(library_name MATCHES "c\\+\\+")#the new libc++ library
 		get_Current_Standard_Library_Version(STD_VERSION STD_NAME)
-
+		if(NOT STD_NAME)#possible when crosscompiling
+			set(STD_NAME "c++")
+		endif()
 		#no ELF symbol version defined in libc++ => use inline namespace of c++11
 		set(STD_ABI "c++")
 		# adding a generic fake symbol representing the version of the library
 		# make it generic for every standard library in use
-		set(STD_SYMBOLS "<VERSION_/${STD_VERSION}>")#will be used to check std lib compatibility
+		set(STD_SYMBOLS "VERSION_;${STD_VERSION}")#will be used to check std lib compatibility
 	endif()
 	set(${RES_NAME} ${STD_NAME} PARENT_SCOPE)
 	set(${RES_VERSION} ${STD_VERSION} PARENT_SCOPE)
@@ -208,62 +234,25 @@ function(get_CXX_Standard_Library_Symbols_Version RES_NAME RES_VERSION RES_SYMBO
 	set(${RES_FLAGS} ${STD_FLAGS} PARENT_SCOPE)
 endfunction(get_CXX_Standard_Library_Symbols_Version)
 
-#resetting symbols to avoid any problem
-set(C_STD_ABI_SYMBOLS)
-set(C_STD_LIBS)
-set(CXX_STD_ABI_SYMBOLS)
-set(CXX_STD_LIBS)
+if(PID_CROSSCOMPILATION)
+	#when crosscompiling information about ABI in use cannot be detected by CMake
+	#not possible to extract symbols when crosscompiling so simply give no value
+	set(C_STD_SYMBOLS CACHE INTERNAL "")
+	set(CXX_STD_SYMBOLS CACHE INTERNAL "")
+	set(CXX_STD_ABI_SYMBOLS)
+	set(CURRENT_CXX_ABI CACHE INTERNAL "")#reset value of current ABI
+	# those library sonames should be given by the environment
+	set(CXX_STANDARD_LIBRARIES ${PID_USE_CXX_STANDARD_LIBRARIES} CACHE INTERNAL "")
+	set(C_STANDARD_LIBRARIES ${PID_USE_C_STANDARD_LIBRARIES} CACHE INTERNAL "")
 
-set(CXX_STD_SYMBOLS CACHE INTERNAL "")
-set(CXX_STANDARD_LIBRARIES CACHE INTERNAL "")
-set(C_STD_SYMBOLS CACHE INTERNAL "")
-set(C_STANDARD_LIBRARIES CACHE INTERNAL "")
-
-#getting standard libraries for C and C++
-set(IMPLICIT_CXX_LIBS ${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES})
-list(REMOVE_DUPLICATES IMPLICIT_CXX_LIBS)
-
-set(IMPLICIT_C_LIBS ${CMAKE_C_IMPLICIT_LINK_LIBRARIES})
-if(IMPLICIT_C_LIBS)
-	list(REMOVE_DUPLICATES IMPLICIT_C_LIBS)
-	list(REMOVE_ITEM IMPLICIT_CXX_LIBS ${IMPLICIT_C_LIBS})#simply remove the implicit C libs from CXX implicit libs (avoir doing two times same thing)
-endif()
-
-# detect current C library ABI in use
-foreach(lib IN LISTS IMPLICIT_C_LIBS)
-	#lib is the short name of the library
-	find_Library_In_Implicit_System_Dir(VALID_PATH LINK_PATH LIB_SONAME LIB_SOVERSION ${lib})
-	if(VALID_PATH)
+	foreach(lib IN LISTS CXX_STANDARD_LIBRARIES)
 		#getting symbols versions from the implicit library
-		get_C_Standard_Library_Symbols_Version(RES_SYMBOL_VERSIONS ${CURRENT_PLATFORM_OS} ${lib} ${VALID_PATH})
-		while(RES_SYMBOL_VERSIONS)
-			pop_ELF_Symbol_Version_From_List(SYMB VERS RES_SYMBOL_VERSIONS)
-			serialize_Symbol(SERIALIZED_SYMBOL ${SYMB} ${VERS})
-			list(APPEND C_STD_ABI_SYMBOLS ${SERIALIZED_SYMBOL})
-		endwhile()
-		list(APPEND C_STD_LIBS ${LIB_SONAME})
-	endif()#otherwise simply do nothing and check with another folder
-endforeach()
-
-#memorize symbol versions
-set(C_STD_SYMBOLS ${C_STD_ABI_SYMBOLS} CACHE INTERNAL "")
-set(C_STANDARD_LIBRARIES ${C_STD_LIBS} CACHE INTERNAL "")
-
-set(CURRENT_CXX_ABI CACHE INTERNAL "")#reset value of current ABI
-# detect current C++ library ABI in use
-
-foreach(lib IN LISTS IMPLICIT_CXX_LIBS)
-	#lib is the short name of the library
-	find_Library_In_Implicit_System_Dir(VALID_PATH LINK_PATH LIB_SONAME LIB_SOVERSION ${lib})
-	if(VALID_PATH)
-		#getting symbols versions from the implicit library
-		get_CXX_Standard_Library_Symbols_Version(RES_NAME RES_VERSION RES_SYMBOL_VERSIONS RES_STD_ABI RES_FLAGS ${CURRENT_PLATFORM_OS} ${lib} ${VALID_PATH})
+		get_CXX_Standard_Library_Symbols_Version(RES_NAME RES_VERSION RES_SYMBOL_VERSIONS RES_STD_ABI RES_FLAGS ${CURRENT_PLATFORM_OS} ${lib} "")#Note: no path can be given when crosscompiling
 		while(RES_SYMBOL_VERSIONS)
 			pop_ELF_Symbol_Version_From_List(SYMB VERS RES_SYMBOL_VERSIONS)
 			serialize_Symbol(SERIALIZED_SYMBOL ${SYMB} ${VERS})
 			list(APPEND CXX_STD_ABI_SYMBOLS ${SERIALIZED_SYMBOL})#memorize symbol versions
 		endwhile()
-		list(APPEND CXX_STD_LIBS ${LIB_SONAME})
 		if(RES_STD_ABI)# the standard C++ library ABI has been detected
 			set(CURRENT_CXX_ABI ${RES_STD_ABI} CACHE INTERNAL "")#reset value of current ABI
 			set(CXX_STD_LIBRARY_NAME ${RES_NAME} CACHE INTERNAL "")
@@ -272,11 +261,82 @@ foreach(lib IN LISTS IMPLICIT_CXX_LIBS)
 				set(CMAKE_CXX_FLAGS "${RES_FLAGS}" CACHE STRING "" FORCE)
 			endif()
 		endif()
-	endif()#otherwise simply do nothing and check with another folder
-endforeach()
+	endforeach()
+	set(CXX_STD_SYMBOLS ${CXX_STD_ABI_SYMBOLS} CACHE INTERNAL "")
+else()
+	#resetting symbols to avoid any problem
+	set(C_STD_ABI_SYMBOLS)
+	set(C_STD_LIBS)
+	set(CXX_STD_ABI_SYMBOLS)
+	set(CXX_STD_LIBS)
 
-set(CXX_STD_SYMBOLS ${CXX_STD_ABI_SYMBOLS} CACHE INTERNAL "")
-set(CXX_STANDARD_LIBRARIES ${CXX_STD_LIBS} CACHE INTERNAL "")
+	set(CXX_STD_SYMBOLS CACHE INTERNAL "")
+	set(CXX_STANDARD_LIBRARIES CACHE INTERNAL "")
+	set(C_STD_SYMBOLS CACHE INTERNAL "")
+	set(C_STANDARD_LIBRARIES CACHE INTERNAL "")
+	set(CURRENT_CXX_ABI CACHE INTERNAL "")#reset value of current ABI
+
+	#getting standard libraries for C and C++
+	set(IMPLICIT_CXX_LIBS ${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES})
+	if(IMPLICIT_CXX_LIBS)
+		list(REMOVE_DUPLICATES IMPLICIT_CXX_LIBS)
+	endif()
+
+	set(IMPLICIT_C_LIBS ${CMAKE_C_IMPLICIT_LINK_LIBRARIES})
+	if(IMPLICIT_C_LIBS)
+		list(REMOVE_DUPLICATES IMPLICIT_C_LIBS)
+		if(IMPLICIT_CXX_LIBS)
+			list(REMOVE_ITEM IMPLICIT_CXX_LIBS ${IMPLICIT_C_LIBS})#simply remove the implicit C libs from CXX implicit libs (avoir doing two times same thing)
+		endif()
+	endif()
+	# detect current C library ABI in use
+	foreach(lib IN LISTS IMPLICIT_C_LIBS)
+		#lib is the short name of the library
+		find_Library_In_Implicit_System_Dir(VALID_PATH LINK_PATH LIB_SONAME LIB_SOVERSION ${lib})
+		if(VALID_PATH)
+			#getting symbols versions from the implicit library
+			get_C_Standard_Library_Symbols_Version(RES_SYMBOL_VERSIONS ${CURRENT_PLATFORM_OS} ${lib} ${VALID_PATH})
+			while(RES_SYMBOL_VERSIONS)
+				pop_ELF_Symbol_Version_From_List(SYMB VERS RES_SYMBOL_VERSIONS)
+				serialize_Symbol(SERIALIZED_SYMBOL ${SYMB} ${VERS})
+				list(APPEND C_STD_ABI_SYMBOLS ${SERIALIZED_SYMBOL})
+			endwhile()
+			list(APPEND C_STD_LIBS ${LIB_SONAME})
+		endif()#otherwise simply do nothing and check with another folder
+	endforeach()
+
+	#memorize symbol versions
+	set(C_STD_SYMBOLS ${C_STD_ABI_SYMBOLS} CACHE INTERNAL "")
+	set(C_STANDARD_LIBRARIES ${C_STD_LIBS} CACHE INTERNAL "")
+
+	# detect current C++ library ABI in use
+
+	foreach(lib IN LISTS IMPLICIT_CXX_LIBS)
+		#lib is the short name of the library
+		find_Library_In_Implicit_System_Dir(VALID_PATH LINK_PATH LIB_SONAME LIB_SOVERSION ${lib})
+		if(VALID_PATH)
+			#getting symbols versions from the implicit library
+			get_CXX_Standard_Library_Symbols_Version(RES_NAME RES_VERSION RES_SYMBOL_VERSIONS RES_STD_ABI RES_FLAGS ${CURRENT_PLATFORM_OS} ${lib} ${VALID_PATH})
+			while(RES_SYMBOL_VERSIONS)
+				pop_ELF_Symbol_Version_From_List(SYMB VERS RES_SYMBOL_VERSIONS)
+				serialize_Symbol(SERIALIZED_SYMBOL ${SYMB} ${VERS})
+				list(APPEND CXX_STD_ABI_SYMBOLS ${SERIALIZED_SYMBOL})#memorize symbol versions
+			endwhile()
+			list(APPEND CXX_STD_LIBS ${LIB_SONAME})
+			if(RES_STD_ABI)# the standard C++ library ABI has been detected
+				set(CURRENT_CXX_ABI ${RES_STD_ABI} CACHE INTERNAL "")#reset value of current ABI
+				set(CXX_STD_LIBRARY_NAME ${RES_NAME} CACHE INTERNAL "")
+				set(CXX_STD_LIBRARY_VERSION ${RES_VERSION} CACHE INTERNAL "")
+				if(RES_FLAGS)
+					set(CMAKE_CXX_FLAGS "${RES_FLAGS}" CACHE STRING "" FORCE)
+				endif()
+			endif()
+		endif()#otherwise simply do nothing and check with another folder
+	endforeach()
+
+	set(CXX_STD_SYMBOLS ${CXX_STD_ABI_SYMBOLS} CACHE INTERNAL "")
+	set(CXX_STANDARD_LIBRARIES ${CXX_STD_LIBS} CACHE INTERNAL "")
+endif()
 
 #finally deal with compile flags
 if(UNIX AND NOT APPLE)

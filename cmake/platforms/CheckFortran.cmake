@@ -31,7 +31,9 @@ function(get_Fortran_Standard_Library_Symbols_Version RES_SYMBOL_VERSIONS operat
 endfunction(get_Fortran_Standard_Library_Symbols_Version)
 
 set(Fortran_Language_AVAILABLE FALSE CACHE INTERNAL "")
-check_language(Fortran)
+if(NOT PID_CROSSCOMPILATION)#only check for language if not crosscompiling
+	check_language(Fortran)
+endif()
 if(CMAKE_Fortran_COMPILER) #ONLY ENABLE FORTRAN if a Fortran toolchain is available
   enable_language(Fortran) #enable FORTRAN language will generate appropriate variables
   set(Fortran_Language_AVAILABLE TRUE CACHE INTERNAL "")
@@ -43,29 +45,36 @@ foreach(symbol IN LISTS Fortran_STD_SYMBOLS)
 	set(Fortran_STD_SYMBOL_${symbol}_VERSION CACHE INTERNAL "")
 endforeach()
 set(Fortran_STD_SYMBOLS CACHE INTERNAL "")
-
 set(Fortran_STANDARD_LIBRARIES CACHE INTERNAL "")
 
-set(IMPLICIT_Fortran_LIBS ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES})
-list(REMOVE_ITEM IMPLICIT_Fortran_LIBS ${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES} ${CMAKE_C_IMPLICIT_LINK_LIBRARIES})
-#check if libraries are not an implicit C/C++ library (otherwise already managed)
-set(Fortran_STD_LIBS)
-set(Fortran_STD_ABI_SYMBOLS)
-# detect current C++ library ABI in use
-foreach(lib IN LISTS IMPLICIT_Fortran_LIBS)
-	#lib is the short name of the library
-	find_Library_In_Implicit_System_Dir(VALID_PATH LINK_PATH LIB_SONAME LIB_SOVERSION ${lib})
-	if(VALID_PATH)
-		#getting symbols versions from the implicit library
-		get_Fortran_Standard_Library_Symbols_Version(RES_SYMBOL_VERSIONS ${CURRENT_PLATFORM_OS} ${lib} ${VALID_PATH})
-		while(RES_SYMBOL_VERSIONS)
-			pop_ELF_Symbol_Version_From_List(SYMB VERS RES_SYMBOL_VERSIONS)
-      serialize_Symbol(SERIALIZED_SYMBOL ${SYMB} ${VERS})
-			list(APPEND Fortran_STD_ABI_SYMBOLS ${SERIALIZED_SYMBOL})#memorize symbol versions
-		endwhile()
-		list(APPEND Fortran_STD_LIBS ${LIB_SONAME})
-	endif()#otherwise simply do nothing and check with another folder
-endforeach()
-
-set(Fortran_STANDARD_LIBRARIES ${Fortran_STD_LIBS} CACHE INTERNAL "")
-set(Fortran_STD_SYMBOLS ${Fortran_STD_ABI_SYMBOLS} CACHE INTERNAL "")
+if(PID_CROSSCOMPILATION)
+	#when crosscompiling information about ABI in use cannot be detected by CMake
+	#not possible to extract symbols when crosscompiling so simply give no value
+	set(Fortran_STD_SYMBOLS CACHE INTERNAL "")
+	set(Fortran_STANDARD_LIBRARIES ${PID_USE_Fortran_STANDARD_LIBRARIES} CACHE INTERNAL "")
+else()
+	set(IMPLICIT_Fortran_LIBS ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES})
+	if(IMPLICIT_Fortran_LIBS)
+		list(REMOVE_ITEM IMPLICIT_Fortran_LIBS ${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES} ${CMAKE_C_IMPLICIT_LINK_LIBRARIES})
+	endif()
+	#check if libraries are not an implicit C/C++ library (otherwise already managed)
+	set(Fortran_STD_LIBS)
+	set(Fortran_STD_ABI_SYMBOLS)
+	# detect current C++ library ABI in use
+	foreach(lib IN LISTS IMPLICIT_Fortran_LIBS)
+		#lib is the short name of the library
+		find_Library_In_Implicit_System_Dir(VALID_PATH LINK_PATH LIB_SONAME LIB_SOVERSION ${lib})
+		if(VALID_PATH)
+			#getting symbols versions from the implicit library
+			get_Fortran_Standard_Library_Symbols_Version(RES_SYMBOL_VERSIONS ${CURRENT_PLATFORM_OS} ${lib} ${VALID_PATH})
+			while(RES_SYMBOL_VERSIONS)
+				pop_ELF_Symbol_Version_From_List(SYMB VERS RES_SYMBOL_VERSIONS)
+	      serialize_Symbol(SERIALIZED_SYMBOL ${SYMB} ${VERS})
+				list(APPEND Fortran_STD_ABI_SYMBOLS ${SERIALIZED_SYMBOL})#memorize symbol versions
+			endwhile()
+			list(APPEND Fortran_STD_LIBS ${LIB_SONAME})
+		endif()#otherwise simply do nothing and check with another folder
+	endforeach()
+	set(Fortran_STANDARD_LIBRARIES ${Fortran_STD_LIBS} CACHE INTERNAL "")
+	set(Fortran_STD_SYMBOLS ${Fortran_STD_ABI_SYMBOLS} CACHE INTERNAL "")
+endif()
