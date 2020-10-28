@@ -59,8 +59,6 @@ function(reset_Environment_Description)
   #reset constraints on platform
   set(${PROJECT_NAME}_PLATFORM_CONSTRAINT_DEFINED CACHE INTERNAL "")
   set_Build_Environment_Platform("" "" "" "" "" "" "")
-  set(${PROJECT_NAME}_TARGET_SYSROOT CACHE INTERNAL "")
-  set(${PROJECT_NAME}_TARGET_STAGING CACHE INTERNAL "")
 
   # reset constraint that can be used to parameterize the environment
   set(${PROJECT_NAME}_ENVIRONMENT_CONSTRAINTS_DEFINED CACHE INTERNAL "")
@@ -91,7 +89,7 @@ function(reset_Environment_Description)
     if(${PROJECT_NAME}_${lang}_TOOLSETS GREATER 0)#some toolset already defined
       math(EXPR max_toolset "${${PROJECT_NAME}_${lang}_TOOLSETS}-1")
       foreach(toolset RANGE ${max_toolset})
-        set_Language_Toolset(${lang} ${toolset} "" "" "" "" "" "" "" "" "" "" "")
+        set_Language_Toolset(${lang} ${toolset} "" "" "" "" "" "" "" "" "" "" "" "")
       endforeach()
     endif()
     set(${PROJECT_NAME}_${lang}_TOOLSETS 0 CACHE INTERNAL "")
@@ -110,18 +108,20 @@ function(reset_Environment_Description)
   set(${PROJECT_NAME}_NM CACHE INTERNAL "")
   set(${PROJECT_NAME}_OBJDUMP CACHE INTERNAL "")
   set(${PROJECT_NAME}_OBJCOPY CACHE INTERNAL "")
+  set(${PROJECT_NAME}_RPATH CACHE INTERNAL "")
   set(${PROJECT_NAME}_EXE_LINKER_FLAGS CACHE INTERNAL "")
   set(${PROJECT_NAME}_MODULE_LINKER_FLAGS CACHE INTERNAL "")
   set(${PROJECT_NAME}_SHARED_LINKER_FLAGS CACHE INTERNAL "")
   set(${PROJECT_NAME}_STATIC_LINKER_FLAGS CACHE INTERNAL "")
-  set(${PROJECT_NAME}_TARGET_SYSROOT CACHE INTERNAL "")
-  set(${PROJECT_NAME}_TARGET_STAGING CACHE INTERNAL "")
   set(${PROJECT_NAME}_INCLUDE_DIRS CACHE INTERNAL "")
   set(${PROJECT_NAME}_LIBRARY_DIRS CACHE INTERNAL "")
   set(${PROJECT_NAME}_PROGRAM_DIRS CACHE INTERNAL "")
   # variable to manage generator in use
   set(${PROJECT_NAME}_GENERATOR_TOOLSET CACHE INTERNAL "")
   set(${PROJECT_NAME}_GENERATOR_PLATFORM CACHE INTERNAL "")
+  # specific for crosscompilation
+  set(${PROJECT_NAME}_TARGET_SYSROOT CACHE INTERNAL "")
+  set(${PROJECT_NAME}_TARGET_STAGING CACHE INTERNAL "")
 endfunction(reset_Environment_Description)
 
 
@@ -1054,6 +1054,7 @@ function(import_Solution_From_Dependency environment)
                           "${${environment}_${lang}_TOOLSET_${toolset}_INTERPRETER}"
                           "${${environment}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS}"
                           "${${environment}_${lang}_TOOLSET_${toolset}_LIBRARY}"
+                          "${${environment}_${lang}_TOOLSET_${toolset}_COVERAGE}"
                           "${${environment}_${lang}_TOOLSET_${toolset}_HOST_COMPILER}"
       )
     endforeach()
@@ -1115,6 +1116,13 @@ function(import_Solution_From_Dependency environment)
       return()
     endif()
     set(${PROJECT_NAME}_OBJCOPY ${${environment}_OBJCOPY} CACHE INTERNAL "")
+  endif()
+  if(${environment}_RPATH)
+    if(${PROJECT_NAME}_RPATH)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : the system rpath edition tool in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_RPATH}")
+      return()
+    endif()
+    set(${PROJECT_NAME}_RPATH ${${environment}_RPATH} CACHE INTERNAL "")
   endif()
 
   if(${environment}_INCLUDE_DIRS)
@@ -1752,13 +1760,21 @@ function(generate_Environment_Toolchain_File)
       #we need a sysroot to the target operating system filesystem ! => defined by user !!
       if(NOT ${PROJECT_NAME}_TARGET_SYSROOT)#sysroot is necessary when cross compiling to another OS
         message(FATAL_ERROR "[PID] ERROR: you must give a sysroot by using the sysroot argument when calling configure.")
-        return()
       endif()
       file(APPEND ${description_file} "set(CMAKE_SYSROOT ${${PROJECT_NAME}_TARGET_SYSROOT} CACHE INTERNAL \"\" FORCE)\n")
       if(${PROJECT_NAME}_TARGET_STAGING)
         file(APPEND ${description_file} "set(CMAKE_STAGING_PREFIX ${${PROJECT_NAME}_TARGET_STAGING} CACHE INTERNAL \"\" FORCE)\n")
       endif()
-
+    endif()
+    #add specific information from what cannot be deduced when cross compiling
+    if(NOT ${PROJECT_NAME}_ABI_CONSTRAINT)#c++ standard library abi in use
+      message("[PID] WARNING: you should give an abi constraint in ${PROJECT_NAME}. Using compiler default ABI as default.")
+    endif()
+    if(${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT)#c++ standard library abi in use
+      file(APPEND ${description_file} "set(PID_USE_DISTRIBUTION ${${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT} CACHE INTERNAL \"\" FORCE)\n")
+    endif()
+    if(${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT)#c++ standard library abi in use
+      file(APPEND ${description_file} "set(PID_USE_DISTRIB_VERSION ${${PROJECT_NAME}_DISTRIB_VERSION_CONSTRAINT} CACHE INTERNAL \"\" FORCE)\n")
     endif()
   endif()
 
@@ -1786,7 +1802,12 @@ function(generate_Environment_Toolchain_File)
         fill_String_From_List(LANG_FLAGS ${prefix}_COMPILER_FLAGS " ")
         file(APPEND ${description_file} "set(CMAKE_${lang}_FLAGS  \"${LANG_FLAGS}\" CACHE INTERNAL \"\" FORCE)\n")
       endif()
-
+      if(${prefix}_LIBRARY)#if standard libraries sonames are given
+        file(APPEND ${description_file} "set(PID_USE_${lang}_STANDARD_LIBRARIES ${${prefix}_LIBRARY} CACHE INTERNAL \"\" FORCE)\n")
+      endif()
+      if(${prefix}_LIBRARY)#if standard libraries sonames are given
+        file(APPEND ${description_file} "set(PID_USE_${lang}_COVERAGE ${${prefix}_COVERAGE} CACHE INTERNAL \"\" FORCE)\n")
+      endif()
       if(lang MATCHES "CUDA")#for CUDA also set the old variables for compiler info
         file(APPEND ${description_file} "set(CUDA_NVCC_EXECUTABLE ${${prefix}_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
         if(${prefix}_COMPILER_FLAGS)
@@ -1854,10 +1875,14 @@ function(generate_Environment_Toolchain_File)
   if(${PROJECT_NAME}_OBJCOPY)
     file(APPEND ${description_file} "set(CMAKE_OBJCOPY ${${PROJECT_NAME}_OBJCOPY} CACHE INTERNAL \"\" FORCE)\n")
   endif()
+  if(${PROJECT_NAME}_RPATH)
+    file(APPEND ${description_file} "set(PID_USE_RPATH_UTILITY ${${PROJECT_NAME}_RPATH} CACHE INTERNAL \"\" FORCE)\n")
+  endif()
 
   if(${PROJECT_NAME}_CROSSCOMPILATION)
     # avoid problem with try_compile when cross compiling
     file(APPEND ${description_file} "set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY CACHE INTERNAL \"\" FORCE)\n")
+
   endif()
 
 endfunction(generate_Environment_Toolchain_File)
@@ -1954,10 +1979,10 @@ endfunction(adjust_Environment_Binary_Variables)
 #     :comp_flags: the default flags to use with the comiler
 #     :interp: the interpreter for the language
 #     :includes: the include folder where to find standard library definitions
-#     :library: the path to language standard library
+#     :libraries: the path to language standard libraries (CUDA, python) or sonames of standard libraries (C,C++)
 #     :host_cc: the C or C++ compiler required by the higher level compiler
 #
-function(set_Language_Toolset lang toolset expression script compiler comp_id comp_ar comp_ranlib comp_flags interp includes library host_cc)
+function(set_Language_Toolset lang toolset expression script compiler comp_id comp_ar comp_ranlib comp_flags interp includes libraries coverage host_cc)
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CONSTRAINT_EXPRESSION ${expression} CACHE INTERNAL "")
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CHECK_SCRIPT ${script} CACHE INTERNAL "")
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER ${compiler} CACHE INTERNAL "")
@@ -1967,7 +1992,8 @@ function(set_Language_Toolset lang toolset expression script compiler comp_id co
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS "${comp_flags}" CACHE INTERNAL "")
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER ${interp} CACHE INTERNAL "")
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS ${includes} CACHE INTERNAL "")
-  set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_LIBRARY ${library} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_LIBRARY ${libraries} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COVERAGE ${coverage} CACHE INTERNAL "")
   set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_HOST_COMPILER ${host_cc} CACHE INTERNAL "")
 endfunction(set_Language_Toolset)
 
@@ -1997,9 +2023,10 @@ endfunction(set_Language_Toolset)
 #     :interp: the interpreter for the language
 #     :includes: the include folder where to find standard library definitions
 #     :library: the path to language standard library
+#     :coverage: the path to coverage tool for that language (gcov)
 #     :host_cc: the C or C++ compiler required by the higher level compiler
 #
-function(add_Language_Toolset lang default expression script compiler comp_id comp_ar comp_ranlib comp_flags interp includes library host_cc)
+function(add_Language_Toolset lang default expression script compiler comp_id comp_ar comp_ranlib comp_flags interp includes library coverage host_cc)
   append_Unique_In_Cache(${PROJECT_NAME}_LANGUAGES ${lang})
   if(NOT ${PROJECT_NAME}_${lang}_TOOLSETS)
     set(${PROJECT_NAME}_${lang}_TOOLSETS 0 CACHE INTERNAL "")
@@ -2019,6 +2046,7 @@ function(add_Language_Toolset lang default expression script compiler comp_id co
                           "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_INTERPRETER}"
                           "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_INCLUDE_DIRS}"
                           "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_LIBRARY}"
+                          "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_COVERAGE}"
                           "${${PROJECT_NAME}_${lang}_TOOLSET_${prev}_HOST_COMPILER}"
       )
       set(count ${prev})
@@ -2039,6 +2067,7 @@ function(add_Language_Toolset lang default expression script compiler comp_id co
                       "${interp}"
                       "${includes}"
                       "${library}"
+                      "${coverage}"
                       "${host_cc}"
   )
   math(EXPR plus_one "${${PROJECT_NAME}_${lang}_TOOLSETS}+1")
@@ -2058,7 +2087,7 @@ endfunction(add_Language_Toolset)
 #
 #   .. command:: set_System_Wide_Configuration(gen_toolset gen_platform
 #                                       sysroot staging
-#                                       linker ar ranlib nm objdump objcopy
+#                                       linker ar ranlib nm objdump objcopy rpath
 #                                       inc_dirs lib_dirs prog_dirs
 #                                       exe_flags module_flags static_flags shared_flags)
 #
@@ -2066,14 +2095,15 @@ endfunction(add_Language_Toolset)
 #
 #     :gen_toolset: generator toolset to use
 #     :gen_platform: generator platform to use
-#     :sysroot: target platform sysroot.
-#     :staging: target platform staging area.
+#     :sysroot: target platform sysroot (cross comilation only).
+#     :staging: target platform staging area (cross comilation only).
 #     :linker: the path to system wide linker.
 #     :ar: the path to system wide ar tool.
 #     :ranlib: the path to system wide ranlib tool.
 #     :nm: the path to system wide nm tool.
 #     :objdump: the path to system wide objdump tool.
 #     :objcopy: the path to system wide objcopy tool.
+#     :rpath: the path to system wide rpath edition tool.
 #     :inc_dirs: the list path to system include directories
 #     :lib_dirs: the list path to system libraries directories
 #     :prog_dirs: the list path to system programs directories
@@ -2084,7 +2114,7 @@ endfunction(add_Language_Toolset)
 #
 function(set_System_Wide_Configuration gen_toolset gen_platform
                                        sysroot staging
-                                       linker ar ranlib nm objdump objcopy
+                                       linker ar ranlib nm objdump objcopy rpath
                                        inc_dirs lib_dirs prog_dirs
                                        exe_flags module_flags static_flags shared_flags
                                       )
@@ -2122,6 +2152,9 @@ function(set_System_Wide_Configuration gen_toolset gen_platform
   endif()
   if(objcopy)
     set(${PROJECT_NAME}_OBJCOPY ${objcopy} CACHE INTERNAL "")
+  endif()
+  if(rpath)
+    set(${PROJECT_NAME}_RPATH ${rpath} CACHE INTERNAL "")
   endif()
 
   #manage default system path
@@ -2276,6 +2309,9 @@ function(write_Language_Toolset file lang toolset)
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_LIBRARY)
     file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_LIBRARY ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_LIBRARY} CACHE INTERNAL \"\")\n")
   endif()
+  if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COVERAGE)
+    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COVERAGE ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COVERAGE} CACHE INTERNAL \"\")\n")
+  endif()
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER)
     file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER} CACHE INTERNAL \"\")\n")
   endif()
@@ -2363,6 +2399,7 @@ if(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION)
   file(APPEND ${file} "set(${PROJECT_NAME}_NM ${${PROJECT_NAME}_NM} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_OBJDUMP ${${PROJECT_NAME}_OBJDUMP} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_OBJCOPY ${${PROJECT_NAME}_OBJCOPY} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_RPATH ${${PROJECT_NAME}_RPATH} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_EXE_LINKER_FLAGS ${${PROJECT_NAME}_EXE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_MODULE_LINKER_FLAGS ${${PROJECT_NAME}_MODULE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_SHARED_LINKER_FLAGS ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
@@ -2435,7 +2472,10 @@ function(print_Language_Toolset environment lang toolset)
     set(lang_str "${lang_str}    * standard library include dirs : ${incs_str}\n")
   endif()
   if(${environment}_${lang}_TOOLSET_${toolset}_LIBRARY)
-    set(lang_str "${lang_str}    * standard library : ${${environment}_${lang}_TOOLSET_${toolset}_LIBRARY}\n")
+    set(lang_str "${lang_str}    * standard libraries : ${${environment}_${lang}_TOOLSET_${toolset}_LIBRARY}\n")
+  endif()
+  if(${environment}_${lang}_TOOLSET_${toolset}_COVERAGE)
+    set(lang_str "${lang_str}    * coverage tool : ${${environment}_${lang}_TOOLSET_${toolset}_COVERAGE}\n")
   endif()
   if(${environment}_${lang}_TOOLSET_${toolset}_INTERPRETER)
     set(lang_str "${lang_str}    * interpreter : ${${environment}_${lang}_TOOLSET_${toolset}_INTERPRETER}\n")
@@ -2532,6 +2572,9 @@ function(print_Evaluated_Environment environment)
     if(${environment}_TARGET_STAGING)
       set(crosscomp_str "${crosscomp_str}  + staging: ${${environment}_TARGET_STAGING}")
     endif()
+    if(${environment}_ABI_CONSTRAINT)
+      set(crosscomp_str "${crosscomp_str}  + c++ library ABI: ${${environment}_ABI_CONSTRAINT}")
+    endif()
   endif()
   if(crosscomp_str)
     message("${crosscomp_str}")
@@ -2556,6 +2599,9 @@ function(print_Evaluated_Environment environment)
     endif()
     if(${environment}_OBJCOPY)
       message("- object translator: ${${environment}_OBJCOPY}")
+    endif()
+    if(${environment}_RPATH)
+      message("- rpath editor: ${${environment}_RPATH}")
     endif()
     if(${environment}_EXE_LINKER_FLAGS)
       message("- linker flags for executables: ${${environment}_EXE_LINKER_FLAGS}")

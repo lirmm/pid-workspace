@@ -2453,7 +2453,7 @@ function(build_B2_External_Project)
     return()
   endif()
 
-  if(BUILD_B2_EXTERNAL_PROJECT_QUIET)
+  if(BUILD_B2_EXTERNAL_PROJECT_QUIET AND NOT ADDITIONAL_DEBUG_INFO)
     set(OUTPUT_MODE OUTPUT_QUIET)
   endif()
 

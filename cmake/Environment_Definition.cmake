@@ -748,7 +748,7 @@ endfunction(get_Configured_Environment_Tool)
 #  configure_Environment_Tool
 #  ^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-#   .. command:: configure_Environment_Tool(LANGUAGE ... [COMPILER...] [AR...] [RANLIB...] [FLAGS...])
+#   .. command:: configure_Environment_Tool(LANGUAGE ... [COMPILER...] [COVERAGE ...] [AR...] [RANLIB...] [FLAGS...])
 #
 #   .. command:: configure_Environment_Tool(SYSTEM [GENERATOR...] [LINKER ...] [[EXE|MODULE|STATIC|SHARED] FLAGS...])
 #
@@ -769,10 +769,12 @@ endfunction(get_Configured_Environment_Tool)
 #     :HOST_COMPILER ...: the path to the host C compiler in use (for LANGUAGE, CUDA only for now).
 #     :TOOLSET_ID  ...: identifier of the toolset (for LANGUAGE).
 #     :AR ...: the path to the archive tool in use (for LANGUAGE and SYSTEM).
+#     :COVERAGE ...: the path to the coverage tool in use (for LANGUAGE).
 #     :RANLIB ...: the path to the static library creation tool (for LANGUAGE and SYSTEM)..
 #     :FLAGS ...: set of compiler flags (if used with LANGUAGE) or linker flags (if used with SYSTEM) to use.
 #     :LINKER ...: the path to the linker in use (for SYSTEM).
 #     :NM ...: the path to the nm tool in use (for SYSTEM).
+#     :RPATH ...: path to the rpath manipulation tool (for SYSTEM, crosscompilation only).
 #     :OBJDUMP ...: the path to the objdump tool in use (for SYSTEM).
 #     :OBJCOPY ...: the path to the objcopy tool in use (for SYSTEM).
 #     :GEN_TOOLSET ...: the name of the generator toolset to use (for SYSTEM).
@@ -810,8 +812,8 @@ endfunction(get_Configured_Environment_Tool)
 #
 function(configure_Environment_Tool)
   set(options SYSTEM EXE MODULE STATIC SHARED CURRENT)
-  set(monoValueArgs EXTRA PROGRAM CONFIGURATION SYSROOT STAGING LANGUAGE COMPILER HOST_COMPILER TOOLCHAIN_ID INTERPRETER NM OBJDUMP OBJCOPY LIBRARY AR RANLIB LINKER GEN_TOOLSET GEN_PLATFORM )
-  set(multiValueArgs PLUGIN FLAGS PROGRAM_DIRS LIBRARY_DIRS INCLUDE_DIRS)
+  set(monoValueArgs EXTRA PROGRAM CONFIGURATION SYSROOT STAGING LANGUAGE COMPILER HOST_COMPILER TOOLCHAIN_ID INTERPRETER NM OBJDUMP OBJCOPY AR RANLIB LINKER GEN_TOOLSET GEN_PLATFORM COVERAGE RPATH)
+  set(multiValueArgs PLUGIN FLAGS PROGRAM_DIRS LIBRARY_DIRS INCLUDE_DIRS LIBRARY)
   cmake_parse_arguments(CONF_ENV_TOOL "${options}" "${monoValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if(NOT CONF_ENV_TOOL_LANGUAGE AND NOT CONF_ENV_TOOL_SYSTEM AND NOT CONF_ENV_TOOL_EXTRA)
@@ -871,6 +873,7 @@ function(configure_Environment_Tool)
                          "${CONF_ENV_TOOL_INTERPRETER}"
                          "${CONF_ENV_TOOL_INCLUDE_DIRS}"
                          "${CONF_ENV_TOOL_LIBRARY}"
+                         "${CONF_ENV_TOOL_COVERAGE}"
                          "${use_host_compiler}")
 
   elseif(CONF_ENV_TOOL_SYSTEM)
@@ -886,6 +889,7 @@ function(configure_Environment_Tool)
       set(${PROJECT_NAME}_NM ${CMAKE_NM} CACHE INTERNAL "")
       set(${PROJECT_NAME}_OBJDUMP ${CMAKE_OBJDUMP} CACHE INTERNAL "")
       set(${PROJECT_NAME}_OBJCOPY ${CMAKE_OBJCOPY} CACHE INTERNAL "")
+      set(${PROJECT_NAME}_RPATH ${RPATH_UTILITY} CACHE INTERNAL "")
       set(${PROJECT_NAME}_INCLUDE_DIRS ${CMAKE_SYSTEM_INCLUDE_PATH} CACHE INTERNAL "")
       set(${PROJECT_NAME}_LIBRARY_DIRS ${CMAKE_SYSTEM_LIBRARY_PATH} CACHE INTERNAL "")
       set(${PROJECT_NAME}_PROGRAM_DIRS ${CMAKE_SYSTEM_PROGRAM_PATH} CACHE INTERNAL "")
@@ -929,7 +933,7 @@ function(configure_Environment_Tool)
     set_System_Wide_Configuration("${CONF_ENV_TOOL_GEN_TOOLSET}" "${CONF_ENV_TOOL_GEN_PLATFORM}"
       "${CONF_ENV_TOOL_SYSROOT}" "${CONF_ENV_TOOL_STAGING}"
         "${CONF_ENV_TOOL_LINKER}" "${CONF_ENV_TOOL_AR}"   "${CONF_ENV_TOOL_RANLIB}"
-        "${CONF_ENV_TOOL_NM}"   "${CONF_ENV_TOOL_OBJDUMP}" "${CONF_ENV_TOOL_OBJCOPY}"
+        "${CONF_ENV_TOOL_NM}"   "${CONF_ENV_TOOL_OBJDUMP}" "${CONF_ENV_TOOL_OBJCOPY}" "${CONF_ENV_TOOL_RPATH}"
         "${CONF_ENV_TOOL_INCLUDE_DIRS}"   "${CONF_ENV_TOOL_LIBRARY_DIRS}" "${CONF_ENV_TOOL_PROGRAM_DIRS}"
         "${exe_flags}" "${module_flags}" "${static_flags}" "${shared_flags}"
     )
