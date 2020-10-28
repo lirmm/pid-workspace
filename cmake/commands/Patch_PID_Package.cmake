@@ -49,7 +49,7 @@ if(NOT TARGET_VERSION)
 endif()
 
 get_Version_String_Numbers(${TARGET_VERSION} TARGET_MAJOR TARGET_MINOR TARGET_PATCH)
-if(NOT TARGET_MINOR)
+if("${TARGET_MINOR}" STREQUAL "")
 	message(FATAL_ERROR "[PID] ERROR : the version you specified (${TARGET_VERSION}) does not contain a minor version. Specify a major.minor version for which you want to create a patch.")
 endif()
 
