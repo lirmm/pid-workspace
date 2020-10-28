@@ -258,7 +258,7 @@ endfunction(write_Workspace_Profiles_Info_File)
 #
 #      :profile: The name of the profile
 #
-#      :ENVIRONMENT: the default environment to use for this profile
+#      :ENVIRONMENT: a build environment to use for this profile (first passed is default one)
 #      :INSTANCE: the instance name for the profile
 #      :SYSROOT: the sysroot folder to use (when crosscompiling)
 #      :STAGING: the staging folder to use (when crosscompiling)
@@ -423,15 +423,14 @@ macro(reset_Profiles)
   #- empty environments folder
   #- missing profile list file
   read_Profiles_Description_File(FILE_EXISTS)
-  if(NOT PROFILES)#case at first configuration time just after a clone or if file has been removed manually
+  if(NOT FILE_EXISTS)#case at first configuration time just after a clone or if file has been removed manually
     add_Default_Profile()
   else()
     list(FIND PROFILES "default" INDEX)
     if(INDEX EQUAL -1)#default profile not present for any reason
-      add_Default_Profile()
+      add_Default_Profile()#perform corrective action
     endif()
   endif()
-
   set(dir ${WORKSPACE_DIR}/build/${CURRENT_PROFILE})
 
   if(NOT EXISTS ${dir}/Workspace_Info.cmake #check if the complete platform description exists for current profile (may have not been generated yet or may has been removed by hand)
@@ -451,8 +450,7 @@ macro(reset_Profiles)
     # evaluate the main environment of the profile, then all additionnal environments
     if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")#need to reevaluate the main environment if profile is not haost default
       evaluate_Environment_From_Profile(ENV_NAME ${CURRENT_PROFILE} ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT} TRUE)#evaluate as main env
-      set(default_env_name ${ENV_NAME})
-      if(ENV_NAME)
+      if(ENV_NAME)#environment is known
         file(	READ ${WORKSPACE_DIR}/environments/${ENV_NAME}/build/PID_Environment_Solution_Info.cmake
               more_solution)
         set(full_solution_str "${full_solution_str}\n${more_solution}")
@@ -465,8 +463,6 @@ macro(reset_Profiles)
       else()#reset to default profile
         set(CURRENT_PROFILE default CACHE INTERNAL "")
       endif()
-    else()
-      set(default_env_name host)
     endif()
     fill_String_From_List(RES_STR PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS " ")
     set(full_solution_str "${full_solution_str}\nset(PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS ${RES_STR} CACHE INTERNAL \"\")")
@@ -483,7 +479,7 @@ macro(reset_Profiles)
       endif()
     endforeach()
 
-    # write the allow access for full solution description
+    # write to file to provide locally description of the solution
     file(WRITE ${dir}/Workspace_Solution_File.cmake "${full_solution_str}")
   endif()
 
@@ -493,20 +489,6 @@ macro(reset_Profiles)
   # need to set the definitions used in evalutaion of profile specific configuration
   fill_String_From_List(res_str LIMITED_JOBS_PACKAGES " ")
   set(args -DWORKSPACE_DIR=${WORKSPACE_DIR} -DIN_CI_PROCESS=${IN_CI_PROCESS} -DPACKAGE_BINARY_INSTALL_DIR=${PACKAGE_BINARY_INSTALL_DIR} -DLIMITED_JOBS_PACKAGES="${res_str}")
-  include(${dir}/Workspace_Solution_File.cmake)#use the solution file to set global variables
-  if(${default_env_name}_CROSSCOMPILATION)
-    list(APPEND args -DPID_CROSSCOMPILATION=TRUE)
-  endif()
-  if(${default_env_name}_TARGET_INSTANCE)
-    list(APPEND args -DPID_USE_INSTANCE_NAME=${${default_env_name}_TARGET_INSTANCE})
-  endif()
-  #Note: not no need to do that with platform as it will be detected directly from Cmake features and c++ flags
-  if(${default_env_name}_TARGET_DISTRIBUTION)
-    list(APPEND args -DPID_USE_DISTRIBUTION=${${default_env_name}_TARGET_DISTRIBUTION})
-  endif()
-  if(${default_env_name}_TARGET_DISTRIBUTION_VERSION)
-    list(APPEND args -DPID_USE_DISTRIB_VERSION=${${default_env_name}_TARGET_DISTRIBUTION_VERSION})
-  endif()
 
   # write the configuration file to memorize choices for next configuration (and for user editing)
   write_Profiles_Description_File()
@@ -546,8 +528,6 @@ macro(reset_Profiles)
     message("${DESCRIPTION_FILE}")
   endif()
 endmacro(reset_Profiles)
-
-
 
 #.rst:
 #
@@ -624,6 +604,71 @@ function(evaluate_Environment_From_Profile RESULT profile environment is_default
   set(${RESULT} ${ENV_NAME} PARENT_SCOPE)
 endfunction(evaluate_Environment_From_Profile)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_Automatic_Plugins| replace:: ``update_Automatic_Plugins``
+#  .. _update_Automatic_Plugins:
+#
+#  update_Automatic_Plugins
+#  -------------------------
+#
+#   .. command:: update_Automatic_Plugins(before_deps_var before_comps_var during_comps_var after_comps_var erase)
+#
+#      Update a profile so that is contains all plugin scripts that have to be automatically executed
+#
+#     :profile_folder: path to profile build folder
+#     :before_deps_var: the input variable that contains the list of tools defining a script execute before dependencies evaluation.
+#     :before_comps_var: the input variable that contains the list of tools defining a script execute before components evaluation.
+#     :during_comps_var: the input variable that contains the list of tools defining a script execute during components evaluation.
+#     :after_comps_var: the input variable that contains the list of tools defining a script execute after components evaluation.
+#     :erase: if TRUE previously memorized will be overwritten, otherwise it will be updated
+#
+function(update_Automatic_Plugins profile_folder before_deps_var before_comps_var during_comps_var after_comps_var erase)
+
+  if(${before_deps_var})
+    set(final_list ${${before_deps_var}})
+    if(NOT erase AND EXISTS ${profile_folder}/plugins/auto_before_deps.cmake)
+      include(${profile_folder}/plugins/auto_before_deps.cmake NO_POLICY_SCOPE)
+      list(APPEND final_list ${PLUGINS_TO_EXECUTE})
+    endif()
+    list(REMOVE_DUPLICATES final_list)
+    file(WRITE ${profile_folder}/plugins/auto_before_deps.cmake
+      "set(PLUGINS_TO_EXECUTE ${final_list})\n")
+  endif()
+  if(${before_comps_var})
+    set(final_list ${${before_comps_var}})
+    if(NOT erase AND EXISTS ${profile_folder}/plugins/auto_before_comps.cmake)
+      include(${profile_folder}/plugins/auto_before_comps.cmake NO_POLICY_SCOPE)
+      list(APPEND final_list ${PLUGINS_TO_EXECUTE})
+    endif()
+    list(REMOVE_DUPLICATES final_list)
+    file(WRITE ${profile_folder}/plugins/auto_before_comps.cmake
+        "set(PLUGINS_TO_EXECUTE ${final_list})\n")
+  endif()
+  if(${during_comps_var})
+    set(final_list ${${during_comps_var}})
+    if(NOT erase AND EXISTS ${profile_folder}/plugins/auto_during_comps.cmake)
+      include(${profile_folder}/plugins/auto_during_comps.cmake NO_POLICY_SCOPE)
+      list(APPEND final_list ${PLUGINS_TO_EXECUTE})
+    endif()
+    list(REMOVE_DUPLICATES final_list)
+    file(WRITE ${profile_folder}/plugins/auto_during_comps.cmake
+        "set(PLUGINS_TO_EXECUTE ${final_list})\n")
+  endif()
+  if(${after_comps_var})
+    set(final_list ${${after_comps_var}})
+    if(NOT erase AND EXISTS ${profile_folder}/plugins/auto_after_comps.cmake)
+      include(${profile_folder}/plugins/auto_after_comps.cmake NO_POLICY_SCOPE)
+      list(APPEND final_list ${PLUGINS_TO_EXECUTE})
+    endif()
+    list(REMOVE_DUPLICATES final_list)
+    file(WRITE ${profile_folder}/plugins/auto_after_comps.cmake
+        "set(PLUGINS_TO_EXECUTE ${final_list})\n")
+  endif()
+  set(PLUGINS_TO_EXECUTE CACHE INTERNAL "")#reset to avoid any problem
+endfunction(update_Automatic_Plugins)
 
 #.rst:
 #
@@ -647,74 +692,128 @@ function(manage_Plugins)
   if(NOT EXISTS ${CMAKE_BINARY_DIR}/Workspace_Solution_File.cmake)
     message(FATAL_ERROR "[PID] CRITICAL ERROR: file ${CMAKE_BINARY_DIR}/Workspace_Solution_File.cmake cannot be found ! Aborting.")
   endif()
+  if(EXISTS ${CMAKE_BINARY_DIR}/plugins)
+    file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/plugins)
+  endif()
+
   if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")#host environment defines no plugin
-    extract_Plugins_From_Environment(BEFORE_DEPS BEFORE_COMPS DURING_COMPS AFTER_COMPS ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
+    extract_Plugins_From_Environment(BEFORE_DEPS BEFORE_COMPS DURING_COMPS AFTER_COMPS
+                                     ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}
+                                     ${CMAKE_BINARY_DIR})
     list(APPEND list_before_deps ${BEFORE_DEPS})
     list(APPEND list_before_comps ${BEFORE_COMPS})
     list(APPEND list_during_comps ${DURING_COMPS})
     list(APPEND list_after_comps ${AFTER_COMPS})
   endif()
   foreach(env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)#additionnal environments may define plugins
-    extract_Plugins_From_Environment(BEFORE_DEPS BEFORE_COMPS DURING_COMPS AFTER_COMPS ${env})
+    extract_Plugins_From_Environment(BEFORE_DEPS BEFORE_COMPS DURING_COMPS AFTER_COMPS
+                                     ${env} ${CMAKE_BINARY_DIR})
     list(APPEND list_before_deps ${BEFORE_DEPS})
     list(APPEND list_before_comps ${BEFORE_COMPS})
     list(APPEND list_during_comps ${DURING_COMPS})
     list(APPEND list_after_comps ${AFTER_COMPS})
   endforeach()
-  if(EXISTS ${CMAKE_BINARY_DIR}/plugins)
-    file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/plugins)
-  endif()
-  if(list_before_deps OR list_before_comps OR list_during_comps OR list_after_comps)
-    set(count 0)
-    #generate the set of files used into packages to activate plugins
-    set(path_to_plug_before_deps ${CMAKE_BINARY_DIR}/plugins/before_deps)
-    if(NOT EXISTS ${path_to_plug_before_deps})
-      file(MAKE_DIRECTORY ${path_to_plug_before_deps})
-    endif()
-    set(path_to_plug_before_comps ${CMAKE_BINARY_DIR}/plugins/before_comps)
-    if(NOT EXISTS ${path_to_plug_before_comps})
-      file(MAKE_DIRECTORY ${path_to_plug_before_comps})
-    endif()
-    set(path_to_plug_during_comps ${CMAKE_BINARY_DIR}/plugins/during_comps)
-    if(NOT EXISTS ${path_to_plug_during_comps})
-      file(MAKE_DIRECTORY ${path_to_plug_during_comps})
-    endif()
-    set(path_to_plug_after_comps ${CMAKE_BINARY_DIR}/plugins/after_comps)
-    if(NOT EXISTS ${path_to_plug_after_comps})
-      file(MAKE_DIRECTORY ${path_to_plug_after_comps})
-    endif()
-
-    set(count 0)
-    foreach(plugin IN LISTS list_before_deps)
-      get_filename_component(PLUGIN_NAME ${plugin} NAME)
-  		file(COPY ${plugin} DESTINATION ${path_to_plug_before_deps})
-      file(RENAME ${path_to_plug_before_deps}/${PLUGIN_NAME} ${path_to_plug_before_deps}/${count}.cmake)
-      math(EXPR count "${count}+1")
-  	endforeach()
-    set(count 0)
-    foreach(plugin IN LISTS list_before_comps)
-      get_filename_component(PLUGIN_NAME ${plugin} NAME)
-  		file(COPY ${plugin} DESTINATION ${path_to_plug_before_comps})
-      file(RENAME ${path_to_plug_before_comps}/${PLUGIN_NAME} ${path_to_plug_before_comps}/${count}.cmake)
-      math(EXPR count "${count}+1")
-  	endforeach()
-    set(count 0)
-    foreach(plugin IN LISTS list_during_comps)
-      get_filename_component(PLUGIN_NAME ${plugin} NAME)
-  		file(COPY ${plugin} DESTINATION ${path_to_plug_during_comps})
-      file(RENAME ${path_to_plug_during_comps}/${PLUGIN_NAME} ${path_to_plug_during_comps}/${count}.cmake)
-      math(EXPR count "${count}+1")
-  	endforeach()
-    set(count 0)
-    foreach(plugin IN LISTS list_after_comps)
-      get_filename_component(PLUGIN_NAME ${plugin} NAME)
-  		file(COPY ${plugin} DESTINATION ${path_to_plug_after_comps})
-      file(RENAME ${path_to_plug_after_comps}/${PLUGIN_NAME} ${path_to_plug_after_comps}/${count}.cmake)
-      math(EXPR count "${count}+1")
-  	endforeach()
-  endif()
+  # now manage all plugins that are automatically activated
+  # Note: using TRUE to erase previous values
+  update_Automatic_Plugins(${CMAKE_BINARY_DIR}
+      list_before_deps list_before_comps list_during_comps list_after_comps
+      TRUE)
 endfunction(manage_Plugins)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_Plugin_Script| replace:: ``install_Plugin_Script``
+#  .. _install_Plugin_Script:
+#
+#  install_Plugin_Script
+#  ---------------------
+#
+#   .. command:: install_Plugin_Script(plugin_install_file plugin_file)
+#
+#      Install a plugin script into specified profile folder of the workspace
+#
+#     :plugin_install_folder: path to plugin script install folder
+#     :plugin_file: the path to the script file to install
+#
+function(install_Plugin_Script plugin_install_file plugin_file)
+  get_filename_component(TOOL_PATH ${plugin_install_file} DIRECTORY)
+  if(NOT EXISTS ${TOOL_PATH})#not already installed during this configuration step
+    file(MAKE_DIRECTORY ${TOOL_PATH})
+    get_filename_component(PLUGIN_NAME ${plugin_file} NAME)
+    file(COPY ${plugin_file} DESTINATION ${TOOL_PATH})
+    file(RENAME ${TOOL_PATH}/${PLUGIN_NAME} ${plugin_install_file})
+  endif()
+endfunction(install_Plugin_Script)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |install_Environment_Scripts| replace:: ``install_Environment_Scripts``
+#  .. _install_Environment_Scripts:
+#
+#  install_Environment_Scripts
+#  --------------------------------
+#
+#   .. command:: install_Environment_Scripts(BEFORE_DEPS BEFORE_COMPS AFTER_COMPS environment path_to_profile)
+#
+#      install all plugins (directly and undirectly) provided by an environment.
+#
+#     :environment: the name of the environment that may contain plugins
+#     :path_to_profile: path to profile folder to update
+#
+#     :BEFORE_DEPS: the output variable containing the list of path to the CMake script files defining plugin behavior to be activated before description of dependencies of a package
+#     :BEFORE_COMPS: the output variable containing the list of path to the CMake script files defining plugin behavior to be activated before description of components of a package
+#     :DURING_COMPS: the output variable containing the list of path to the CMake script files defining plugin behavior to be activated during description of components of a package
+#     :AFTER_COMPS: the output variable containing the list of path to the CMake script files defining plugin behavior to be activated after description of components of a package
+#
+function(install_Environment_Scripts BEFORE_DEPS BEFORE_COMPS DURING_COMPS AFTER_COMPS environment path_to_profile)
+  set(${BEFORE_DEPS} PARENT_SCOPE)
+  set(${BEFORE_COMPS} PARENT_SCOPE)
+  set(${DURING_COMPS} PARENT_SCOPE)
+  set(${AFTER_COMPS} PARENT_SCOPE)
+  set(res_bef_deps)
+  set(res_bef_comps)
+  set(res_during_comps)
+  set(res_aft_comps)
+  foreach(tool IN LISTS ${environment}_EXTRA_TOOLS)
+    if(${environment}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES)
+      set(path_to_plug_before_deps ${path_to_profile}/plugins/${tool}/before_deps.cmake)
+      install_Plugin_Script(${path_to_plug_before_deps} ${${environment}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES})
+      if(NOT ${environment}_EXTRA_${tool}_PLUGIN_ON_DEMAND)
+        list(APPEND res_bef_deps ${tool})
+      endif()
+    endif()
+    if(${environment}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS)
+      set(path_to_plug_before_comps ${path_to_profile}/plugins/${tool}/before_comps.cmake)
+      install_Plugin_Script(${path_to_plug_before_comps} ${${environment}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS})
+      if(NOT ${environment}_EXTRA_${tool}_PLUGIN_ON_DEMAND)
+        list(APPEND res_bef_comps ${tool})
+      endif()
+    endif()
+    if(${environment}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS)
+      set(path_to_plug_during_comps ${path_to_profile}/plugins/${tool}/during_comps.cmake)
+      install_Plugin_Script(${path_to_plug_during_comps} ${${environment}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS})
+      if(NOT ${environment}_EXTRA_${tool}_PLUGIN_ON_DEMAND)
+        list(APPEND res_during_comps ${tool})
+      endif()
+    endif()
+    if(${environment}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS)
+      set(path_to_plug_after_comps ${path_to_profile}/plugins/${tool}/after_comps.cmake)
+      install_Plugin_Script(${path_to_plug_after_comps} ${${environment}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS})
+      if(NOT ${environment}_EXTRA_${tool}_PLUGIN_ON_DEMAND)
+        list(APPEND res_aft_comps ${tool})
+      endif()
+    endif()
+  endforeach()
+  set(${BEFORE_DEPS} ${res_bef_deps} PARENT_SCOPE)
+  set(${BEFORE_COMPS} ${res_bef_comps} PARENT_SCOPE)
+  set(${DURING_COMPS} ${res_during_comps} PARENT_SCOPE)
+  set(${AFTER_COMPS} ${res_aft_comps} PARENT_SCOPE)
+endfunction(install_Environment_Scripts)
 
 #.rst:
 #
@@ -728,59 +827,35 @@ endfunction(manage_Plugins)
 #
 #   .. command:: extract_Plugins_From_Environment(BEFORE_DEPS BEFORE_COMPS AFTER_COMPS environment)
 #
-#      Get the list of path to files used to implement plugins behavior
+#      Automatically install all plugins required by an environment. Can also deploy the environment if necessary.
 #
-#     :environment: the name of the environment defining the plugin
+#     :environment: the name of the environment directly or undirectly defining the plugin.
+#     :install_folder: path to plugins root install folder.
 #
 #     :BEFORE_DEPS: the output variable containing the list of path to the CMake script files defining plugin behavior to be activated before description of dependencies of a package
 #     :BEFORE_COMPS: the output variable containing the list of path to the CMake script files defining plugin behavior to be activated before description of components of a package
 #     :DURING_COMPS: the output variable containing the list of path to the CMake script files defining plugin behavior to be activated during description of components of a package
 #     :AFTER_COMPS: the output variable containing the list of path to the CMake script files defining plugin behavior to be activated after description of components of a package
 #
-function(extract_Plugins_From_Environment BEFORE_DEPS BEFORE_COMPS DURING_COMPS AFTER_COMPS environment)
-   parse_Configuration_Expression(ENV_NAME ENV_ARGS ${environment})
-   set(path_to_env ${WORKSPACE_DIR}/environments/${ENV_NAME})
-   set(res_bef_deps)
-   set(res_bef_comps)
-   set(res_during_comps)
-   set(res_aft_comps)
-   if(NOT EXISTS ${path_to_env})#check that te environment exist because we need to copy scripts from its content
+function(extract_Plugins_From_Environment BEFORE_DEPS BEFORE_COMPS DURING_COMPS AFTER_COMPS environment install_folder)
+    set(${BEFORE_DEPS} PARENT_SCOPE)
+    set(${BEFORE_COMPS} PARENT_SCOPE)
+    set(${DURING_COMPS} PARENT_SCOPE)
+    set(${AFTER_COMPS} PARENT_SCOPE)
+    parse_Configuration_Expression(ENV_NAME ENV_ARGS ${environment})
+    set(path_to_env ${WORKSPACE_DIR}/environments/${ENV_NAME})
+    if(NOT EXISTS ${path_to_env})#check that the environment exist because we need to copy scripts from its content
      load_Environment(LOADED ${ENV_NAME})
      if(NOT LOADED)
        message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot find or deploy environment ${ENV_NAME}. This is probably due to a badly referenced environment or it is contained in a contribution space not currenlty used.")
        return()
      endif()
-   endif()
-   foreach(tool IN LISTS ${ENV_NAME}_EXTRA_TOOLS)
-     if(${ENV_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES)
-       list(APPEND res_bef_deps ${${ENV_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES})
-     endif()
-     if(${ENV_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS)
-       list(APPEND res_bef_comps ${${ENV_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS})
-     endif()
-     if(${ENV_NAME}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS)
-       list(APPEND res_during_comps ${${ENV_NAME}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS})
-     endif()
-     if(${ENV_NAME}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS)
-       list(APPEND res_aft_comps ${${ENV_NAME}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS})
-     endif()
-   endforeach()
-   if(res_bef_deps)
-     list(REMOVE_DUPLICATES res_bef_deps)
-   endif()
-   if(res_bef_comps)
-     list(REMOVE_DUPLICATES res_bef_comps)
-   endif()
-   if(res_during_comps)
-     list(REMOVE_DUPLICATES res_during_comps)
-   endif()
-   if(res_aft_comps)
-     list(REMOVE_DUPLICATES res_aft_comps)
-   endif()
-   set(${BEFORE_DEPS} ${res_bef_deps} PARENT_SCOPE)
-   set(${BEFORE_COMPS} ${res_bef_comps} PARENT_SCOPE)
-   set(${DURING_COMPS} ${res_during_comps} PARENT_SCOPE)
-   set(${AFTER_COMPS} ${res_aft_comps} PARENT_SCOPE)
+    endif()
+    install_Environment_Scripts(res_bef_deps res_bef_comps res_during_comps res_aft_comps ${ENV_NAME} ${install_folder})
+    set(${BEFORE_DEPS} ${res_bef_deps} PARENT_SCOPE)
+    set(${BEFORE_COMPS} ${res_bef_comps} PARENT_SCOPE)
+    set(${DURING_COMPS} ${res_during_comps} PARENT_SCOPE)
+    set(${AFTER_COMPS} ${res_aft_comps} PARENT_SCOPE)
 endfunction(extract_Plugins_From_Environment)
 
 #.rst:
@@ -1186,6 +1261,72 @@ endfunction(use_Language_Toolset)
 #
 # .. ifmode:: internal
 #
+#  .. |get_Extra_Tools_With_On_Demand_Plugins_For_Environment| replace:: ``get_Extra_Tools_With_On_Demand_Plugins_For_Environment``
+#  .. _get_Extra_Tools_With_On_Demand_Plugins_For_Environment:
+#
+#  get_Extra_Tools_With_On_Demand_Plugins_For_Environment
+#  ------------------------------------------------------
+#
+#   .. command:: get_Extra_Tools_With_On_Demand_Plugins_For_Environment(RESULT environment)
+#
+#    Get all extra tools that define an on demand plugin (that does not appear in automatically executed plugins).
+#
+#     :environment: the environment required by a package or wrapper.
+#
+#     :RESULT: the output variable that contains all tools defining on demand plugins contained by the required environment.
+#
+function(get_Extra_Tools_With_On_Demand_Plugins_For_Environment RESULT environment)
+  #Note : by construction we know that environment already belongs to more
+  set(top_level_env FALSE)
+  if(PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL environment)
+    set(top_level_env TRUE)
+  else()
+    list(FIND PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS ${environment} INDEX)
+    if(NOT INDEX EQUAL -1)
+      set(top_level_env TRUE)
+    endif()
+  endif()
+  set(all_tool)
+  if(top_level_env)#directly search for all extra tools defined in this top level environment
+    foreach(atool IN LISTS ${environment}_EXTRA_TOOLS)
+      set(prefix ${environment}_EXTRA_${atool})
+      if(${prefix}_PLUGIN_ON_DEMAND)#the tool defines on demand plugins, use it
+        list(APPEND all_tools ${atool})
+      endif()
+    endforeach()
+  else()#we need to search into top level environments if they contain definitions for this extra tool
+    set(container_prefix)
+    foreach(tool IN LISTS ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_EXTRA_TOOLS)
+      if(tool STREQUAL environment)#the extra tool is the one required
+        set(container_prefix ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_EXTRA_${environment})
+      endif()
+    endforeach()
+    if(NOT container_prefix)
+      foreach(env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
+        foreach(tool IN LISTS ${env}_EXTRA_TOOLS)
+          if(tool STREQUAL environment)#the extra tool is the one required
+            set(container_prefix ${env}_EXTRA_${environment})
+            break() #no need to search more
+          endif()
+        endforeach()
+        if(container_prefix)
+          break() #no need to search more
+        endif()
+      endforeach()
+    endif()
+    if(container_prefix)#OK the extra tool has been found in a top level environment
+      if(${prefix}_PLUGIN_ON_DEMAND)#the tool defines on demand plugins, use it
+        set(all_tools ${environment})#only one possible in this case
+      endif()
+    endif()
+  endif()
+  set(${RESULT} ${all_tools} PARENT_SCOPE)
+endfunction(get_Extra_Tools_With_On_Demand_Plugins_For_Environment)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |check_Extra_Tool_Configuration| replace:: ``check_Extra_Tool_Configuration``
 #  .. _check_Extra_Tool_Configuration:
 #
@@ -1211,8 +1352,8 @@ function(check_Extra_Tool_Configuration RESULT CONFIG_CONSTRAINTS tool mode)
     message("[PID] CRITICAL ERROR : extra toolset check ${tool} is ill formed.")
     return()
   endif()
-  add_Required_Extra_Tool(${TOOL_NAME})
   check_Extra_Tool_Configuration_With_Arguments(RESULT_WITH_ARGS CONSTRAINTS ${TOOL_NAME} TOOL_ARGS ${mode})
+  add_Required_Extra_Tools(${TOOL_NAME})#the extra tool is explicitly required
   set(${RESULT} ${RESULT_WITH_ARGS} PARENT_SCOPE)
   set(${CONFIG_CONSTRAINTS} ${CONSTRAINTS} PARENT_SCOPE)
 endfunction(check_Extra_Tool_Configuration)
@@ -1423,10 +1564,51 @@ function(evaluate_Extra_Tool_Configuration RESULT_OK CONFIGS tool)
     return()
   endif()
   evaluate_Extra_Tool_In_Environment(RESULT_FROM_ENV CONFIGS_TO_CHECK ${tool} ${tool})
+  update_Current_Profile_Environments(${tool})
   set(${RESULT_OK} ${RESULT_FROM_ENV} PARENT_SCOPE)
   set(${CONFIGS} ${CONFIGS_TO_CHECK} PARENT_SCOPE)
 endfunction(evaluate_Extra_Tool_Configuration)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |update_Current_Profile_Environments| replace:: ``update_Current_Profile_Environments``
+#  .. _update_Current_Profile_Environments:
+#
+#  update_Current_Profile_Environments
+#  -----------------------------------
+#
+#   .. command:: update_Current_Profile_Environments(environment)
+#
+#    Add an extra environment to current profile.
+#
+#     :environment: the environment to add
+#
+function(update_Current_Profile_Environments environment)
+  #memorize choice made at gobal scope so that it will be keep at next evaluation of workspace
+  add_Managed_Profile(${CURRENT_PROFILE} ENVIRONMENT ${environment})
+  write_Profiles_Description_File()#update global description
+  #now also update the full descriptive solution file of the current profile
+  #this will allow to avoid unecessary operations at next config
+  append_Unique_In_Cache(PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS ${environment})#update locally
+  file(READ ${WORKSPACE_DIR}/environments/${environment}/build/PID_Environment_Solution_Info.cmake
+        temp_str)
+  #Note: overewrite current profile additional environments to update globally for every package/wrapper
+  set(to_input "\nset(PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS ${PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS} CACHE INTERNAL \"\")\n")
+  set(to_input "${to_input}\n${temp_str}")
+  file(APPEND ${WORKSPACE_DIR}/build/${CURRENT_PROFILE}/Workspace_Solution_File.cmake "${to_input}")
+  # finally also need to update plugins
+  install_Environment_Scripts(res_bef_deps res_bef_comps res_during_comps res_aft_comps
+                              ${environment} ${WORKSPACE_DIR}/build/${CURRENT_PROFILE})
+
+  #finally update those who require automatic execution into adequate files
+  update_Automatic_Plugins(${WORKSPACE_DIR}/build/${CURRENT_PROFILE}
+      res_bef_deps res_bef_comps res_during_comps res_aft_comps
+      FALSE)#Note: update the existing list
+  #now the environment is ready to be used and need no more to be installed
+endfunction(update_Current_Profile_Environments)
 
 #.rst:
 #

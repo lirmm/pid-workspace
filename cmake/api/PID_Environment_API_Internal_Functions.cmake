@@ -98,7 +98,7 @@ function(reset_Environment_Description)
   set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION FALSE CACHE INTERNAL "")
 
   foreach(tool IN LISTS ${PROJECT_NAME}_EXTRA_TOOLS)
-    set_Extra_Tool(${tool} "" "" "" "" "" "" "" "" "")
+    set_Extra_Tool(${tool} "" "" "" "" "" "" "" "" "" "")
   endforeach()
   set(${PROJECT_NAME}_EXTRA_TOOLS CACHE INTERNAL "")
 
@@ -1072,6 +1072,7 @@ function(import_Solution_From_Dependency environment)
                     "${${environment}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS}"
                     "${${environment}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS}"
                     "${${environment}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS}"
+                    "${${environment}_EXTRA_${tool}_PLUGIN_ON_DEMAND}"
       )
   endforeach()
 
@@ -1805,7 +1806,7 @@ function(generate_Environment_Toolchain_File)
       if(${prefix}_LIBRARY)#if standard libraries sonames are given
         file(APPEND ${description_file} "set(PID_USE_${lang}_STANDARD_LIBRARIES ${${prefix}_LIBRARY} CACHE INTERNAL \"\" FORCE)\n")
       endif()
-      if(${prefix}_LIBRARY)#if standard libraries sonames are given
+      if(${prefix}_COVERAGE)#if standard libraries sonames are given
         file(APPEND ${description_file} "set(PID_USE_${lang}_COVERAGE ${${prefix}_COVERAGE} CACHE INTERNAL \"\" FORCE)\n")
       endif()
       if(lang MATCHES "CUDA")#for CUDA also set the old variables for compiler info
@@ -2195,7 +2196,8 @@ endfunction(set_System_Wide_Configuration)
 #
 #   .. command:: set_Extra_Tool(tool_name expression on_demand
 #                               tool_program tool_configs tool_program_dirs
-#                               tool_plugin_before_deps tool_plugin_before_comps tool_plugin_after_comps)
+#                               tool_plugin_before_deps tool_plugin_before_comps
+#                               tool_plugin_after_comps tool_plugin_ondemand)
 #
 #   Set definition of an extra tool.
 #
@@ -2209,8 +2211,9 @@ endfunction(set_System_Wide_Configuration)
 #     :tool_plugin_before_comps: path to plugin script that is executed after dependencies description and before components description.
 #     :tool_plugin_during_comps: path to plugin script that is executed after during components description.
 #     :tool_plugin_after_comps: path to plugin script that is executed after components description.
+#     :tool_plugin_ondemand: if TRUE the plugin is only activated on demand.
 #
-function(set_Extra_Tool tool expression script tool_program tool_configs tool_program_dirs tool_plugin_before_deps tool_plugin_before_comps tool_plugin_during_comps tool_plugin_after_comps)
+function(set_Extra_Tool tool expression script tool_program tool_configs tool_program_dirs tool_plugin_before_deps tool_plugin_before_comps tool_plugin_during_comps tool_plugin_after_comps tool_plugin_ondemand)
   set(${PROJECT_NAME}_EXTRA_${tool}_CONSTRAINT_EXPRESSION ${expression} CACHE INTERNAL "")
   set(${PROJECT_NAME}_EXTRA_${tool}_CHECK_SCRIPT ${script} CACHE INTERNAL "")
   set(${PROJECT_NAME}_EXTRA_${tool}_PROGRAM ${tool_program} CACHE INTERNAL "")
@@ -2228,6 +2231,7 @@ function(set_Extra_Tool tool expression script tool_program tool_configs tool_pr
   if(tool_plugin_after_comps)
     set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS ${CMAKE_SOURCE_DIR}/src/${tool_plugin_after_comps} CACHE INTERNAL "")
   endif()
+  set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_ON_DEMAND ${tool_plugin_ondemand} CACHE INTERNAL "")
 endfunction(set_Extra_Tool)
 
 #.rst:
@@ -2242,7 +2246,8 @@ endfunction(set_Extra_Tool)
 #
 #   .. command:: add_Extra_Tool(tool expression script force on_demand
 #                              tool_program tool_configs tool_program_dirs
-#                              tool_plugin_before_deps tool_plugin_before_comps tool_plugin_after_comps)
+#                              tool_plugin_before_deps tool_plugin_before_comps
+#                              tool_plugin_after_comps tool_plugin_ondemand)
 #
 #   Add definition of an extra tool to the set of extra tools of the environment.
 #
@@ -2258,8 +2263,9 @@ endfunction(set_Extra_Tool)
 #     :tool_plugin_before_comps: path to plugin script that is executed after dependencies description and before components description.
 #     :tool_plugin_during_comps: path to plugin script that is executed after during components description.
 #     :tool_plugin_after_comps: path to plugin script that is executed after components description.
+#     :tool_plugin_ondemand: plugi scripts are activated only when the configuration is explicilty required by project.
 #
-function(add_Extra_Tool tool expression script force tool_program tool_configs tool_program_dirs tool_plugin_before_deps tool_plugin_before_comps tool_plugin_during_comps tool_plugin_after_comps)
+function(add_Extra_Tool tool expression script force tool_program tool_configs tool_program_dirs tool_plugin_before_deps tool_plugin_before_comps tool_plugin_during_comps tool_plugin_after_comps tool_plugin_ondemand)
   if(NOT force)
     list(FIND ${PROJECT_NAME}_EXTRA_TOOLS ${tool} INDEX)
     if(NOT INDEX EQUAL -1)#already define, do not overwrite
@@ -2269,7 +2275,8 @@ function(add_Extra_Tool tool expression script force tool_program tool_configs t
   append_Unique_In_Cache(${PROJECT_NAME}_EXTRA_TOOLS ${tool})
   set_Extra_Tool(${tool} "${expression}" "${script}"
                 "${tool_program}" "${tool_configs}" "${tool_program_dirs}"
-                "${tool_plugin_before_deps}" "${tool_plugin_before_comps}" "${tool_plugin_during_comps}" "${tool_plugin_after_comps}")
+              "${tool_plugin_before_deps}" "${tool_plugin_before_comps}" "${tool_plugin_during_comps}"
+              "${tool_plugin_after_comps}" "${tool_plugin_ondemand}")
 endfunction(add_Extra_Tool)
 
 #.rst:
@@ -2355,6 +2362,7 @@ function(write_Extra_Tool file tool)
   file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_ON_DEMAND ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_ON_DEMAND} CACHE INTERNAL \"\")\n")
 endfunction(write_Extra_Tool)
 
 #.rst:
@@ -2522,7 +2530,11 @@ function(print_Extra_Tool environment tool)
     OR ${environment}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS
     OR ${environment}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS
     OR ${environment}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS)
-    set(tool_str "${tool_str}    * plugin callbacks:\n")
+    if(${environment}_EXTRA_${tool}_PLUGIN_ON_DEMAND)
+      set(tool_str "${tool_str}    * on demand plugin callbacks:\n")
+    else()
+      set(tool_str "${tool_str}    * plugin callbacks:\n")
+    endif()
     if(${environment}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES)
       set(tool_str "${tool_str}         + before dependencies: ${${environment}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES}\n")
     endif()

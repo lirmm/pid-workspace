@@ -2409,6 +2409,8 @@ endmacro(return_External_Project_Error)
 #   .. command:: build_B2_External_Project(PROJECT ... FOLDER ... MODE ... [OPTIONS])
 #
 #     Configure, build and install an external project defined with Boost build.
+#     WARNING: this function is usable only in wrappers, to build Boost build projects
+#              wrapper using this function must declare
 #
 #     .. rubric:: Required parameters
 #
@@ -2438,202 +2440,14 @@ endmacro(return_External_Project_Error)
 #
 #     .. code-block:: cmake
 #
-#         build_B2_External_Project(PROJECT boost FOLDER boost_1_64_0 MODE Release)
+#         in wrapper content description file:
 #
-function(build_B2_External_Project)
-  if(ERROR_IN_SCRIPT)
-    return()
-  endif()
-  set(options QUIET) #used to define the context
-  set(oneValueArgs PROJECT FOLDER MODE COMMENT USER_JOBS)
-  set(multiValueArgs DEFINITIONS INCLUDES LINKS WITH WITHOUT)
-  cmake_parse_arguments(BUILD_B2_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-  if(NOT BUILD_B2_EXTERNAL_PROJECT_PROJECT OR NOT BUILD_B2_EXTERNAL_PROJECT_FOLDER OR NOT BUILD_B2_EXTERNAL_PROJECT_MODE)
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : PROJECT, FOLDER and MODE arguments are mandatory when calling build_B2_External_Project.")
-    return()
-  endif()
-
-  if(BUILD_B2_EXTERNAL_PROJECT_QUIET AND NOT ADDITIONAL_DEBUG_INFO)
-    set(OUTPUT_MODE OUTPUT_QUIET)
-  endif()
-
-  if(BUILD_B2_EXTERNAL_PROJECT_MODE STREQUAL Debug)
-    set(TARGET_MODE Debug)
-  else()
-    set(TARGET_MODE Release)
-  endif()
-
-  if(BUILD_B2_EXTERNAL_PROJECT_COMMENT)
-    set(use_comment "(${BUILD_B2_EXTERNAL_PROJECT_COMMENT}) ")
-  endif()
-
-  #create the build folder inside the project folder
-  set(project_dir ${TARGET_BUILD_DIR}/${BUILD_B2_EXTERNAL_PROJECT_FOLDER})
-  if(NOT EXISTS ${project_dir})
-    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
-    message("[PID] ERROR : when calling build_B2_External_Project  the build folder specified (${BUILD_B2_EXTERNAL_PROJECT_FOLDER}) does not exist.")
-    return()
-  endif()
-
-  # preparing b2 invocation parameters
-  #configure build mode (to get available parameters see https://boostorg.github.io/build/tutorial.html section "Feature reference")
-  if(BUILD_B2_EXTERNAL_PROJECT_MODE STREQUAL Debug)
-      set(ARGS_FOR_B2_BUILD "variant=debug")
-  else()
-      set(ARGS_FOR_B2_BUILD "variant=release")
-  endif()
-  # configure current platform
-  set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} address-model=${CURRENT_PLATFORM_ARCH}")#address model is specified the same way in PID and b2
-  set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} link=shared")#build shared libraries
-  set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} runtime-link=shared")#link to shared C and C++ runtime
-  set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} threading=multi")#build shared libraries
-  set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} architecture=${CURRENT_PLATFORM_TYPE}")#processor architecture supported are "x86" and "arm" so PID uses same names than b2
-  if(CURRENT_PLATFORM_OS STREQUAL macos)#we use a specific identifier in PID only for macos otherwise thay are the same than b2
-    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} target-os=darwin")#processor architecture
-  else()
-    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} target-os=${CURRENT_PLATFORM_OS}")#processor architecture
-  endif()
-   #ABI definition is already in compile flags
-  # configure toolchain
-  if(CMAKE_COMPILER_IS_GNUCXX)
-    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} toolset=gcc")
-    set(install_toolset "gcc")
-  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
-      OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"
-      OR CMAKE_CXX_COMPILER_ID STREQUAL "clang")
-    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} toolset=clang")
-    set(install_toolset "clang")
-  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} toolset=msvc")
-    set(install_toolset "msvc")
-	else()# add new support for compiler or use CMake generic mechanism to do so for instance : CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"
-    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} toolset=${CMAKE_CXX_COMPILER_ID}")
-    set(install_toolset "${CMAKE_CXX_COMPILER_ID}")
-	endif()
-  #configure compilation flags
-  get_Environment_Info(CXX RELEASE CFLAGS cxx_flags COMPILER cxx_compiler)
-  get_Environment_Info(C RELEASE CFLAGS c_flags)
-  #enfore use of standard defined in description
-  translate_Standard_Into_Option(RES_C_STD_OPT RES_CXX_STD_OPT ${USE_C_STD} ${USE_CXX_STD})
-  if(NOT WIN32)
-    if(c_flags)
-      set(c_flags "${c_flags} ${RES_C_STD_OPT}")
-    endif()
-    if(cxx_flags)
-      set(cxx_flags "${cxx_flags} ${RES_CXX_STD_OPT}")
-    endif()
-  endif()
-  if(BUILD_B2_EXTERNAL_PROJECT_LINKS)
-    set(all_links)
-    foreach(link IN LISTS BUILD_B2_EXTERNAL_PROJECT_LINKS)#specific includes (to manage dependencies)
-      set(all_links "${all_links} ${link}")
-    endforeach()
-    set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} linkflags=\"${links}\"")#need to use guillemet because pass "as is"
-  endif()
-
-  if(BUILD_B2_EXTERNAL_PROJECT_DEFINITIONS)
-    foreach(def IN LISTS BUILD_B2_EXTERNAL_PROJECT_DEFINITIONS)
-      set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} define=${def}")#specific preprocessor definition
-    endforeach()
-  endif()
-  if(BUILD_B2_EXTERNAL_PROJECT_INCLUDES)
-    foreach(inc IN LISTS BUILD_B2_EXTERNAL_PROJECT_INCLUDES)#specific includes (to manage dependencies)
-      set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} include=${inc}")
-    endforeach()
-  endif()
-  if(BUILD_B2_EXTERNAL_PROJECT_WITH)
-    foreach(lib IN LISTS BUILD_B2_EXTERNAL_PROJECT_WITH)#libraries to build
-      set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} --with-${lib}")
-    endforeach()
-  endif()
-  if(BUILD_B2_EXTERNAL_PROJECT_WITHOUT)
-    foreach(lib IN LISTS BUILD_B2_EXTERNAL_PROJECT_WITHOUT)#libraries to exclude from build
-      set(ARGS_FOR_B2_BUILD "${ARGS_FOR_B2_BUILD} --without-${lib}")
-    endforeach()
-  endif()
-
-  if(CMAKE_HOST_WIN32)#on a window host path must be resolved
-    # separate_arguments(COMMAND_ARGS_AS_LIST WINDOWS_COMMAND "${ARGS_FOR_B2_BUILD}")
-    string(REGEX REPLACE "/" "-" COMMAND_ARGS_AS_LIST ${ARGS_FOR_B2_BUILD})
-    string(REGEX REPLACE " " ";" COMMAND_ARGS_AS_LIST ${COMMAND_ARGS_AS_LIST})
-  else()#if not on windows use a UNIX like command syntac
-    separate_arguments(COMMAND_ARGS_AS_LIST UNIX_COMMAND "${ARGS_FOR_B2_BUILD}")#always from host perpective
-  endif()
-
-  message("[PID] INFO : Configuring ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
-  # this phase mainly consists in building boost.build tool so we need to let Boost.Build detect
-  # the adequate compiler on platform
-  if(WIN32)
-    execute_process(COMMAND ${project_dir}/bootstrap.bat --with-toolset=${install_toolset} --layout=system
-    WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}
-    RESULT_VARIABLE result)
-  else()
-    execute_process(COMMAND ${project_dir}/bootstrap.sh --with-toolset=${install_toolset}
-    WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}
-    RESULT_VARIABLE result)
-  endif()
-
-  if(NOT result EQUAL 0)#error at configuration time
-    set(ENV{CXX} ${TEMP_CXX})
-    set(ENV{CC} ${TEMP_CC})
-    message("[PID] ERROR : cannot configure boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment}...")
-    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
-    return()
-  endif()
-
-  #for the build of boost libraries we need to use specific compiler and flags, same as those
-  #use by current profile
-  set(TEMP_CXXFLAGS $ENV{CXXFLAGS})
-  set(TEMP_CFLAGS $ENV{CFLAGS})
-  set(TEMP_CXX $ENV{CXX})
-  set(TEMP_CC $ENV{CC})
-  get_Environment_Info(CXX RELEASE COMPILER cxx_compiler)
-  set(ENV{CXX} ${cxx_compiler})
-  get_Environment_Info(C RELEASE COMPILER c_compiler)
-  set(ENV{CC} ${c_compiler})
-  set(ENV{CXXFLAGS} ${cxx_flags})
-  set(ENV{CFLAGS} ${c_flags})
-  set(jnumber 1)
-  if(ENABLE_PARALLEL_BUILD)#parallel build is allowed from CMake configuration
-    list(FIND LIMITED_JOBS_PACKAGES ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} INDEX)
-    if(INDEX EQUAL -1)#package can compile with many jobs
-      if(BUILD_B2_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
-        set(jnumber ${BUILD_B2_EXTERNAL_PROJECT_USER_JOBS})
-      else()
-        get_Environment_Info(JOBS_NUMBER jnumber)
-      endif()
-    endif()
-  endif()
-  set(jobs "-j${jnumber}")
-
-  message("[PID] INFO : Building and installing ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} in ${TARGET_MODE} mode using ${jnumber} jobs...")
-  execute_process(COMMAND ${project_dir}/b2 install
-                          ${jobs}
-                          --prefix=${TARGET_INSTALL_DIR}
-                          --layout=system
-                          # --user-config=${jamfile}
-                          ${COMMAND_ARGS_AS_LIST}
-                 WORKING_DIRECTORY ${project_dir}
-                 ${OUTPUT_MODE}
-                 RESULT_VARIABLE result
-                 ERROR_VARIABLE varerr)
-
-
-  set(ENV{CXX} ${TEMP_CXX})
-  set(ENV{CXXFLAGS} ${TEMP_CXXFLAGS})
-  set(ENV{CC} ${TEMP_CC})
-  set(ENV{CFLAGS} ${TEMP_CFLAGS})
-  if(NOT result EQUAL 0
-    AND NOT (varerr MATCHES "^link\\.jam: No such file or directory[ \t\n]*$"))#if the error is the one specified this is a normal situation (i.e. a BUG in previous version of b2, -> this message should be a warning)
-    message("[PID] ERROR : cannot build and install boost build project ${BUILD_B2_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
-    set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
-    return()
-  endif()
-
-  enforce_Standard_Install_Dirs(${TARGET_INSTALL_DIR})
-  symlink_DLLs_To_Lib_Folder(${TARGET_INSTALL_DIR})
-  set_External_Runtime_Component_Rpath(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_VERSION})
-endfunction(build_B2_External_Project)
+#           PID_Wrapper_Environment(b2)
+#
+#         in wrapper deploy script:
+#
+#           build_B2_External_Project(PROJECT boost FOLDER boost_1_64_0 MODE Release)
+#
 
 #.rst:
 #

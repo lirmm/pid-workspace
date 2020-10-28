@@ -607,27 +607,6 @@ endfunction(set_Version_Cache_Variables)
 #
 # .. ifmode:: internal
 #
-#  .. |add_Required_Extra_Tool| replace:: ``add_Required_Extra_Tool``
-#  .. _add_Required_Extra_Tool:
-#
-#  add_Required_Extra_Tool
-#  -----------------------
-#
-#   .. command:: add_Required_Extra_Tool(tool)
-#
-#   Add into cache the information of required extra tool.
-#
-#     :tool: the name of required extra tool
-#
-function(add_Required_Extra_Tool tool)
-  set(${tool}_REQUIRED TRUE CACHE INTERNAL "")
-  append_Unique_In_Cache(${PROJECT_NAME}_EXTRA_TOOLS_USED ${tool})
-endfunction(add_Required_Extra_Tool)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
 #  .. |reset_Version_Cache_Variables| replace:: ``reset_Version_Cache_Variables``
 #  .. _reset_Version_Cache_Variables:
 #
@@ -1355,6 +1334,48 @@ endfunction(reset_External_Package_Dependency_Cached_Variables_From_Use)
 #
 # .. ifmode:: internal
 #
+#  .. |reset_Extra_Tool_Cache_Variables| replace:: ``reset_Extra_Tool_Cache_Variables``
+#  .. _reset_Extra_Tool_Cache_Variables:
+#
+#  reset_Extra_Tool_Cache_Variables
+#  ---------------------------------
+#
+#   .. command:: reset_Extra_Tool_Cache_Variables()
+#
+#   Resetting all internal cached variables defined by a package. Used to start reconfiguration from a clean situation.
+#
+function(reset_Extra_Tool_Cache_Variables)
+  set(${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED CACHE INTERNAL "")
+endfunction(reset_Extra_Tool_Cache_Variables)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_Required_Extra_Tools| replace:: ``add_Required_Extra_Tools``
+#  .. _add_Required_Extra_Tools:
+#
+#  add_Required_Extra_Tools
+#  ------------------------
+#
+#   .. command:: add_Required_Extra_Tools(tool)
+#
+#   Add into cache the information of required extra tool.
+#
+#     :environment: the name of required environment defining extra tools
+#
+function(add_Required_Extra_Tools environment)
+  get_Extra_Tools_With_On_Demand_Plugins_For_Environment(ALL_EXTRA ${environment})
+  foreach(extra IN LISTS ALL_EXTRA)
+    append_Unique_In_Cache(${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED ${extra})
+  endforeach()
+endfunction(add_Required_Extra_Tools)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |reset_Package_Description_Cached_Variables| replace:: ``reset_Package_Description_Cached_Variables``
 #  .. _reset_Package_Description_Cached_Variables:
 #
@@ -1366,10 +1387,7 @@ endfunction(reset_External_Package_Dependency_Cached_Variables_From_Use)
 #   Resetting all internal cached variables defined by a package. Used to start reconfiguration from a clean situation.
 #
 function(reset_Package_Description_Cached_Variables)
-  foreach(extra_tool IN LISTS ${PROJECT_NAME}_EXTRA_TOOLS_USED)
-    set(${extra_tool}_REQUIRED CACHE INTERNAL "")
-  endforeach()
-  set(${PROJECT_NAME}_EXTRA_TOOLS_USED CACHE INTERNAL "")
+  reset_Extra_Tool_Cache_Variables()#reset info on plugins used
 	# package dependencies declaration must be reinitialized otherwise some problem (uncoherent dependancy versions) would appear
 	foreach(dep_package IN LISTS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
     set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")

@@ -703,11 +703,6 @@ endmacro(declare_PID_Component_Documentation)
 #      check_PID_Environment(LANGUAGE CXX TOOLSET clang[version=9.0])#check that a clang compiler with version >= 9.0 is available
 #
 macro(check_PID_Environment)
-  if(NOT PLUGIN_EXEC_BEFORE_DEPS)
-    #plugin call point before any dependency (platform constraint or PID dependency)
-    manage_Plugins_In_Package_Before_Dependencies_Description()
-    set(PLUGIN_EXEC_BEFORE_DEPS TRUE)
-  endif()
   set(monoValueArg OPTIONAL)
   set(multiValueArgs LANGUAGE TOOL TOOLSET)
   cmake_parse_arguments(CHECK_PID_ENV "" "${monoValueArg}" "${multiValueArgs}" ${ARGN} )

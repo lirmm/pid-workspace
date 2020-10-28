@@ -32,26 +32,111 @@ include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
 #
 # .. ifmode:: internal
 #
+#  .. |manage_Plugins_In_Wrapper| replace:: ``manage_Plugins_In_Wrapper``
+#  .. _manage_Plugins_In_Wrapper:
+#
+#  manage_Plugins_In_Wrapper
+#  -------------------------
+#
+#   .. command:: manage_Plugins_In_Wrapper(filename)
+#
+#    Manage actions of activated plugins in currently built wrapper.
+#
+#    :filename : name of the file listing used plugins.
+#    :package : name of the wrapper being built.
+#    :version : version of the wrapper being built.
+#
+macro(manage_Plugins_In_Wrapper filename package version)
+  set(plugins_path ${WORKSPACE_DIR}/build/${CURRENT_PROFILE}/plugins)
+  #only manage on demand plugins for wrappers
+  #Note: if they are part of _EXTRA_TOOLS_REQUIRED variable this means they have been required
+  foreach(tool IN LISTS ${package}_KNOWN_VERSION_${version}_EXTRA_TOOLS)
+    message("wrapper checking for ${plugins_path}/${tool}/${filename}.cmake")
+    if(EXISTS ${plugins_path}/${tool}/${filename}.cmake)
+      include(${plugins_path}/${tool}/${filename}.cmake)
+    endif()
+  endforeach()
+endmacro(manage_Plugins_In_Wrapper)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Plugins_In_Wrapper_Before_Dependencies_Description| replace:: ``manage_Plugins_In_Wrapper_Before_Dependencies_Description``
+#  .. _manage_Plugins_In_Wrapper_Before_Dependencies_Description:
+#
+#  manage_Plugins_In_Wrapper_Before_Dependencies_Description
+#  ---------------------------------------------------------
+#
+#   .. command:: manage_Plugins_In_Wrapper_Before_Dependencies_Description()
+#
+#    Callback function used in currently built wrapper to manage specific configuration actions provided by active environments.
+#    This callback is called BEFORE resolution of dependencies of the wrapper version being built.
+#
+#    :package : name of the wrapper being built.
+#    :version : version of the wrapper being built.
+#
+macro(manage_Plugins_In_Wrapper_Before_Dependencies_Description package version)
+ manage_Plugins_In_Wrapper(before_deps ${package} ${version})
+endmacro(manage_Plugins_In_Wrapper_Before_Dependencies_Description)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Plugins_In_Wrapper_After_Components_Description| replace:: ``manage_Plugins_In_Wrapper_After_Components_Description``
+#  .. _manage_Plugins_In_Wrapper_After_Components_Description:
+#
+#  manage_Plugins_In_Wrapper_After_Components_Description
+#  ------------------------------------------------------
+#
+#   .. command:: manage_Plugins_In_Wrapper_After_Components_Description()
+#
+#    Callback function used in currently built wrapper to manage specific configuration actions provided by active environments.
+#    This callback is called AFTER wrapper has been built.
+#
+#    :package : name of the wrapper being built.
+#    :version : version of the wrapper being built.
+#
+macro(manage_Plugins_In_Wrapper_After_Components_Description package version)
+  manage_Plugins_In_Wrapper(after_comps ${package} ${version})
+endmacro(manage_Plugins_In_Wrapper_After_Components_Description)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |manage_Plugins_In_Package| replace:: ``manage_Plugins_In_Package``
 #  .. _manage_Plugins_In_Package:
 #
 #  manage_Plugins_In_Package
 #  -------------------------
 #
-#   .. command:: manage_Plugins_In_Package()
+#   .. command:: manage_Plugins_In_Package(filename)
 #
 #    Manage actions of activated/deactivated plugins in currently built package.
 #
-macro(manage_Plugins_In_Package folder)
-  set(target_path ${WORKSPACE_DIR}/build/${CURRENT_PROFILE}/plugins/${folder})
+#    :filename : name of the file listing automatically used plugins.
+#
+macro(manage_Plugins_In_Package filename)
+  set(plugins_path ${WORKSPACE_DIR}/build/${CURRENT_PROFILE}/plugins)
+  set(target_path ${plugins_path}/auto_${filename}.cmake)
   if(EXISTS ${target_path})#check if the folder exists, otherwise simply do nothing
-    file(GLOB ALL_SCRIPTS "${target_path}/*")
-    if(ALL_SCRIPTS)#check if the folder contains scripts, otherwise simply do nothing
-      foreach(plugin_script IN LISTS ALL_SCRIPTS)
-        include(${plugin_script})#simply include the corresponding cmake script
-    	endforeach()
-    endif()
+    include(${target_path})
+    foreach(tool IN LISTS PLUGINS_TO_EXECUTE)
+      include(${plugins_path}/${tool}/${filename}.cmake)
+    endforeach()
+    set(PLUGINS_TO_EXECUTE CACHE INTERNAL "")#reset variable provided by the file
   endif()
+  #also manage on demand plugins
+  #Note: if they are part of _EXTRA_TOOLS_REQUIRED variable this means they have been required
+  foreach(tool IN LISTS ${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED)
+    message("checking for ${plugins_path}/${tool}/${filename}.cmake")
+    if(EXISTS ${plugins_path}/${tool}/${filename}.cmake)
+      include(${plugins_path}/${tool}/${filename}.cmake)
+    endif()
+  endforeach()
 endmacro(manage_Plugins_In_Package)
 
 #.rst:

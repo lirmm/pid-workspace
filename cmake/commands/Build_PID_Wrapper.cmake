@@ -28,6 +28,7 @@ include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(Wrapper_Definition NO_POLICY_SCOPE) # to be able to interpret description of external packages and generate the use files
 include(External_Definition NO_POLICY_SCOPE) #to be able to interpret description of dependencies (external packages)
+include(PID_Plugins_Management NO_POLICY_SCOPE)
 
 load_Workspace_Info() #loading the current workspace configuration before executing the deploy script
 #########################################################################################
@@ -156,11 +157,13 @@ else()#by default build the given package version using external project specifi
 	resolve_Wrapper_Language_Configuration(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
 	if(NOT IS_OK)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message("[PID] ERROR : Cannot satisfy build environment's required configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} !")
+		message("[PID] ERROR : Cannot satisfy build environment's required language configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} !")
 		return()
 	else()
-		message("[PID] INFO : all required build environment configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
+		message("[PID] INFO : all required build environment language configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
 	endif()
+	#callback for plugins execution
+	manage_Plugins_In_Wrapper_Before_Dependencies_Description(${TARGET_EXTERNAL_PACKAGE} ${version})
 
 	#checking for platform configurations
 	resolve_Wrapper_Platform_Configuration(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
@@ -257,4 +260,7 @@ if(NOT use_os_variant)# perform specific operations at the end of the install pr
 else()
 	message("[PID] INFO : external package ${TARGET_EXTERNAL_PACKAGE} version ${version} configured from OS settings.")
 endif()
+#call back for plugins execution
+manage_Plugins_In_Wrapper_After_Components_Description(${TARGET_EXTERNAL_PACKAGE} ${version})
+
 finish_Progress(${GLOBAL_PROGRESS_VAR})

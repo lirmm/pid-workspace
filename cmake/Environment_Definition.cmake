@@ -940,18 +940,20 @@ function(configure_Environment_Tool)
 
   elseif(CONF_ENV_TOOL_EXTRA)#extra tool defined
     if(CONF_ENV_TOOL_PLUGIN)
+      set(options ON_DEMAND)
       set(monoValueArgs BEFORE_DEPS BEFORE_COMPS DURING_COMPS AFTER_COMPS)
-      cmake_parse_arguments(CONF_PLUGIN "" "${monoValueArgs}" "" ${CONF_ENV_TOOL_PLUGIN})
+      cmake_parse_arguments(CONF_PLUGIN "${options}" "${monoValueArgs}" "" ${CONF_ENV_TOOL_PLUGIN})
       set(plugin_before_deps ${CONF_PLUGIN_BEFORE_DEPS})
       set(plugin_before_comps ${CONF_PLUGIN_BEFORE_COMPS})
       set(plugin_during_comps ${CONF_PLUGIN_DURING_COMPS})
       set(plugin_after_comps ${CONF_PLUGIN_AFTER_COMPS})
+      set(plugin_ondemand ${CONF_PLUGIN_ON_DEMAND})
     endif()
     # Note: no expression provided since it will be computable when envronment is fully configured
     # Note same for check script that is automatically added when generating solution description
     add_Extra_Tool(${CONF_ENV_TOOL_EXTRA} "" "" TRUE
                   "${CONF_ENV_TOOL_PROGRAM}" "${CONF_ENV_TOOL_CONFIGURATION}" "${CONF_ENV_TOOL_PROGRAM_DIRS}"
-                  "${plugin_before_deps}" "${plugin_before_comps}" "${plugin_during_comps}" "${plugin_after_comps}")
+                  "${plugin_before_deps}" "${plugin_before_comps}" "${plugin_during_comps}" "${plugin_after_comps}" "${plugin_ondemand}")
   endif()
 endfunction(configure_Environment_Tool)
 

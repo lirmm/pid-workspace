@@ -4039,6 +4039,21 @@ endfunction(manage_Migrations)
 #     Define the current platform in use and provide to the user some options to control finally targetted platform.
 #
 function(manage_Platforms)
+if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")#need to reevaluate the main environment if profile is not haost default
+	parse_Configuration_Expression(ENV_NAME ENV_ARGS ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
+	set(default_env_name ${ENV_NAME})
+else()
+	set(default_env_name host)
+endif()
+	# include(${dir}/Workspace_Solution_File.cmake)#use the solution file to set global variables
+if(${default_env_name}_CROSSCOMPILATION)
+  set(PID_CROSSCOMPILATION TRUE CACHE INTERNAL "" FORCE)
+else()
+	set(PID_CROSSCOMPILATION FALSE CACHE INTERNAL "" FORCE)
+endif()
+set(PID_USE_INSTANCE_NAME ${${default_env_name}_TARGET_INSTANCE} CACHE INTERNAL "" FORCE)
+set(PID_USE_DISTRIBUTION ${${default_env_name}_TARGET_DISTRIBUTION} CACHE INTERNAL "" FORCE)
+set(PID_USE_DISTRIB_VERSION ${${default_env_name}_TARGET_DISTRIBUTION_VERSION} CACHE INTERNAL "" FORCE)
 
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER) # during local profile evaluation, program MUST be in host system
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE NEVER) # during local profile evaluation, packages MUST be found in host system
