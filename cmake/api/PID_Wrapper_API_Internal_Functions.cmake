@@ -303,6 +303,18 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			COMMENT "[PID] Uninstalling external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} ..."
 		)
 
+
+		# sysinstall target (install currently built version on the system)
+		add_custom_target(sysinstall
+			COMMAND ${CMAKE_COMMAND}
+				-DWORKSPACE_DIR=${WORKSPACE_DIR}
+				-DINSTALLED_PACKAGE=${PROJECT_NAME}
+				-DTARGET_VERSION=\${version}
+				-DINSTALL_FOLDER=\${folder}
+				-DINSTALL_MODE=\${mode}
+				-P ${WORKSPACE_DIR}/cmake/commands/Install_PID_Package.cmake
+		)
+
 		# reference file generation target
 		get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${PROJECT_NAME})
 		add_custom_target(referencing
