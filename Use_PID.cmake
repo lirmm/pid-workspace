@@ -146,7 +146,7 @@ endmacro(import_PID_Workspace)
 #  .. _add_PID_Contribution_Space:
 #
 #  add_PID_Contribution_Space
-#  ------------------
+#  --------------------------
 #
 #  .. command:: add_PID_Contribution_Space(NAME ... URL .. [PRIORITY ...])
 #

@@ -2816,7 +2816,7 @@ endfunction(update_Framework_Repository)
 #  publish_Framework_Repository
 #  ----------------------------
 #
-#   .. command:: publish_Framework_Repository(framework PUBLISHED)
+#   .. command:: publish_Framework_Repository(PUBLISHED framework trials)
 #
 #     Commit and push unpublished content of local framework's repository.
 #
@@ -2824,7 +2824,7 @@ endfunction(update_Framework_Repository)
 #
 #     :PUBLISHED: the output variable that is TRUE if framework published, FALSE otherwise
 #
-function(publish_Framework_Repository framework PUBLISHED)
+function(publish_Framework_Repository PUBLISHED framework trials)
   set(framework_path ${WORKSPACE_DIR}/sites/frameworks/${framework})
   execute_process(COMMAND git status --porcelain
                   WORKING_DIRECTORY ${framework_path} OUTPUT_VARIABLE res)
@@ -2833,11 +2833,12 @@ function(publish_Framework_Repository framework PUBLISHED)
                     WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
   	execute_process(COMMAND git commit -m "publishing new version of framework"
                     WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
-  else()
+  elseif(trials EQUAL 1)#on first trial if nothing to commit, then nothing to do
     message("[PID] INFO: nothing new to publish in ${framework}")
     set(${PUBLISHED} TRUE PARENT_SCOPE)
     return()
   endif()
+  #otherwise there is something to commit OR we are on next trials
   execute_process(COMMAND git pull --ff-only origin master
                   WORKING_DIRECTORY ${framework_path}
                   OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
@@ -2851,6 +2852,8 @@ function(publish_Framework_Repository framework PUBLISHED)
     if(PUSH_RESULT EQUAL 0)
       set(${PUBLISHED} TRUE PARENT_SCOPE)
       return()
+    else()
+      message("[PID] WARNING: cannot push to ${framework} repository ... maybe due to access rights or network problems")
     endif()
   else()
     message("[PID] WARNING: cannot push to ${framework} repository because there are conflicts to manage !")
@@ -3397,7 +3400,7 @@ endfunction(update_Static_Site_Repository)
 #  publish_Static_Site_Repository
 #  ------------------------------
 #
-#   .. command:: publish_Static_Site_Repository(package PUBLISHED)
+#   .. command:: publish_Static_Site_Repository(PUBLISHED package trials)
 #
 #     Commit and push unpublished content of local package's static site repository.
 #
@@ -3405,7 +3408,7 @@ endfunction(update_Static_Site_Repository)
 #
 #     :PUBLISHED: the output variable that is TRUE if package static site has been pushed to a remote repository
 #
-function(publish_Static_Site_Repository package PUBLISHED)
+function(publish_Static_Site_Repository PUBLISHED package trials)
   set(site_path ${WORKSPACE_DIR}/sites/packages/${package})
   execute_process(COMMAND git status --porcelain
                   WORKING_DIRECTORY ${site_path} OUTPUT_VARIABLE res)
@@ -3414,11 +3417,15 @@ function(publish_Static_Site_Repository package PUBLISHED)
                     WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET)
   	execute_process(COMMAND git commit -m "publising ${package} static site"
                     WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET)
+  elseif(trials EQUAL 1)#on first trial if nothing to commit then nothing to do
+    message("[PID] INFO: nothing new to publish in ${package} static site")
+    set(${PUBLISHED} TRUE PARENT_SCOPE)
+    return()
   endif()
   execute_process(COMMAND git pull --ff-only  origin master
                   WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET
                   RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
-  if(PULL_RESULT EQUAL 0)
+  if(PULL_RESULT EQUAL 0)# pull is OK
     execute_process(COMMAND git lfs pull origin master
                     WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
     execute_process(COMMAND git push origin master
@@ -3427,7 +3434,11 @@ function(publish_Static_Site_Repository package PUBLISHED)
     if(PUSH_RESULT EQUAL 0)
       set(${PUBLISHED} TRUE PARENT_SCOPE)
       return()
+    else()
+      message("[PID] WARNING: cannot push to ${package} static site repository ... maybe due to access rights or network problems")
     endif()
+  else()
+    message("[PID] WARNING: cannot push to ${package} static site repository because there are conflicts to manage !")
   endif()
   set(${PUBLISHED} FALSE PARENT_SCOPE)
 endfunction(publish_Static_Site_Repository)

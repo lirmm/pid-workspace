@@ -2410,7 +2410,6 @@ endmacro(return_External_Project_Error)
 #
 #     Configure, build and install an external project defined with Boost build.
 #     WARNING: this function is usable only in wrappers, to build Boost build projects
-#              wrapper using this function must declare
 #
 #     .. rubric:: Required parameters
 #
