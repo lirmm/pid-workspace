@@ -61,7 +61,10 @@ if("${TARGET_MINOR}" STREQUAL "")
 	message(FATAL_ERROR "[PID] ERROR : the version you specified (${TARGET_VERSION}) does not contain a minor version. Specify a major.minor version for which you want to create a patch.")
 endif()
 
-get_Repository_Current_Commit(CURRENT_COMMIT ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})#Note: to be able to go back to initial state if any error occurs
+get_Repository_Current_Branch(CURRENT_COMMIT_OR_BRANCH ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
+if(NOT CURRENT_COMMIT_OR_BRANCH)
+	get_Repository_Current_Commit(CURRENT_COMMIT_OR_BRANCH ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})#Note: to be able to go back to initial state if any error occurs
+endif()
 # check for modifications
 has_Modifications(HAS_MODIFS ${TARGET_PACKAGE})
 if(HAS_MODIFS)
@@ -75,13 +78,13 @@ list_Ignored_Files(IGNORED_ON_INITIAL_COMMIT ${WORKSPACE_DIR}/packages/${TARGET_
 update_Package_Repository_Versions(UPDATE_OK ${TARGET_PACKAGE})
 if(NOT UPDATE_OK)
 	message("[PID] ERROR : ${TARGET_PACKAGE} cannot be updated from official one. Patch command cannot ensure you will not try to patch a non existing version. Maybe you have no clone rights from official or local master branch of package ${package} is not synchronizable with official master branch.")
-	go_To_Commit(${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} ${CURRENT_COMMIT})
+	go_To_Commit(${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} ${CURRENT_COMMIT_OR_BRANCH})
 	return()
 endif() #from here graph of commits and version tags are OK
 
 # here there may have newly untracked files in master that are newly ignored files on dev branch
 # these files should be preserved
-checkout_From_Master_To_Commit(${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} ${CURRENT_COMMIT} IGNORED_ON_INITIAL_COMMIT)
+checkout_From_Master_To_Commit(${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} ${CURRENT_COMMIT_OR_BRANCH} IGNORED_ON_INITIAL_COMMIT)
 
 # check that version is not already released on official/master branch
 get_Repository_Version_Tags(AVAILABLE_VERSION_TAGS ${TARGET_PACKAGE})
@@ -93,28 +96,32 @@ if(NOT VERSION_NUMBERS)
 	return()
 endif()
 
-set(max_patch_for_minor_version ${TARGET_PATCH})
+set(max_patch_for_minor_version -1)
 foreach(version IN LISTS VERSION_NUMBERS)
 	get_Version_String_Numbers(${version} MAJOR MINOR PATCH)
 	if(MAJOR EQUAL TARGET_MAJOR AND MINOR EQUAL TARGET_MINOR)
-		if(	NOT max_patch_for_minor_version
-				OR PATCH GREATER_EQUAL max_patch_for_minor_version)
+		if(	PATCH GREATER max_patch_for_minor_version)
 			set(max_patch_for_minor_version ${PATCH})
 		endif()
 	endif()
 endforeach()
 
-if(NOT max_patch_for_minor_version)
-		message(FATAL_ERROR "[PID] ERROR : cannot patch package ${TARGET_PACKAGE} version ${TARGET_VERSION} because no such major.minor version can be found !")
+if(max_patch_for_minor_version EQUAL -1)
+	message(FATAL_ERROR "[PID] ERROR : cannot patch package ${TARGET_PACKAGE} version ${TARGET_VERSION} because no such major.minor version can be found !")
 endif()
 
+if(TARGET_PATCH)
+	if(TARGET_PATCH GREATER max_patch_for_minor_version)
+		message(FATAL_ERROR "[PID] ERROR : cannot patch package ${TARGET_PACKAGE} version ${TARGET_VERSION} because patch version you specified (${TARGET_PATCH}) does not match any existing patch version.")
+	endif()
+endif()
 ##### now we can proceed ######
 
 #OK from here the biggest patch version for major.minor has been found
 math(EXPR new_patch_number "${max_patch_for_minor_version}+1")
 set(new_patch_version ${TARGET_MAJOR}.${TARGET_MINOR}.${new_patch_number})
 set(new_branch_name "patch-${new_patch_version}")
-start_Patching_Version(NEW_BRANCH ${TARGET_PACKAGE} ${new_branch_name}  ${TARGET_MAJOR}.${TARGET_MINOR}.${max_patch_for_minor_version})
+start_Patching_Version(NEW_BRANCH ${TARGET_PACKAGE} ${new_branch_name} ${TARGET_MAJOR}.${TARGET_MINOR}.${max_patch_for_minor_version})
 if(NEW_BRANCH)
 	message("[PID] INFO : new patch branch ${new_branch_name} created.")
 	get_Version_Number_And_Repo_From_Package(${TARGET_PACKAGE} DIGITS STRING FORMAT METHOD ADDRESS)
