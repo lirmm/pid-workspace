@@ -1047,17 +1047,17 @@ endfunction(build_And_Install_Source)
 function(deploy_Source_Native_Package DEPLOYED package already_installed_versions run_tests)
 # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 set(${DEPLOYED} FALSE PARENT_SCOPE)
-save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
+save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package} FALSE)
 update_Package_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available released modifications
 if(NOT UPDATE_OK)
 	message("[PID] ERROR : source package ${package} master branch cannot be updated from its official repository. Try to solve the problem by hand or contact the administrator of the official package.")
-	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
+	restore_Repository_Context(${package} FALSE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
 get_Repository_Version_Tags(GIT_VERSIONS ${package})
 if(NOT GIT_VERSIONS) #no version available => BUG
 	message("[PID] ERROR : no version available for source package ${package}. Maybe this is a malformed package, please contact the administrator of this package.")
-	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
+	restore_Repository_Context(${package} FALSE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
 
@@ -1065,7 +1065,7 @@ normalize_Version_Tags(VERSION_NUMBERS "${GIT_VERSIONS}") #getting standard vers
 select_Last_Version(RES_VERSION "${VERSION_NUMBERS}")
 if(NOT RES_VERSION)
 	message("[PID] WARNING : no adequate version found for source package ${package} !! Maybe this is due to a malformed package (contact the administrator of this package). Otherwise that may mean you use a non released version of ${package} (in development version).")
-	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
+	restore_Repository_Context(${package} FALSE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
 list(FIND already_installed_versions ${RES_VERSION} INDEX)
@@ -1105,7 +1105,7 @@ else()#already installed !!
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
 endif()
-restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
+restore_Repository_Context(${package} FALSE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Native_Package)
 
 #.rst:
@@ -1131,7 +1131,7 @@ endfunction(deploy_Source_Native_Package)
 function(deploy_Source_Native_Package_From_Branch DEPLOYED package branch run_tests)
   # go to package source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
   set(${DEPLOYED} FALSE PARENT_SCOPE)
-  save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
+  save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package} FALSE)
   set(ALL_IS_OK FALSE)
 	build_And_Install_Package(ALL_IS_OK ${package} "${branch}" "${run_tests}")
   if(ALL_IS_OK)
@@ -1142,7 +1142,7 @@ function(deploy_Source_Native_Package_From_Branch DEPLOYED package branch run_te
 		message("[PID] ERROR : automatic build and install of source package ${package} from branch ${branch} FAILED !!")
 		add_Managed_Package_In_Current_Process(${package} "" "FAIL" FALSE)
 	endif()
-	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
+	restore_Repository_Context(${package} FALSE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Native_Package_From_Branch)
 
 #.rst:
@@ -1224,18 +1224,18 @@ endfunction(try_In_Development_Version)
 function(deploy_Source_Native_Package_Version DEPLOYED package min_version is_exact already_installed_versions run_tests)
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 # go to package source and find all version matching the pattern of min_version : if exact taking min_version, otherwise taking the greatest version number
-save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package})
+save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package} FALSE)
 update_Package_Repository_Versions(UPDATE_OK ${package}) # updating the local repository to get all available modifications
 if(NOT UPDATE_OK)
 	message("[PID] WARNING : source package ${package} master branch cannot be updated from its official repository. Try to solve the problem by hand.")
-	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
+	restore_Repository_Context(${package} FALSE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
 
 get_Repository_Version_Tags(GIT_VERSIONS ${package}) #get all version tags
 if(NOT GIT_VERSIONS) #no version available => BUG
 	message("[PID] ERROR : no version available for source package ${package}. Maybe this is a malformed package, please contact the administrator of this package.")
-	restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
+	restore_Repository_Context(${package} FALSE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
 
@@ -1256,7 +1256,7 @@ if(NOT RES_VERSION)#no adequate version found, this may be due to the use of a n
   	message("[PID] WARNING : no adequate version found for source package ${package} !! Maybe this is due to a malformed package (contact the administrator of this package). Otherwise that may mean you use a non released version of ${package} (in development version) that cannot be found on integration branch.")
     add_Managed_Package_In_Current_Process(${package} ${min_version} "FAIL" FALSE)
   endif()
-  restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
+  restore_Repository_Context(${package} FALSE ${CURRENT_COMMIT} ${SAVED_CONTENT})
   return()
 endif()
 
@@ -1297,7 +1297,7 @@ else()#selected version excluded from current process
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" FALSE)
 endif()
-restore_Repository_Context(${package} ${CURRENT_COMMIT} ${SAVED_CONTENT})
+restore_Repository_Context(${package} FALSE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_Native_Package_Version)
 
 #.rst:
@@ -2064,10 +2064,11 @@ endfunction(deploy_Wrapper_Repository)
 function(deploy_Source_External_Package DEPLOYED package already_installed_versions)
 # go to wrapper source and find all version matching the pattern of VERSION_MIN : if exact taking VERSION_MIN, otherwise taking the greatest version number
 set(${DEPLOYED} FALSE PARENT_SCOPE)
-
-update_Wrapper_Repository(${package})#update wrapper repository
+save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package} TRUE)
+update_Wrapper_Repository(UPDATED ${package})#update wrapper repository
 load_And_Configure_Wrapper(LOADED ${package})
 if(NOT LOADED)
+  restore_Repository_Context(${package} TRUE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
 get_Wrapper_Known_Versions(ALL_VERSIONS ${package})
@@ -2078,10 +2079,12 @@ if(NOT RES_VERSION)
     message("[PID] INFO : wrapper of external package ${package} only defines a platform configuration check.")
     add_Managed_Package_In_Current_Process(${package} "SYSTEM_CHECK" "SUCCESS" TRUE)
     set(${DEPLOYED} TRUE PARENT_SCOPE)
+    restore_Repository_Context(${package} TRUE ${CURRENT_COMMIT} ${SAVED_CONTENT})
     return()
   else()
     message("[PID] ERROR : no adequate version found for wrapper of external package ${package} !! Maybe this is due to a malformed package (contact the administrator of this package). Otherwise that may mean you use a non released version of ${package} (in development version).")
   	add_Managed_Package_In_Current_Process(${package} "NO_VERSION" "FAIL" TRUE)
+    restore_Repository_Context(${package} TRUE ${CURRENT_COMMIT} ${SAVED_CONTENT})
   	return()
   endif()
 endif()
@@ -2115,6 +2118,7 @@ else() #nothing to do but result is OK
 	message("[PID] WARNING : no need to deploy external package ${package} version ${RES_VERSION} from wrapper, since version already exists.")
   add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
 endif()
+restore_Repository_Context(${package} TRUE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_External_Package)
 
 #.rst:
@@ -2143,10 +2147,11 @@ endfunction(deploy_Source_External_Package)
 function(deploy_Source_External_Package_Version DEPLOYED package min_version is_exact is_system already_installed_versions)
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 # go to package source and find all version matching the pattern of min_version : if exact taking min_version, otherwise taking the greatest version number
-
-update_Wrapper_Repository(${package})#update wrapper repository
+save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package} TRUE)
+update_Wrapper_Repository(UPDATED ${package})#update wrapper repository
 load_And_Configure_Wrapper(LOADED ${package})
 if(NOT LOADED)
+  restore_Repository_Context(${package} TRUE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
 get_Wrapper_Known_Versions(ALL_VERSIONS ${package})
@@ -2159,7 +2164,8 @@ endif()
 
 if(NOT RES_VERSION)
 	message("[PID] WARNING : no adequate version found for wrapper of external package ${package} !! Maybe this is due to a malformed package (contact the administrator of this package).")
-	return()
+  restore_Repository_Context(${package} TRUE ${CURRENT_COMMIT} ${SAVED_CONTENT})
+  return()
 endif()
 list(FIND already_installed_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) # selected version is not excluded from deploy process
@@ -2190,6 +2196,7 @@ else() #nothing to do but result is OK
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 	add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
 endif()
+restore_Repository_Context(${package} TRUE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 endfunction(deploy_Source_External_Package_Version)
 
 #.rst:

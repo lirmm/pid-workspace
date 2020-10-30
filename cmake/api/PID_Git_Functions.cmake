@@ -399,9 +399,15 @@ endfunction(go_To_Integration)
 #     Checkout to the master branch of the target source package.
 #
 #     :package: The target source package
+#     :external: TRUE if package is an external package
 #
-function(go_To_Master package)
-  go_To_Commit(${WORKSPACE_DIR}/packages/${package} master)
+function(go_To_Master package external)
+  if(external)
+    set(path ${WORKSPACE_DIR}/wrappers/${package})
+  else()
+    set(path ${WORKSPACE_DIR}/packages/${package})
+  endif()
+  go_To_Commit(${path} master)
 endfunction(go_To_Master)
 
 #.rst:
@@ -574,17 +580,22 @@ endfunction(get_Repository_Current_Commit)
 #  save_Repository_Context
 #  -----------------------
 #
-#   .. command:: save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT package)
+#   .. command:: save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT package external)
 #
-#     Save and clean the current state of a package's repository.
+#     Save and clean the current state of a package or wrapper repository.
 #
-#     :package: the name of target package  name
+#     :package: the name of target package
+#     :external: TRUE if package is an external package
 #
 #     :INITIAL_COMMIT: the output variable that contains the current commit id
 #     :SAVED_CONTENT: the output variable that is TRUE if some content has ben stashed, false otherwise
 #
-function(save_Repository_Context INITIAL_COMMIT SAVED_CONTENT package)
-  set(package_path ${WORKSPACE_DIR}/packages/${package})
+function(save_Repository_Context INITIAL_COMMIT SAVED_CONTENT package external)
+  if(external)
+    set(package_path ${WORKSPACE_DIR}/wrappers/${package})
+  else()
+    set(package_path ${WORKSPACE_DIR}/packages/${package})
+  endif()
   get_Repository_Current_Branch(BRANCH_NAME ${package_path})
   if(NOT BRANCH_NAME)
     set(COMMIT_ID)
@@ -594,7 +605,7 @@ function(save_Repository_Context INITIAL_COMMIT SAVED_CONTENT package)
   	set(CONTEXT ${BRANCH_NAME})
   endif()
   set(${INITIAL_COMMIT} ${CONTEXT} PARENT_SCOPE)
-  has_Modifications(RESULT ${package})
+  has_Modifications(RESULT ${package} ${external})
   if(RESULT)
   	execute_process(COMMAND git stash save --include-untracked --keep-index
                     WORKING_DIRECTORY ${package_path}
@@ -615,16 +626,21 @@ endfunction(save_Repository_Context)
 #  restore_Repository_Context
 #  --------------------------
 #
-#   .. command:: restore_Repository_Context(package initial_commit saved_content)
+#   .. command:: restore_Repository_Context(package external initial_commit saved_content)
 #
 #     Restore the previous state of a package's repository.
 #
-#     :package:  the name of target package  name
+#     :package:  the name of target package
+#     :external:  TRUE if package is an external package
 #     :initial_commit: the id of the commit to checkout to
 #     :saved_content: if TRUE then stashed content will be pop
 #
-function(restore_Repository_Context package initial_commit saved_content)
-  set(package_path ${WORKSPACE_DIR}/packages/${package})
+function(restore_Repository_Context package external initial_commit saved_content)
+  if(external)
+    set(package_path ${WORKSPACE_DIR}/wrappers/${package})
+  else()
+    set(package_path ${WORKSPACE_DIR}/packages/${package})
+  endif()
   prepare_Repository_Context_Switch(${package_path})
   checkout_To_Commit(${package_path} ${initial_commit})
   if(saved_content)
@@ -724,7 +740,7 @@ endfunction(restore_Workspace_Repository_Context)
 #     :RESULT: the ouuput variable that is set to TRUE if merge succeeded, FALSE otherwise
 #
 function(merge_Into_Master RESULT package branch version_string)
-go_To_Master(${package})
+go_To_Master(${package} FALSE)
 execute_process(COMMAND git merge --ff-only ${branch}
                 WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
                 RESULT_VARIABLE res OUTPUT_QUIET ERROR_QUIET)
@@ -1259,7 +1275,7 @@ endfunction(delete_Package_Temporary_Branch)
 function(publish_Repository_Master RESULT_OK package)
   set(package_path ${WORKSPACE_DIR}/packages/${package})
   set(${RESULT_OK} FALSE PARENT_SCOPE)
-  go_To_Master(${package})
+  go_To_Master(${package} FALSE)
   execute_process(COMMAND git push --porcelain official master
                   WORKING_DIRECTORY ${package_path}
                   OUTPUT_VARIABLE out ERROR_QUIET)#releasing on master branch of official
@@ -1386,7 +1402,7 @@ endfunction(test_Remote_Connection)
 #
 function(update_Package_Repository_Versions RESULT package)
   set(package_path ${WORKSPACE_DIR}/packages/${package})
-  go_To_Master(${package})
+  go_To_Master(${package} FALSE)
   adjust_Official_Remote_Address(OFFICIAL_CONNECTED ${package_path} TRUE)
   if(NOT OFFICIAL_CONNECTED)
     message("[PID] WARNING : cannot get connection with official remote (see previous outputs). Aborting ${package} update !")
@@ -1628,17 +1644,23 @@ endfunction(update_Package_Repository_From_Remotes)
 #  has_Modifications
 #  -----------------
 #
-#   .. command:: has_Modifications(RESULT package)
+#   .. command:: has_Modifications(RESULT package external)
 #
 #     Tell wether a package's repository has modifications to stage or commit on its current branch.
 #
 #     :package: the name of target package
+#     :external: TRUE if target package is an external package, FALSE otherwise
 #
 #     :RESULT: the output variable that is TRUE if package has modifications, FALSE otherwise
 #
-function(has_Modifications RESULT package)
+function(has_Modifications RESULT package external)
+  if(external)
+    set(path ${WORKSPACE_DIR}/wrappers/${package})
+  else()
+    set(path ${WORKSPACE_DIR}/packages/${package})
+  endif()
 execute_process(COMMAND git status --porcelain
-                WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
+                WORKING_DIRECTORY ${path}
                 OUTPUT_VARIABLE res_out ERROR_QUIET)
 if(NOT res_out)# no modification to stage or commit
 	set(${RESULT} FALSE PARENT_SCOPE)
@@ -2140,7 +2162,7 @@ endfunction(connect_Package_Repository)
 function(reconnect_Repository package url)
   set(package_path ${WORKSPACE_DIR}/packages/${package})
   reconnect_Repository_Remote(${package_path} ${url} ${url} official)
-  go_To_Master(${package})
+  go_To_Master(${package} FALSE)
   execute_process(COMMAND git pull official master
                   WORKING_DIRECTORY ${package_path}
                   OUTPUT_QUIET ERROR_QUIET)#updating master
@@ -2685,19 +2707,35 @@ endfunction(initialize_Wrapper_Git_Repository_Push_Address)
 #  update_Wrapper_Repository
 #  --------------------------
 #
-#   .. command:: update_Wrapper_Repository(wrapper)
+#   .. command:: update_Wrapper_Repository(UPDATED wrapper)
 #
 #     Update local wrapper's repository (pull).
 #
 #     :wrapper: the name of target wrapper
+#     :RESULT: FALSE if update failed, TRUE otherwise (including no update)
 #
-function(update_Wrapper_Repository wrapper)
+function(update_Wrapper_Repository RESULT wrapper)
+  set(${RESULT} TRUE PARENT_SCOPE)
   set(wrapper_path ${WORKSPACE_DIR}/wrappers/${wrapper})
-  execute_process(COMMAND git pull origin master
-                  WORKING_DIRECTORY ${wrapper_path} OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
-  execute_process(COMMAND git pull origin --tags
-                  WORKING_DIRECTORY ${wrapper_path} OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
-  execute_process(COMMAND git lfs pull origin master
+  go_To_Master(${wrapper} TRUE)
+  adjust_Official_Remote_Address(OFFICIAL_CONNECTED ${wrapper_path} TRUE)
+  if(NOT OFFICIAL_CONNECTED)
+    message("[PID] WARNING : cannot get connection with official remote (see previous outputs). Aborting ${wrapper} update !")
+  	set(${RESULT} TRUE PARENT_SCOPE) #this is not an error since no official defined
+  	return()
+  endif()
+  execute_process(COMMAND git fetch official --tags
+                  WORKING_DIRECTORY ${wrapper_path}
+                  OUTPUT_QUIET ERROR_QUIET)#getting new tags
+  execute_process(COMMAND git pull --ff-only official master
+                  WORKING_DIRECTORY ${wrapper_path}
+                  RESULT_VARIABLE res OUTPUT_QUIET ERROR_QUIET)#pulling master branch of official
+  if(NOT res EQUAL 0)#not a fast forward !! => there is a problem
+  	message("[PID] WARNING : local wrapper ${wrapper} master branch and corresponding branch in official repository have diverged ! If you committed no modification to the local master branch (check using git GUI or git log), ask to the administrator of this repository to solve the problem !")
+  	set(${RESULT} FALSE PARENT_SCOPE)
+  	return()
+  endif()
+  execute_process(COMMAND git lfs pull official master
                   WORKING_DIRECTORY ${wrapper_path})#fetching master branch to get most up to date archives
 endfunction(update_Wrapper_Repository)
 

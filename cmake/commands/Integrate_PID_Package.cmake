@@ -54,7 +54,7 @@ if(NOT ORIGIN_CONNECTED OR NOT OFFICIAL_CONNECTED)
 endif()
 
 # check for modifications
-has_Modifications(HAS_MODIFS ${TARGET_PACKAGE})
+has_Modifications(HAS_MODIFS ${TARGET_PACKAGE} FALSE)
 if(HAS_MODIFS)
 	message("[PID] ERROR : impossible to do integration of package ${TARGET_PACKAGE} because there are modifications to commit or stash before.")
 	return()
@@ -67,7 +67,7 @@ update_Package_Repository_From_Remotes(${TARGET_PACKAGE})
 
 #merging origin/integration
 integrate_Branch(${TARGET_PACKAGE} origin/integration)
-has_Modifications(HAS_MODIFS ${TARGET_PACKAGE})
+has_Modifications(HAS_MODIFS ${TARGET_PACKAGE} FALSE)
 if(HAS_MODIFS)
 	message("[PID] ERROR : merge problem when trying to integrate all modifications of package ${TARGET_PACKAGE}. Please solve them before launching integrate command again.")
 	return()
@@ -76,7 +76,7 @@ endif()
 #merging official/integration
 if(WITH_OFFICIAL STREQUAL "true" OR WITH_OFFICIAL STREQUAL "TRUE" OR WITH_OFFICIAL STREQUAL "ON")
 	integrate_Branch(${TARGET_PACKAGE} official/integration)
-	has_Modifications(HAS_MODIFS ${TARGET_PACKAGE})
+	has_Modifications(HAS_MODIFS ${TARGET_PACKAGE} FALSE)
 	if(HAS_MODIFS)
 		message("[PID] ERROR : merge problem when trying to integrate all modifications of package ${TARGET_PACKAGE}. Please solve them before launching integrate command again.")
 		return()

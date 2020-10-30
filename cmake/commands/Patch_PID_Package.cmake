@@ -66,7 +66,7 @@ if(NOT CURRENT_COMMIT_OR_BRANCH)
 	get_Repository_Current_Commit(CURRENT_COMMIT_OR_BRANCH ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})#Note: to be able to go back to initial state if any error occurs
 endif()
 # check for modifications
-has_Modifications(HAS_MODIFS ${TARGET_PACKAGE})
+has_Modifications(HAS_MODIFS ${TARGET_PACKAGE} FALSE)
 if(HAS_MODIFS)
 	message("[PID] ERROR : package ${TARGET_PACKAGE} has modification to commit or stash, patch aborted.")
 	return()

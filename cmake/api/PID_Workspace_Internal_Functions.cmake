@@ -2050,7 +2050,7 @@ endfunction(connect_PID_Framework)
 #      :first_time: if FALSE a reconnection of official repository will take place.
 #
 function(connect_PID_Package package git_url first_time)
-save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package}) # saving local repository state
+save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package} FALSE) # saving local repository state
 go_To_Integration(${package})
 if(first_time)#first time this package is connected because newly created
 	# set the address of the official repository in the CMakeLists.txt of the package
@@ -2065,7 +2065,7 @@ else() #forced reconnection
 	# synchronizing with the new "official" remote git repository
 	reconnect_Repository(${package} ${git_url})
 endif()
-restore_Repository_Context(${package} ${INITIAL_COMMIT} ${SAVED_CONTENT}) # restoring local repository state
+restore_Repository_Context(${package} FALSE ${INITIAL_COMMIT} ${SAVED_CONTENT}) # restoring local repository state
 endfunction(connect_PID_Package)
 
 #.rst:
@@ -2086,9 +2086,9 @@ endfunction(connect_PID_Package)
 #      :git_url: the url of the origin remote used for that package.
 #
 function(add_Connection_To_PID_Package package git_url)
-save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package}) # saving local repository state
+save_Repository_Context(INITIAL_COMMIT SAVED_CONTENT ${package} FALSE) # saving local repository state
 change_Origin_Repository(${package} ${git_url} origin) # synchronizing with the remote "origin" git repository
-restore_Repository_Context(${package} ${INITIAL_COMMIT} ${SAVED_CONTENT})# restoring local repository state
+restore_Repository_Context(${package} FALSE ${INITIAL_COMMIT} ${SAVED_CONTENT})# restoring local repository state
 endfunction(add_Connection_To_PID_Package)
 
 #.rst:
@@ -2406,7 +2406,7 @@ else()#no branch specified => using integration
 endif()
 
 # check for modifications
-has_Modifications(HAS_MODIFS ${package})
+has_Modifications(HAS_MODIFS ${package} FALSE)
 if(HAS_MODIFS)
 	message("[PID] ERROR : impossible to release package ${package} because there are modifications to commit or stash.")
 	return()
