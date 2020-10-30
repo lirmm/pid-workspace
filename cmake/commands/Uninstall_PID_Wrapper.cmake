@@ -20,6 +20,9 @@
 if(NOT TARGET_EXTERNAL_VERSION AND DEFINED ENV{version})#to manage the call for non UNIX makefile generators
   set(TARGET_EXTERNAL_VERSION $ENV{version} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{version})
+	unset(ENV{version})
+endif()
 
 if(NOT TARGET_EXTERNAL_VERSION)
   message("[PID] CRITICAL ERROR : cannot uninstall a version since no version given. Use version argument to set it !")

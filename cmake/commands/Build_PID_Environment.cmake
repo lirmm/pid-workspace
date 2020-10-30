@@ -32,17 +32,33 @@ if(NOT TARGET_INSTANCE AND DEFINED ENV{instance})
 	set(TARGET_INSTANCE $ENV{instance} CACHE INTERNAL "" FORCE)
 endif()
 
+if(DEFINED ENV{instance})
+	unset(ENV{instance})
+endif()
+
 if(NOT TARGET_SYSROOT AND DEFINED ENV{sysroot})
 	set(TARGET_SYSROOT $ENV{sysroot} CACHE INTERNAL "" FORCE)
+endif()
+
+if(DEFINED ENV{sysroot})
+	unset(ENV{sysroot})
 endif()
 
 if(NOT TARGET_STAGING AND DEFINED ENV{staging})
 	set(TARGET_STAGING $ENV{staging} CACHE INTERNAL "" FORCE)
 endif()
 
+if(DEFINED ENV{staging})
+	unset(ENV{staging})
+endif()
+
 #more on platform
 if(NOT TARGET_PLATFORM AND DEFINED ENV{platform})
 	set(TARGET_PLATFORM $ENV{platform} CACHE INTERNAL "" FORCE)
+endif()
+
+if(DEFINED ENV{platform})
+	unset(ENV{platform})
 endif()
 
 if(TARGET_PLATFORM)
@@ -69,12 +85,34 @@ else()
 		set(TARGET_ABI $ENV{abi} CACHE INTERNAL "" FORCE)
 	endif()
 endif()
+
+if(DEFINED ENV{proc_type})
+	unset(ENV{proc_type})
+endif()
+if(DEFINED ENV{proc_arch})
+	unset(ENV{proc_arch})
+endif()
+if(DEFINED ENV{os})
+	unset(ENV{os})
+endif()
+if(DEFINED ENV{abi})
+	unset(ENV{abi})
+endif()
+
 if(NOT TARGET_DISTRIBUTION AND DEFINED ENV{distribution})
 	set(TARGET_DISTRIBUTION $ENV{distribution} CACHE INTERNAL "" FORCE)
 	#more on platform
 	if(NOT TARGET_DISTRIBUTION_VERSION AND DEFINED ENV{distrib_version})
 		set(TARGET_DISTRIBUTION_VERSION $ENV{distrib_version} CACHE INTERNAL "" FORCE)
 	endif()
+endif()
+
+if(DEFINED ENV{distribution})
+	unset(ENV{distribution})
+endif()
+
+if(DEFINED ENV{distrib_version})
+	unset(ENV{distrib_version})
 endif()
 
 load_Profile_Info()

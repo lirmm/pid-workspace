@@ -103,9 +103,15 @@ load_Workspace_Info() #loading the current platform configuration
 if(NOT FLAT_PRESENTATION AND DEFINED ENV{flat})
 	set(FLAT_PRESENTATION $ENV{flat} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{flat})
+	unset(ENV{flat})
+endif()
 
 if(NOT WRITE_TO_FILE AND DEFINED ENV{write_file})
 	set(WRITE_TO_FILE $ENV{write_file} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{write_file})
+	unset(ENV{write_file})
 endif()
 
 if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)

@@ -31,17 +31,29 @@ load_Workspace_Info() #loading the current platform configuration
 if(NOT INSTALLED_PACKAGE AND DEFINED ENV{package})
 	set(INSTALLED_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{package})
+	unset(ENV{package})
+endif()
 
 if(NOT TARGET_VERSION AND DEFINED ENV{version})
 	set(TARGET_VERSION $ENV{version} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{version})
+	unset(ENV{version})
 endif()
 
 if(NOT INSTALL_FOLDER AND DEFINED ENV{folder})
 	set(INSTALL_FOLDER $ENV{folder} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{folder})
+	unset(ENV{folder})
+endif()
 
 if(NOT INSTALL_MODE AND DEFINED ENV{mode})
 	set(INSTALL_MODE $ENV{mode} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{mode})
+	unset(ENV{mode})
 endif()
 
 #now make sure user defined folder takes priority over workspace CMAKE_INSTALL_PREFIX if defined

@@ -34,6 +34,9 @@ load_Workspace_Info() #loading the current platform configuration
 if(NOT WITH_OFFICIAL AND DEFINED ENV{official})
 	set(WITH_OFFICIAL $ENV{official} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{official})
+	unset(ENV{official})
+endif()
 
 # check that current branch of package is integration
 get_Repository_Current_Branch(BRANCH_NAME ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})

@@ -33,14 +33,23 @@ if(NOT SYNCHRO AND DEFINED ENV{synchro})
 	set(SYNCHRO $ENV{synchro} CACHE INTERNAL "" FORCE)
 endif()
 
+if(DEFINED ENV{synchro})
+	unset(ENV{synchro})
+endif()
 if(NOT FORCED_UPDATE AND DEFINED ENV{force})#to manage the call for non UNIX makefile generators
 	set(FORCED_UPDATE $ENV{force} CACHE INTERNAL "" FORCE)
 endif()
 
+if(DEFINED ENV{force})
+	unset(ENV{force})
+endif()
 if(NOT ONLY_BINARIES AND DEFINED ENV{only_binaries})
 	set(ONLY_BINARIES $ENV{only_binaries} CACHE INTERNAL "" FORCE)
 endif()
 
+if(DEFINED ENV{only_binaries})
+	unset(ENV{only_binaries})
+endif()
 # managing script arguments
 if(NOT TARGET_PACKAGE)
 	message("[PID] ERROR : the target package for which the static website is built is not defined !")

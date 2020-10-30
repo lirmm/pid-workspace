@@ -37,9 +37,17 @@ SEPARATE_ARGUMENTS(CMAKE_SYSTEM_PREFIX_PATH)
 if(NOT TARGET_VERSION AND DEFINED ENV{version})
 	set(TARGET_VERSION $ENV{version} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{version})
+	unset(ENV{version})
+endif()
+
 if(NOT RESOLVED_PACKAGE AND DEFINED ENV{package})
 	set(RESOLVED_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{package})
+	unset(ENV{package})
+endif()
+
 
 
 if(RESOLVED_PACKAGE AND TARGET_VERSION)

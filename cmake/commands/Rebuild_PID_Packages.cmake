@@ -34,6 +34,9 @@ set(LIST_OF_TARGETS)
 if(NOT TARGET_PACKAGES AND DEFINED ENV{package})
 	set(TARGET_PACKAGES $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{package})
+	unset(ENV{package})
+endif()
 
 if(TARGET_PACKAGES AND NOT TARGET_PACKAGES STREQUAL "all")
 	#clean them first

@@ -31,6 +31,9 @@ load_Workspace_Info() #loading the current platform configuration before executi
 if(NOT TARGET_VERSION AND DEFINED ENV{version})
 	set(TARGET_VERSION $ENV{version} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{version})
+	unset(ENV{version})
+endif()
 
 if(NOT TARGET_VERSION)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR: you must define the version to memorize using version= argument to the memorizing command")

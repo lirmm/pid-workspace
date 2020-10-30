@@ -39,21 +39,32 @@ load_Workspace_Info() #loading the current workspace configuration before execut
 if(NOT TARGET_EXTERNAL_VERSION AND DEFINED ENV{version})
 	set(TARGET_EXTERNAL_VERSION $ENV{version} CACHE INTERNAL "" FORCE)
 endif()
-
+if(DEFINED ENV{version})
+	unset(ENV{version})
+endif()
 if(NOT TARGET_BUILD_MODE AND DEFINED ENV{mode})#to manage the call for non UNIX makefile generators
 	set(TARGET_BUILD_MODE $ENV{mode} CACHE INTERNAL "" FORCE)
 endif()
-
+if(DEFINED ENV{mode})
+	unset(ENV{mode})
+endif()
 if(NOT GENERATE_BINARY_ARCHIVE AND DEFINED ENV{archive})#to manage the call for non UNIX makefile generators
 	set(GENERATE_BINARY_ARCHIVE $ENV{archive} CACHE INTERNAL "" FORCE)
 endif()
-
+if(DEFINED ENV{archive})
+	unset(ENV{archive})
+endif()
 if(NOT DO_NOT_EXECUTE_SCRIPT AND DEFINED ENV{skip_script})#to manage the call for non UNIX makefile generators
 	set(DO_NOT_EXECUTE_SCRIPT $ENV{skip_script} CACHE INTERNAL "" FORCE)
 endif()
-
+if(DEFINED ENV{skip_script})
+	unset(ENV{skip_script})
+endif()
 if(NOT USE_SYSTEM_VARIANT AND DEFINED ENV{os_variant})#to manage the call for non UNIX makefile generators
 	set(USE_SYSTEM_VARIANT $ENV{os_variant} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{os_variant})
+	unset(ENV{os_variant})
 endif()
 
 if(USE_SYSTEM_VARIANT AND (USE_SYSTEM_VARIANT STREQUAL "true" OR USE_SYSTEM_VARIANT STREQUAL "TRUE"  OR USE_SYSTEM_VARIANT STREQUAL "ON" ))

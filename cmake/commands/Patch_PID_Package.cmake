@@ -29,9 +29,17 @@ load_Workspace_Info() #loading the current platform configuration
 if(NOT TARGET_PACKAGE AND DEFINED ENV{package})
 	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{package})
+	unset(ENV{package})
+endif()
+
 if(NOT TARGET_VERSION AND DEFINED ENV{version})
 	set(TARGET_VERSION $ENV{version} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{version})
+	unset(ENV{version})
+endif()
+
 
 #### preliminary checks ###
 

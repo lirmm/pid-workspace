@@ -41,9 +41,15 @@ begin_Progress(workspace NEED_REMOVE)
 if(NOT TARGET_OFFICIAL AND DEFINED ENV{official})
 	set(TARGET_OFFICIAL $ENV{official} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{official})
+	unset(ENV{official})
+endif()
 
 if(NOT UPDATE_ALL_PACKAGES AND DEFINED ENV{update})
 	set(UPDATE_ALL_PACKAGES $ENV{update} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{update})
+	unset(ENV{update})
 endif()
 
 if(	UPDATE_ALL_PACKAGES

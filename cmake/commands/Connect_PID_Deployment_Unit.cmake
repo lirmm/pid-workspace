@@ -28,29 +28,51 @@ load_Workspace_Info() #loading the current platform configuration
 if(NOT OFFICIAL_GIT_URL AND DEFINED ENV{official})
 	set(OFFICIAL_GIT_URL $ENV{official} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{official})
+	unset(ENV{official})
+endif()
+
 
 if(NOT ORIGIN_GIT_URL AND DEFINED ENV{origin})
 	set(ORIGIN_GIT_URL $ENV{origin} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{origin})
+	unset(ENV{origin})
 endif()
 
 if(NOT FORCED_RECONNECTION AND DEFINED ENV{force})
 	set(FORCED_RECONNECTION $ENV{force} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{force})
+	unset(ENV{force})
+endif()
 
 if(NOT TARGET_PACKAGE AND DEFINED ENV{package})
 	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{package})
+	unset(ENV{package})
 endif()
 
 if(NOT TARGET_FRAMEWORK AND DEFINED ENV{framework})
 	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{framework})
+	unset(ENV{framework})
+endif()
 
 if(NOT TARGET_WRAPPER AND DEFINED ENV{wrapper})
 	set(TARGET_WRAPPER $ENV{wrapper} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{wrapper})
+	unset(ENV{wrapper})
+endif()
 
 if(NOT TARGET_ENVIRONMENT AND DEFINED ENV{environment})
 	set(TARGET_ENVIRONMENT $ENV{environment} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{environment})
+	unset(ENV{environment})
 endif()
 
 #early common check

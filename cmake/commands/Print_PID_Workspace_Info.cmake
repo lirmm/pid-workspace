@@ -30,21 +30,36 @@ include(${WORKSPACE_DIR}/build/CategoriesInfo.cmake NO_POLICY_SCOPE)
 if(NOT TARGET_FRAMEWORK AND DEFINED ENV{framework})
 	set(TARGET_FRAMEWORK $ENV{framework} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{framework})
+	unset(ENV{framework})
+endif()
 
 if(NOT TARGET_ENVIRONMENT AND DEFINED ENV{environment})#to manage the call for non UNIX makefile generators
 	set(TARGET_ENVIRONMENT $ENV{environment} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{environment})
+	unset(ENV{environment})
 endif()
 
 if(NOT TARGET_PACKAGE AND DEFINED ENV{package})#to manage the call for non UNIX makefile generators
 	set(TARGET_PACKAGE $ENV{package} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{package})
+	unset(ENV{package})
+endif()
 
 if(NOT TARGET_LICENSE AND DEFINED ENV{license})#to manage the call for non UNIX makefile generators
 	set(TARGET_LICENSE $ENV{license} CACHE INTERNAL "" FORCE)
 endif()
+if(DEFINED ENV{license})
+	unset(ENV{license})
+endif()
 
 if(NOT TARGET_LANGUAGE AND DEFINED ENV{language})#to manage the call for non UNIX makefile generators
 	set(TARGET_LANGUAGE $ENV{language} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{language})
+	unset(ENV{language})
 endif()
 
 #perfom the command

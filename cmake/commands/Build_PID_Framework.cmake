@@ -33,6 +33,9 @@ set(INCREMENTAL_BUILD_OPTION --incremental)
 if(NOT INCREMENTAL_BUILD OR (DEFINED ENV{incremental} AND NOT $ENV{incremental}))
     set(INCREMENTAL_BUILD_OPTION)
 endif()
+if(DEFINED ENV{incremental})
+	unset(ENV{incremental})
+endif()
 
 #2) build site with jekyll
 execute_process(COMMAND ${JEKYLL_EXECUTABLE} build ${INCREMENTAL_BUILD_OPTION} -d ${PATH_TO_FRAMEWORK_RESULT} WORKING_DIRECTORY ${PATH_TO_FRAMEWORK_JEKYLL})
