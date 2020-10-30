@@ -870,13 +870,20 @@ execute_process(COMMAND ${CMAKE_COMMAND}
                 WORKING_DIRECTORY ${environment_build_folder}
                 RESULT_VARIABLE res)
 
-# 1.2 import variable description file
-if(res OR NOT EXISTS ${environment_build_folder}/PID_Environment_Solution_Info.cmake)
-  return()
-endif()
 
-set(${EVAL_OK} TRUE PARENT_SCOPE)
-# at the end: 2 files, toolchain file (optional, only generated if needed) and environment description in environment build folder
+  foreach(var IN LISTS ${environment}_INPUTS)#avoid keeping in memory the environment variable
+    if(DEFINED ENV{${var}})# an environment variable is defined for that constraint
+      unset(ENV{${var}})
+    endif()
+  endforeach()
+  
+  # 1.2 import variable description file
+  if(res OR NOT EXISTS ${environment_build_folder}/PID_Environment_Solution_Info.cmake)
+    return()
+  endif()
+
+  set(${EVAL_OK} TRUE PARENT_SCOPE)
+  # at the end: 2 files, toolchain file (optional, only generated if needed) and environment description in environment build folder
 endfunction(evaluate_Environment_From_Script)
 
 #.rst:
