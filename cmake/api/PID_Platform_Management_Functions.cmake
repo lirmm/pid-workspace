@@ -196,7 +196,7 @@ macro(detect_Current_Platform)
   endif()
 
   set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install/${CURRENT_PLATFORM} CACHE INTERNAL "" FORCE)
-
+  set(CURRENT_ENVIRONMENT ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT} CACHE INTERNAL "")
 endmacro(detect_Current_Platform)
 
 
