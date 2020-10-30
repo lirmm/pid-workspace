@@ -876,7 +876,7 @@ execute_process(COMMAND ${CMAKE_COMMAND}
       unset(ENV{${var}})
     endif()
   endforeach()
-  
+
   # 1.2 import variable description file
   if(res OR NOT EXISTS ${environment_build_folder}/PID_Environment_Solution_Info.cmake)
     return()
@@ -1767,7 +1767,7 @@ function(generate_Environment_Toolchain_File)
     if(NOT ${PROJECT_NAME}_TARGET_SYSTEM_NAME STREQUAL Generic) # cas where there is a kernel in use (e.g. building for microcontrollers)
       #we need a sysroot to the target operating system filesystem ! => defined by user !!
       if(NOT ${PROJECT_NAME}_TARGET_SYSROOT)#sysroot is necessary when cross compiling to another OS
-        message(FATAL_ERROR "[PID] ERROR: you must give a sysroot by using the sysroot argument when calling configure.")
+        message(FATAL_ERROR "[PID] CRITICAL ERROR: you must give a sysroot by using the sysroot argument when calling build command.")
       endif()
       file(APPEND ${description_file} "set(CMAKE_SYSROOT ${${PROJECT_NAME}_TARGET_SYSROOT} CACHE INTERNAL \"\" FORCE)\n")
       if(${PROJECT_NAME}_TARGET_STAGING)
