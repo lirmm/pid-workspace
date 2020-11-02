@@ -1,4 +1,4 @@
-Packages Integration & Deployment (PID) API documentation
+Packages Integral Development (PID) API documentation
 #########################################################
 
 This documentation covers the CMake API of PID and internal documentation for PID developers.
