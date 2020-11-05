@@ -1435,10 +1435,10 @@ function(get_All_Configuration_Visible_Build_Variables LINK_OPTS COMPILE_OPTS IN
     list(REMOVE_DUPLICATES rpath)
   endif()
   set(${LINK_OPTS} ${links} PARENT_SCOPE)
-  set(${COMPILE_OPTS} ${defs} PARENT_SCOPE)
+  set(${COMPILE_OPTS} ${opts} PARENT_SCOPE)
   set(${INC_DIRS} ${includes} PARENT_SCOPE)
   set(${LIB_DIRS} ${lib_dirs} PARENT_SCOPE)
-  set(${DEFS} ${opts} PARENT_SCOPE)
+  set(${DEFS} ${defs} PARENT_SCOPE)
   set(${RPATH} ${rpath} PARENT_SCOPE)
 endfunction(get_All_Configuration_Visible_Build_Variables)
 
