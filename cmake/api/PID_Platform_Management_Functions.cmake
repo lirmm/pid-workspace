@@ -722,7 +722,7 @@ macro(manage_Current_Platform build_folder type)
         endif()
 
       endif()
-      if(DO_CLEAN)
+      if(DO_CLEAN AND NOT type STREQUAL "SITE")
         message("[PID] INFO : cleaning the build folder after major environment change")
         if(type STREQUAL "NATIVE")
   				hard_Clean_Package(${PROJECT_NAME})

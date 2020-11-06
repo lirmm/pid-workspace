@@ -9,14 +9,11 @@ stages:
 build_framework:
   stage: build
   script:
-    - chmod 700 ./share/ci/prepare_workspace.sh
-    - chmod 700 ./share/ci/configure_framework.sh
-    - ./share/ci/prepare_workspace.sh
-    - ./share/ci/configure_framework.sh
-    - chmod 700 ./share/ci/build_site.sh
-    - ./share/ci/build_site.sh
-    - chmod 700 ./share/ci/publish_site.sh
-    - ./share/ci/publish_site.sh
+    - chmod 700 ./share/ci/prepare_framework_ci.sh
+    - ./share/ci/prepare_framework_ci.sh
+    - ./configure_workspace.sh
+    - ./build_framework.sh
+    - ./publish_framework.sh
   artifacts:
     paths:
     - public

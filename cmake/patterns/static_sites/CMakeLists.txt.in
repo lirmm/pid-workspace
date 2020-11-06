@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8.2)
 set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR}/../../.. CACHE PATH "root of the workspace directory")
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/api) # using generic scripts/modules of the workspace
+list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake ${WORKSPACE_DIR}/cmake/api) # using generic scripts/modules of the workspace
 include(PID_Framework_API_Internal_Functions NO_POLICY_SCOPE)
 
 project(@PACKAGE_NAME@)

@@ -32,24 +32,24 @@ load_Workspace_Info() #loading the current platform configuration
 if(NOT SYNCHRO AND DEFINED ENV{synchro})
 	set(SYNCHRO $ENV{synchro} CACHE INTERNAL "" FORCE)
 endif()
-
 if(DEFINED ENV{synchro})
 	unset(ENV{synchro})
 endif()
+
 if(NOT FORCED_UPDATE AND DEFINED ENV{force})#to manage the call for non UNIX makefile generators
 	set(FORCED_UPDATE $ENV{force} CACHE INTERNAL "" FORCE)
 endif()
-
 if(DEFINED ENV{force})
 	unset(ENV{force})
 endif()
+
 if(NOT ONLY_BINARIES AND DEFINED ENV{only_binaries})
 	set(ONLY_BINARIES $ENV{only_binaries} CACHE INTERNAL "" FORCE)
 endif()
-
 if(DEFINED ENV{only_binaries})
 	unset(ENV{only_binaries})
 endif()
+
 # managing script arguments
 if(NOT TARGET_PACKAGE)
 	message("[PID] ERROR : the target package for which the static website is built is not defined !")
@@ -125,15 +125,13 @@ elseif(SITE_GIT)# the package site is put into a dedicated static site
 		#install the static site if necessary or create it if it does not exists
 		create_Local_Static_Site_Project(SUCCEEDED ${TARGET_PACKAGE} ${SITE_GIT} ${push_site} ${project_url} ${site_url})
 		if(NOT SUCCEEDED)
-			message("[PID] ERROR : impossible to connect to the static site repository. You are probably not a developer of the package ${package} which explains why you cannot publish the static site.")
-			return()
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to connect to the static site repository. You are probably not a developer of the package ${TARGET_PACKAGE} which explains why you cannot publish the static site.")
 		endif()
 	else()
 		update_Local_Static_Site_Project(${TARGET_PACKAGE} ${project_url} ${site_url}) # update static site repository, to ensure its synchronization
 	endif()
 else()
 	message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot build package site due to bad arguments. This situation should never appear so you may face a BUG in PID. Please contact PID developers.")
-	return()
 endif()
 
 #2) clean generate and copy files according to project documentation

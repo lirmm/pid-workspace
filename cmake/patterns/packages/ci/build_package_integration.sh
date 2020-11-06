@@ -1,10 +1,11 @@
 #!/bin/bash
 
 echo "--------------------------------------------------------------"
-echo "----[PID] CI : configuring the project -----------------------"
+echo "----[PID] CI : building package ------------------------------"
 echo "--------------------------------------------------------------"
 
-#NB: never building API doc not binaries on integration, but always geberating developpers reports
+cd build
+#NB: never building API doc nor binaries on integration, but always generating developpers reports
 if [ "$PACKAGE_HAS_LIBRARIES" = true ] ; then
   if [ "$PACKAGE_HAS_TESTS" = true ] ; then
      if [ "$PACKAGE_HAS_EXAMPLES" = true ] ; then
@@ -27,16 +28,26 @@ else  # no libraries => this is a pure applicative package, no examples since n
     fi
 fi
 CONF_RES=$?
-
 if [ $CONF_RES != 0 ]; then
+  cd ..
   echo "--------------------------------------------------------------"
-  echo "----[PID] CI : configuring the project: FAIL -----------------"
+  echo "----[PID] CI : building package: FAIL (configuration) --------"
   echo "--------------------------------------------------------------"
   exit $CONF_RES
 fi
 # always generating the dependencies file of the package
 write_file=true cmake --build . --target list_dependencies
+#build the code
+force=true cmake --build . --target build
+BUILD_RES=$?
+cd ..
+if [ $BUILD_RES != 0 ]; then
+  echo "--------------------------------------------------------------"
+  echo "----[PID] CI : building package: FAIL --------------------"
+  echo "--------------------------------------------------------------"
+  exit $BUILD_RES
+fi
 
 echo "--------------------------------------------------------------"
-echo "----[PID] CI : configuring the project: DONE -----------------"
+echo "----[PID] CI : building package: SUCCESS ---------------------"
 echo "--------------------------------------------------------------"

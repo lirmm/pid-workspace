@@ -1,37 +1,17 @@
 
-cache:
-  key: "$CI_COMMIT_REF_NAME-$CI_COMMIT_SHA"
-  paths:
-   - binaries/
-   - build/
-
 stages:
  - build
  - deploy
- - cleanup
 
 ### configure (CMake project configuration) and build (generate, install)
 build_site:
   stage: build
   script:
-    - chmod 700 ./share/ci/prepare_workspace.sh
-    - chmod 700 ./share/ci/configure_site.sh
-    - ./share/ci/prepare_workspace.sh
-    - ./share/ci/configure_site.sh
-     - chmod 700 ./share/ci/build_site.sh
-     - ./share/ci/build_site.sh
-  only:
-    - master
-  tags:
-    - pid
-    - site
-
-### upload the static site (using gitlab pages)
-pages:
-  stage: deploy
-  script:
-   - chmod 700 ./share/ci/publish_site.sh
-   - ./share/ci/publish_site.sh
+    - chmod 700 ./share/ci/prepare_static_site_ci.sh
+    - ./share/ci/prepare_static_site_ci.sh
+    - ./configure_workspace.sh
+    - ./build_site.sh
+    - ./publish_site.sh
   artifacts:
     paths:
     - public
@@ -42,13 +22,14 @@ pages:
     - site
 
 
-## cleaning everything at the end
-cleanup_build:
-  stage: cleanup
+### upload the static site (using gitlab pages)
+pages:
+  stage: deploy
   script:
-   - chmod 700 ./share/ci/cleanup.sh
-   - ./share/ci/cleanup.sh
-  when: always
+    - echo "[PID] generating static web site"
+  artifacts:
+    paths:
+    - public
   only:
     - master
   tags:

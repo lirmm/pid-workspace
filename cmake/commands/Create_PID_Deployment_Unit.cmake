@@ -146,7 +146,6 @@ elseif(TARGET_FRAMEWORK)# a framework is created
 	endif()
 	if(EXISTS ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK} AND IS_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK})
 		message(FATAL_ERROR "[PID] ERROR : A framework with the same name ${TARGET_FRAMEWORK} already resides in the workspace filesystem.")
-		return()
 	endif()
 	if(OPTIONAL_LICENSE)
 		check_license(${OPTIONAL_LICENSE})
@@ -156,7 +155,6 @@ elseif(TARGET_FRAMEWORK)# a framework is created
 		if(	NOT RES_NAME STREQUAL TARGET_FRAMEWORK
 			AND NOT RES_NAME STREQUAL "${TARGET_FRAMEWORK}-framework")
 			message(FATAL_ERROR "[PID] ERROR : the git url of the repository (${OPTIONNAL_GIT_URL}) does not define a repository with same name than framework ${TARGET_FRAMEWORK}.")
-			return()
 		endif()
 	endif()
 	# from here we are sure the request is well formed

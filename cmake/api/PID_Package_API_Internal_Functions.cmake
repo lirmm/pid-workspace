@@ -344,7 +344,12 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	# site target (generation of a static site documenting the project)
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} site
-		COMMENT "[PID] Creating/Updating web pages of the project ${PROJECT_NAME} ..."
+		COMMENT "[PID] Creating/Updating web pages of package ${PROJECT_NAME} ..."
+		VERBATIM
+	)
+	add_custom_target(serve
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} serve
+		COMMENT "[PID] Serving web pages of package ${PROJECT_NAME} ..."
 		VERBATIM
 	)
 
@@ -548,7 +553,7 @@ endmacro(declare_Package)
 #     Create the "site" target for currently defined package project, used to launch static site update.
 #
 function(create_Documentation_Target)
-if(NOT ${CMAKE_BUILD_TYPE} MATCHES Release) # the documentation can be built in release mode only
+if(NOT CMAKE_BUILD_TYPE MATCHES Release) # the documentation can be built in release mode only
 	return()
 endif()
 
@@ -597,6 +602,12 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done
 						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
 						-DPACKAGE_SITE_URL="${${PROJECT_NAME}_SITE_ROOT_PAGE}"
 			 -P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Site.cmake)
+
+			 add_custom_target(serve
+ 				COMMAND ${CMAKE_MAKE_PROGRAM} serve
+			  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${PROJECT_NAME}/build
+			 )
+
 elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done with a framework
 
 	add_custom_target(site
@@ -616,6 +627,14 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 						-DSYNCHRO=\${synchro}
 						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
 			 -P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Site.cmake
+	)
+
+	add_custom_target(serve
+		COMMAND ${CMAKE_COMMAND} -E echo "Nothing to be served. Use serve command of framework ${${PROJECT_NAME}_FRAMEWORK}"
+	)
+else()
+	add_custom_target(serve
+		COMMAND ${CMAKE_COMMAND} -E echo "Nothing to be served"
 	)
 endif()
 endfunction(create_Documentation_Target)

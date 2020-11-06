@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "--------------------------------------------------------------"
-echo "----[PID] CI : deploying the project -------------------------"
+echo "----[PID] CI : publishing wrapper ----------------------------"
 echo "--------------------------------------------------------------"
 
 #getting the current platform of the current runner
@@ -20,25 +20,26 @@ if [ "$platform" = "$PACKAGE_MAIN_PLATFORM" ]; then
 elif [ "$PACKAGE_BINARIES_PUBLISHED" != true ]; then
   # the current runner may be only used to publish binaries but it does not do that
   echo "--------------------------------------------------------------"
-  echo "----[PID] CI : deploying the project: SKIPPED ----------------"
+  echo "----[PID] CI : publishing wrapper: SKIPPED -------------------"
   echo "--------------------------------------------------------------"
   exit 0
 fi
 
 #now generate the site
 SITE_RES=0
+cd build
 if [ "$PACKAGE_HAS_SITE" = true ] ; then
   only_binaries=$runner_only_binaries version=$1 cmake --build . --target site
 fi
-
 SITE_RES=$?
+cd ..
 if [ $SITE_RES != 0 ]; then
   echo "--------------------------------------------------------------"
-  echo "----[PID] CI : deploying the project: FAIL (STATIC SITE) -----"
+  echo "----[PID] CI : publishing wrapper: FAIL (static site) --------"
   echo "--------------------------------------------------------------"
   exit $SITE_RES
 fi
 
 echo "--------------------------------------------------------------"
-echo "----[PID] CI : deploying the project: DONE -------------------"
+echo "----[PID] CI : publishing wrapper: SUCCESS -------------------"
 echo "--------------------------------------------------------------"

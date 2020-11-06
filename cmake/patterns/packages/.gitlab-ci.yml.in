@@ -19,15 +19,10 @@ stages:
    stage: build
    script:
      - chmod 700 ./share/ci/prepare_package_ci.sh
-     - ./share/ci/prepare_package_ci.sh "$CI_RUNNER_TAGS"
-     - cd build
-     - chmod 700 ../share/ci/configure_package_integration.sh
-     - ../share/ci/configure_package_integration.sh
-     - chmod 700 ../share/ci/build_package.sh
-     - ../share/ci/build_package.sh
-     - chmod 700 ../share/ci/deploy_package_integration.sh
-     - ../share/ci/deploy_package_integration.sh
-     - cd ..
+     - ./share/ci/prepare_package_ci.sh
+     - ./configure_workspace.sh "$CI_RUNNER_TAGS"
+     - ./build_package_integration.sh
+     - ./publish_package_integration.sh
    only:
      - integration
    artifacts:
@@ -40,15 +35,10 @@ stages:
    stage: build
    script:
      - chmod 700 ./share/ci/prepare_package_ci.sh
-     - ./share/ci/prepare_package_ci.sh "$CI_RUNNER_TAGS"
-     - cd build
-     - chmod 700 ../share/ci/configure_package_release.sh
-     - ../share/ci/configure_package_release.sh
-     - chmod 700 ../share/ci/build_package.sh
-     - ../share/ci/build_package.sh
-     - chmod 700 ../share/ci/deploy_package_release.sh
-     - ../share/ci/deploy_package_release.sh $CI_RUNNER_TAGS
-     - cd ..
+     - ./share/ci/prepare_package_ci.sh
+     - ./configure_workspace.sh "$CI_RUNNER_TAGS"
+     - ./build_package_release.sh
+     - ./publish_package_release.sh "$CI_RUNNER_TAGS"
    only:
         - /^v.*$/
    artifacts:

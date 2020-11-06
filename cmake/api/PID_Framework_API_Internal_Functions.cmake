@@ -208,58 +208,65 @@ endfunction(generate_Site_Binary_References)
 #
 #   Define current project as a lone package or wrapper static site. Internal counterpart to declare_PID_Site.
 #
-function(declare_Site package_url site_url)
-set(${PROJECT_NAME}_PROJECT_PAGE ${package_url} CACHE INTERNAL "")
-set(${PROJECT_NAME}_SITE_PAGE ${site_url} CACHE INTERNAL "")
-file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
-if(DIR_NAME STREQUAL "build")
+macro(declare_Site package_url site_url)
+	manage_Current_Platform("${CMAKE_BINARY_DIR}" "SITE") #loading the current platform configuration and perform adequate actions if any changes
 
-	generate_Site_Readme_File() # generating the simple README file for the project
-	generate_Site_Data() #generating the jekyll source folder in build tree
-	generate_Site_Binary_References() #generating the cmake script that references available binaries
-
-	#searching for jekyll (static site generator)
-	if(JEKYLL_EXECUTABLE)
-		get_Jekyll_URLs(${${PROJECT_NAME}_PROJECT_PAGE} PUBLIC_URL BASE_URL)
-		set(STATIC_SITE_BASEURL "${BASE_URL}")
-		add_custom_target(build
-			COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-							-DTARGET_PACKAGE=${PROJECT_NAME}
-							-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
-							-P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Package_Site.cmake
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-			COMMENT "[PID] Building package site ..."
-			VERBATIM
-		)
-
-		add_custom_target(serve
-			COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
-							-DTARGET_PACKAGE=${PROJECT_NAME}
-							-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
-							-DSITE_BASE_URL=${STATIC_SITE_BASEURL}
-							-P ${WORKSPACE_DIR}/cmake/commands/Serve_PID_Package_Site.cmake
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-			COMMENT "[PID] Serving the static site of the package ..."
-			VERBATIM
-		)
-
-	  add_custom_target(hard_clean
-	  COMMAND ${CMAKE_COMMAND}
-	            -DWORKSPACE_DIR=${WORKSPACE_DIR}
-	            -DTARGET_FRAMEWORK=${PROJECT_NAME}
-	  					-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
-	  					-P ${WORKSPACE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
-	  	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-	  )
-
-	else()
-		message("[PID] ERROR: the jekyll executable cannot be found in the system, please install it and put it in a standard path.")
+	configure_Git()
+	if(NOT GIT_CONFIGURED)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR: your git tool is NOT configured. To use PID you need to configure git:\ngit config --global user.name \"Your Name\"\ngit config --global user.email <your email address>\n")
+		return()
 	endif()
-else()
-	message("[PID] ERROR : please run cmake in the build folder of the package ${PROJECT_NAME} static site.")
-	return()
-endif()
-endfunction(declare_Site)
+
+	set(${PROJECT_NAME}_PROJECT_PAGE ${package_url} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_SITE_PAGE ${site_url} CACHE INTERNAL "")
+	file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+	if(DIR_NAME STREQUAL "build")
+
+		generate_Site_Readme_File() # generating the simple README file for the project
+		generate_Site_Data() #generating the jekyll source folder in build tree
+		generate_Site_Binary_References() #generating the cmake script that references available binaries
+
+		#searching for jekyll (static site generator)
+		if(JEKYLL_EXECUTABLE)
+			get_Jekyll_URLs(${${PROJECT_NAME}_SITE_PAGE} PUBLIC_URL BASE_URL)
+			set(STATIC_SITE_BASEURL "${BASE_URL}")
+			add_custom_target(build
+				COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+								-DTARGET_PACKAGE=${PROJECT_NAME}
+								-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+								-P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Package_Site.cmake
+				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+				COMMENT "[PID] Building static site of package ${PROJECT_NAME} ..."
+				VERBATIM
+			)
+
+			add_custom_target(serve
+				COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+								-DTARGET_PACKAGE=${PROJECT_NAME}
+								-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+								-DSITE_BASE_URL=${STATIC_SITE_BASEURL}
+								-P ${WORKSPACE_DIR}/cmake/commands/Serve_PID_Package_Site.cmake
+				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+				VERBATIM
+			)
+
+		  add_custom_target(hard_clean
+		  COMMAND ${CMAKE_COMMAND}
+		            -DWORKSPACE_DIR=${WORKSPACE_DIR}
+		            -DTARGET_FRAMEWORK=${PROJECT_NAME}
+		  					-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
+		  					-P ${WORKSPACE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
+		  	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+		  )
+
+		else()
+			message("[PID] ERROR: the jekyll executable cannot be found in the system, please install it and put it in a standard path.")
+		endif()
+	else()
+		message("[PID] ERROR : please run cmake in the build folder of the package ${PROJECT_NAME} static site.")
+		return()
+	endif()
+endmacro(declare_Site)
 
 ##################################################################################
 ##########################  declaration of a framework ###########################
@@ -314,8 +321,6 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}(-framework|-site)?/build$")
 
 	#searching for jekyll (static site generator)
 	if(JEKYLL_EXECUTABLE)
-		get_Jekyll_URLs(${${PROJECT_NAME}_SITE} PUBLIC_URL BASE_URL)
-		set(STATIC_SITE_BASEURL "${BASE_URL}")
 
 		add_custom_target(build
 			COMMAND ${CMAKE_COMMAND}	-DFRAMEWORK_PATH=${CMAKE_SOURCE_DIR}
@@ -328,16 +333,26 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}(-framework|-site)?/build$")
 			VERBATIM
 		)
 
-		add_custom_target(serve
-			COMMAND ${CMAKE_COMMAND}	-DFRAMEWORK_PATH=${CMAKE_SOURCE_DIR}
-							-DTARGET_FRAMEWORK=${PROJECT_NAME}
-							-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
-							-DFRAMEWORK_BASE_URL=${STATIC_SITE_BASEURL}
-							-P ${WORKSPACE_DIR}/cmake/commands/Serve_PID_Framework.cmake
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-			COMMENT "[PID] Serving the static site of the framework ${PROJECT_NAME} ..."
-			VERBATIM
-		)
+
+		if(${PROJECT_NAME}_SITE)
+			get_Jekyll_URLs(${${PROJECT_NAME}_SITE} PUBLIC_URL BASE_URL)
+			add_custom_target(serve
+				COMMAND ${CMAKE_COMMAND}	-DFRAMEWORK_PATH=${CMAKE_SOURCE_DIR}
+								-DTARGET_FRAMEWORK=${PROJECT_NAME}
+								-DJEKYLL_EXECUTABLE=${JEKYLL_EXECUTABLE}
+								-DFRAMEWORK_BASE_URL=${BASE_URL}
+								-P ${WORKSPACE_DIR}/cmake/commands/Serve_PID_Framework.cmake
+				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+				COMMENT "[PID] Serving the static site of the framework ${PROJECT_NAME} ..."
+				VERBATIM
+			)
+		else()
+			add_custom_target(serve
+				COMMAND ${CMAKE_COMMAND} -E echo "[PID] ERROR: no site defined, cannot serve pages"
+				COMMENT "[PID] Serving the static site of the framework ${PROJECT_NAME} ..."
+			)
+			message("[PID] WARNING: no serve command is possible for framework ${PROJECT_NAME} as no web site address is defined. Use SITE argument to define a web site location.")
+		endif()
 
 	  # update target (update the framework from upstream git repository)
 	  add_custom_target(update
@@ -701,7 +716,7 @@ function(update_Framework_CI_Config_File)
 	if(FRAMEWORK_CI_CONTRIBUTION_SPACES)
 		list(REMOVE_ITEM FRAMEWORK_CI_CONTRIBUTION_SPACES pid)#remove official contribution space as it is used by default
 	endif()
-	configure_file(${WORKSPACE_DIR}/cmake/patterns/frameworks/framework/.gitlab-ci.yml.in
+	configure_file(${WORKSPACE_DIR}/cmake/patterns/frameworks/.gitlab-ci.yml.in
 		             ${CMAKE_SOURCE_DIR}/.gitlab-ci.yml @ONLY)#adding the gitlab-ci configuration file to the repository
 
 endfunction(update_Framework_CI_Config_File)

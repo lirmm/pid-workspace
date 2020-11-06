@@ -1,20 +1,23 @@
+
 #!/bin/bash
 
+#first step is initializing the workspace
 echo "--------------------------------------------------------------"
-echo "----[PID] CI : building the project --------------------------"
+echo "----[PID] CI : configuring workspace  ...    -----------------"
 echo "--------------------------------------------------------------"
 
-force=true cmake --build . --target build
-
-BUILD_RES=$?
-
-if [ $BUILD_RES != 0 ]; then
+# 1) first time configuration
+cd binaries/pid-workspace/build
+cmake -DIN_CI_PROCESS=ON ..
+CONFIGURE_RES=$?
+cd ../../..
+if [ $CONFIGURE_RES != 0 ]; then
   echo "--------------------------------------------------------------"
-  echo "----[PID] CI : building the project: FAIL --------------------"
+  echo "----[PID] CI : configuring workspace: FAIL -------------------"
   echo "--------------------------------------------------------------"
-  exit $BUILD_RES
+  exit $CONFIGURE_RES
 fi
 
 echo "--------------------------------------------------------------"
-echo "----[PID] CI : building the project: DONE --------------------"
+echo "----[PID] CI : configuring workspace: SUCCESS ----------------"
 echo "--------------------------------------------------------------"

@@ -4600,13 +4600,16 @@ endfunction(test_Site_Content_File)
 #     :ARE_SAME: the output variable that is TRUE of both files have same content, FALSE otherwise.
 #
 function(test_Same_File_Content file1_path file2_path ARE_SAME)
-file(READ ${file1_path} FILE_1_CONTENT)
-file(READ ${file2_path} FILE_2_CONTENT)
-if("${FILE_1_CONTENT}" STREQUAL "${FILE_2_CONTENT}")
-	set(${ARE_SAME} TRUE PARENT_SCOPE)
-else()
-	set(${ARE_SAME} FALSE PARENT_SCOPE)
-endif()
+  set(${ARE_SAME} FALSE PARENT_SCOPE)
+  if(NOT EXISTS ${file1_path} OR NOT EXISTS ${file2_path})
+    #if any or both files do not exists, their content is not the same
+    return()
+  endif()
+  file(READ ${file1_path} FILE_1_CONTENT)
+  file(READ ${file2_path} FILE_2_CONTENT)
+  if("${FILE_1_CONTENT}" STREQUAL "${FILE_2_CONTENT}")
+  	set(${ARE_SAME} TRUE PARENT_SCOPE)
+  endif()
 endfunction(test_Same_File_Content)
 
 #.rst:
@@ -4641,7 +4644,6 @@ foreach(a_file IN LISTS ALL_FILES_DIR1)
 			set(SAME FALSE)
 			test_Same_File_Content(${dir1_path}/${a_file} ${dir2_path}/${a_file} SAME)
 			if(NOT SAME)#file content is different
-
 				set(${ARE_SAME} FALSE PARENT_SCOPE)
 				return()
 			endif()

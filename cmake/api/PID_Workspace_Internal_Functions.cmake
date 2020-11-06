@@ -1405,10 +1405,8 @@ else()
 	message("[PID] WARNING: no license defined so using the default CeCILL license.")
 	set(FRAMEWORK_LICENSE "CeCILL")#default license is CeCILL
 endif()
-if(site AND NOT site STREQUAL "")
-	set(FRAMEWORK_SITE "${site}")
-else()
-	set(FRAMEWORK_SITE "\"TODO: input the web site address \"")
+if(site)
+	set(FRAMEWORK_SITE "SITE ${site}")
 endif()
 set(FRAMEWORK_DESCRIPTION "\"TODO: input a short description of framework ${framework} utility here\"")
 string(TIMESTAMP date "%Y")
@@ -1418,7 +1416,7 @@ configure_file(${WORKSPACE_DIR}/cmake/patterns/frameworks/CMakeLists.txt.in ${WO
 #configuring git repository
 init_Framework_Repository(${framework})
 #configuring project now
-execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR}/sites/frameworks/${framework} -B ${WORKSPACE_DIR}/sites/frameworks/${framework}/build
+execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR}/sites/frameworks/${framework}
 								WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
 endfunction(create_PID_Framework)
 

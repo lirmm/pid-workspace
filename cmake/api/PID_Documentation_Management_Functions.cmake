@@ -1610,7 +1610,7 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
   endif()
 
 
-  if(NOT only_bin)#no need to generate anything related to documentation
+  if(NOT only_bin)#no need to generate anything related to documentation if only binaries are generated
 
     ######### copy the documentation content ##############
     # 1) copy content from source into the binary dir
@@ -1633,8 +1633,6 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
     	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${PATH_TO_PACKAGE_BUILD}/release/site ${TARGET_PACKAGE_PATH}
         WORKING_DIRECTORY ${PATH_TO_PACKAGE_BUILD})# copy content from binary dir to site repository source dir
     	set(NEW_POST_CONTENT_PAGES TRUE)
-    else()
-      file(COPY ${PATH_TO_PACKAGE_BUILD}/release/site/index.md DESTINATION ${TARGET_PACKAGE_PATH}) # QUESTION: why copy the index page only ?
     endif()
   endif()
 
