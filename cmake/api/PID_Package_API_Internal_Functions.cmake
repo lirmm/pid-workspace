@@ -341,6 +341,12 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		VERBATIM
 	)
 
+	# system installation
+	add_custom_target(sysinstall
+		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} sysinstall
+		VERBATIM
+	)
+
 	# site target (generation of a static site documenting the project)
 	add_custom_target(site
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} site
@@ -1334,6 +1340,17 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 			VERBATIM
 		)
 	endif()
+
+	# sysinstall target (install currently built version on the system)
+	add_custom_target(sysinstall
+		COMMAND ${CMAKE_COMMAND}
+					-DWORKSPACE_DIR=${WORKSPACE_DIR}
+					-DINSTALLED_PACKAGE=${PROJECT_NAME}
+					-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
+					-DINSTALL_FOLDER=\${folder}
+					-DINSTALL_MODE=\${mode}
+					-P ${WORKSPACE_DIR}/cmake/commands/Install_PID_Package.cmake
+	)
 
 endif()
 
