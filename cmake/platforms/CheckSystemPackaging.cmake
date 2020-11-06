@@ -42,7 +42,7 @@ if(NOT PID_CROSSCOMPILATION) #there is a pâckaging system only if a distributio
         set(CURRENT_PACKAGING_SYSTEM_EXE pacman  CACHE INTERNAL "")
         set(CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS -S --noconfirm CACHE INTERNAL "")
         set(CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS -Syy --noconfirm CACHE INTERNAL "")
-        set(CURRENT_PACKAGING_SYSTEM_EXE_UPGRADE_OPTIONS -Syu --noconfirm CACHE INTERNAL "")
+        set(CURRENT_PACKAGING_SYSTEM_EXE_UPGRADE_OPTIONS -Syyu --noconfirm CACHE INTERNAL "")
       else()
         find_program(PATH_TO_YUM NAMES yum NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)
         if(PATH_TO_YUM)
