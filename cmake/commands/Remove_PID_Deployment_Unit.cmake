@@ -54,6 +54,10 @@ if(TARGET_PACKAGE)
 		list_Subdirectories(PACKS_TO_REMOVE ${WORKSPACE_DIR}/packages)
 		foreach(pack IN LISTS PACKS_TO_REMOVE)
 			remove_PID_Package(${pack})
+			#Note: also remove the static site of the package if any
+			if(EXISTS ${WORKSPACE_DIR}/sites/packages/${pack})
+				file(REMOVE_RECURSE ${WORKSPACE_DIR}/sites/packages/${pack})
+			endif()
 		endforeach()
 		list_Subdirectories(PACKS_TO_REMOVE ${WORKSPACE_DIR}/wrappers)
 		foreach(pack IN LISTS PACKS_TO_REMOVE)
@@ -70,6 +74,10 @@ if(TARGET_PACKAGE)
 		if(EXISTS ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE}
 			AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${TARGET_PACKAGE})
 			remove_PID_Package(${TARGET_PACKAGE})
+			#Note: also remove the static site of the package if any
+			if(EXISTS ${WORKSPACE_DIR}/sites/packages/${TARGET_PACKAGE})
+				file(REMOVE_RECURSE ${WORKSPACE_DIR}/sites/packages/${TARGET_PACKAGE})
+			endif()
 		elseif(EXISTS ${WORKSPACE_DIR}/wrappers/${TARGET_PACKAGE}
 			AND IS_DIRECTORY ${WORKSPACE_DIR}/wrappers/${TARGET_PACKAGE})
 			remove_PID_Wrapper(${TARGET_PACKAGE})
