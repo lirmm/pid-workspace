@@ -2876,8 +2876,11 @@ function(build_CMake_External_Project)
     return()
   endif()
 
-  if(BUILD_CMAKE_EXTERNAL_PROJECT_QUIET)
+  if(BUILD_CMAKE_EXTERNAL_PROJECT_QUIET
+    AND NOT ADDITIONAL_DEBUG_INFO)
     set(OUTPUT_MODE OUTPUT_QUIET)
+  else()
+    set(OUTPUT_MODE)
   endif()
 
   if(BUILD_CMAKE_EXTERNAL_PROJECT_MODE STREQUAL Debug)
