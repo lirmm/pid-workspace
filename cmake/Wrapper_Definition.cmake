@@ -2952,7 +2952,7 @@ function(build_CMake_External_Project)
                             -DCMAKE_INSTALL_LIBDIR=lib
                             -DCMAKE_INSTALL_BINDIR=bin
                             -DCMAKE_INSTALL_INCLUDEDIR=include
-                            -DDATAROOTDIR=share
+                            -DCMAKE_INSTALL_DATAROOTDIR=share
                             ${RPATH_ARGS_AS_LIST}
                             -DCMAKE_C_STANDARD=${USE_C_STD}
                             -DCMAKE_CXX_STANDARD=${USE_CXX_STD}
