@@ -3344,15 +3344,6 @@ function(resolve_Wrapper_Language_Configuration CONFIGURED package version)
 	set(IS_CONFIGURED TRUE)
 	set(PACKAGE_SPECIFIC_BUILD_INFO_FILE ${CMAKE_BINARY_DIR}/Package_Build_Info.cmake)
 	file(WRITE "${PACKAGE_SPECIFIC_BUILD_INFO_FILE}" "")#reset the package specific build info (may obverwrite general info)
-	# C and C++ are mandatory so use them any time even if not explicitly defined by user
-	list(FIND ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS C INDEX)
-	if(INDEX EQUAL -1)
-		append_Unique_In_Cache( ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS C)
-	endif()
-	list(FIND ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS CXX INDEX)
-	if(INDEX EQUAL -1)
-		append_Unique_In_Cache( ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS CXX)
-	endif()
 	foreach(lang IN LISTS ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS)
 		check_Language_Configuration_With_Arguments(SYSCHECK_RESULT LANG_SPECS PLATFORM_SPECS ${lang} ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS Release)
 		#TODO STD need to add PLATFORM_SPECS ?
@@ -3378,7 +3369,7 @@ function(resolve_Wrapper_Language_Configuration CONFIGURED package version)
 	endforeach()
 	file(READ ${PACKAGE_SPECIFIC_BUILD_INFO_FILE} SPECIFIC_BUILD LIMIT 5)#reading only 5 first bytes
 	string(LENGTH "${SPECIFIC_BUILD}" SIZE)
-	if(SIZE EQUAL 5)#ok there is some modified content
+	if(SIZE GREATER_EQUAL 5)#ok there is some modified content
 		include(${PACKAGE_SPECIFIC_BUILD_INFO_FILE})#will overwrite some build related variables
 	endif()
 	#do not check, simply add C and C++ languages if not already explicitly required by usern as they are default

@@ -79,11 +79,11 @@ set(PACKAGE_SPECIFIC_BUILD_INFO_FILE ${CMAKE_BINARY_DIR}/Package_Build_Info.cmak
 if(EXISTS ${PACKAGE_SPECIFIC_BUILD_INFO_FILE}) #loading package specific build info
 	file(READ ${PACKAGE_SPECIFIC_BUILD_INFO_FILE} SPECIFIC_BUILD LIMIT 5)#reading only 5 first bytes
 	string(LENGTH "${SPECIFIC_BUILD}" SIZE)
-	if(SIZE EQUAL 5)#ok there is some modified content
-		include(${PACKAGE_SPECIFIC_BUILD_INFO_FILE})#will overwrite some build related variables
+	if(SIZE GREATER_EQUAL 5)#ok there is some modified content
+		include(${PACKAGE_SPECIFIC_BUILD_INFO_FILE})#will overwrite some build related variables (in build mode specific folders)
 	endif()
 else()
-	file(WRITE "${PACKAGE_SPECIFIC_BUILD_INFO_FILE}" "")#create the file
+	file(WRITE "${PACKAGE_SPECIFIC_BUILD_INFO_FILE}" "")#create the file (only useful in build mode specific folders)
 endif()
 
 set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")

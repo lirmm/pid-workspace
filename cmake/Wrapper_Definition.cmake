@@ -2943,7 +2943,7 @@ function(build_CMake_External_Project)
 	else()#if not on windows use a UNIX like command syntax
 		separate_arguments(RPATH_ARGS_AS_LIST UNIX_COMMAND "${rpath_options}")#always from host perpective
 	endif()
-
+  get_Project_Specific_Build_Info(BUILD_INFO_FILE)
   execute_process(
     COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=${TARGET_MODE}
                             -DCMAKE_INSTALL_PREFIX=${TARGET_INSTALL_DIR}
@@ -2956,7 +2956,7 @@ function(build_CMake_External_Project)
                             ${RPATH_ARGS_AS_LIST}
                             -DCMAKE_C_STANDARD=${USE_C_STD}
                             -DCMAKE_CXX_STANDARD=${USE_CXX_STD}
-                            -C ${WORKSPACE_DIR}/build/${CURRENT_PROFILE}/Workspace_Build_Info.cmake
+                            -C ${BUILD_INFO_FILE}
                             ${COMMAND_ARGS_AS_LIST}
                             ..
     WORKING_DIRECTORY ${project_build_dir}
