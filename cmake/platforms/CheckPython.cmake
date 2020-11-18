@@ -17,6 +17,26 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
+function(install_pip old)
+  if(CURRENT_PACKAGING_SYSTEM STREQUAL APT)
+    if(CURRENT_PYTHON VERSION_GREATER_EQUAL 3.0 AND NOT old)#for python 3 try with another oackage name
+      execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} python3-pip)
+    else()
+      execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} python-pip)
+    endif()
+  elseif(CURRENT_PACKAGING_SYSTEM STREQUAL PACMAN)
+    if(CURRENT_PYTHON VERSION_GREATER_EQUAL 3.0  AND NOT old)
+      execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} python3-pip)
+    else()
+      execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} python-pip)
+    endif()
+  elseif(CURRENT_PACKAGING_SYSTEM STREQUAL PKG)
+    string(REPLACE "." "" res_py_version "${CURRENT_PYTHON}")
+    execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} py${res_py_version}-pip)
+  endif()
+endfunction(install_pip)
+
+
 set(CURRENT_PYTHON CACHE INTERNAL "")
 set(CURRENT_PYTHON_EXECUTABLE CACHE INTERNAL "")
 set(CURRENT_PYTHON_LIBRARIES CACHE INTERNAL "")
@@ -61,19 +81,7 @@ if(Python_Language_AVAILABLE)#if python is available we should provide a package
   find_program(PATH_TO_PIP ${pip_name})
   if((NOT PATH_TO_PIP OR PATH_TO_PIP STREQUAL PATH_TO_PIP-NOTFOUND)
       AND CURRENT_PACKAGING_SYSTEM_EXE)
-    if(CURRENT_PACKAGING_SYSTEM STREQUAL APT)
-      if(CURRENT_PYTHON VERSION_GREATER_EQUAL 3.0)#for python 3 try with another oackage name
-        execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} python3-pip)
-      else()
-        execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} python-pip)
-      endif()
-    elseif(CURRENT_PACKAGING_SYSTEM STREQUAL PACMAN)
-      if(CURRENT_PYTHON VERSION_GREATER_EQUAL 3.0)
-        execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} python3-pip)
-      else()
-        execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} python-pip)
-      endif()
-    endif()
+    install_pip(FALSE)
     find_program(PATH_TO_PIP ${pip_name})
   endif()
   if(NOT PATH_TO_PIP)
@@ -81,7 +89,7 @@ if(Python_Language_AVAILABLE)#if python is available we should provide a package
       set(pip_name "pip")
       find_program(PATH_TO_PIP ${pip_name})
       if(NOT PATH_TO_PIP)#so try to install with old package name
-          execute_OS_Command(${CURRENT_PACKAGING_SYSTEM_EXE} ${CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS} python-pip)
+        install_pip(TRUE)
       endif()
       #then try to find again
       find_program(PATH_TO_PIP ${pip_name})
