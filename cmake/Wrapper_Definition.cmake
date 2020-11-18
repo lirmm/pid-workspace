@@ -2210,7 +2210,8 @@ endfunction(get_Target_Platform_Info)
 #
 #     .. rubric:: Optional parameters
 #
-#     :URL <url>: The URL from where to download the archive.
+#     :URL <url>: The URL from where to download the archive or to clone the project.
+#     :GIT_CLONE_ARGS <list of arguments>: List of argument to use when cloning.
 #     :PATH <path>: the output variable that contains the path to the installed project, empty if project cannot be installed
 #     :PROJECT <string>: the name of the project if you want to generate nice outputs about external package install process
 #     :VERSION <version string>: the version of the external project that is installed, only usefull together with PROJECT keyword.
@@ -2239,7 +2240,7 @@ endfunction(get_Target_Platform_Info)
 function(install_External_Project)
   set(options) #used to define the context
   set(oneValueArgs PROJECT VERSION URL ARCHIVE GIT_CLONE_COMMIT FOLDER PATH)
-  set(multiValueArgs)
+  set(multiValueArgs GIT_CLONE_ARGS)
   cmake_parse_arguments(INSTALL_EXTERNAL_PROJECT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
   if((NOT INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT AND NOT INSTALL_EXTERNAL_PROJECT_ARCHIVE)
       OR NOT INSTALL_EXTERNAL_PROJECT_FOLDER)
@@ -2329,7 +2330,7 @@ function(install_External_Project)
       message("[PID] INFO : Cloning ${INSTALL_EXTERNAL_PROJECT_PROJECT} with commit ${INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT} ...")
     endif()
     execute_process(
-      COMMAND git clone ${INSTALL_EXTERNAL_PROJECT_URL}
+      COMMAND git clone ${INSTALL_EXTERNAL_PROJECT_GIT_CLONE_ARGS} ${INSTALL_EXTERNAL_PROJECT_URL}
       WORKING_DIRECTORY ${TARGET_BUILD_DIR}
     )
     execute_process(
