@@ -4,6 +4,19 @@
 #  you can try using the dash shell, which is very close to POSIX, to make sure
 #  that any modification you make doesn't break compatibility
 
+
+platform="unknown"
+unamestr=$(uname)
+if [ "$unamestr" = "Linux" ]; then
+   platform="linux"
+elif [ "$unamestr" = "FreeBSD" ]; then
+   platform="freebsd"
+elif [ "$unamestr" = "Darwin" ]; then
+   platform="macos"
+fi
+
+
+
 # Main function to be invoked by users
 pid() {
     # Print help if -h or --help is passed
@@ -205,7 +218,12 @@ pid() {
         setopt shwordsplit
     fi
     for var in $to_unexport; do
-        local name=$(echo $var|sed -re "s:([^=]+)=.*:\1:g")
+        local name="";
+        if [ "$platform" = "macos" ]; then
+          name=$(echo $var|gsed -re "s:([^=]+)=.*:\1:g")
+        else
+          name=$(echo $var|sed -re "s:([^=]+)=.*:\1:g")
+        fi
         unset $name
     done
     if [ "$ZSH_VERSION" ]; then
@@ -324,7 +342,14 @@ _pid_ws_get_project_name() {
 
 
 _pid_ws_readlink() {
-    local target=$(readlink "$1")
+    local target=""
+    if [ "$platform" = "macos" ]; then
+      target=$(greadlink "$1")
+    elif [ "$platform" = "freebsd" ]; then
+      target=$(greadlink "$1")
+    else
+      target=$(readlink "$1")
+    fi
     if [ "$target" = "" ]; then
         target=$1
     fi
@@ -437,7 +462,11 @@ _pid_ws_get_all_folders() {
 
 # Sets the targets variable with the list of all available targets for the specified project
 _pid_ws_get_targets() {
+  if [ "$platform" = "macos" ]; then
+    targets=$(cmake --build build --target help 2> /dev/null|gsed -re "s:^[. ]*([a-z][^ ]+).*$:\1:g"|tail -n +2)
+  else
     targets=$(cmake --build build --target help 2> /dev/null|sed -re "s:^[. ]*([a-z][^ ]+).*$:\1:g"|tail -n +2)
+  fi
 }
 
 # Don't include the completions in this file otherwise a POSIX shell will complain about unsupported syntax

@@ -1,8 +1,28 @@
 # dont use a shebang otherwise the shell detection won't work
 
+platform="unknown"
+unamestr=$(uname)
+if [ "$unamestr" = "Linux" ]; then
+   platform="linux"
+elif [ "$unamestr" = "FreeBSD" ]; then
+   platform="freebsd"
+elif [ "$unamestr" = "Darwin" ]; then
+   platform="macos"
+else
+   platform="linux"
+fi
+
 source_dir=`dirname "$0"`
-script_abs_path=$(readlink -m $source_dir/pid)
-ws_dir=$(readlink -m $script_abs_path/..)
+if [ "$platform" = "macos" ]; then
+  script_abs_path=$(greadlink -m $source_dir/pid)
+  ws_dir=$(greadlink -m $script_abs_path/..)
+elif [ "$platform" = "freebsd" ]; then
+  script_abs_path=$(greadlink -m $source_dir/pid)
+  ws_dir=$(greadlink -m $script_abs_path/..)
+else
+  script_abs_path=$(readlink -m $source_dir/pid)
+  ws_dir=$(readlink -m $script_abs_path/..)
+fi
 
 # Try to make embedded shell detection (e.g bash in zsh) works in all cases
 shell_exe_name=$(ps -o fname --no-headers $$) # should always give bash on bash
@@ -10,10 +30,8 @@ shell_base_name=$(basename $SHELL) # should always give zsh if the current or pa
 
 if [ "$shell_exe_name" = "bash" ]; then
     shell="bash"
-elif [ "$shell_base_name" = "zsh" ]; then
-    shell="zsh"
 else
-    shell=""
+    shell="$shell_base_name"
 fi
 
 echo "----------------------------------------------------- WARNING --------------------------------------------------"
