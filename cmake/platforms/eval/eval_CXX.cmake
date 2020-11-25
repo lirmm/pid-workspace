@@ -127,12 +127,17 @@ if(CMAKE_CXX_COMPILER)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_FOR_OPTIMS}" CACHE STRING "" FORCE)
   endif()
   if(CXX_proc_optimization)#just check that optimization are available for the proc
-    foreach(opt IN LISTS CXX_proc_optimization)
-      list(FIND CURRENT_SPECIFIC_INSTRUCTION_SET ${opt} INDEX)
-      if(INDEX EQUAL -1)
-        return()
-      endif()
-    endforeach()
+    if(CXX_proc_optimization STREQUAL "all" OR CXX_proc_optimization STREQUAL "native")
+    	#nothing to check just provide the exact list in binary constraints
+    	set(CXX_proc_optimization ${CURRENT_SPECIFIC_INSTRUCTION_SET})
+    else()#only a subset of all processor instructions is required, check if they exist
+      foreach(opt IN LISTS CXX_proc_optimization)
+        list(FIND CURRENT_SPECIFIC_INSTRUCTION_SET ${opt} INDEX)
+        if(INDEX EQUAL -1)
+          return()
+        endif()
+      endforeach()
+    endif()
   endif()
   if(CXX_std)
     #1) get supported standards
