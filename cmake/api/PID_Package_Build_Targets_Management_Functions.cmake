@@ -1038,11 +1038,18 @@ if(type STREQUAL "STATIC")
     		)
       endif()
     else()#path to a static library
-	  get_filename_component(LIB_NAME ${link} NAME)
+	    get_filename_component(LIB_NAME ${link} NAME)
       set(target_name ext-${LIB_NAME}${TARGET_SUFFIX})
       if(NOT TARGET ${target_name})#target does not exist
-        add_library(${target_name} STATIC IMPORTED GLOBAL)
-        set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}")
+        if(EXISTS ${link})
+          add_library(${target_name} STATIC IMPORTED GLOBAL)
+          set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}")
+        else()#this is only a static library name, add it as an option
+          add_library(${target_name} INTERFACE)#need to use an interface library to give the linker flag
+          set_property(TARGET ${target_name} APPEND PROPERTY
+      			INTERFACE_LINK_LIBRARIES  ${link}
+      		)
+        endif()
       endif()
     endif()
     set(${EXT_TARGET_NAME} ${target_name} PARENT_SCOPE)
@@ -1081,22 +1088,29 @@ else()#type is unknown
   elseif(RES_TYPE STREQUAL SHARED)
     get_filename_component(LIB_NAME ${link} NAME)
     set(target_name ext-${LIB_NAME}${TARGET_SUFFIX})
-	if(NOT TARGET ${target_name})#target does not exist
+	   if(NOT TARGET ${target_name})#target does not exist
 	  	add_library(${target_name} SHARED IMPORTED GLOBAL)
 	  	if(WIN32)
 		  	get_Windows_Link_Interface(INTERFACE ${link})
-			set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}" IMPORTED_IMPLIB "${INTERFACE}")
-		else()
-			set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}")
-		endif()
+			  set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}" IMPORTED_IMPLIB "${INTERFACE}")
+  		else()
+  			set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}")
+  		endif()
   	endif()
   	set(${EXT_TARGET_NAME} ${target_name} PARENT_SCOPE)
   else(RES_TYPE STREQUAL STATIC)
 	  get_filename_component(LIB_NAME ${link} NAME)
     set(target_name ext-${LIB_NAME}${TARGET_SUFFIX})
   	if(NOT TARGET ${target_name})#target does not exist
-  		add_library(${target_name} STATIC IMPORTED GLOBAL)
-  		set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}")
+      if(EXISTS ${link})
+        add_library(${target_name} STATIC IMPORTED GLOBAL)
+        set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION "${link}")
+      else()#this is only a static library name, add it as an option
+        add_library(${target_name} INTERFACE)#need to use an interface library to give the linker flag
+        set_property(TARGET ${target_name} APPEND PROPERTY
+          INTERFACE_LINK_LIBRARIES ${link}
+        )
+      endif()
   	endif()
   	set(${EXT_TARGET_NAME} ${target_name} PARENT_SCOPE)
   endif()

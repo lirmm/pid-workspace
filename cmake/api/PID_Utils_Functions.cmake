@@ -2510,15 +2510,15 @@ set(${SHARED} FALSE PARENT_SCOPE)
 get_filename_component(LIB_TYPE ${input_link} EXT)
 if(LIB_TYPE)
   if(APPLE)
-      if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dylib$")#found shared lib
+      if(LIB_TYPE MATCHES "\\.dylib$")#found shared lib
         set(${SHARED} TRUE PARENT_SCOPE)
       endif()
   elseif(UNIX)
-      if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.so(\\.[0-9]+)*$")#found shared lib
+      if(LIB_TYPE MATCHES "\\.so(\\.[0-9]+)*$")#found shared lib
         set(${SHARED} TRUE PARENT_SCOPE)
       endif()
   elseif(WIN32)
-     if(LIB_TYPE MATCHES "^(\\.[0-9]+)*\\.dll(\\.[0-9]+)*$")#found shared lib
+     if(LIB_TYPE MATCHES "^\\.dll(\\.[0-9]+)*$")#found shared lib
         set(${SHARED} TRUE PARENT_SCOPE)
      endif()
   endif()
@@ -2823,11 +2823,11 @@ function(convert_Library_Path_To_Default_System_Library_Link RESULTING_LINK libr
     return()
   endif()
   get_filename_component(LIB_NAME ${library_path} NAME)
-  string(REGEX REPLACE "^lib(.+)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
   #remove the extensions only if
   if(LIB_NAME MATCHES "^(.+)\\.(lib|l?a)$")#static library => need to force their usage
-    set(${RESULTING_LINK} "-l${LIB_NAME}" PARENT_SCOPE)#keep the extension to force use of a static library
+    set(${RESULTING_LINK} "${LIB_NAME}" PARENT_SCOPE)#keep the extension to force use of a static library
   else()
+    string(REGEX REPLACE "^lib(.+)$" "\\1" LIB_NAME ${LIB_NAME})#remove the first "lib" characters if any
     if(APPLE)
       string(REGEX REPLACE "^(.+)\\.(\\.[0-9]+)*dylib$" "\\1" LIB_NAME ${LIB_NAME})
     elseif(UNIX)

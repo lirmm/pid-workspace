@@ -347,6 +347,39 @@ function(get_Soname SONAME SOVERSION library_description)
   set(${SOVERSION} ${so_version} PARENT_SCOPE)#i.e. NO soversion by default
 endfunction(get_Soname)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Archive_Description| replace:: ``get_Archive_Description``
+#  .. _get_Archive_Description:
+#
+#  get_Archive_Description
+#  -----------------------
+#
+#   .. command:: get_Archive_Description(DESCRITION path_to_library)
+#
+#    Get the description of a binary archive.
+#
+#     :path_to_library: the library to inspect.
+#
+#     :DESCRITION: the output variable that contains the description of the archive (content).
+#
+function(get_Archive_Description DESCRITION path_to_library)
+  #print the table of content
+  execute_process(COMMAND ${CMAKE_AR} -t ${path_to_library}
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    ERROR_QUIET
+    OUTPUT_VARIABLE OBJECT_CONTENT
+    RESULT_VARIABLE res)
+  if(res EQUAL 0)
+    set(${DESCRITION} ${OBJECT_CONTENT} PARENT_SCOPE)
+  else()
+    set(${DESCRITION} PARENT_SCOPE)
+  endif()
+endfunction(get_Archive_Description)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -436,12 +469,17 @@ endfunction(find_Possible_Library_Path)
 #
 #     :library: the name of the library (without any prefix or postfix specific to system).
 #     :path_to_linker_script: the file that is possibly a linker script.
+#     :is_shared: TRUE if the target is a shared library false otherwise.
 #
 #     :LIBRARY_PATH: the output variable that contains the path to the real binary if specified in the linker script, empty otherwise.
 #
-function(extract_Library_Path_From_Linker_Script LIBRARY_PATH library path_to_linker_script)
+function(extract_Library_Path_From_Linker_Script LIBRARY_PATH library path_to_linker_script is_shared)
     set(${LIBRARY_PATH} PARENT_SCOPE)
-    get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSIONS "SHARED")
+    if(is_shared)
+      get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSIONS "SHARED")
+    else()
+      get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSIONS "STATIC")
+    endif()
     usable_In_Regex(libpattern "${library}")
     set(prefixed_name ${PREFIX}${libpattern})
 
@@ -453,7 +491,7 @@ function(extract_Library_Path_From_Linker_Script LIBRARY_PATH library path_to_li
       OR CURRENT_PLATFORM_OS STREQUAL "freebsd") #GNU linker scripts
         set(pattern "^.*(GROUP|INPUT)[ \t]*\\([ \t]*([^ \t]+${prefixed_name}[^ \t]*\\${ext}[^ \t]*)[ \t]+.*$")#\\ is for adding \ at the beginning of extension (.so) so taht . will not be interpreted as a
         set(index 2)
-      elseif(CURRENT_PLATFORM_OS STREQUAL "macos")
+      elseif(CURRENT_PLATFORM_OS STREQUAL "macos") #macos linker script
         set(pattern "^install-name:[ \t]*'([^ \t]+${prefixed_name}[^ \t]*\\${ext})'[ \t]*.*$")#\\ is for adding \ at the beginning of extension (.so) so taht . will not be interpreted as a
         set(index 1)
       endif()
@@ -544,7 +582,7 @@ function(get_Soname_Info_From_Library_Path LIBRARY_PATH LIB_SONAME LIB_SOVERSION
     set(${LIB_SOVERSION} ${SOVERSION} PARENT_SCOPE)
     return()
   else()#here we can check the text content, since the file can be an implicit linker script use as an alias (and more)
-    extract_Library_Path_From_Linker_Script(LIB_PATH ${library_name} ${full_path})
+    extract_Library_Path_From_Linker_Script(LIB_PATH ${library_name} ${full_path} TRUE)
     if(LIB_PATH)
       get_Binary_Description(DESCRIPTION ${LIB_PATH})
       if(DESCRIPTION)#preceding commands says OK: means the binary is recognized as an adequate shared object
@@ -561,6 +599,46 @@ function(get_Soname_Info_From_Library_Path LIBRARY_PATH LIB_SONAME LIB_SOVERSION
   set(${LIB_SONAME} PARENT_SCOPE)
   set(${LIB_SOVERSION} PARENT_SCOPE)
 endfunction(get_Soname_Info_From_Library_Path)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_RealPath_From_Static_Library_Path| replace:: ``get_RealPath_From_Static_Library_Path``
+#  .. _get_RealPath_From_Static_Library_Path:
+#
+#  get_RealPath_From_Static_Library_Path
+#  -------------------------------------
+#
+#   .. command:: get_RealPath_From_Static_Library_Path(LIBRARY_PATH library_name full_path)
+#
+#    Get link info of a static library that is supposed to be located in implicit system folders.
+#
+#     :library_name: the name of the library (without any prefix or suffix specific to system).
+#     :full_path: the full path to the library file (may be a real soobject or link or a linker script).
+#
+#     :LIBRARY_PATH: the output variable that contains the full path to library, empty if no path found.
+#
+function(get_RealPath_From_Static_Library_Path LIBRARY_PATH library_name full_path)
+  get_Archive_Description(DESCRIPTION ${full_path})
+  if(DESCRIPTION)#preceding commands says OK: means the binary is recognized as an adequate shared object
+    set(${LIBRARY_PATH} ${full_path} PARENT_SCOPE)
+    return()
+  else()#here we can check the text content, since the file can be an implicit linker script use as an alias (and more)
+    extract_Library_Path_From_Linker_Script(LIB_PATH ${library_name} ${full_path} FALSE)
+    if(LIB_PATH)
+      get_Binary_Description(DESCRIPTION ${LIB_PATH})
+      if(DESCRIPTION)#preceding commands says OK: means the binary is recognized as an adequate shared object
+        #getting the SONAME
+        set(${LIBRARY_PATH} ${LIB_PATH} PARENT_SCOPE)
+        return()
+      endif()
+    endif()
+  endif()
+  set(${LIBRARY_PATH} PARENT_SCOPE)
+endfunction(get_RealPath_From_Static_Library_Path)
+
 
 #.rst:
 #

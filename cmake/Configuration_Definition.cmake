@@ -182,9 +182,13 @@ endmacro(execute_OS_Configuration_Command)
 #
 #     :<list_of_path>: the list of path to libraries.
 #
-#     :<ALL_LIBRARIES_REAL_PATH>: the output variable that contains the list of path to real binaries in operating system filesystem.
+#     :<ALL_SHARED_LIBRARIES_REAL_PATH>: the output variable that contains the list of path to real binaries in operating system filesystem.
 #
-#     :<ALL_LIBRARIES_SONAME>: the output variable that contains the list of the libraries sonames.
+#     :<ALL_SHARED_LIBRARIES_SONAME>: the output variable that contains the list of the libraries sonames.
+#
+#     :<ALL_STATIC_LIBRARIES_REAL_PATH>: the output variable that contains the list of path to static libraries.
+#
+#     :<ALL_LINKS_PATH>: the output variable that contains the list of path to links (or real path if no link) used to target the libraries used (either static or shared).
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -203,16 +207,25 @@ endmacro(execute_OS_Configuration_Command)
 #        find_package(OpenSSL REQUIRED)
 #        resolve_PID_System_Libraries_From_Path("${OpenSSL_LIBRARIES}" ALL OPENSSL_LIBS OPENSSL_SONAMES)
 #
-function(resolve_PID_System_Libraries_From_Path all_libraries ALL_LIBRARIES_REAL_PATH ALL_LIBRARIES_SONAME)
-  set(result_path)
+function(resolve_PID_System_Libraries_From_Path all_libraries ALL_SHARED_LIBRARIES_REAL_PATH ALL_SHARED_LIBRARIES_SONAME ALL_STATIC_LIBRARIES_PATH ALL_LINKS_PATH)
+  set(result_shared_path)
+  set(result_static_path)
   set(result_sonames)
+  set(result_link_path)
   foreach(lib IN LISTS all_libraries)
-    find_PID_Library_In_Linker_Order(${lib} ALL REAL_PATH SONAME)
-    list(APPEND result_path ${REAL_PATH})
-    list(APPEND result_sonames ${SONAME})
+    find_PID_Library_In_Linker_Order(${lib} ALL REAL_PATH SONAME LINK_PATH)
+    if(SONAME)
+      list(APPEND result_sonames ${SONAME})
+      list(APPEND result_shared_path ${REAL_PATH})
+    else()
+      list(APPEND result_static_path ${REAL_PATH})
+    endif()
+    list(APPEND result_link_path ${LINK_PATH})
   endforeach()
-  set(${ALL_LIBRARIES_REAL_PATH} ${result_path} PARENT_SCOPE)
-  set(${ALL_LIBRARIES_SONAME} ${result_sonames} PARENT_SCOPE)
+  set(${ALL_SHARED_LIBRARIES_REAL_PATH} ${result_shared_path} PARENT_SCOPE)
+  set(${ALL_SHARED_LIBRARIES_SONAME} ${result_sonames} PARENT_SCOPE)
+  set(${ALL_STATIC_LIBRARIES_PATH} ${result_static_path} PARENT_SCOPE)
+  set(${ALL_LINKS_PATH} ${result_link_path} PARENT_SCOPE)
 endfunction(resolve_PID_System_Libraries_From_Path)
 
 #.rst:
@@ -237,7 +250,12 @@ endfunction(resolve_PID_System_Libraries_From_Path)
 #
 #     :<LIBRARY_PATH>: the output variable that contains the path to the library in the system.
 #
-#     :<LIB_SONAME>: the output variable that contains the SONAME of the library, if any.
+#     :<LIB_SONAME>: the output variable that contains the SONAME of the library, if any (for shared libraries).
+#
+#     .. rubric:: Optional parameters
+#
+#     :<out_var_link>: the output variable that contains the path to link used to target the library (or real path if direct path is used)
+#
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -279,10 +297,16 @@ function(find_PID_Library_In_Linker_Order possible_library_names_or_path search_
       message("[PID] ERROR: bad usage of function find_PID_Library_In_Linker_Order, only one path must be provided !")
       return()
     endif()
+
     #from here only one path given => must resolve everything to be sure we do not target a linker script but we want soname info from real binary
     list(GET possible_library_names_or_path 0 the_path)
     get_filename_component(LIB_NAME_WE ${the_path} NAME_WE)
-    get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSIONS "SHARED")
+    is_Shared_Lib_With_Path(SHARED ${the_path})
+    if(SHARED)
+      get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSIONS "SHARED")
+    else()
+      get_Platform_Related_Binary_Prefix_Suffix(PREFIX EXTENSIONS "STATIC")
+    endif()
     if(PREFIX)
       string(FIND "${LIB_NAME_WE}" "${PREFIX}" INDEX)
       if(INDEX EQUAL 0)#avoid removing prefix like "lib" if same string is used within library name
@@ -294,11 +318,17 @@ function(find_PID_Library_In_Linker_Order possible_library_names_or_path search_
     else()
       set(lib_name ${LIB_NAME_WE})
     endif()
-    get_Soname_Info_From_Library_Path(LIB_PATH SONAME SOVERSION ${lib_name} ${the_path})
-    set(${LIBRARY_PATH} ${LIB_PATH} PARENT_SCOPE)
-    set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
+    if(SHARED)
+      get_Soname_Info_From_Library_Path(LIB_PATH SONAME SOVERSION ${lib_name} ${the_path})
+      set(${LIBRARY_PATH} ${LIB_PATH} PARENT_SCOPE)
+      set(${LIB_SONAME} ${SONAME} PARENT_SCOPE)
+    else()#this is a path to a static library
+      get_RealPath_From_Static_Library_Path(LIB_PATH ${lib_name} ${the_path})
+      set(${LIBRARY_PATH} ${LIB_PATH} PARENT_SCOPE)
+      set(${LIB_SONAME} PARENT_SCOPE)#no sonames for static libraries
+    endif()
     if(out_var_link)#if a path is given directly return the library path when the link path name is required
-      set(${out_var_link} ${LIB_PATH} PARENT_SCOPE)
+      set(${out_var_link} ${the_path} PARENT_SCOPE)#may be different than LIB_PATH wichi is the resolved path
     endif()
     return()
   endif()
