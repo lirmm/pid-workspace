@@ -855,7 +855,7 @@ set(curr_max_minor ${new_minor})
 foreach(version_required IN LISTS ${package}_ALL_REQUIRED_VERSIONS)
 	get_Version_String_Numbers("${version_required}.0" required_major required_minor required_patch)
 	if(NOT required_major EQUAL curr_major)
-		return()#not compatible since the new version has a greater version number
+		return()#not compatible since the new version has a greater major version number
 	elseif(required_minor GREATER curr_max_minor)
 		set(curr_max_minor ${required_minor})
 	endif()

@@ -329,6 +329,14 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
       message(FATAL_ERROR "[PID] CRITICAL ERROR :  native package dependency to ${dep_pack} cannot be resolved since the automatic download of packages is not activated in ${PROJECT_NAME}. You may set the REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD option to ON.")
     endif()
   elseif(NOT IS_VERSION_COMPATIBLE OR NOT IS_ABI_COMPATIBLE)#package binary found in install tree but is not compatible !
+    if(ADDITIONAL_DEBUG_INFO)
+      if(NOT IS_VERSION_COMPATIBLE)
+        message("[PID] WARNING : dependency ${dep_pack} version ${${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} required by package ${package} has incompatible version with currently selected versions.")
+      endif()
+      if(NOT IS_ABI_COMPATIBLE)
+        message("[PID] WARNING : dependency ${dep_pack} version ${${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} required by package ${package} is not binary compatible with current platform.")
+      endif()
+    endif()
     list(APPEND list_of_conflicting_dependencies ${dep_pack})
 	else()# resolution took place and is OK
     add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
