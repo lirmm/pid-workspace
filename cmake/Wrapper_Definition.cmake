@@ -1343,7 +1343,7 @@ else()#this is a dependency to another component defined in the same external pa
         endif()
       endif()
       #need to apply corrrective action in compiler options
-      set(all_opts ${EXPORT_OPTS} CACHE INTERNAL "")#force adaption of the variable at global scope
+      set(all_opts ${EXPORT_OPTS})#force adaption of the variable at global scope
       declare_Wrapped_Component_System_Dependency(${component_name}
         "${includes}"
         "${lib_dirs}"
