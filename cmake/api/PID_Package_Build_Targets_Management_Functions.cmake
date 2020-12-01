@@ -661,6 +661,9 @@ endforeach()
 
 # managing compile time flags (-D<preprocessor_defs>)
 foreach(def IN LISTS defs)
+  if(def MATCHES "^(-D|/D).+$")#remove compile flags to avoid any bug
+    string(REPLACE "${CMAKE_MATCH_1}" "" def "${def}")
+  endif()
 	target_compile_definitions(${PROJECT_NAME}_${component_name}${mode_suffix} INTERFACE "${def}")
 endforeach()
 
@@ -712,6 +715,9 @@ endforeach()
 
 # managing compile time flags
 foreach(def IN LISTS defs)
+  if(def MATCHES "^(-D|/D).+$")#remove compile flags to avoid any bug
+    string(REPLACE "${CMAKE_MATCH_1}" "" def "${def}")
+  endif()
 	target_compile_definitions(${PROJECT_NAME}_${component}${mode_suffix} PRIVATE "${def}")
 endforeach()
 
