@@ -2082,11 +2082,11 @@ macro(activate_Adequate_Languages)
 #enable assembler by default => assembler will be used anytime because it is a C/C++ project
 enable_language(ASM)#use assembler
 
-if(CMAKE_Fortran_COMPILER)
+if(CMAKE_Fortran_COMPILER AND EXISTS ${CMAKE_Fortran_COMPILER})
   enable_language(Fortran)#use fortran
 endif()
 
-if(CMAKE_CUDA_COMPILER)#if a CUDA compiler is defined by the current environment, then enable language
+if(CMAKE_CUDA_COMPILER AND EXISTS ${CMAKE_CUDA_COMPILER})#if a CUDA compiler is defined by the current environment, then enable language
   set(temp_flags ${CMAKE_CUDA_FLAGS})#need to deactivate forced flags to avoid problems when detecting language
   set(CMAKE_CUDA_FLAGS CACHE INTERNAL "" FORCE)
   enable_language(CUDA)#use cuda compiler
