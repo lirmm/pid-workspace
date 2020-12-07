@@ -29,7 +29,6 @@ endfunction()
 
 set(CUDA_Language_AVAILABLE FALSE CACHE INTERNAL "")
 # CUDA arch may have been directly set in CMAKE_CUDA_FLAGS
-set(temp_CUDA_flags)# a code compatibility has been specified using an environment
 set(used_CUDA_ARCH)
 foreach(flag IN LISTS CMAKE_CUDA_FLAGS)
   if(flag MATCHES "arch=compute_([0-9]+),code=sm_([0-9]+)")
@@ -73,6 +72,7 @@ set(CUDA_Language_AVAILABLE TRUE CACHE INTERNAL "")
 
 #memorizing build variables
 set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE INTERNAL "" FORCE)
+unset(CMAKE_CUDA_FLAGS)
 set(CMAKE_CUDA_FLAGS CACHE INTERNAL "" FORCE) #for security, avoid setting flags when language is checked (otherwise if errors occurs they will be persistent)
 if(NOT PID_CROSSCOMPILATION)
   check_language(CUDA)#only check for language if crosscompilation is not active
@@ -115,7 +115,6 @@ else()
   endif()
 endif()
 set(AVAILABLE_CUDA_ARCHS ${possible_CUDA_archs} CACHE INTERNAL "")
-
 if(used_CUDA_ARCH) #target architecture has been specified using environment
   set(DEFAULT_CUDA_ARCH ${used_CUDA_ARCH} CACHE INTERNAL "")#default arch is greater available
 else()
@@ -146,12 +145,16 @@ else()
     if(ADDITIONAL_DEBUG_INFO)
       message("[PID] WARNING: no CUDA GPU found while a CUDA compiler is installed. Cannot detect default CUDA architecture. This is probably due to a problem in mismatching driver/toolkit versions. Please install your CUDA drivers.")
     endif()
-    get_Greatest_CUDA_Arch(CHOSEN_ARCH "${AVAILABLE_CUDA_ARCHS}")
-    set(DEFAULT_CUDA_ARCH ${CHOSEN_ARCH} CACHE INTERNAL "")#default arch is greater available
+    #cannot detect so compile for every possible known card supported by the compiler
+    set(DEFAULT_CUDA_ARCH ${AVAILABLE_CUDA_ARCHS} CACHE INTERNAL "")#default arch is greater available
     set(DEFAULT_CUDA_DRIVER CACHE INTERNAL "")#no default driver means no nvidia card installed
     set(DEFAULT_CUDA_RUNTIME CACHE INTERNAL "")#no default runtime means no nvidia card installed
   endif()
 endif()
-string(REGEX REPLACE "\\." "" arch "${DEFAULT_CUDA_ARCH}")
-set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${arch},code=sm_${arch} -D_FORCE_INLINES" CACHE STRING "" FORCE)
+set(final_cuda_flag)
+foreach(arch IN LISTS DEFAULT_CUDA_ARCH)
+  string(REGEX REPLACE "\\." "" arch "${arch}")
+  set(final_cuda_flag "${final_cuda_flag} -gencode arch=compute_${arch},code=sm_${arch}")
+endforeach()
+set(CMAKE_CUDA_FLAGS "${final_cuda_flag} -D_FORCE_INLINES" CACHE STRING "" FORCE)
 set(CUDA_NVCC_FLAGS "${CMAKE_CUDA_FLAGS}" CACHE STRING "" FORCE)
