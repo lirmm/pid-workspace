@@ -574,7 +574,7 @@ endfunction(is_A_System_Reference_Path)
 #  is_A_System_Include_Path
 #  ------------------------
 #
-#   .. command:: is_A_System_Include_Path(path IS_SYSTEM)
+#   .. command:: is_A_System_Include_Path(IS_SYSTEM path)
 #
 #     Tells wether a path is a system include folder.
 #
@@ -582,7 +582,7 @@ endfunction(is_A_System_Reference_Path)
 #
 #     :IS_SYSTEM: the output variable that is TRUE if path is a system include path, FALSE otherwise
 #
-function(is_A_System_Include_Path path IS_SYSTEM)
+function(is_A_System_Include_Path IS_SYSTEM path)
   set(all_default_path ${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES} ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
   if(all_default_path)
     get_filename_component(RESOLVED_PATH ${path} REALPATH)#Note: resolve the path if it is a symlink to ensure it does not point to a system folder
@@ -591,7 +591,6 @@ function(is_A_System_Include_Path path IS_SYSTEM)
       if(a_path STREQUAL RESOLVED_PATH)#OK path is in default path => remove it
         set(${IS_SYSTEM} TRUE PARENT_SCOPE)
         return()
-      else()
       endif()
     endforeach()
   endif()
@@ -3242,7 +3241,7 @@ endforeach()
 #second path to remove default system path (avoid any trouble)
 set(res_includes_without_system)
 foreach(include_dir IN LISTS res_includes)
-  is_A_System_Include_Path(${include_dir} IS_SYSTEM)
+  is_A_System_Include_Path(IS_SYSTEM ${include_dir})
   if(NOT IS_SYSTEM)
     list(APPEND res_includes_without_system ${include_dir})
   endif()

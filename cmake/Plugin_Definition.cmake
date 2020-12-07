@@ -273,7 +273,7 @@ function(get_Package_Component_Includes PACKAGE_INCLUDE_FOLDER_IN_INSTALL INCLUD
           list(APPEND include_list_rel "${CMAKE_MATCH_1}")
         endif()
       else()
-        is_A_System_Include_Path(${inc} IS_SYSTEM)
+        is_A_System_Include_Path(IS_SYSTEM ${inc})
         if(NOT IS_SYSTEM)#not in default system include path but not in package
           list(APPEND include_list_abs "${inc}")#only in absolute
         endif()
