@@ -2824,6 +2824,8 @@ function(add_Sanitizer_Flags_If_Available sanitizer compilier_options link_flags
 	# Need to set LDFLAGS otherwise check_cxx_compilier_flag will fail
 	set(LDFLAGS_OLD $ENV{LDFLAGS})
 	set(ENV{LDFLAGS} "$ENV{LDFLAGS} ${SAN_FLAG}")
+	set(CMAKE_EXE_LINKER_FLAGS_OLD ${CMAKE_EXE_LINKER_FLAGS})
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${SAN_FLAG}")
 	check_cxx_compiler_flag("${SAN_FLAG} ${extra_compiler_options}" HAS_${sanitizer}_SANITIZER)
 	if(HAS_${sanitizer}_SANITIZER)
 		list(APPEND ${compilier_options} ${SAN_FLAG} ${extra_compiler_options})
@@ -2835,4 +2837,5 @@ function(add_Sanitizer_Flags_If_Available sanitizer compilier_options link_flags
 		message("[PID] WARNING : ${sanitizer} sanitizer activated but your compiler doesn't support it")
 	endif()
 	set(ENV{LDFLAGS} ${LDFLAGS_OLD})
+	set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS_OLD})
 endfunction(add_Sanitizer_Flags_If_Available)
