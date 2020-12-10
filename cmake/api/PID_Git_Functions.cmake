@@ -934,6 +934,11 @@ endfunction(register_Repository_Version)
 function(update_Contribution_Space_Repository contrib_space)
   get_Path_To_Contribution_Space(PATH_TO_DIR ${contrib_space})
   if(PATH_TO_DIR)
+    test_Remote_Connection(CONNECTED ${PATH_TO_DIR} origin)
+    if(NOT CONNECTED)
+      message("[PID] ERROR: cannot update contribution space ${contrib_space}. Reason: No connection to remote available.")
+      return()
+    endif()
     #merge official content with local one
     execute_process(COMMAND git pull origin master
                     WORKING_DIRECTORY ${PATH_TO_DIR}
