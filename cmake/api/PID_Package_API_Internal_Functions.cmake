@@ -466,33 +466,47 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		resolve_Path_To_Format_File(PATH_TO_STYLE ${code_style})
 		if(NOT PATH_TO_STYLE)
 			message(WARNING "[PID] WARNING: you use an undefined code format ${code_style}")
-			set(format_cmd_message " no format called ${code_style} found. Formatting aborted.")
+			set(format_cmd_message "no format called ${code_style} found")
 		else()
-			file(COPY ${PATH_TO_STYLE} DESTINATION ${PACKAGE_FORMAT_FOLDER})
-			file(RENAME ${PACKAGE_FORMAT_FOLDER}/.clang-format.${code_style} ${PACKAGE_FORMAT_FILE})
-			if(CLANG_FORMAT_EXECUTABLE)
-				add_custom_target(format
-					COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
-								 -DPACKAGE_NAME=${PROJECT_NAME}
-								 -DCLANG_FORMAT_EXE=${CLANG_FORMAT_EXECUTABLE}
-								 -P ${WORKSPACE_DIR}/cmake/commands/Format_PID_Package_Sources.cmake
-					COMMENT "[PID] formatting the source files"
-				)
-				set(no_format FALSE)
+			set(PATH_TO_CUSTOM_STYLE ${PACKAGE_FORMAT_FOLDER}/share/.clang-format)
+			if(EXISTS ${PATH_TO_CUSTOM_STYLE})
+				file(STRINGS ${PATH_TO_STYLE} BASE_STYLE)
+				file(READ ${PATH_TO_CUSTOM_STYLE} CUSTOM_STYLE)
+				set(STYLE)
+				foreach(line IN LISTS BASE_STYLE)
+					if(line STREQUAL "...")
+						set(STYLE "${STYLE}${CUSTOM_STYLE}")
+					endif()
+					set(STYLE "${STYLE}${line}\n")
+				endforeach()
+				file(WRITE ${PACKAGE_FORMAT_FOLDER}/.clang-format ${STYLE})
 			else()
-				set(format_cmd_message " no clang formatter found. Formatting aborted.")
+				file(COPY ${PATH_TO_STYLE} DESTINATION ${PACKAGE_FORMAT_FOLDER})
+				file(RENAME ${PACKAGE_FORMAT_FOLDER}/.clang-format.${code_style} ${PACKAGE_FORMAT_FILE})
 			endif()
 		endif()
-	elseif(EXISTS ${PACKAGE_FORMAT_FILE})
-		# code style has been removed, removing the configuration file
-		file(REMOVE ${PACKAGE_FORMAT_FILE})
-		set(format_cmd_message "no format defined.")
+	endif()
+	# we have a .clang-format file, either provided by PID or by the user
+	if(EXISTS ${PACKAGE_FORMAT_FILE})
+		if(CLANG_FORMAT_EXECUTABLE)
+			add_custom_target(format
+				COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR}
+								-DPACKAGE_NAME=${PROJECT_NAME}
+								-DCLANG_FORMAT_EXE=${CLANG_FORMAT_EXECUTABLE}
+								-P ${WORKSPACE_DIR}/cmake/commands/Format_PID_Package_Sources.cmake
+				COMMENT "[PID] formatting the source files"
+			)
+			set(no_format FALSE)
+		else()
+			set(format_cmd_message "no clang formatter found")
+		endif()
 	else()
-		set(format_cmd_message "formatting not activated.")
+		set(format_cmd_message "the package does not have a .clang-format file at its root")
 	endif()
 	if(no_format)
 		add_custom_target(format
-			COMMAND ${CMAKE_COMMAND} -E echo "[PID] WARNING: ${format_cmd_message}"
+			COMMAND ${CMAKE_COMMAND} -E echo "[PID] ERROR: ${format_cmd_message}. Formatting aborted."
+			COMMAND exit 1
 			COMMENT "[PID] formatting the source files"
 		)
 	endif()
