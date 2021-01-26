@@ -3043,6 +3043,64 @@ else()
 endif()
 endfunction(is_External_Package_Defined)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_External_Compiler_Options| replace:: ``resolve_External_Compiler_Options``
+#  .. _resolve_External_Compiler_Options:
+#
+#  resolve_External_Compiler_Options
+#  ---------------------------------
+#
+#   .. command:: resolve_External_Compiler_Options(RES ext_package link)
+#
+#    Extract from compiler options everything that may be put into more specific
+#    features (includes, definitions) and set adequately corresponding variables.
+#
+#     :IN_OUT_OPTS: the input/output variable that contain compiler options.
+#     :IN_OUT_OPTS: the input/output variable that contains preprocessor definitions.
+#     :IN_OUT_INCS: the input/output variable that contains include directives.
+#
+function(resolve_External_Compiler_Options IN_OUT_OPTS IN_OUT_DEFS IN_OUT_INCS)
+set(out_incs ${${IN_OUT_INCS}})
+set(out_defs ${${IN_OUT_DEFS}})
+set(out_opts)
+#filtering compiler options
+foreach(opt IN LISTS ${IN_OUT_OPTS})
+  if(opt MATCHES "^(-D|/D)(.*)")
+    list(APPEND out_defs ${CMAKE_MATCH_2})
+  elseif(opt MATCHES "^(-I|/I|-isystem).*")
+    list(APPEND out_incs ${CMAKE_MATCH_2})
+  else()
+    list(APPEND out_opts ${opt})
+  endif()
+endforeach()
+#now resolving flags in definitions
+set(final_defs)
+foreach(def IN LISTS out_defs)
+  if(def MATCHES "^(-D|/D)(.*)")
+    list(APPEND final_defs ${CMAKE_MATCH_2})
+  else()
+    list(APPEND final_defs ${def})
+  endif()
+endforeach()
+#now resolving flags in definitions
+set(final_incs)
+foreach(inc IN LISTS out_incs)
+  if(inc MATCHES "^(-I|/I|-isystem).*")
+    list(APPEND final_incs ${CMAKE_MATCH_2})
+  else()
+    list(APPEND final_incs ${inc})
+  endif()
+endforeach()
+#returning
+set(${IN_OUT_OPTS} ${out_opts} PARENT_SCOPE)
+set(${IN_OUT_DEFS} ${final_defs} PARENT_SCOPE)
+set(${IN_OUT_INCS} ${final_incs} PARENT_SCOPE)
+endfunction(resolve_External_Compiler_Options)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -5468,7 +5526,10 @@ endfunction(usable_In_Regex)
 #     :element_value: the new element to append.
 #
 function(append_Unique_In_Cache list_name element_value)
-	if(${list_name})
+  if(element_value)
+    list(REMOVE_DUPLICATES element_value)
+  endif()
+  if(${list_name})
 		set(temp_list ${${list_name}})
 		list(APPEND temp_list ${element_value})
 		list(REMOVE_DUPLICATES temp_list)

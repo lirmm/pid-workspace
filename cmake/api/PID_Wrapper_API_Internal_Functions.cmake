@@ -1555,13 +1555,13 @@ endfunction(declare_Wrapped_Component_Internal_Dependency)
 #      :resources: the list of absolute path to file and folder used at runtime by the component. May be defined as a configuration variable.
 #
 function(declare_Wrapped_Component_System_Dependency component includes lib_dirs links defs opts c_std c_max_std cxx_std cxx_max_std resources)
-	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_INCLUDES "${includes}")
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_LIB_DIRS "${lib_dirs}")
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_LINKS "${links}")
 	escape_Guillemet_From_String(defs)#special case, definition may contain complex string exprtession that we may want to escape using \". We generally want to preserve these espaces
+	resolve_External_Compiler_Options(opts defs includes)
+	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_INCLUDES "${includes}")
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_DEFINITIONS "${defs}")
 	append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_OPTIONS "${opts}")
-
 	#Note: for system dependencies we need to resolve since there may have many dependencies each having their own constraints on standards (even if obviously very rare)
 	if(c_std OR cxx_std)#C or C++ standard is set
 		if(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SYSTEM_C_STANDARD
@@ -2080,6 +2080,23 @@ else()
 	set(includes "")
 endif()
 
+if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_DEFINITIONS)
+	fill_String_From_List(RES_DEFS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_DEFINITIONS " ")
+	set(defs " DEFINITIONS ${RES_DEFS}")
+	set(package_rel_to_write TRUE)
+else()
+	set(defs "")
+endif()
+
+if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_OPTIONS)
+	fill_String_From_List(RES_OPTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_OPTIONS " ")
+	set(opts " COMPILER_OPTIONS ${RES_OPTS}")
+	set(package_rel_to_write TRUE)
+else()
+	set(opts "")
+endif()
+
+
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_LIB_DIRS)
 	fill_String_From_List(RES_DIRS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_LIB_DIRS " ")
 	set(lib_dirs " LIBRARY_DIRS ${RES_DIRS}")
@@ -2096,20 +2113,6 @@ else()
 	set(shared "")
 endif()
 
-if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_DEFINITIONS)
-	fill_String_From_List(RES_DEFS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_DEFINITIONS " ")
-	set(defs " DEFINITIONS ${RES_DEFS}")
-	set(package_rel_to_write TRUE)
-else()
-	set(defs "")
-endif()
-if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_OPTIONS)
-	fill_String_From_List(RES_OPTS ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_OPTIONS " ")
-	set(opts " COMPILER_OPTIONS ${RES_OPTS}")
-	set(package_rel_to_write TRUE)
-else()
-	set(opts "")
-endif()
 if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_C_STANDARD)
 	set(c_std " C_STANDARD ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SYSTEM_C_STANDARD}")
 	set(package_rel_to_write TRUE)
@@ -2853,7 +2856,7 @@ function(set_Build_Info_For_Dependency prefix dep_package component)
 	evaluate_Variables_In_List(EVAL_BUILD_OPTS opts)
 	evaluate_Variables_In_List(EVAL_BUILD_SHARED_LNKS runtime_links) #first evaluate element of the list => if they are variables they are evaluated
 	evaluate_Variables_In_List(EVAL_BUILD_RRES rres)
-
+	resolve_External_Compiler_Options(EVAL_BUILD_OPTS EVAL_BUILD_DEFS EVAL_BUILD_INCS)
 	#clean a bit the result, to avoid unecessary repetitions
 	remove_Duplicates_From_List(EVAL_BUILD_LNKS)
 	remove_Duplicates_From_List(EVAL_BUILD_INCS)
@@ -3100,6 +3103,9 @@ function(set_Build_Info_For_Component package component version platform)
 	evaluate_Variables_In_List(EVAL_DEFS defs)
 	evaluate_Variables_In_List(EVAL_OPTS opts)
 	evaluate_Variables_In_List(EVAL_RRES res)
+
+	#now resolve compiler options (to avoid them to contain defs and incs) and ensure uniqueness
+	resolve_External_Compiler_Options(EVAL_OPTS EVAL_DEFS EVAL_INCS)
 	#clean a bit the result, to avoid unecessary repetitions
 	remove_Duplicates_From_List(EVAL_SHARED_LNKS)
 	remove_Duplicates_From_List(EVAL_LNKS)
@@ -3109,12 +3115,14 @@ function(set_Build_Info_For_Component package component version platform)
 	remove_Duplicates_From_List(EVAL_OPTS)
 	remove_Duplicates_From_List(EVAL_RRES)
 	remove_Duplicates_From_List(all_local_deps)
-	#resolbe all path into absolute path if required (path to external package content)
+
+	#resolve all path into absolute path if required (path to external package content)
 	resolve_External_Libs_Path(COMPLETE_SHARED_LINKS_PATH "${EVAL_SHARED_LNKS}" Release)
 	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${EVAL_LNKS}" Release)
 	resolve_External_Libs_Path(COMPLETE_LDIRS_PATH "${EVAL_LDIRS}" Release)
 	resolve_External_Includes_Path(COMPLETE_INCS_PATH "${EVAL_INCS}" Release)
 	resolve_External_Resources_Path(COMPLETE_RESOURCE_PATH "${EVAL_RRES}" Release)
+
 
 	#finally set the cache variables that will be written
 	set(${prefix}_COMPONENT_${component}_BUILD_INFO_DONE TRUE CACHE INTERNAL "")
