@@ -80,7 +80,7 @@ stages:
 .selection_archlinux_: &selection_archlinux
    tags:
         - pid
-        - x86_64_linux_stdc++11__arch_gcc10__
+        - x86_64_linux_stdc++11__arch_gcc__
 
 .selection_debian_: &selection_debian
    tags:
