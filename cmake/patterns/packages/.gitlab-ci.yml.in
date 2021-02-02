@@ -23,8 +23,9 @@ stages:
      - ./configure_workspace.sh "$CI_RUNNER_TAGS"
      - ./build_package_integration.sh
      - ./publish_package_integration.sh
-   only:
-     - integration
+   except:
+     - master
+     - /^v.*$/
    artifacts:
      name: "artefacts_integration_${CI_RUNNER_ID}"
      paths:
