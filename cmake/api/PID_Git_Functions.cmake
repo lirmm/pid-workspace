@@ -129,25 +129,25 @@ endfunction(git_Provides_LSREMOTE)
 #
 # .. ifmode:: internal
 #
-#  .. |prepare_Repository_Context_Switch| replace:: ``prepare_Repository_Context_Switch``
-#  .. _prepare_Repository_Context_Switch:
+#  .. |reset_Repository_Context| replace:: ``reset_Repository_Context``
+#  .. _reset_Repository_Context:
 #
-#  prepare_Repository_Context_Switch
+#  reset_Repository_Context
 #  ---------------------------------
 #
-#   .. command:: prepare_Repository_Context_Switch(path)
+#   .. command:: reset_Repository_Context(path)
 #
 #     Clean the git repository, which must be done before any git context switch (i.e. checkout).
 #
 #     :path: path to the repository whose repository is cleaned
 #
-function(prepare_Repository_Context_Switch path)
+function(reset_Repository_Context path)
 execute_process(
     COMMAND git reset --hard # remove any change applied to the previous repository state
 		COMMAND git clean -ff -d # remove untracked files
     WORKING_DIRECTORY ${path}
     OUTPUT_QUIET ERROR_QUIET)#this is a mandatory step due to the generation of versionned files in source dir when build takes place (this should let the repository in same state as initially)
-endfunction(prepare_Repository_Context_Switch)
+endfunction(reset_Repository_Context)
 
 #.rst:
 #
@@ -190,7 +190,7 @@ endfunction(checkout_To_Commit)
 #     :commit_or_branch: The target commit to go to
 #
 function(go_To_Commit path commit_or_branch)
-  prepare_Repository_Context_Switch(${path})
+  reset_Repository_Context(${path})
   checkout_To_Commit(${path} ${commit_or_branch})
 endfunction(go_To_Commit)
 
@@ -641,7 +641,7 @@ function(restore_Repository_Context package external initial_commit saved_conten
   else()
     set(package_path ${WORKSPACE_DIR}/packages/${package})
   endif()
-  prepare_Repository_Context_Switch(${package_path})
+  reset_Repository_Context(${package_path})
   checkout_To_Commit(${package_path} ${initial_commit})
   if(saved_content)
   	execute_process(COMMAND git stash pop --index
