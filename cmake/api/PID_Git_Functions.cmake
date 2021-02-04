@@ -699,20 +699,23 @@ endfunction(save_Workspace_Repository_Context)
 #  restore_Workspace_Repository_Context
 #  ------------------------------------
 #
-#   .. command:: restore_Workspace_Repository_Context(initial_commit saved_content)
+#   .. command:: restore_Workspace_Repository_Context(ERROR initial_commit saved_content)
 #
 #     Restore the previous state of the workspace's repository.
 #
 #     :initial_commit: the id of the commit to checkout to
 #     :saved_content: if TRUE then stashed content will be pop
+#     :ERROR: the output variable that contains output on error, empty otherwise
 #
-function(restore_Workspace_Repository_Context initial_commit saved_content)
-checkout_To_Commit(${WORKSPACE_DIR} ${initial_commit})
-if(saved_content)
-	execute_process(COMMAND git stash pop
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}
-                  OUTPUT_QUIET ERROR_QUIET)
-endif()
+function(restore_Workspace_Repository_Context ERROR initial_commit saved_content)
+  set(${ERROR} "" PARENT_SCOPE)
+  checkout_To_Commit(${WORKSPACE_DIR} ${initial_commit})
+  if(saved_content)
+    execute_Silent_Process(GIT_OUT GIT_RES ${WORKSPACE_DIR} git stash pop)
+    if(GIT_RES)
+      set(${ERROR} "${GIT_OUT}" PARENT_SCOPE)
+    endif()
+  endif()
 endfunction(restore_Workspace_Repository_Context)
 
 ######################################################################
@@ -940,11 +943,9 @@ function(update_Contribution_Space_Repository contrib_space)
       return()
     endif()
     #merge official content with local one
-    execute_process(COMMAND git pull origin master
-                    WORKING_DIRECTORY ${PATH_TO_DIR}
-                    OUTPUT_QUIET ERROR_VARIABLE out RESULT_VARIABLE res)#pulling master branch of origin (in case of) => merge can take place
-    if(res)
-      message("[PID] ERROR: cannot update contribution space ${contrib_space}. Reason: ${out}. Check the status of ${contrib_space}.")
+    execute_Silent_Process(GIT_OUT GIT_RES ${PATH_TO_DIR} git pull origin master)
+    if(GIT_RES)
+      message("[PID] ERROR: cannot update contribution space ${contrib_space}. Reason: ${GIT_OUT}. Check the status of ${contrib_space}.")
     endif()
   endif()
 endfunction(update_Contribution_Space_Repository)
@@ -1165,8 +1166,22 @@ endfunction(get_Contribution_Space_Repository_Status cs)
 #
 function(update_Workspace_Repository remote)
 go_To_Workspace_Master()
-execute_process(COMMAND git pull ${remote} master
-                WORKING_DIRECTORY ${WORKSPACE_DIR} OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin or official
+execute_Silent_Process(GIT_OUT GIT_RES ${WORKSPACE_DIR} git pull ${remote} master)
+if(res)
+  message("[PID] WARNING: Cannot update workspace from its ${remote} remote. Reason: ${GIT_OUT}")
+else()
+  set(print FALSE)
+  string(REPLACE "\n" ";" list_of_lines "${GIT_OUT}")
+  foreach(line IN LISTS list_of_lines)
+    if(line MATCHES ".*CONFLICT.*")
+      set(print TRUE)
+      break()
+    endif()
+  endforeach()
+  if(print)
+    message("[PID] WARNING: when updating, conflicts have been detected: ${GIT_OUT}")
+  endif()
+endif()
 endfunction(update_Workspace_Repository)
 
 #.rst:

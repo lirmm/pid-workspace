@@ -5455,6 +5455,41 @@ endfunction(resolve_Imported_Standards)
 ################################### pure CMake utilities ########################################
 #################################################################################################
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |execute_Silent_Process| replace:: ``execute_Silent_Process``
+#  .. _execute_Silent_Process:
+#
+#  execute_Silent_Process
+#  ----------------------
+#
+#   .. command:: execute_Silent_Process(OUTPUT ...)
+#
+#    Execute a process with silent output but returning the output into a variable.
+#
+#     :OUTPUT: the output variable containing output of the process (error + standard) .
+#
+#     :RESULT: the output variable containing result code of the process.
+#
+#     :dir: working directory for executing the command.
+#
+#     :...: list of arguments to pass to execute_process
+#
+function(execute_Silent_Process OUTPUT RESULT dir)
+  execute_process(COMMAND ${ARGN}
+                  WORKING_DIRECTORY ${dir}
+                  OUTPUT_FILE ${CMAKE_BINARY_DIR}/tmp_exec_out.txt
+                  ERROR_FILE ${CMAKE_BINARY_DIR}/tmp_exec_out.txt
+                  RESULT_VARIABLE res)#pulling master branch of origin or official
+  file(READ ${CMAKE_BINARY_DIR}/tmp_exec_out.txt file_content)
+  file(REMOVE ${CMAKE_BINARY_DIR}/tmp_exec_out.txt)
+  set(${OUTPUT} "${file_content}" PARENT_SCOPE)
+  set(${RESULT} "${res}" PARENT_SCOPE)
+endfunction(execute_Silent_Process)
+
 #.rst:
 #
 # .. ifmode:: internal
