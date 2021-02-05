@@ -173,8 +173,10 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
 
   	# configuring doxyfile to use dot executable if available
   	set(DOXYFILE_DOT "NO")
+    set(DOXYGEN_DOT_PATH)
   	if(DOXYGEN_DOT_EXECUTABLE)
   		set(DOXYFILE_DOT "YES")
+      set(DOXYGEN_DOT_PATH ${DOXYGEN_DOT_EXECUTABLE})
   	endif()
 
   	# configuring doxyfile for latex generation
