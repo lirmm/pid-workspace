@@ -345,7 +345,7 @@ if(version_dirs)#seaking for a good version only if there are versions installed
   else()#no preliminary contraints applies to version
     set(curr_patch_version 0)
   endif()
-  update_Package_Installed_Version(${package} ${major} ${minor} "${patch}" true "${version_dirs}")#updating only if there are installed versions
+  update_Package_Installed_Version(${package} ${major} ${minor} "${patch}" true "${version_dirs}" "${BUILD_RELEASE_ONLY}")#updating only if there are installed versions
   foreach(version IN LISTS version_dirs)
     if(version MATCHES "^${major}\\.${minor}\\.([0-9]+)$")
       if(NOT (CMAKE_MATCH_1 LESS curr_patch_version)) #=minor >= patch
@@ -395,7 +395,7 @@ if(version_dirs)#seaking for a good version only if there are versions installed
   else()#no preliminary contraints applies to version
     set(curr_patch_version 0)
   endif()
-  update_Package_Installed_Version(${package} ${major} ${minor} "${patch}" false "${version_dirs}")#updating only if there are installed versions
+  update_Package_Installed_Version(${package} ${major} ${minor} "${patch}" false "${version_dirs}" "${BUILD_RELEASE_ONLY}")#updating only if there are installed versions
 	foreach(version IN LISTS version_dirs)
 		if(version MATCHES "^${major}\\.${minor}\\.([0-9]+)$")
 			if(NOT (CMAKE_MATCH_1 LESS curr_patch_version)) #=minor >= patch
@@ -435,7 +435,7 @@ function(check_Last_Version VERSION_FOUND package install_dir)#taking local vers
 set(${VERSION_FOUND} FALSE PARENT_SCOPE)
 list_Version_Subdirectories(local_versions ${install_dir})
 if(local_versions)#seaking for a good version only if there are versions installed
-	update_Package_Installed_Version(${package} "" "" "" false "${local_versions}")#updating only if there are installed versions
+	update_Package_Installed_Version(${package} "" "" "" false "${local_versions}" "${BUILD_RELEASE_ONLY}")#updating only if there are installed versions
 	set(version_string_curr "0.0.0")
 	foreach(local_version_dir IN LISTS local_versions)
 		if(version_string_curr VERSION_LESS local_version_dir)
@@ -1822,6 +1822,42 @@ endmacro(exitFindScript)
 #
 # .. ifmode:: internal
 #
+#  .. |exit_And_Manage_Install_Requirement_For_Native| replace:: ``exit_And_Manage_Install_Requirement_For_Native``
+#  .. _exit_And_Manage_Install_Requirement_For_Native:
+#
+#  exit_And_Manage_Install_Requirement_For_Native
+#  ----------------------------------------------
+#
+#   .. command:: exit_And_Manage_Install_Requirement_For_Native(package message_to_send)
+#
+#    Exitting the find script of a native package with a message and setting adequate variables to ensure install of not found dependencies.
+#
+#     :package: the name of the package.
+#     :message_to_send: message to print when exitting the script.
+#
+macro(exit_And_Manage_Install_Requirement_For_Native package message_to_send)
+  if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
+    if(${package}_FIND_REQUIRED)
+      if(${package}_FIND_VERSION)
+        if(${package}_FIND_VERSION_PATCH)
+           add_To_Install_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" ${${package}_FIND_VERSION_EXACT})
+        else()
+          add_To_Install_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" ${${package}_FIND_VERSION_EXACT})
+        endif()
+      else()
+        add_To_Install_Package_Specification(${package} "" FALSE)
+      endif()
+    endif()
+    return()
+  else()
+    exitFindScript(${package} "${message}")
+  endif()
+endmacro(exit_And_Manage_Install_Requirement_For_Native)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |finding_Package| replace:: ``finding_Package``
 #  .. _finding_Package:
 #
@@ -1877,16 +1913,22 @@ if(EXIST)
 			endif()
 
 		else()#no component check, register all of them
-
 			all_Components(USE_FILE_NOTFOUND "${package}" ${${package}_VERSION_STRING} ${PATH_TO_PACKAGE_VERSION})
 			if(USE_FILE_NOTFOUND)
 				exitFindScript(${package} "[PID] CRITICAL ERROR when configuring ${PROJECT_NAME} : the  selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted.")
 			endif()
 		endif()
 
-		#here everything has been found => setting global standard CMake find process variables to adequate values
-		set(${package}_FOUND${VAR_SUFFIX} TRUE CACHE INTERNAL "")
-		set(${package}_ROOT_DIR ${PATH_TO_PACKAGE_VERSION} CACHE INTERNAL "")
+    #need to check if debug binaries are provided (based on ${package}_BUILT_RELEASE_ONLY variable provided in Use file)
+    if(CMAKE_BUILD_TYPE MATCHES Debug)
+      if(${package}_BUILT_RELEASE_ONLY)#debug binaries are not available, so package is not found
+        exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the package ${package} with version ${${package}_FIND_VERSION} has been found but does not provide debug artifacts as required. Considered as not found.")
+      endif()
+    endif()
+
+    #here everything has been found => setting global standard CMake find process variables to adequate values
+    set(${package}_FOUND${VAR_SUFFIX} TRUE CACHE INTERNAL "")
+    set(${package}_ROOT_DIR ${PATH_TO_PACKAGE_VERSION} CACHE INTERNAL "")
     append_Unique_In_Cache(${PROJECT_NAME}_ALL_USED_PACKAGES ${package})
 
     if(${package}_FIND_VERSION)
@@ -1903,44 +1945,31 @@ if(EXIST)
 		if(${res} STREQUAL NOTFOUND) #no bound to the package (maybe old package style before versionning)
 			set(${package}_PID_VERSION 0 CACHE INTERNAL "")#default version is 0
 		endif()
-
 	else()#no adequate version found
-		if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-			if(${package}_FIND_REQUIRED)
-				if(${package}_FIND_VERSION)
-          if(${package}_FIND_VERSION_PATCH)
-					   add_To_Install_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" ${${package}_FIND_VERSION_EXACT})
-          else()
-            add_To_Install_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" ${${package}_FIND_VERSION_EXACT})
-          endif()
-        else()
-					add_To_Install_Package_Specification(${package} "" FALSE)
-				endif()
-			endif()
-		else()
-			exitFindScript(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the package ${package} with version ${${package}_FIND_VERSION} cannot be found in the workspace.")
-		endif()
+    exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the package ${package} with version ${${package}_FIND_VERSION} cannot be found in the workspace.")
 	endif()
 else() #if the directory does not exist it means the package cannot be found
-	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-		if(${package}_FIND_REQUIRED)
-			if(${package}_FIND_VERSION)
-        if(${package}_FIND_VERSION_PATCH)
-           add_To_Install_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" ${${package}_FIND_VERSION_EXACT})
-        else()
-          add_To_Install_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" ${${package}_FIND_VERSION_EXACT})
-        endif()
-			else()
-				add_To_Install_Package_Specification(${package} "" FALSE)
-			endif()
-		endif()
-	else()
-		exitFindScript(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the required package ${package} cannot be found in the workspace.")
-	endif()
-
+  exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the required package ${package} cannot be found in the workspace.")
 endif()
 endmacro(finding_Package)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |exit_And_Manage_Install_Requirement_For_External| replace:: ``exit_And_Manage_Install_Requirement_For_External``
+#  .. _exit_And_Manage_Install_Requirement_For_External:
+#
+#  exit_And_Manage_Install_Requirement_For_External
+#  ------------------------------------------------
+#
+#   .. command:: exit_And_Manage_Install_Requirement_For_External(package message_to_send)
+#
+#    Exitting the find script of an external package with a message and setting adequate variables to ensure install of not found dependencies.
+#
+#     :package: the name of the package.
+#     :message_to_send: message to print when exitting the script.
+#
 macro(exit_And_Manage_Install_Requirement_For_External package message is_exact is_system)
   if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
     if(${package}_FIND_REQUIRED)
@@ -2020,6 +2049,12 @@ if(EXIST)
         unset(${package}_ROOT_DIR CACHE)
         exit_And_Manage_Install_Requirement_For_External(${package} "[PID] ERROR : the required OS variant version (${VERSION_TO_USE}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
   	  endif()
+    else()# when not a system install the package may be built in release only mode
+      if(CMAKE_BUILD_TYPE MATCHES Debug)
+        if(${package}_BUILT_RELEASE_ONLY)#debug binaries are not available, so package is not found
+          exit_And_Manage_Install_Requirement_For_External(${package} "[PID] ERROR : the package ${package} with version ${${package}_FIND_VERSION} has been found but does not provide debug artifacts as required. Considered as not found." ${is_exact} ${is_system})
+        endif()
+      endif()
     # else even if an OS variant is not required, an OS variant can be used
     endif()
 		set(${package}_FOUND${VAR_SUFFIX} TRUE CACHE INTERNAL "")

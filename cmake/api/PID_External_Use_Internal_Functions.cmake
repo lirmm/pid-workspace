@@ -504,17 +504,20 @@ function(manage_Dependent_PID_Package DEPLOYED package version)
   if(NOT ${package}_FOUND${VAR_SUFFIX})
     #TODO deploy from workspace
     set(ENV{manage_progress} FALSE)
-
+    set(release_only FALSE)
+    if(CMAKE_BUILD_TYPE MATCHES Debug)
+      set(release_only FALSE)
+    endif()
     #TODO need to check this
     if(NOT INDEX_IN_DECLARED_OS_DEPS EQUAL -1)#deploying external dependency as os variant
-      execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=system
+      execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=system release_only=${release_only}
                       WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
     else()
       if(version)
-        execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=${version}
+        execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=${version} release_only=${release_only}
         WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
       else()
-        execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package}
+        execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} release_only=${release_only}
         WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
       endif()
     endif()
@@ -534,7 +537,7 @@ function(manage_Dependent_PID_Package DEPLOYED package version)
 
   if(${package}_FOUND${VAR_SUFFIX})
     set(${DEPLOYED} TRUE PARENT_SCOPE)
-    resolve_Package_Dependencies(${package} ${WORKSPACE_MODE} TRUE)
+    resolve_Package_Dependencies(${package} ${WORKSPACE_MODE} TRUE "${release_only}")
     set(${package}_RPATH ${${package}_ROOT_DIR}/.rpath CACHE INTERNAL "")
   else()
     set(${DEPLOYED} FALSE PARENT_SCOPE)

@@ -49,6 +49,18 @@ if(DEFINED ENV{package})
 endif()
 
 
+if(NOT RELEASE_ONLY AND DEFINED ENV{release_only})
+	set(RELEASE_ONLY $ENV{release_only} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{release_only})
+	unset(ENV{release_only})
+endif()
+if(RELEASE_ONLY MATCHES "true|TRUE")
+	set(RELEASE_ONLY TRUE  CACHE INTERNAL "" FORCE)
+else()
+	set(RELEASE_ONLY FALSE CACHE INTERNAL "" FORCE)
+endif()
+
 
 if(RESOLVED_PACKAGE AND TARGET_VERSION)
 	if(	 NOT EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${RESOLVED_PACKAGE}/${TARGET_VERSION}
@@ -59,7 +71,7 @@ if(RESOLVED_PACKAGE AND TARGET_VERSION)
 	remove_Progress_File() #reset the build progress information (sanity action)
 	begin_Progress(workspace GLOBAL_PROGRESS_VAR)
 
-	bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${RESOLVED_PACKAGE} ${TARGET_VERSION} TRUE)
+	bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${RESOLVED_PACKAGE} ${TARGET_VERSION} TRUE "${RELEASE_ONLY}")
 	if(NOT BOUND)
 		message(SEND_ERROR "[PID] ERROR : cannot configure runtime dependencies for installed version ${TARGET_VERSION} of package ${RESOLVED_PACKAGE}.")
 	else()

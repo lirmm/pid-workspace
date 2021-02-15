@@ -172,7 +172,11 @@ endmacro(execute_OS_Configuration_Command)
 #  resolve_PID_System_Libraries_From_Path
 #  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-#   .. command:: resolve_PID_System_Libraries_From_Path(list_of_path ALL_LIBRARIES_REAL_PATH ALL_LIBRARIES_SONAME)
+#   .. command:: resolve_PID_System_Libraries_From_Path(list_of_path
+#                                                       ALL_SHARED_LIBRARIES_REAL_PATH
+#                                                       ALL_SHARED_LIBRARIES_SONAME
+#                                                       ALL_STATIC_LIBRARIES_REAL_PATH
+#                                                       ALL_LINKS_PATH)
 #
 #      Utility function to be used in system configuration eval script (cf. Wrapper API).
 #      Resolve real path to libraries' binaries (i.e. resolve linker scripts) and get their soname.

@@ -79,11 +79,11 @@ if(DEFINED ENV{force})
 	unset(ENV{force})
 endif()
 
-if(NOT NO_SOURCE AND DEFINED ENV{no_source})
-	set(NO_SOURCE $ENV{no_source} CACHE INTERNAL "" FORCE)
+if(NOT USE_BINARIES AND DEFINED ENV{use_binaries})
+	set(USE_BINARIES $ENV{use_binaries} CACHE INTERNAL "" FORCE)
 endif()
-if(DEFINED ENV{no_source})
-	unset(ENV{no_source})
+if(DEFINED ENV{use_binaries})
+	unset(ENV{use_binaries})
 endif()
 
 if(NOT USE_SOURCE AND DEFINED ENV{use_source})
@@ -113,11 +113,24 @@ else()
 	set(MANAGE_PROGRESS TRUE)
 endif()
 
+if(NOT RELEASE_ONLY AND DEFINED ENV{release_only})
+	set(RELEASE_ONLY $ENV{release_only} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{release_only})
+	unset(ENV{release_only})
+endif()
+#only release binaries are deployed by default
+if(RELEASE_ONLY MATCHES "false|FALSE")
+	set(RELEASE_ONLY FALSE  CACHE INTERNAL "" FORCE)
+else()
+	set(RELEASE_ONLY TRUE CACHE INTERNAL "" FORCE)
+endif()
+
 #checking TARGET_VERSION value
 if(TARGET_VERSION)
 	if(TARGET_VERSION STREQUAL "system" OR TARGET_VERSION STREQUAL "SYSTEM" OR TARGET_VERSION STREQUAL "System")
 		set(TARGET_VERSION "SYSTEM" CACHE INTERNAL "" FORCE)#prepare value for call to deploy_PID_Package
-		set(NO_SOURCE FALSE CACHE INTERNAL "")#SYSTEM version can only be installed from external package wrapper
+		set(USE_BINARIES FALSE CACHE INTERNAL "")#SYSTEM version can only be installed from external package wrapper
 	endif()
 endif()
 
@@ -134,7 +147,7 @@ if(DEPLOYED_FRAMEWORK)# a framework is deployed
 		message("[PID] ERROR : Source repository for framework ${DEPLOYED_FRAMEWORK} already resides in the workspace.")
 		return()
 	endif()
-	message("[PID] INFO : deploying PID framework ${DEPLOYED_FRAMEWORK} in the workspace ...")
+	message("[PID] INFO : deploying framework ${DEPLOYED_FRAMEWORK} in the workspace ...")
 	deploy_PID_Framework(${DEPLOYED_FRAMEWORK} "${VERBOSE_MODE}") #do the job
 	return()
 
@@ -150,7 +163,7 @@ elseif(DEPLOYED_ENVIRONMENT)# deployment of an environment is required
 		message("[PID] INFO : Source repository for environment ${DEPLOYED_FRAMEWORK} already resides in the workspace. Nothing to do...")
 		return()
 	endif()
-	message("[PID] INFO : deploying PID environment ${DEPLOYED_ENVIRONMENT} in the workspace ...")
+	message("[PID] INFO : deploying environment ${DEPLOYED_ENVIRONMENT} in the workspace ...")
 	deploy_PID_Environment(${DEPLOYED_ENVIRONMENT} "${VERBOSE_MODE}") #do the job
 	return()
 else()# a package deployment is required
@@ -224,13 +237,13 @@ else()# a package deployment is required
 	# check in case when direct binary deployment asked
 	set(references_loaded FALSE)
 	set(deploy_mode "ANY")
-	if(NO_SOURCE STREQUAL "true" OR NO_SOURCE STREQUAL "TRUE")
+	if(USE_BINARIES STREQUAL "true" OR USE_BINARIES STREQUAL "TRUE")
 		if(USE_SOURCE STREQUAL "true" OR USE_SOURCE STREQUAL "TRUE")
-			message("[PID] ERROR : Cannot force use of deployment from sources and binaries at same time. Use either use_source or no_source but not both.")
+			message("[PID] ERROR : Cannot force use of deployment from sources and binaries at same time. Use either use_source or use_binaries but not both.")
 			return()
 		endif()
 	endif()
-	if(NO_SOURCE STREQUAL "true" OR NO_SOURCE STREQUAL "TRUE")
+	if(USE_BINARIES STREQUAL "true" OR USE_BINARIES STREQUAL "TRUE")
 		set(deploy_mode "BINARY")
 	elseif(USE_SOURCE STREQUAL "true" OR USE_SOURCE STREQUAL "TRUE")
 		set(deploy_mode "SOURCE")
@@ -259,7 +272,7 @@ else()# a package deployment is required
 			return()
 		endif()
 		if(deploy_mode STREQUAL "BINARY")#need to run the deployment from sources !!
-			message("[PID] ERROR : Cannot deploy a specific branch of ${DEPLOYED_PACKAGE} if no source deployment is required (using argument no_source=true).")
+			message("[PID] ERROR : Cannot deploy a specific branch of ${DEPLOYED_PACKAGE} if no source deployment is required (using argument use_binaries=true).")
 			return()
 		elseif(deploy_mode STREQUAL "ANY")
 			set(deploy_mode "SOURCE")
@@ -278,8 +291,8 @@ else()# a package deployment is required
 			message("[PID] ERROR : Cannot run test during deployment of ${DEPLOYED_PACKAGE} because it is an external package.")
 			return()
 		endif()
-		if(NOT can_use_source)#need to run the deployment from sources !!
-			message("[PID] ERROR : Cannot run test during deployment of ${DEPLOYED_PACKAGE} if no source deployment is required (using argument no_source=true).")
+		if(deploy_mode STREQUAL "BINARY")#need to run the deployment from sources !!
+			message("[PID] ERROR : Cannot run test during deployment of ${DEPLOYED_PACKAGE} if deployment from binaries is required (you used use_binaries=true).")
 			return()
 		endif()
 		set(run_tests TRUE)
@@ -329,9 +342,9 @@ else()# a package deployment is required
 	message("${message_to_print}")
 	# now do the deployment
 	if(is_external)#external package is deployed
-		deploy_PID_External_Package(PACK_DEPLOYED ${DEPLOYED_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${deploy_mode} ${redeploy})
+		deploy_PID_External_Package(PACK_DEPLOYED ${DEPLOYED_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${deploy_mode} ${redeploy} "${RELEASE_ONLY}")
 	else()#native package is deployed
-		deploy_PID_Native_Package(PACK_DEPLOYED ${DEPLOYED_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${deploy_mode} "${branch}" ${run_tests})
+		deploy_PID_Native_Package(PACK_DEPLOYED ${DEPLOYED_PACKAGE} "${TARGET_VERSION}" "${VERBOSE_MODE}" ${deploy_mode} "${branch}" ${run_tests} "${RELEASE_ONLY}")
 	endif()
 	if(NOT PACK_DEPLOYED)
 		message(SEND_ERROR "[PID] CRITICAL ERROR : there were errors during deployment of ${DEPLOYED_PACKAGE}")

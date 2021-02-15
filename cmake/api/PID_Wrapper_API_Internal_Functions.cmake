@@ -272,7 +272,7 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 						 -DWORKSPACE_DIR=${WORKSPACE_DIR}
 	           -DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
 	           -DTARGET_EXTERNAL_VERSION=\${version}
-					 	 -DTARGET_BUILD_MODE=\${mode}
+						 -DTARGET_BUILD_MODE=\${mode}
 					   -DGENERATE_BINARY_ARCHIVE=\${archive}
 	           -DDO_NOT_EXECUTE_SCRIPT=\${skip_script}
 					 	 -DUSE_SYSTEM_VARIANT=\${os_variant}
@@ -380,6 +380,7 @@ endmacro(declare_Wrapper)
 macro(declare_Wrapper_Global_Cache_Options)
 option(ADDITIONAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
 option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
+option(BUILD_RELEASE_ONLY "Package is built in release mode" ON)
 endmacro(declare_Wrapper_Global_Cache_Options)
 
 #.rst:
@@ -706,6 +707,7 @@ endif()
 #writing options that can be useful to control the build process
 file(APPEND ${path_to_file} "set(ENABLE_PARALLEL_BUILD ${ENABLE_PARALLEL_BUILD} CACHE INTERNAL \"\")\n")
 file(APPEND ${path_to_file} "set(ADDITIONAL_DEBUG_INFO ${ADDITIONAL_DEBUG_INFO} CACHE INTERNAL \"\")\n")
+file(APPEND ${path_to_file} "set(BUILD_RELEASE_ONLY ${BUILD_RELEASE_ONLY} CACHE INTERNAL \"\")\n")
 
 #write version about user options
 file(APPEND ${path_to_file} "set(${PROJECT_NAME}_USER_OPTIONS ${${PROJECT_NAME}_USER_OPTIONS} CACHE INTERNAL \"\")\n")
@@ -1830,6 +1832,7 @@ function(generate_External_Use_File_For_Version package version platform os_vari
   file(APPEND ${file_for_version} "set(${package}_BUILT_FOR_DISTRIBUTION_VERSION ${CURRENT_DISTRIBUTION_VERSION} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file_for_version} "set(${package}_BUILT_OS_VARIANT ${os_variant} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file_for_version} "set(${package}_BUILT_FOR_INSTANCE ${CURRENT_PLATFORM_INSTANCE} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file_for_version} "set(${package}_BUILT_RELEASE_ONLY ${BUILD_RELEASE_ONLY} CACHE INTERNAL \"\")\n")
 
 	file(APPEND ${file_for_version} "############# ${package} (version ${version}) specific scripts for deployment #############\n")
 	set(post_install_file_name)
@@ -3552,7 +3555,7 @@ function(resolve_Wrapper_Dependencies package version os_variant)
 	foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES)#contains only used dependencies
 		need_Install_External_Package(MUST_BE_INSTALLED ${dep_pack})
 		if(MUST_BE_INSTALLED)
-			install_External_Package(INSTALL_OK ${dep_pack} FALSE FALSE)
+			install_External_Package(INSTALL_OK ${dep_pack} FALSE FALSE "${BUILD_RELEASE_ONLY}")
 			if(NOT INSTALL_OK)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace contribution spaces and try to fond ReferExternal${dep_pack}.cmake file references subfolders.")
@@ -3577,11 +3580,11 @@ function(resolve_Wrapper_Dependencies package version os_variant)
 				set(${prefix}_DEPENDENCY_${dep_pack}_VERSION_USED_FOR_BUILD_IS_SYSTEM ${${dep_pack}_REQUIRED_VERSION_SYSTEM} CACHE INTERNAL "")
 				add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
 				if(${dep_pack}_EXTERNAL_DEPENDENCIES) #are there any dependency (external only) for this external package
-					resolve_Package_Dependencies(${dep_pack} Release TRUE)#recursion : resolving dependencies for each external package dependency
+					resolve_Package_Dependencies(${dep_pack} Release TRUE "${BUILD_RELEASE_ONLY}")#recursion : resolving dependencies for each external package dependency
 				endif()
 			endif()
 		else()#no need to be installed -> already found
-			resolve_Package_Dependencies(${dep_pack} Release TRUE)
+			resolve_Package_Dependencies(${dep_pack} Release TRUE "${BUILD_RELEASE_ONLY}")
 		endif()
 	endforeach()
 endfunction(resolve_Wrapper_Dependencies)

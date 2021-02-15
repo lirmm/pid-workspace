@@ -1412,7 +1412,7 @@ endfunction(test_Remote_Connection)
 #  update_Package_Repository_Versions
 #  ----------------------------------
 #
-#   .. command:: update_Package_Repository_Versions(CONNECTED package remote)
+#   .. command:: update_Package_Repository_Versions(CONNECTED package)
 #
 #     Update local package's repository known versions.
 #

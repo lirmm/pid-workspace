@@ -149,7 +149,9 @@ if(use_os_variant)#instead of building the project using its variant coming from
 
 else()#by default build the given package version using external project specific build process
 	#define the build mode
-	if(NOT TARGET_BUILD_MODE OR (NOT TARGET_BUILD_MODE STREQUAL "Debug" AND NOT TARGET_BUILD_MODE STREQUAL "debug"))
+	if(NOT TARGET_BUILD_MODE
+		 OR (NOT TARGET_BUILD_MODE STREQUAL "Debug" AND NOT TARGET_BUILD_MODE STREQUAL "debug")
+	   OR BUILD_RELEASE_ONLY)
 	  set(CMAKE_BUILD_TYPE Release)
 	else()#debug only if exlicitly asked for
 	  message("[PID] INFO: building ${TARGET_EXTERNAL_PACKAGE} in Debug mode...")

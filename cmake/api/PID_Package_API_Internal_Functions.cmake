@@ -112,7 +112,7 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build/release$")
 	set (USE_MODE_SUFFIX "" CACHE INTERNAL "")
 	if(NOT CACHE_POPULATED)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : misuse of PID functionnalities -> you must run cmake command from the build folder at first time.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must configure the package from the build folder at first time.")
 		return()
 	endif()
 elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build/debug$")
@@ -123,7 +123,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build/debug$")
 	set(USE_MODE_SUFFIX "_DEBUG" CACHE INTERNAL "")
 	if(NOT CACHE_POPULATED)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : misuse of PID functionnalities -> you must run cmake command from the build folder at first time.")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must configure the package from the build folder at first time.")
 		return()
 	endif()
 elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
@@ -325,14 +325,23 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	)
 
 	# redefinition of install target
-	add_custom_target(installing
-		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Debug artefacts
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} install
-		COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Release artefacts
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} install
-		COMMENT "[PID] Installing the package ${PROJECT_NAME} ..."
-		VERBATIM
-	)
+	if(BUILD_RELEASE_ONLY)
+		add_custom_target(installing
+			COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Release artefacts
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} install
+			COMMENT "[PID] Installing the package ${PROJECT_NAME} (Release artifacts only) ..."
+			VERBATIM
+		)
+	else()
+		add_custom_target(installing
+			COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Debug artefacts
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} install
+			COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Release artefacts
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} install
+			COMMENT "[PID] Installing the package ${PROJECT_NAME} ..."
+			VERBATIM
+		)
+	endif()
 
 	# uninstall target (cleaning the install tree)
 	add_custom_target(uninstall
@@ -414,14 +423,23 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 
 	if(GENERATE_INSTALLER)
 		# package target (generation and install of a UNIX binary packet)
-		add_custom_target(packaging
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} package
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} package_install
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package
-			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package_install
-			COMMENT "[PID] Generating and installing system binary package for ${PROJECT_NAME} ..."
-			VERBATIM
-		)
+		if(BUILD_RELEASE_ONLY)
+			add_custom_target(packaging
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package_install
+				COMMENT "[PID] Generating and installing binary package for ${PROJECT_NAME} ..."
+				VERBATIM
+			)
+		else()
+			add_custom_target(packaging
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} package
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} package_install
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package_install
+				COMMENT "[PID] Generating and installing binary package for ${PROJECT_NAME} ..."
+				VERBATIM
+			)
+		endif()
 		add_dependencies(site packaging)
 	endif()
 
@@ -433,7 +451,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			VERBATIM
 		)
 	endif()
-	if(ADDITIONAL_DEBUG_INFO)
+	if(ADDITIONAL_DEBUG_INFO AND NOT BUILD_RELEASE_ONLY)
 		add_custom_target(list_dependencies
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} list_dependencies
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} list_dependencies
@@ -527,8 +545,10 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	set_Mode_Specific_Options_From_Global()
 
 	#calling cmake for each build mode (continue package configuration for Release and Debug Modes
-	execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DWORKSPACE_DIR=${WORKSPACE_DIR} ${CMAKE_SOURCE_DIR}
-									WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
+	if(NOT BUILD_RELEASE_ONLY)
+		execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DWORKSPACE_DIR=${WORKSPACE_DIR} ${CMAKE_SOURCE_DIR}
+										WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
+	endif()
 	execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DWORKSPACE_DIR=${WORKSPACE_DIR} ${CMAKE_SOURCE_DIR}
 									WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release)
 
@@ -1065,7 +1085,7 @@ endif()
 foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
 	need_Install_External_Package(MUST_BE_INSTALLED ${dep_pack})
 	if(MUST_BE_INSTALLED)
-		install_External_Package(INSTALL_OK ${dep_pack} FALSE FALSE)
+		install_External_Package(INSTALL_OK ${dep_pack} FALSE FALSE "${BUILD_RELEASE_ONLY}")
 		if(NOT INSTALL_OK)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace contributions folder and try to find ReferExternal${dep_pack}.cmake file.")
@@ -1099,11 +1119,11 @@ foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX
 		else()#OK resolution took place !!
 			add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
 			if(${dep_pack}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}) #are there any dependency (external only) for this external package
-				resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)#recursion : resolving dependencies for each external package dependency
+				resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE "${BUILD_RELEASE_ONLY}")#recursion : resolving dependencies for each external package dependency
 			endif()
 		endif()
 	else()#no need to install => simply resolve its dependencies
-		resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)
+		resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE "${BUILD_RELEASE_ONLY}")
 	endif()
 endforeach()
 
@@ -1113,7 +1133,7 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	foreach(dep_pack IN LISTS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 		need_Install_Native_Package(MUST_BE_INSTALLED ${dep_pack})
 		if(MUST_BE_INSTALLED)
-			install_Native_Package(INSTALL_OK ${dep_pack} FALSE)
+			install_Native_Package(INSTALL_OK ${dep_pack} FALSE "${BUILD_RELEASE_ONLY}")
 			if(NOT INSTALL_OK)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install native package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace contributions and try to find Refer${dep_pack}.cmake file.")
@@ -1136,11 +1156,11 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 				add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
 				if(${dep_pack}_DEPENDENCIES${USE_MODE_SUFFIX}
 					OR ${dep_pack}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}) #are there any dependency for this package
-					resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)#recursion : resolving dependencies for each external package dependency
+					resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE "${BUILD_RELEASE_ONLY}")#recursion : resolving dependencies for each external package dependency
 				endif()
 			endif()
 		else()#no need to install so directly resolve
-			resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)
+			resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE "${BUILD_RELEASE_ONLY}")
 		endif()
  	endforeach()
 
@@ -1447,6 +1467,7 @@ if(	BUILD_DEPENDENT_PACKAGES
 							-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 							"-DDEPENDENT_PACKAGES=${DEPENDENT_SOURCE_PACKAGES}"
 							-DPACKAGE_LAUCHING_BUILD=${PROJECT_NAME}
+							-DBUILD_RELEASE_ONLY=${BUILD_RELEASE_ONLY}
 							-P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Package_Dependencies.cmake
 				COMMENT "[PID] INFO : building dependencies of ${PROJECT_NAME} ..."
 				VERBATIM
@@ -2497,7 +2518,7 @@ if(NOT COMP_WILL_BE_BUILT)
 endif()
 if(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided (maybe due to the fact that an old version of the external package is installed)
 	message ("[PID] WARNING when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} provides no description. Attempting to reinstall it to get it !")
-	install_External_Package(INSTALL_OK ${dep_package} TRUE FALSE)#force the reinstall of binary
+	install_External_Package(INSTALL_OK ${dep_package} TRUE FALSE  "${BUILD_RELEASE_ONLY}")#force the reinstall of binary
 	if(NOT INSTALL_OK)
 		message (FATAL_ERROR "[PID] CRITICAL ERROR when reinstalling package ${dep_package} in ${PROJECT_NAME}, cannot redeploy package binary archive !")
 		return()

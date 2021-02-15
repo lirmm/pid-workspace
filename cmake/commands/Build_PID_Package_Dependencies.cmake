@@ -34,7 +34,8 @@ if(DEPENDENT_PACKAGES)
 		package_Dependency_Needs_To_Be_Rebuilt(NEEDS_BUILD ${dep_pack} ${dep_version} ${PACKAGE_LAUCHING_BUILD})
 		if(NEEDS_BUILD)# if not built modifications
 			message("[PID] INFO : Building ${dep_pack} ...")
-			execute_process (COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${dep_pack}/build)
+			execute_process (COMMAND ${CMAKE_MAKE_PROGRAM} build
+											 WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${dep_pack}/build)
 			message("[PID] INFO : ${dep_pack} built.")
 		endif()
 	endwhile()

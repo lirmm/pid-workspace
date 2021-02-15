@@ -1553,7 +1553,7 @@ endfunction(deploy_PID_Environment)
 #  bind_Installed_Package
 #  -----------------------
 #
-#   .. command:: bind_Installed_Package(DEPLOYED package version)
+#   .. command:: bind_Installed_Package(DEPLOYED package version only_resolve release_only)
 #
 #   Binding an installed package by resolving its runtime symlinks.
 #
@@ -1561,10 +1561,11 @@ endfunction(deploy_PID_Environment)
 #      :package: the name of the package to bind.
 #      :version: the version to bind
 #      :only_resolve: if TRUE only resolve do not redeploy if required by binding
+#      :release_only: if TRUE only resolve release binaries
 #
 #      :BOUND: the output variable that is true of binding process succeede, FALSE otherwise
 #
-function(bind_Installed_Package BOUND platform package version only_resolve)
+function(bind_Installed_Package BOUND platform package version only_resolve release_only)
 	set(${BOUND} FALSE PARENT_SCOPE)
 	set(BIN_PACKAGE_PATH ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
 	get_Package_Type(${package} PACK_TYPE)
@@ -1576,9 +1577,13 @@ function(bind_Installed_Package BOUND platform package version only_resolve)
 			return()
 		endif()
 		#getting full external packages description
-		set(CMAKE_BUILD_TYPE Debug)
-		set(${package}_FOUND_Debug TRUE CACHE INTERNAL "")
-		include(${BIN_PACKAGE_PATH}/share/Use${package}-${version}.cmake)
+		if(NOT release_only)
+			#include and resolve the use file in debug mode
+			set(CMAKE_BUILD_TYPE Debug)
+			set(${package}_FOUND_Debug TRUE CACHE INTERNAL "")
+			include(${BIN_PACKAGE_PATH}/share/Use${package}-${version}.cmake)
+		endif()
+		#now resolve the use file in release mode
 		set(CMAKE_BUILD_TYPE Release)
 		set(${package}_FOUND TRUE CACHE INTERNAL "")
 		include(${BIN_PACKAGE_PATH}/share/Use${package}-${version}.cmake)
@@ -1608,15 +1613,15 @@ function(bind_Installed_Package BOUND platform package version only_resolve)
 	else()
 		set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE CACHE INTERNAL "" FORCE)
 	endif()
-
-	set(CMAKE_BUILD_TYPE Debug)#to adequately interpret external packages description
-	set(${package}_FOUND_DEBUG TRUE CACHE INTERNAL "")
-	resolve_Package_Dependencies(${package} Debug TRUE) # finding all package dependencies
-	resolve_Package_Runtime_Dependencies(${package} Debug) # then resolving runtime resources to symlink
-
+	if(NOT release_only)
+		set(CMAKE_BUILD_TYPE Debug)#to adequately interpret external packages description
+		set(${package}_FOUND_DEBUG TRUE CACHE INTERNAL "")
+		resolve_Package_Dependencies(${package} Debug TRUE FALSE) # finding all package dependencies
+		resolve_Package_Runtime_Dependencies(${package} Debug) # then resolving runtime resources to symlink
+	endif()
 	set(CMAKE_BUILD_TYPE Release)#to adequately interpret external packages description
 	set(${package}_FOUND TRUE CACHE INTERNAL "")
-	resolve_Package_Dependencies(${package} Release TRUE) # finding all package dependencies
+	resolve_Package_Dependencies(${package} Release TRUE "${release_only}") # finding all package dependencies
 	resolve_Package_Runtime_Dependencies(${package} Release) # then resolving runtime resources to symlink
 
 	set(${BOUND} TRUE PARENT_SCOPE)
@@ -1632,7 +1637,8 @@ endfunction(bind_Installed_Package)
 #  deploy_PID_Native_Package
 #  -------------------------
 #
-#   .. command:: deploy_PID_Native_Package(DEPLOYED package version verbose deploy_mode branch run_tests)
+#   .. command:: deploy_PID_Native_Package(DEPLOYED package version
+#								                            verbose deploy_mode branch run_tests release_only)
 #
 #   Deploy a native package into workspace. Finally results in installing an existing package version in the workspace install tree.
 #
@@ -1642,10 +1648,11 @@ endfunction(bind_Installed_Package)
 #      :deploy_mode: use BINARY, SOURCE or ANY.
 #      :branch: define the branch to build (may be left empty).
 #      :run_tests: if TRUE built project will run tests.
+#      :release_only: if TRUE project only generates release binaries
 #
 #      :DEPLOYED: output variable that is set to SOURCE or BINARY depending on the nature of the deployed package, empty if package has not been deployed.
 #
-function(deploy_PID_Native_Package DEPLOYED package version verbose deploy_mode branch run_tests)
+function(deploy_PID_Native_Package DEPLOYED package version verbose deploy_mode branch run_tests release_only)
 set(PROJECT_NAME ${package})
 set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON)
 if(verbose)
@@ -1676,14 +1683,14 @@ if(NOT version)#no specific version required
 		endif()
 		#now build the package
 		if(branch)#deploying a specific branch
-			deploy_Source_Native_Package_From_Branch(INSTALLED ${package} ${branch} "${run_tests}")
+			deploy_Source_Native_Package_From_Branch(INSTALLED ${package} ${branch} "${run_tests}" "${release_only}")
 			go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${branch})#finally checkout the repository state to the target branch
 			if(NOT INSTALLED)
 				message("[PID] ERROR : cannot build ${package} after cloning its repository. Abort deployment !")
 				return()
 			endif()
 		else()
-			deploy_Source_Native_Package(INSTALLED ${package} "" "${run_tests}")
+			deploy_Source_Native_Package(INSTALLED ${package} "" "${run_tests}" "${release_only}")
 		endif()
 	endif()
 	if(NOT INSTALLED)# deployment from sources was not possible
@@ -1692,14 +1699,14 @@ if(NOT version)#no specific version required
 			set(RES_VERSION)
 			greatest_Version_Archive(${package} RES_VERSION)
 			if(RES_VERSION)
-				deploy_Binary_Native_Package_Version(BIN_DEPLOYED ${package} ${RES_VERSION} TRUE "")
+				deploy_Binary_Native_Package_Version(BIN_DEPLOYED ${package} ${RES_VERSION} TRUE "" "${release_only}")
 				if(NOT BIN_DEPLOYED)
 					message("[PID] ERROR : problem deploying ${package} binary archive version ${RES_VERSION}. Deployment aborted !")
 					#if source deployment was possible then it would already have heppended in this situation
 					#so no more to do -> there is no solution
 					return()
 				endif()
-				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${RES_VERSION} FALSE)
+				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${RES_VERSION} FALSE "${release_only}")
 				if(BOUND)
 					message("[PID] INFO : deploying ${package} binary archive version ${RES_VERSION} success !")
 					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
@@ -1720,11 +1727,11 @@ else()#deploying a specific version
 		#first, try to download the archive if the binary archive for this version exists
 		exact_Version_Archive_Exists(${package} "${version}" ARCHIVE_EXISTS)
 		if(ARCHIVE_EXISTS)#download the binary directly if an archive exists for this version
-			deploy_Binary_Native_Package_Version(BIN_DEPLOYED ${package} ${version} TRUE "")
+			deploy_Binary_Native_Package_Version(BIN_DEPLOYED ${package} ${version} TRUE "" "${release_only}")
 			if(NOT BIN_DEPLOYED)
 				message("[PID] WARNING : problem deploying ${package} binary archive version ${version}. This may be due to binary compatibility problems. Try building from sources...")
 			else()
-				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${version} FALSE)
+				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${version} FALSE "${release_only}")
 				if(BOUND)
 					message("[PID] INFO : deploying ${package} binary archive version ${version} success !")
 					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
@@ -1744,7 +1751,7 @@ else()#deploying a specific version
 				return()
 			endif()
 		endif()
-		deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${version} TRUE "" "${run_tests}")
+		deploy_Source_Native_Package_Version(SOURCE_DEPLOYED ${package} ${version} TRUE "" "${run_tests}" "${release_only}")
 		if(SOURCE_DEPLOYED)
 				message("[PID] INFO : package ${package} has been deployed from its repository.")
 				set(${DEPLOYED} "SOURCE" PARENT_SCOPE)
@@ -1767,7 +1774,7 @@ endfunction(deploy_PID_Native_Package)
 #  deploy_PID_External_Package
 #  ---------------------------
 #
-#   .. command:: deploy_PID_External_Package(DEPLOYED package version verbose deploy_mode redeploy)
+#   .. command:: deploy_PID_External_Package(DEPLOYED package version verbose deploy_mode redeploy release_only)
 #
 #   Deploy an external package into workspace. Finally results in installing an existing external package version in the workspace install tree.
 #
@@ -1776,10 +1783,11 @@ endfunction(deploy_PID_Native_Package)
 #      :verbose: if TRUE the deployment will print more information to standard output.
 #      :deploy_mode: use SOURCE, BINARY or ANY.
 #      :redeploy: if TRUE the external package version is redeployed even if it was existing before.
+#      :release_only: if TRUE only release version will be deployed.
 #
 #      :DEPLOYED: output variable that is set to SOURCE or BINARY depending on the nature of the deployed package, empty if package has not been deployed.
 #
-function(deploy_PID_External_Package DEPLOYED package version verbose deploy_mode redeploy)
+function(deploy_PID_External_Package DEPLOYED package version verbose deploy_mode redeploy release_only)
 if(verbose)
 	set(ADDITIONAL_DEBUG_INFO ON)
 else()
@@ -1816,12 +1824,12 @@ if(NOT version)#deploying the latest version of the package
 					message("[PID] INFO : external package ${package} version ${MAX_CURR_VERSION} already lies in the workspace, use force=true to force the redeployment.")
 					return()
 				endif()
-				deploy_Binary_External_Package_Version(BIN_DEPLOYED ${package} ${MAX_CURR_VERSION} FALSE)
+				deploy_Binary_External_Package_Version(BIN_DEPLOYED ${package} ${MAX_CURR_VERSION} FALSE "${release_only}")
 				if(NOT BIN_DEPLOYED)#an error occurred during deployment !! => Not a normal situation
 					message("[PID] ERROR : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive or due to no archive exists for current platform and build constraints. Please contact the administrator of the package ${package}.")
 					return()
 				else()
-					bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${MAX_CURR_VERSION} FALSE)
+					bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${MAX_CURR_VERSION} FALSE "${release_only}")
 					if(BOUND)
 						message("[PID] INFO : deploying ${package} binary archive version ${MAX_CURR_VERSION} success !")
 						set(${DEPLOYED} "BINARY" PARENT_SCOPE)
@@ -1853,7 +1861,7 @@ if(NOT version)#deploying the latest version of the package
 			list_Version_Subdirectories(RES_VERSIONS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
 			set(list_of_installed_versions ${RES_VERSIONS})
 		endif()
-		deploy_Source_External_Package(SOURCE_DEPLOYED ${package} "${list_of_installed_versions}")
+		deploy_Source_External_Package(SOURCE_DEPLOYED ${package} "${list_of_installed_versions}" "${release_only}")
 		if(SOURCE_DEPLOYED)
 				message("[PID] INFO : external package ${package} has been deployed from its wrapper repository.")
 				set(${DEPLOYED} "SOURCE" PARENT_SCOPE)
@@ -1870,12 +1878,12 @@ else()#deploying a specific version of the external package
 			#first, try to download the archive if the binary archive for this version exists
 			exact_Version_Archive_Exists(${package} "${version}" ARCHIVE_EXISTS)
 			if(ARCHIVE_EXISTS)#download the binary directly if an archive exists for this version
-				deploy_Binary_External_Package_Version(BIN_DEPLOYED ${package} ${version} FALSE)#deploying the target binary relocatable archive
+				deploy_Binary_External_Package_Version(BIN_DEPLOYED ${package} ${version} FALSE "${release_only}")#deploying the target binary relocatable archive
 				if(NOT BIN_DEPLOYED)
 					message("[PID] ERROR : problem deploying ${package} binary archive version ${version}. Deployment aborted !")
 					return()
 				else()
-					bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${version} FALSE)
+					bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${version} FALSE "${release_only}")
 					if(BOUND)
 						message("[PID] INFO : deploying ${package} binary archive version ${version} success !")
 						set(${DEPLOYED} "BINARY" PARENT_SCOPE)
@@ -1910,7 +1918,7 @@ else()#deploying a specific version of the external package
 			set(USE_SYSTEM FALSE)
 		endif()
 		if(version)#a given version must be installed
-			deploy_Source_External_Package_Version(BIN_DEPLOYED ${package} ${version} TRUE ${USE_SYSTEM} "")
+			deploy_Source_External_Package_Version(BIN_DEPLOYED ${package} ${version} TRUE ${USE_SYSTEM} "" ${release_only})
 			if(BIN_DEPLOYED)
 					message("[PID] INFO : external package ${package} has been deployed from its wrapper repository.")
 					set(${DEPLOYED} "SOURCE" PARENT_SCOPE)
@@ -2511,8 +2519,8 @@ if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
 	endif()
 endif()
 
-# build one time to be sure it builds and tests pass
-build_And_Install_Source(IS_BUILT ${package} "" "${CURRENT_BRANCH}" TRUE)
+# build one time to be sure it builds and tests pass (force build in both Debug and Release)
+build_And_Install_Source(IS_BUILT ${package} "" "${CURRENT_BRANCH}" TRUE FALSE)
 if(NOT IS_BUILT)
 	message("[PID] ERROR : cannot release package ${package}, because its branch ${CURRENT_BRANCH} does not build.")
 	return()
@@ -2563,7 +2571,7 @@ else()# check that integration branch is a fast forward of master
 	#remove the installed version built from integration branch
 	file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${STRING})
 	#rebuild package from master branch to get a clean installed version (getting clean use file)
-	build_And_Install_Source(IS_BUILT ${package} ${STRING} "" FALSE)
+	build_And_Install_Source(IS_BUILT ${package} ${STRING} "" FALSE FALSE)
 	if(NOT IS_BUILT AND STRING VERSION_GREATER_EQUAL "1.0.0")#if the package is in a preliminary development state do not stop the versionning if package does not build
 		message("[PID] ERROR : cannot release package ${package}, because its version ${STRING} does not build.")
 		tag_Version(${package} ${STRING} FALSE)#remove local tag
@@ -2610,7 +2618,10 @@ else()# check that integration branch is a fast forward of master
 		set(${RESULT} FALSE PARENT_SCOPE)
 	endif()
 endif()
-
+set(debug FALSE)
+set(run_tests FALSE)
+set(release_only TRUE)#TODO for there option we should keep those already used !!!!
+configure_Source(IS_CONFIGURED ${package} debug run_tests release_only)
 set(${RESULT} ${STRING} PARENT_SCOPE)
 update_Package_Repository_From_Remotes(${package}) #synchronize information on remotes with local one (sanity process, not mandatory)
 
@@ -2642,10 +2653,16 @@ list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${CURRENT_PLAT
 get_Package_Type(${package} PACK_TYPE)
 if(PACK_TYPE STREQUAL "NATIVE")
 	message("[PID] INFO : launch the update of native package ${package} from sources...")
-	deploy_Source_Native_Package(INSTALLED ${package} "${version_dirs}" FALSE)
+	if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build/Package_Build_Info.cmake)
+	 include(${WORKSPACE_DIR}/packages/${package}/build/Package_Build_Info.cmake NO_POLICY_SCOPE)#loading the wrapper description
+	endif()
+	deploy_Source_Native_Package(INSTALLED ${package} "${version_dirs}" FALSE ${${package}_BUILD_RELEASE_ONLY})
 else()
 	message("[PID] INFO : launch the update of external package ${package} from its wrapper...")
-	deploy_Source_External_Package(INSTALLED ${package} "${version_dirs}")
+	if(EXISTS ${WORKSPACE_DIR}/wrappers/${package}/build/Build${package}.cmake)
+		include(${WORKSPACE_DIR}/wrappers/${package}/build/Build${package}.cmake NO_POLICY_SCOPE)#loading the wrapper description
+	endif()
+	deploy_Source_External_Package(INSTALLED ${package} "${version_dirs}" ${${package}_BUILD_RELEASE_ONLY})
 endif()
 if(NOT INSTALLED)
 	message("[PID] ERROR : cannot update ${package}.")
@@ -2674,11 +2691,18 @@ endfunction(update_PID_Source_Package)
 function(update_PID_Binary_Package package)
 message("[PID] INFO : launch the update of binary package ${package}...")
 list_Version_Subdirectories(version_dirs ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
+select_Last_Version(RES_VERSION "${version_dirs}")
+if(NOT RES_VERSION)
+	return()
+endif()
+# Note: load the use file of last version to check if it is used as "release only"
+# newly installed version (if any) will follow same install pattern
+include(${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${RES_VERSION}/share/Use${package}-${RES_VERSION}.cmake)
 get_Package_Type(${package} PACK_TYPE)
 if(PACK_TYPE STREQUAL "NATIVE")
-	deploy_Binary_Native_Package(DEPLOYED ${package} "${version_dirs}")
+	deploy_Binary_Native_Package(DEPLOYED ${package} "${version_dirs}" "${${package}_BUILT_RELEASE_ONLY}")
 else()
-	deploy_Binary_External_Package(DEPLOYED ${package} "${version_dirs}")
+	deploy_Binary_External_Package(DEPLOYED ${package} "${version_dirs}" "${${package}_BUILT_RELEASE_ONLY}")
 endif()
 if(NOT DEPLOYED)
 	message("[PID] ERROR : cannot update ${package}.")
@@ -3431,7 +3455,12 @@ function(install_Package_In_System IS_INSTALLED package version)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 	set(${package}_FOUND${VAR_SUFFIX} TRUE CACHE INTERNAL "")
 	set(${package}_VERSION_STRING ${version} CACHE INTERNAL "")
-	resolve_Package_Dependencies(${package} ${CMAKE_BUILD_TYPE} TRUE) # finding all package dependencies and loading all adequate variables locally
+	if(CMAKE_BUILD_TYPE MATCHES Debug)
+		set(release_only FALSE)
+	else()
+		set(release_only TRUE)
+	endif()
+	resolve_Package_Dependencies(${package} ${CMAKE_BUILD_TYPE} TRUE "${release_only}") # finding all package dependencies and loading all adequate variables locally
 
 	#prepare creation of install subfolders
 	if(NOT EXISTS ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})

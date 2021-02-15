@@ -319,12 +319,16 @@ endfunction(get_Option_Value_From_List)
 function(set_Global_Options_From_Mode_Specific)
 	# GOAL: copying new cache entries in the global build cache
   #first get cache entries from debug and release mode
-  execute_process(COMMAND ${CMAKE_COMMAND} -LH -N ../..
-                  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
+  if(NOT BUILD_RELEASE_ONLY)
+    execute_process(COMMAND ${CMAKE_COMMAND} -LH -N ../..
+                    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
+    file(STRINGS ${CMAKE_BINARY_DIR}/optionsDEBUG.txt LINES_DEBUG)
+  else()
+    set(LINES_DEBUG)
+  endif()
   execute_process(COMMAND ${CMAKE_COMMAND} -LH -N ../..
                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
 	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES_GLOBAL)
-	file(STRINGS ${CMAKE_BINARY_DIR}/optionsDEBUG.txt LINES_DEBUG)
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsRELEASE.txt LINES_RELEASE)
   # searching new cache entries in release mode cache
 	foreach(line IN LISTS LINES_RELEASE)
@@ -343,32 +347,34 @@ function(set_Global_Options_From_Mode_Specific)
   set(last_comment "")
 
   # searching new cache entries in debug mode cache
-  foreach(line IN LISTS LINES_DEBUG)
-    get_Option_Line_Info(OPT_NAME OPT_TYPE OPT_VALUE OPT_COMMENT "${line}")
-    if(OPT_COMMENT)#the line contains a comment, simply memorize it (will be used for immediate next option)
-      set(last_comment "${OPT_COMMENT}")
-    elseif(OPT_NAME AND OPT_TYPE)#the line contains an option
-      find_Option_Into_List(INDEX_GLOB ${OPT_NAME} ${OPT_TYPE} LINES_GLOBAL)#search for same option in global cache
-      find_Option_Into_List(INDEX_REL ${OPT_NAME} ${OPT_TYPE} LINES_RELEASE)#search for same option in global cache
-      if(INDEX_GLOB EQUAL -1 AND INDEX_REL EQUAL -1)#not found in global and release caches
-        set(${OPT_NAME} ${OPT_VALUE} CACHE ${OPT_TYPE} "${last_comment}")#add it to global cache
-      elseif((NOT POS_REL EQUAL -1) AND (NOT POS EQUAL -1))#found in both global and release caches
-        #1) check if release and debug have same value
-        set(debug_value ${OPT_VALUE})
-        get_Option_Value_From_List(release_value ${OPT_NAME} ${OPT_TYPE} LINES_RELEASE)
-        if(debug_value STREQUAL release_value) #debug and release have same value
-          #1) if their value differ from global one then apply it
-          get_Option_Value_From_List(global_value ${OPT_NAME} ${OPT_TYPE} LINES_GLOBAL)
-          if(NOT (release_value STREQUAL global_value))#their value is different from value of same global option => need to update
-            set(${OPT_NAME} ${release_value} CACHE ${OPT_TYPE} "${last_comment}" FORCE)#add it to global cache
+  if(NOT BUILD_RELEASE_ONLY)
+    foreach(line IN LISTS LINES_DEBUG)
+      get_Option_Line_Info(OPT_NAME OPT_TYPE OPT_VALUE OPT_COMMENT "${line}")
+      if(OPT_COMMENT)#the line contains a comment, simply memorize it (will be used for immediate next option)
+        set(last_comment "${OPT_COMMENT}")
+      elseif(OPT_NAME AND OPT_TYPE)#the line contains an option
+        find_Option_Into_List(INDEX_GLOB ${OPT_NAME} ${OPT_TYPE} LINES_GLOBAL)#search for same option in global cache
+        find_Option_Into_List(INDEX_REL ${OPT_NAME} ${OPT_TYPE} LINES_RELEASE)#search for same option in global cache
+        if(INDEX_GLOB EQUAL -1 AND INDEX_REL EQUAL -1)#not found in global and release caches
+          set(${OPT_NAME} ${OPT_VALUE} CACHE ${OPT_TYPE} "${last_comment}")#add it to global cache
+        elseif((NOT POS_REL EQUAL -1) AND (NOT POS EQUAL -1))#found in both global and release caches
+          #1) check if release and debug have same value
+          set(debug_value ${OPT_VALUE})
+          get_Option_Value_From_List(release_value ${OPT_NAME} ${OPT_TYPE} LINES_RELEASE)
+          if(debug_value STREQUAL release_value) #debug and release have same value
+            #1) if their value differ from global one then apply it
+            get_Option_Value_From_List(global_value ${OPT_NAME} ${OPT_TYPE} LINES_GLOBAL)
+            if(NOT (release_value STREQUAL global_value))#their value is different from value of same global option => need to update
+              set(${OPT_NAME} ${release_value} CACHE ${OPT_TYPE} "${last_comment}" FORCE)#add it to global cache
+            endif()
+          #else debug and release mode variables differ (rare case, except for CMAKE_BUILD_TYPE)
+          #simply do nothing : DO NOT remove otherwise at next configuration time it will be added with the value of a mode
           endif()
-        #else debug and release mode variables differ (rare case, except for CMAKE_BUILD_TYPE)
-        #simply do nothing : DO NOT remove otherwise at next configuration time it will be added with the value of a mode
         endif()
       endif()
-    endif()
-	endforeach()
-  set(last_comment "")
+  	endforeach()
+    set(last_comment "")
+  endif()
 
   # searching removed cache entries in release and debug mode caches => then remove them from global cache
 	foreach(line IN LISTS LINES_GLOBAL)
@@ -386,7 +392,9 @@ function(set_Global_Options_From_Mode_Specific)
 	endforeach()
 
 	#removing temporary files containing cache entries
-  file(REMOVE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
+  if(NOT BUILD_RELEASE_ONLY)
+    file(REMOVE ${CMAKE_BINARY_DIR}/optionsDEBUG.txt)
+  endif()
   file(REMOVE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
   file(REMOVE ${CMAKE_BINARY_DIR}/options.txt)
 endfunction(set_Global_Options_From_Mode_Specific)
@@ -2289,11 +2297,15 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
 		file(APPEND ${file} "set(${package}_DEVELOPMENT_STATE development CACHE INTERNAL \"\")\n")
 	endif()
 
-  #writing info about compiler used to build the binary
   file(APPEND ${file} "set(${package}_BUILT_FOR_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${package}_BUILT_FOR_DISTRIBUTION_VERSION ${CURRENT_DISTRIBUTION_VERSION} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${package}_BUILT_FOR_INSTANCE ${CURRENT_PLATFORM_INSTANCE} CACHE INTERNAL \"\")\n")
-
+  # Note: used to tell if the installed package contains debug binaries
+  if(BUILD_RELEASE_ONLY)
+    file(APPEND ${file} "set(${package}_BUILT_RELEASE_ONLY TRUE CACHE INTERNAL \"\")\n")
+  else()
+    file(APPEND ${file} "set(${package}_BUILT_RELEASE_ONLY FALSE CACHE INTERNAL \"\")\n")
+  endif()
 	file(APPEND ${file} "######### declaration of package components ########\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")

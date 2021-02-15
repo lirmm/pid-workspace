@@ -128,7 +128,7 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "             - environment=*name of an environment*: deploy an environment from its repository."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments for package argument [optional] ---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - version=*version number*: deploy a specific version, mandatory for an external package."
-	COMMAND ${CMAKE_COMMAND} -E echo "             - no_source=true: force the download of an existing binary package version archive."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - use_binaries=true: force the download of an existing binary package version archive."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - use_source=true: force the compilation of package sources."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - force=true: force deployment even if the adequate version already lies in the workspace."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - verbose=true: get more debug information during the deployment process"
@@ -349,10 +349,11 @@ set(deploy_args "\
 	-DDEPLOYED_FRAMEWORK=\${framework} \
 	-DVERBOSE_MODE=\${verbose} \
 	-DFORCE_REDEPLOY=\${force} \
-	-DNO_SOURCE=\${no_source} \
+	-DUSE_BINARIES=\${use_binaries} \
 	-DUSE_SOURCE=\${use_source} \
 	-DUSE_BRANCH=\${branch} \
-	-DRUN_TESTS=\${test} ")
+	-DRUN_TESTS=\${test} \
+	-DRELEASE_ONLY=\${release_only}")
 add_PID_Command(deploy Deploy_PID_Deployment_Unit.cmake)
 
 ## building a list of source packages
@@ -366,7 +367,8 @@ add_PID_Command(rebuild Rebuild_PID_Packages.cmake)
 ## resolving runtime dependencies of an already installed package
 set(resolve_args "\
 	-DRESOLVED_PACKAGE=\${package} \
-	-DTARGET_VERSION=\${version} ")
+	-DTARGET_VERSION=\${version} ) \
+  -DRELEASE_ONLY=\${release_only} ")
 add_PID_Command(resolve Resolve_PID_Package.cmake)
 
 ## creating a new package
