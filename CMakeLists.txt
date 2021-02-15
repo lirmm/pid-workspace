@@ -191,6 +191,8 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "             - package=*name of the package*: register a native or external package."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - framework=*name of the framework*: register a framework."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - environment=*name of the environment*: register an environment."
+	COMMAND ${CMAKE_COMMAND} -E echo "             --- Optional argument ---"
+	COMMAND ${CMAKE_COMMAND} -E echo "             - space=*name of cotribution space*: force to register into a given contribution space."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
 	COMMAND ${CMAKE_COMMAND} -E echo " release:    release the target native package. Release process consists in:"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - merging branches and tagging the package repository."
@@ -416,7 +418,8 @@ add_PID_Command(remove Remove_PID_Deployment_Unit.cmake)
 set(register_args "\
 	-DTARGET_PACKAGE=\${package} \
 	-DTARGET_FRAMEWORK=\${framework} \
-	-DTARGET_ENVIRONMENT=\${environment} ")
+	-DTARGET_ENVIRONMENT=\${environment} \
+  -DTARGET_CS=\${space} ")
 add_PID_Command(register Register_PID_Deployment_Unit.cmake)
 
 ## releasing a package

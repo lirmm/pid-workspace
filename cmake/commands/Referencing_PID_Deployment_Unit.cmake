@@ -23,8 +23,29 @@ include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 
+load_Workspace_Info() #loading
+
+#manage arguments if they are passed as environmentvariables (for non UNIX makefile generators usage)
+if(NOT TARGET_CS AND DEFINED ENV{space})
+	set(TARGET_CS $ENV{space} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{space})
+	unset(ENV{space})
+endif()
+
+set(ALL_PUBLISHING_CS)
+if(TARGET_ENVIRONMENT)
+	get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${TARGET_ENVIRONMENT} "${TARGET_CS}")
+elseif(TARGET_FRAMEWORK)
+	get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${TARGET_FRAMEWORK} "${TARGET_CS}")
+elseif(TARGET_WRAPPER)
+	get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${TARGET_WRAPPER} "${TARGET_CS}")
+elseif(TARGET_PACKAGE)
+	get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${TARGET_PACKAGE} "${TARGET_CS}")
+else()
+	return()
+endif()
 # needed to parse adequately CMAKe variables passed to the script
-SEPARATE_ARGUMENTS(ALL_PUBLISHING_CS)
 if(TARGET_ENVIRONMENT)
   foreach(cs_path IN LISTS ALL_PUBLISHING_CS)
     file(COPY ${CMAKE_BINARY_DIR}/share/ReferEnvironment${TARGET_ENVIRONMENT}.cmake

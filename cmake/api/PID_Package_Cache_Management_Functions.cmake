@@ -2574,7 +2574,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
   normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}") #getting standard version number depending on value of tags
   set(FIND_FILE_KNOWN_VERSIONS ${VERSION_NUMBERS})#only write release versions
 	configure_file(${WORKSPACE_DIR}/cmake/patterns/packages/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
-  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${PROJECT_NAME})
+  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${PROJECT_NAME} "")
   foreach(cs_path IN LISTS ALL_PUBLISHING_CS)
     install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${cs_path}/finds) #install in the adequate contribution space
   endforeach()

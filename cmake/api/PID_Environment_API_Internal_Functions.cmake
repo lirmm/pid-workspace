@@ -458,13 +458,13 @@ macro(build_Environment_Project)
   if(${PROJECT_NAME}_ADDRESS)
     generate_Environment_Reference_File(${CMAKE_BINARY_DIR}/share/ReferEnvironment${PROJECT_NAME}.cmake)
     #copy the reference file of the package into the "references" folder of the workspace
-    get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${PROJECT_NAME})
     add_custom_target(referencing
       COMMAND ${CMAKE_COMMAND}
               -DWORKSPACE_DIR=${WORKSPACE_DIR}
               -DTARGET_ENVIRONMENT=${PROJECT_NAME}
               -DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
-              -DALL_PUBLISHING_CS=\"${ALL_PUBLISHING_CS}\"
+              -DTARGET_CONTRIBUTION_SPACE=${TARGET_CONTRIBUTION_SPACE}
+              -DTARGET_CS=\${space}
               -P ${WORKSPACE_DIR}/cmake/commands/Referencing_PID_Deployment_Unit.cmake
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )

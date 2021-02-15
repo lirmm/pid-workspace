@@ -2263,15 +2263,18 @@ endfunction(remove_PID_Environment)
 #  register_PID_Package
 #  --------------------
 #
-#   .. command:: register_PID_Package(package)
+#   .. command:: register_PID_Package(package space)
 #
 #     Updating the workspace contributions space(s) with updated (or newly created) reference and find files for a given package.
 #
 #      :package: the name of the package to register.
+#      :space: the name of the contribution space where package will be referenced in addition to all spaces where it is already referenced.
 #
-function(register_PID_Package package)
+function(register_PID_Package package space)
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} installing WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
+set(ENV{space} ${space})
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
+unset(ENV{space})
 #only publish if the package has an address and/or a public address
 include_Package_Reference_File(PATH_TO_FILE ${package})
 if(PATH_TO_FILE AND (${package}_PUBLIC_ADDRESS OR ${package}_ADDRESS))#means included and an address is defined
@@ -2289,14 +2292,17 @@ endfunction(register_PID_Package)
 #  register_PID_Wrapper
 #  --------------------
 #
-#   .. command:: register_PID_Wrapper(wrapper)
+#   .. command:: register_PID_Wrapper(wrapper space)
 #
 #     Updating the workspace contributions space(s) with updated (or newly created) reference and find files for a given external package wrapper.
 #
 #      :wrapper: the name of the external package wrapper to register.
+#      :space: the name of the contribution space where wrapper will be referenced in addition to all spaces where it is already referenced.
 #
-function(register_PID_Wrapper wrapper)
+function(register_PID_Wrapper wrapper space)
+	set(ENV{space} ${space})
 	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${wrapper}/build)
+	unset(ENV{space})
 	#only publish if the wrapper has an address and/or a public address
 	include_External_Reference_File(PATH_TO_FILE ${wrapper})
 	if(PATH_TO_FILE AND (${wrapper}_PUBLIC_ADDRESS OR ${wrapper}_ADDRESS))#means included and an address is defined
@@ -2314,15 +2320,18 @@ endfunction(register_PID_Wrapper)
 #  register_PID_Framework
 #  ----------------------
 #
-#   .. command:: register_PID_Framework(framework)
+#   .. command:: register_PID_Framework(framework space)
 #
 #     Updating the workspace repository with an updated (or newly created) reference file for a given framework.
+#      :space: the name of the contribution space where framework will be referenced in addition to all spaces where it is already referenced.
 #
 #      :framework: the name of the framework to register.
 #
-function(register_PID_Framework framework)
+function(register_PID_Framework framework space)
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
+set(ENV{space} ${space})
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
+unset(ENV{space})
 #only publish if the package has an address and/or a public address
 include_Framework_Reference_File(PATH_TO_FILE ${framework})
 if(PATH_TO_FILE AND ${framework}_ADDRESS)#means included and an address is defined
@@ -2340,14 +2349,17 @@ endfunction(register_PID_Framework)
 #  register_PID_Environment
 #  ------------------------
 #
-#   .. command:: register_PID_Environment(environment)
+#   .. command:: register_PID_Environment(environment space)
 #
 #     Updating the workspace repository with an updated (or newly created) reference file for a given environment.
 #
 #      :environment: the name of the environment to register.
+#      :space: the name of the contribution space where environment will be referenced in addition to all spaces where it is already referenced.
 #
-function(register_PID_Environment environment)
+function(register_PID_Environment environment space)
+set(ENV{space} ${space})
 execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/environments/${environment}/build)
+unset(ENV{space})
 #only publish if the package has an address and/or a public address
 include_Environment_Reference_File(PATH_TO_FILE ${environment})
 if(PATH_TO_FILE AND (${environment}_PUBLIC_ADDRESS OR ${environment}_ADDRESS))#means included and an address is defined

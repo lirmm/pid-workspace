@@ -762,14 +762,19 @@ endfunction(get_Path_To_Contribution_Space)
 #      get the path to all contribution spaces publishing references of a given depoyment unit.
 #
 #      :deployment_unit: name of the deployment unit.
+#      :default_space: name of the default contribution space to use
 #
 #      :PUBLISHING_CONTRIB_SPACES: output variable containing the list of path to the contribution spaces that contain references to deployment_unit.
 #
-function(get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces PUBLISHING_CONTRIB_SPACES deployment_unit)
+function(get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces PUBLISHING_CONTRIB_SPACES deployment_unit default_space)
   set(list_of_spaces)
   if(TARGET_CONTRIBUTION_SPACE)
     list(APPEND list_of_spaces ${WORKSPACE_DIR}/contributions/${TARGET_CONTRIBUTION_SPACE})
   endif()
+  if(default_space)
+    list(APPEND list_of_spaces ${WORKSPACE_DIR}/contributions/${default_space})
+  endif()
+
   foreach(cs IN LISTS CONTRIBUTION_SPACES)
     get_All_Matching_Contributions(LICENSE REFERENCE FIND FORMAT PLUGIN ${cs} ${deployment_unit})
     if(REFERENCE OR FIND)
@@ -778,7 +783,7 @@ function(get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spac
   endforeach()
   if(list_of_spaces)
     list(REMOVE_DUPLICATES list_of_spaces)
-  else()
+  else()#use at least the contribution space greater priority
     list(GET CONTRIBUTION_SPACES 0 space)
     set(list_of_spaces ${WORKSPACE_DIR}/contributions/${space})
   endif()

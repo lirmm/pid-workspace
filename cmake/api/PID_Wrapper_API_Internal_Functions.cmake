@@ -316,13 +316,13 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		)
 
 		# reference file generation target
-		get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${PROJECT_NAME})
 		add_custom_target(referencing
 			COMMAND ${CMAKE_COMMAND}
               -DWORKSPACE_DIR=${WORKSPACE_DIR}
 							-DTARGET_WRAPPER=${PROJECT_NAME}
 							-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
-							-DALL_PUBLISHING_CS=\"${ALL_PUBLISHING_CS}\"
+							-DTARGET_CONTRIBUTION_SPACE=${TARGET_CONTRIBUTION_SPACE}
+							-DTARGET_CS=\${space}
 							-P ${WORKSPACE_DIR}/cmake/commands/Referencing_PID_Deployment_Unit.cmake
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 		)
@@ -559,7 +559,7 @@ function(generate_Wrapper_Find_File)
 	endif()
 	# generating/installing the generic cmake find file for the package
 	configure_file(${WORKSPACE_DIR}/cmake/patterns/wrappers/FindExternalPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
-	get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${PROJECT_NAME})
+	get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${PROJECT_NAME} "")
   foreach(cs_path IN LISTS ALL_PUBLISHING_CS)
 		install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${cs_path}/finds) #install in the worskpace cmake directory which contains cmake find modules
 	endforeach()

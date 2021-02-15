@@ -967,7 +967,7 @@ endfunction(update_Contribution_Space_Repository)
 #     :package: the name of target package
 #
 function(publish_Package_References_In_Contribution_Spaces_Repositories package)
-  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${package})
+  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${package} "")
   foreach(cs IN LISTS ALL_CONTRIB)
     set(PATH_TO_REF ${cs}/references/Refer${package}.cmake)
     set(PATH_TO_FIND ${cs}/finds/Find${package}.cmake)
@@ -1003,7 +1003,7 @@ endfunction(publish_Package_References_In_Contribution_Spaces_Repositories)
 #     :wrapper: the name of external package wrapper to use.
 #
 function(publish_Wrapper_References_In_Contribution_Spaces_Repositories wrapper)
-  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${wrapper})
+  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${wrapper} "")
   foreach(cs IN LISTS ALL_CONTRIB)
     set(PATH_TO_REF ${cs}/references/ReferExternal${wrapper}.cmake)
     set(PATH_TO_FIND ${cs}/finds/Find${wrapper}.cmake)
@@ -1039,7 +1039,7 @@ endfunction(publish_Wrapper_References_In_Contribution_Spaces_Repositories)
 #     :framework: the name of target framework
 #
 function(publish_Framework_References_In_Contribution_Spaces_Repositories framework)
-  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${framework})
+  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${framework} "")
   foreach(cs IN LISTS ALL_CONTRIB)
     set(PATH_TO_REF ${cs}/references/ReferFramework${framework}.cmake)
     if(EXISTS ${PATH_TO_REF})
@@ -1072,7 +1072,7 @@ endfunction(publish_Framework_References_In_Contribution_Spaces_Repositories)
 #     :environment: the name of target environment
 #
 function(publish_Environment_References_In_Contribution_Spaces_Repositories environment)
-  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${environment})
+  get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${environment} "")
   foreach(cs IN LISTS ALL_CONTRIB)
     set(PATH_TO_REF ${cs}/references/ReferEnvironment${environment}.cmake)
     if(EXISTS ${PATH_TO_REF})
