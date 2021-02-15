@@ -1334,7 +1334,7 @@ get_Version_String_Numbers(${version_or_branch} MAJOR MINOR PATCH)
 # message("build_And_Install_Package ${package} version_or_branch=${version_or_branch} version = ${MAJOR} ${MINOR} ${PATCH}")
 
 if(NOT DEFINED MAJOR)#not a version string => it is a branch
-  track_Repository_Branch(${package} official ${version_or_branch})
+  track_Repository_Branch(${package} official ${version_or_branch} TRUE)
   go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${version_or_branch})
   build_And_Install_Source(IS_BUILT ${package} "" ${version_or_branch} "${run_tests}") # 2) building sources from a branch
 else()

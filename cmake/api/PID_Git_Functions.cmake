@@ -1874,19 +1874,29 @@ endfunction(clone_Package_Repository)
 #  track_Repository_Branch
 #  -----------------------
 #
-#   .. command:: track_Repository_Branch(package remote branch)
+#   .. command:: track_Repository_Branch(package remote branch switch)
 #
 #     Make the local repository of package track the given branch from given remote.
 #
 #     :package: the name of target package
 #     :remote: the name of remote whose branch will be tracked
-#     :branch: the name of the branch
+#     :branch: the name of the branch that is created and tracks the remote branch
+#     :switch: if TRUE switch to newly tracked branch
 #
-function(track_Repository_Branch package remote branch)
-  #TODO check if it does no provoke any problems in currenlty developped package
-  execute_process(COMMAND git checkout --track -b ${branch} ${remote}/${branch}
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
-                  OUTPUT_QUIET ERROR_QUIET)#updating reference on branch defined in remote
+function(track_Repository_Branch package remote branch switch)
+  if(switch)
+    #TODO check if it does no provoke any problems in currenlty developped package
+    execute_process(COMMAND git checkout --track -b ${branch} ${remote}/${branch}
+                    WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
+                    OUTPUT_QUIET ERROR_QUIET)#updating reference on branch defined in remote
+  else()#same but do not checkout
+    execute_process(COMMAND git branch ${branch}
+                    WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
+                    OUTPUT_QUIET ERROR_QUIET)
+    execute_process(COMMAND git branch --set-upstream-to=${remote}/${branch} ${branch}
+                    WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}
+                    OUTPUT_QUIET ERROR_QUIET)#updating reference on branch defined in remote
+  endif()
 endfunction(track_Repository_Branch)
 
 #.rst:
@@ -1948,7 +1958,7 @@ function(test_Package_Remote_Initialized package url INITIALIZED)
                   ${clone_output}) #cloning in a temporary area
 
   #testing if origin remote defines an integration branch
-  test_Branch_Exists(BRANCH_EXISTS ${WORKSPACE_DIR}/build/${package} "remotes/origin/integration)")
+  test_Branch_Exists(BRANCH_EXISTS ${WORKSPACE_DIR}/build/${package} "remotes/origin/integration")
   set(${INITIALIZED} ${BRANCH_EXISTS} PARENT_SCOPE)
   #always remove the local repository
   execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/build/${package}
@@ -1978,7 +1988,7 @@ endfunction(test_Package_Remote_Initialized)
 #     :EXIST: the output variable that is TRUE if a branch with matching name exists, FALSE otherwise
 #
 function(test_Branch_Exists EXIST path_to_repo branch_name_pattern)
-  set(${EXIST} PARENT_SCOPE)
+  set(${EXIST} FALSE PARENT_SCOPE)
   execute_process(COMMAND git branch -a
             		WORKING_DIRECTORY ${path_to_repo}
             		OUTPUT_VARIABLE all_branches ERROR_QUIET)#getting all branches
@@ -1987,7 +1997,7 @@ function(test_Branch_Exists EXIST path_to_repo branch_name_pattern)
   	string(REPLACE "\n" ";" GIT_BRANCHES ${all_branches})
   	set(BRANCH_FOUND FALSE)
   	foreach(branch IN LISTS GIT_BRANCHES)#checking that the origin/integration branch exists
-  		if(branch MATCHES "^[ \t]*${branch_name_pattern}[ \t]*$")
+      if(branch MATCHES "[ \t]+${branch_name_pattern}[ \t]*")#test consist in getting same name with at least one space before
         set(${EXIST} TRUE PARENT_SCOPE)
   			return()
   		endif()
@@ -2415,6 +2425,44 @@ else()#there is a connected remote after adjustment
   endif()
 endif()
 endfunction(check_For_Remote_Respositories)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_For_Branches| replace:: ``check_For_Branches``
+#  .. _check_For_Branches:
+#
+#  check_For_Branches
+#  -------------------
+#
+#   .. command:: check_For_Branches()
+#
+#     Check, and eventually perform corrective actions, that package's repository has master and integration branches.
+#
+function(check_For_Branches)
+test_Branch_Exists(INTEGRATION_EXISTS ${CMAKE_SOURCE_DIR} "integration")
+if(NOT INTEGRATION_EXISTS)#branch deleted or package has been cloned by hand from master branch
+  test_Branch_Exists(REMOTE_INTEGRATION_EXISTS ${CMAKE_SOURCE_DIR} "remotes/origin/integration")
+  if(NOT REMOTE_INTEGRATION_EXISTS)
+    message("[PID] WARNING: no integration branch defined for remote origin !. Your package's repository has a problem. Probably it has been created online without using PID. A package repository should have at least one master and one integration branch.")
+    return()
+  endif()
+  #perform corrective action
+  track_Repository_Branch(${PROJECT_NAME} "origin" "integration" FALSE)
+endif()
+test_Branch_Exists(MASTER_EXISTS ${CMAKE_SOURCE_DIR} "master")
+if(NOT MASTER_EXISTS)#branch deleted or package has been cloned by hand from master branc
+  test_Branch_Exists(REMOTE_MASTER_EXISTS ${CMAKE_SOURCE_DIR} "remotes/official/master")
+  if(NOT REMOTE_MASTER_EXISTS)
+    message("[PID] WARNING: no master branch defined for remote official !. Your package's repository has a problem. Probably it has been created online without using PID. A package repository should have at least one master and one integration branch.")
+    return()
+  endif()
+  #perform corrective action
+  track_Repository_Branch(${PROJECT_NAME} "official" "master" FALSE)
+endif()
+endfunction(check_For_Branches)
 
 #.rst:
 #

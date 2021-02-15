@@ -534,9 +534,8 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 
 	#now getting options specific to debug and release modes
 	set_Global_Options_From_Mode_Specific()
-
 	return()# execution of the root CMakeLists.txt ends for general build
-else()	# the build must be done in the build directory
+else()	# the configuration must be done in the build directory
 	message("[PID] ERROR : please run cmake in the build folder of the package ${PROJECT_NAME}.")
 	return()
 endif()
@@ -553,7 +552,12 @@ init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
 init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "")
 reset_Version_Cache_Variables()
 reset_Temporary_Optimization_Variables(${CMAKE_BUILD_TYPE}) #resetting temporary variables used in optimization of configruation process
-check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")
+is_First_Package_Configuration(FIRST_CONFIG)
+if(FIRST_CONFIG)#adjust or alert if there is a potential problem in repositories adresses
+	check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")
+	check_For_Branches("${ADDITIONAL_DEBUG_INFO}")
+endif()
+unset(FIRST_CONFIG)
 init_Standard_Path_Cache_Variables()
 begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
 endmacro(declare_Package)
