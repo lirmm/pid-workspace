@@ -560,10 +560,6 @@ function(generate_Wrapper_Find_File)
 	endif()
 	# generating/installing the generic cmake find file for the package
 	configure_file(${WORKSPACE_DIR}/cmake/patterns/wrappers/FindExternalPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
-	get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${PROJECT_NAME} "")
-  foreach(cs_path IN LISTS ALL_PUBLISHING_CS)
-		install(FILES ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake DESTINATION ${cs_path}/finds) #install in the worskpace cmake directory which contains cmake find modules
-	endforeach()
 endfunction(generate_Wrapper_Find_File)
 
 #.rst:
@@ -1649,8 +1645,11 @@ endfunction(install_External_Use_File_For_Version)
 #      :package: the name of the external package.
 #
 function(install_External_Find_File_For_Version package)
-	set(wrapper_path ${WORKSPACE_DIR}/wrappers/${package}/build)
-	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} install WORKING_DIRECTORY ${wrapper_path})#simply call the install function of the wrapper
+	set(wrapper_build_path ${WORKSPACE_DIR}/wrappers/${package}/build)
+	get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${package} "")
+	foreach(cs_path IN LISTS ALL_PUBLISHING_CS)
+		file(COPY ${wrapper_build_path}/share/Find${package}.cmake DESTINATION ${cs_path}/finds) #install in the worskpace cmake directory which contains cmake find modules
+	endforeach()
 endfunction(install_External_Find_File_For_Version)
 
 #.rst:
@@ -3470,7 +3469,6 @@ elseif(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SY
 	if(NOT RESULT_OK OR NOT ${dep_package}_VERSION)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
-		return()
 	endif()
 	#need to detect the version in order to pas it to add_External_Package_Dependency_To_Cache
 	add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_VERSION}" TRUE TRUE "${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS}") #set the dependency
