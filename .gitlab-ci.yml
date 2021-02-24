@@ -26,7 +26,7 @@ stages:
    stage: deploy
    script:
         - pid deploy package=mytestpackage
-        - pid deploy package=open-phri version=1.0.0
+        - pid deploy package=open-phri version=1.0.1
         - pid deploy package=opencv version=4.0.1
 
 .external_use_: &external_use
