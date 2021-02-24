@@ -931,6 +931,41 @@ endfunction(sort_Version_List)
 #
 # .. ifmode:: internal
 #
+#  .. |is_Src_File_Updated| replace:: ``is_Src_File_Updated``
+#  .. _is_Src_File_Updated:
+#
+#  is_Src_File_Updated
+#  ---------------------------
+#
+#   .. command:: is_Src_File_Updated(NEWER installed_file src_file)
+#
+#     Check whether a source file has been updated since last modification of another installed file.
+#
+#     :installed_file: the path to the installed file.
+#     :src_file: the path to the source file whose last modification date is tested
+#
+#     :NEWER: the output variable tha is TRUE if source file has been updated since last modification of installed file, FALSE otherwise.
+#
+function(is_Src_File_Updated NEWER installed_file src_file)
+if(NOT EXISTS ${installed_file})
+  set(${NEWER} TRUE PARENT_SCOPE)
+endif()
+set(${NEWER} FALSE PARENT_SCOPE)
+if(${src_file} IS_NEWER_THAN ${installed_file})#not sure file1 is strictly newer they can be of same date
+  #they can have same date
+  file(TIMESTAMP ${src_file} SRC_TIME "%s" UTC)
+  file(TIMESTAMP ${installed_file} INSTALL_TIME "%s" UTC)
+  if(SRC_TIME GREATER INSTALL_TIME)
+    set(${NEWER} TRUE PARENT_SCOPE)
+  endif()
+endif()
+return()
+endfunction(is_Src_File_Updated)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |make_Empty_Folder| replace:: ``make_Empty_Folder``
 #  .. _make_Empty_Folder:
 #
@@ -5454,7 +5489,6 @@ endfunction(resolve_Imported_Standards)
 #################################################################################################
 ################################### pure CMake utilities ########################################
 #################################################################################################
-
 
 #.rst:
 #

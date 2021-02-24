@@ -1351,7 +1351,7 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
     message("[PID] INFO: checking target platform configuration ${config_name}")
   endif()
   #need to ensure system configuration check is installed
-  install_System_Configuration_Check(PATH_TO_CONFIG ${config_name})
+  install_System_Configuration_Check(PATH_TO_CONFIG ${config_name})#TODO
   if(NOT PATH_TO_CONFIG)
     message(WARNING "[PID] ERROR : when checking if system configuration ${config_name} is possibly usable on current platform. Please either : remove the constraint ${config_name}; check that ${config_name} is well spelled and rename it if necessary; contact developpers of wrapper ${config_name} to solve the problem, create a new wrapper called ${config_name} or configure your workspace with the contribution space referencing the wrapper of ${config_name}.")
     return()
@@ -1372,7 +1372,7 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
     return()
   endif()
   #evaluate the platform configuration expression
-  evaluate_Platform_Configuration(${config_name} ${PATH_TO_CONFIG})
+  evaluate_Platform_Configuration(${config_name} ${PATH_TO_CONFIG} FALSE)
   set(${config_name}_AVAILABLE TRUE CACHE INTERNAL "")
   if(NOT ${config_name}_CONFIG_FOUND)
   	install_Platform_Configuration(${config_name} ${PATH_TO_CONFIG})
@@ -1601,7 +1601,7 @@ function(is_Allowed_Platform_Configuration ALLOWED config_name config_args)
     endif()
   endforeach()
 
-  evaluate_Platform_Configuration(${config_name} ${PATH_TO_CONFIG}) # find the artifacts used by this configuration
+  evaluate_Platform_Configuration(${config_name} ${PATH_TO_CONFIG} FALSE) # find the artifacts used by this configuration
   if(NOT ${config_name}_CONFIG_FOUND)# not found, trying to see if it can be installed
     is_Platform_Configuration_Installable(INSTALLABLE ${config_name} ${PATH_TO_CONFIG})
     if(NOT INSTALLABLE)
@@ -1610,6 +1610,201 @@ function(is_Allowed_Platform_Configuration ALLOWED config_name config_args)
   endif()
   set(${ALLOWED} TRUE PARENT_SCOPE)
 endfunction(is_Allowed_Platform_Configuration)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |memorize_Platform_Configuration_Inputs| replace:: ``memorize_Platform_Configuration_Inputs``
+#  .. _memorize_Platform_Configuration_Inputs:
+#
+#  memorize_Platform_Configuration_Inputs
+#  --------------------------------------
+#
+#   .. command:: memorize_Platform_Configuration_Inputs(config index)
+#
+#    Memorize in a cache file the arguments used as constraint for checking the platform configuration.
+#
+#     :config: the name of the configuration (without argument).
+#     :index: index for teh set of input arguments used to check theconfigruation.
+#
+function(memorize_Platform_Configuration_Inputs config index)
+  set(eval_input_file ${CMAKE_BINARY_DIR}/input_vars.txt)#using a txt file that is read to avoid inclusion that implicitly generates a reconfiguration when modified
+  if(FORCE_REEVAL)#if forced reevaluation, simply stop as inputs will not be modified
+    message("FORCED REEVALUATION")
+    return()
+  endif()
+  if(NOT EXISTS ${eval_input_file})
+    file(WRITE ${eval_input_file} "")#empty file at beginning
+  endif()
+  extract_All_Words("${ARGS}" " " ARGS_LIST)
+  set(args_val)
+  foreach(arg IN LISTS ARGS_LIST)
+    fill_String_From_List(RES_VAL ${config}_${arg} ",")#list are separated with , NOT ; (otherwise problem with CMake parsing)
+    list(APPEND args_val "${arg}=${RES_VAL}")
+  endforeach()
+  file(APPEND ${eval_input_file} "${index} >>> ${args_val}\n")
+endfunction(memorize_Platform_Configuration_Inputs)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |platform_Configuration_Arguments_Already_Checked| replace:: ``platform_Configuration_Arguments_Already_Checked``
+#  .. _platform_Configuration_Arguments_Already_Checked:
+#
+#  platform_Configuration_Arguments_Already_Checked
+#  ------------------------------------------------
+#
+#   .. command:: platform_Configuration_Arguments_Already_Checked(RES_INDEX config path_to_config)
+#
+#    Memorize in a cache file the arguments used as constraint for checking the platform configuration.
+#
+#     :config: the name of the configuration (without argument).
+#     :path_to_config: path to the configuration check script installed in workspace.
+
+#     :RES_INDEX: the output variable that conains the index in cache file for the adequate set of arguments if this set matches the set of arguments currenlty checked, otherwise empty if no set of arguments matches current set of arguments passed.
+#
+function(platform_Configuration_Arguments_Already_Checked RES_INDEX config path_to_config)
+  set(eval_input_file ${path_to_config}/build/input_vars.txt)#using a txt file that is read to avoid inclusion that implicitly generates a reconfiguration
+  set(${RES_INDEX} PARENT_SCOPE)
+  if(NOT EXISTS ${eval_input_file})
+    return()
+  endif()
+  list(LENGTH ${config}_arguments size_args_curr)
+  file (STRINGS ${eval_input_file} PREVIOUS_CALLS)
+  foreach(call IN LISTS PREVIOUS_CALLS)#creae the variablkes locally
+    if(call MATCHES "^([0-9]+) >>> (.*)$")
+      #1) get all constraints arguments passed to the previous evaluation
+      set(curr_idx ${CMAKE_MATCH_1})
+      set(args_list ${CMAKE_MATCH_2})
+      set(tmp_args)
+      foreach(arg IN LISTS args_list)
+        if(arg MATCHES "^([^=]+)=(.+)$")
+          extract_All_Words("${CMAKE_MATCH_2}" "," ARGS_LIST)
+          set(tmp_${CMAKE_MATCH_1} ${ARGS_LIST})#create the variable
+          list(APPEND tmp_args tmp_${CMAKE_MATCH_1})#memorize the variable
+        endif()
+      endforeach()
+      #2) compare previous value VS current value of arguments
+      set(match_ok FALSE)
+      if(NOT ${config}_arguments)
+        if(NOT tmp_args)#bot are empty so OK
+          set(match_ok TRUE)
+        endif()
+      elseif(tmp_args) #OTHERWISE: if previous args are empty then not the previosu call is not adequate
+        #both list are
+        list(LENGTH tmp_args size_args_prev)
+        if(size_args_prev EQUAL size_args_curr)#OTHERWISE: not same set of arguments
+          set(all_same_args TRUE)
+          foreach(arg IN LISTS ${config}_arguments)
+            if(NOT DEFINED tmp_${arg})
+              set(all_same_args FALSE)
+              break()#NOTE: if argument not defined in previous context no need to continue
+            endif()
+            list(LENGTH tmp_${arg} size_prev)
+            list(LENGTH ${config}_${arg} size_curr)
+            if(NOT size_prev EQUAL size_curr)
+              #NOTE: currenlty tested argument has not the same SIZE in previous and current contexts so immediately stop
+              set(all_same_args FALSE)
+              break()
+            endif()
+            #OK so now checking that each value of the list can be found in the other list
+            foreach(val IN LISTS ${config}_${arg})
+              list(FIND tmp_${arg} ${val} INDEX)
+              if(INDEX EQUAL -1)
+                set(all_same_args FALSE)
+                break()
+              endif()
+            endforeach()
+            if(NOT all_same_args)
+              break()# NOTE: currenlty tested argument has not the same (unordered) VALUE in previous and current contexts so immediately stop
+            endif()
+          endforeach()
+          if(all_same_args)
+            set(match_ok TRUE)
+          endif()
+        endif()
+      endif()
+      #3) reset the variable to avoid any problem with following iterations
+      foreach(arg IN LISTS tmp_args)
+        unset(${arg})
+      endforeach()
+      #4) verify that a match has been found
+      if(match_ok)
+        set(${RES_INDEX} ${curr_idx} PARENT_SCOPE)
+        return()
+      endif()
+    endif()
+  endforeach()
+endfunction(platform_Configuration_Arguments_Already_Checked)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Already_Checked_Platform_Configuration_Arguments| replace:: ``reset_Already_Checked_Platform_Configuration_Arguments``
+#  .. _reset_Already_Checked_Platform_Configuration_Arguments:
+#
+#  reset_Already_Checked_Platform_Configuration_Arguments
+#  ------------------------------------------------------
+#
+#   .. command:: reset_Already_Checked_Platform_Configuration_Arguments(path_to_config)
+#
+#    Reset all cache information that memorize the set of arguments already checked for a platform configuration.
+#    This remove either cache file for inputs AND the various output variables correspond to results of previous calls.
+#
+#     :path_to_config: path to the configuration check script installed in workspace.
+#
+function(reset_Already_Checked_Platform_Configuration_Arguments path_to_config)
+  set(eval_input_file ${path_to_config}/build/input_vars.txt)#
+  if(EXISTS ${eval_input_file})
+    file(REMOVE ${eval_input_file})#simply remove the file containing the cached arguments
+  endif()
+  file(GLOB ALL_OUTPUTS ${path_to_config}/build/output_vars_*.cmake)
+  foreach(a_file IN LISTS ALL_OUTPUTS)
+    file(REMOVE ${a_file})
+  endforeach()
+endfunction(reset_Already_Checked_Platform_Configuration_Arguments)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Next_Index_For_Checked_Platform_Configuration_Arguments| replace:: ``get_Next_Index_For_Checked_Platform_Configuration_Arguments``
+#  .. _get_Next_Index_For_Checked_Platform_Configuration_Arguments:
+#
+#  get_Next_Index_For_Checked_Platform_Configuration_Arguments
+#  -----------------------------------------------------------
+#
+#   .. command:: get_Next_Index_For_Checked_Platform_Configuration_Arguments(NEXT_INDEX path_to_config)
+#
+#    Get the index to use for evaluating the next set of arguments.
+#    Used when no set of argument already checked matches the current call arguments, to know how to memorize the currently used set of arguments.
+#
+#     :path_to_config: path to the configuration check script installed in workspace.
+#
+#     :NEXT_INDEX: the output variable that contains the index in cache file for the new set of arguments.
+#
+function(get_Next_Index_For_Checked_Platform_Configuration_Arguments NEXT_INDEX path_to_config)
+  file(GLOB ALL_OUTPUTS ${path_to_config}/build/output_vars_*.cmake)
+  set(max_index -1)
+  foreach(a_file IN LISTS ALL_OUTPUTS)
+    if(a_file MATCHES "output_vars_([0-9]+).cmake")
+      if(CMAKE_MATCH_1 GREATER max_index)
+        set(max_index ${CMAKE_MATCH_1})
+      endif()
+    endif()
+  endforeach()
+  if(max_index EQUAL -1)
+    set(${NEXT_INDEX} 0 PARENT_SCOPE)
+  else()
+    math(EXPR next_idx "${max_index}+1")
+    set(${NEXT_INDEX} ${next_idx} PARENT_SCOPE)
+  endif()
+endfunction(get_Next_Index_For_Checked_Platform_Configuration_Arguments)
 
 #.rst:
 #
@@ -1621,21 +1816,21 @@ endfunction(is_Allowed_Platform_Configuration)
 #  evaluate_Platform_Configuration
 #  -------------------------------
 #
-#   .. command:: evaluate_Platform_Configuration(config path_to_config)
+#   .. command:: evaluate_Platform_Configuration(config path_to_config force_reeval)
 #
 #   Call the procedure for finding artefacts related to a configuration. Set the ${config}_FOUND variable, that is TRUE is configuration has been found, FALSE otherwise.
 #
 #     :config: the name of the configuration to find.
 #     :path_to_config: the path to configuration folder.
+#     :force_reeval: if TRUE the evaluation will be forced even if the same set of arguments has already been tested.
 #
-macro(evaluate_Platform_Configuration config path_to_config)
+macro(evaluate_Platform_Configuration config path_to_config force_reeval)
   # finding artifacts to fulfill system configuration
   set(${config}_CONFIG_FOUND FALSE)
   set(eval_file ${path_to_config}/${${config}_EVAL_FILE})
   set(check_file ${path_to_config}/check_${config}.cmake)#used only to know if regeneration is required
   set(eval_project_file ${path_to_config}/CMakeLists.txt)
   set(eval_result_config_file ${path_to_config}/output_vars.cmake.in)
-  set(eval_result_file ${path_to_config}/output_vars.cmake)
   set(eval_folder ${path_to_config}/build)
   set(eval_languages C CXX)
   foreach(lang IN LISTS ${config}_EVAL_LANGUAGES)
@@ -1661,77 +1856,123 @@ macro(evaluate_Platform_Configuration config path_to_config)
       return()
     endif()
   endforeach()
-
+  # optimization check to avoid CMake regeneration of system check when not necessary
+  # NOTE: main problem is related to reevaluation due to debug+release builds :
+  # each build mode write the included file (same for both) which leads to a complete reevaluation of the
+  set(need_reevaluate TRUE)
+  set(need_regen FALSE)
+  set(result_index 0)
+  set(force_reevaluation ${force_reeval})#NOTE: define a variable since force_reeval is a macro argument => not a variable
   #prepare CMake project used for evaluation
-  if(NOT EXISTS ${eval_folder})
-    file(MAKE_DIRECTORY ${eval_folder})#create the build folder used for evaluation
-  elseif(EXISTS ${eval_folder}/CMakeCache.txt)
-    file(REMOVE ${eval_folder}/CMakeCache.txt)#clean the cache
-  endif()
-  if(${check_file} IS_NEWER_THAN ${eval_project_file} # only regenerate the project file if check file has changed (project regenerated)
-    OR ${WORKSPACE_DIR}/cmake/api/PID_Platform_Management_Functions.cmake IS_NEWER_THAN ${eval_project_file})# or if current file has changed (implementation evolution)
-    file(GLOB eval_build_files "${eval_folder}/*")#clean the eval project subfolder when necessary
-    if(eval_build_files)
-      file(REMOVE_RECURSE ${eval_build_files})
-    endif()
-    get_filename_component(the_path ${WORKSPACE_DIR} ABSOLUTE)
-    file(WRITE ${eval_project_file} "cmake_minimum_required(VERSION 3.8.2)\n")
-    file(APPEND ${eval_project_file} "set(WORKSPACE_DIR ${the_path} CACHE PATH \"root of the PID workspace\")\n")
-    file(APPEND ${eval_project_file} "list(APPEND CMAKE_MODULE_PATH \${WORKSPACE_DIR}/cmake)\n")
-    file(APPEND ${eval_project_file} "include(Configuration_Definition NO_POLICY_SCOPE)\n")
-    file(APPEND ${eval_project_file} "project(test_${config} ${eval_languages})\n")
-    file(APPEND ${eval_project_file} "set(CMAKE_MODULE_PATH \${CMAKE_SOURCE_DIR} \${CMAKE_MODULE_PATH})\n")
-    file(APPEND ${eval_project_file} "include(${${config}_EVAL_FILE})\n")
-    file(APPEND ${eval_project_file} "configure_file(\${CMAKE_SOURCE_DIR}/output_vars.cmake.in \${CMAKE_SOURCE_DIR}/output_vars.cmake @ONLY)")
-  endif()
-  #prepare CMake project pattern file used used for getting result
-  if(NOT EXISTS ${eval_result_config_file} OR ${check_file} IS_NEWER_THAN ${eval_result_config_file})
-    set(eval_vars)#getting all meaningfull variables returned from the eval script
-    foreach(var IN LISTS ${config}_RETURNED_VARIABLES)
-      list(APPEND eval_vars ${${config}_${var}_RETURNED_VARIABLE})#getting name of each returned variable
-    endforeach()
-    foreach(var IN LISTS ${config}_IN_BINARY_CONSTRAINTS)
-      list(APPEND eval_vars ${${config}_${var}_BINARY_VALUE})#getting name of each variable used in "required in binary constraint"
-    endforeach()
-    if(eval_vars)
-      list(REMOVE_DUPLICATES eval_vars)
-    endif()
-    file(WRITE ${eval_result_config_file} "set(${config}_CONFIG_FOUND \@${config}_CONFIG_FOUND\@)\n")
-    foreach(var IN LISTS eval_vars)
-      file(APPEND ${eval_result_config_file} "set(${var} @${var}@)\n")#the output file will contain value of variables generated by the eval script
-    endforeach()
-    unset(eval_vars)
-  endif()
-
-  #launch evaluation
-  #1) prepare argument as CMake definitions
-  set(calling_defs "")
-  foreach(arg IN LISTS ${config}_arguments)
-    set(calling_defs "-D${config}_${arg}=${${config}_${arg}} ${calling_defs}")
-  endforeach()
-  foreach(arg IN LISTS ${config}_no_arguments)
-    set(calling_defs "-U${config}_${arg} ${calling_defs}")
-  endforeach()
-  if(ADDITIONAL_DEBUG_INFO)
-    set(options)
+  if(NOT EXISTS ${eval_folder})#if build folder does not exists no need to question
+    file(MAKE_DIRECTORY ${eval_folder})#create the build folder used for evaluation at first time, then immediately reevaluate
+    set(need_regen TRUE)
   else()
-    set(options OUTPUT_QUIET ERROR_QUIET)
+    #specific case when the API has been updated => need to regenerate one time to be sure
+    is_Src_File_Updated(UPDATED ${eval_project_file} ${WORKSPACE_DIR}/cmake/api/PID_Platform_Management_Functions.cmake)
+    if(NOT UPDATED)
+      #case when the check file has been regenerated FROM WRAPPER but installed project not reevaluated
+      is_Src_File_Updated(UPDATED ${eval_project_file} ${check_file})
+    endif()
+    if(UPDATED)
+      set(need_regen TRUE)
+    endif()
+    if(need_regen)#when regeneration is required we must reset everything already evaluated
+      reset_Already_Checked_Platform_Configuration_Arguments(${path_to_config})
+    else()
+      # NOTE: if this file exists and noneed to regen we can check if all input
+      # variables have already been evaluated
+      # if this is true no need to continue
+      platform_Configuration_Arguments_Already_Checked(INDEX_MATCHING_ARGS ${config} ${path_to_config})
+      if(DEFINED INDEX_MATCHING_ARGS)
+        set(need_reevaluate FALSE)
+        set(result_index ${INDEX_MATCHING_ARGS})
+      endif()
+    endif()
+  endif()
+  if(need_reevaluate OR force_reevaluation)
+    set(write_output_config FALSE)
+    if(need_regen) # only regenerate the project file if check file has changed (project regenerated) or if current file has changed (implementation evolution)
+      file(GLOB eval_build_files "${eval_folder}/*")#clean the eval project subfolder when necessary
+      if(eval_build_files)
+        file(REMOVE_RECURSE ${eval_build_files})
+      endif()
+      get_filename_component(the_path ${WORKSPACE_DIR} ABSOLUTE)
+      file(WRITE ${eval_project_file} "cmake_minimum_required(VERSION 3.8.2)\n")
+      file(APPEND ${eval_project_file} "set(WORKSPACE_DIR ${the_path} CACHE PATH \"root of the PID workspace\")\n")
+      file(APPEND ${eval_project_file} "list(APPEND CMAKE_MODULE_PATH \${WORKSPACE_DIR}/cmake \${WORKSPACE_DIR}/cmake/api)\n")
+      file(APPEND ${eval_project_file} "include(Configuration_Definition NO_POLICY_SCOPE)\n")# to interpret user defined eval files
+      file(APPEND ${eval_project_file} "include(PID_Platform_Management_Functions NO_POLICY_SCOPE)\n")# to acces functions of platform management API
+      file(APPEND ${eval_project_file} "project(test_${config} ${eval_languages})\n")
+      file(APPEND ${eval_project_file} "set(CMAKE_MODULE_PATH \${CMAKE_SOURCE_DIR} \${CMAKE_MODULE_PATH})\n")
+      file(APPEND ${eval_project_file} "include(${${config}_EVAL_FILE})\n")
+      file(APPEND ${eval_project_file} "configure_file(\${CMAKE_SOURCE_DIR}/output_vars.cmake.in \${CMAKE_BINARY_DIR}/output_vars_\${RESULT_INDEX}.cmake @ONLY)\n")
+      file(APPEND ${eval_project_file} "memorize_Platform_Configuration_Inputs(${config} \${RESULT_INDEX})\n")
+      set(write_output_config TRUE) #anytime regeneration took place simply rewrite config file defining resul variables
+    else()
+      #regenerate output config file if it does not exist OR or check file updated
+      is_Src_File_Updated(UPDATED ${eval_result_config_file} ${check_file})
+      # only perform this step if check file has been regenerated (new implem for the system check)
+      # to ensure consistency: then the generated output config file must be in turn regenerated because
+      # the variables it contains may have changed
+      if(UPDATED)
+        set(write_output_config TRUE)
+      endif()
+    endif()
+    #prepare CMake project pattern file used used for getting result
+    if(write_output_config)
+      set(eval_vars)#getting all meaningfull variables returned from the eval script
+      foreach(var IN LISTS ${config}_RETURNED_VARIABLES)
+        list(APPEND eval_vars ${${config}_${var}_RETURNED_VARIABLE})#getting name of each returned variable
+      endforeach()
+      foreach(var IN LISTS ${config}_IN_BINARY_CONSTRAINTS)
+        list(APPEND eval_vars ${${config}_${var}_BINARY_VALUE})#getting name of each variable used in "required in binary constraint"
+      endforeach()
+      if(eval_vars)
+        list(REMOVE_DUPLICATES eval_vars)
+      endif()
+      file(WRITE ${eval_result_config_file} "set(${config}_CONFIG_FOUND \@${config}_CONFIG_FOUND\@)\n")
+      foreach(var IN LISTS eval_vars)
+        file(APPEND ${eval_result_config_file} "set(${var} @${var}@)\n")#the output file will contain value of variables generated by the eval script
+      endforeach()
+      unset(eval_vars)
+    endif()
+    unset(write_output_config)
+
+    # launch evaluation
+    # 1) define which file contains the result
+    if(need_reevaluate)
+      get_Next_Index_For_Checked_Platform_Configuration_Arguments(result_index ${path_to_config})
+      #otherwise it means evaluation has been forced so the result_index is already set
+    endif()
+    # 2) prepare argument as definition of CMake cache variables
+    fill_String_From_List(CALL_ARGS ${config}_arguments " ")
+    set(calling_defs "-DRESULT_INDEX=${result_index} \"-DARGS=${CALL_ARGS}\" -DFORCE_REEVAL=${force_reevaluation}")#set the index for the file containing output variables
+    foreach(arg IN LISTS ${config}_arguments)
+      set(calling_defs "-D${config}_${arg}=${${config}_${arg}} ${calling_defs}")
+    endforeach()
+    foreach(arg IN LISTS ${config}_no_arguments)
+      set(calling_defs "-U${config}_${arg} ${calling_defs}")
+    endforeach()
+    if(ADDITIONAL_DEBUG_INFO)
+      set(options)
+    else()
+      set(options OUTPUT_QUIET ERROR_QUIET)
+    endif()
+
+    if(CMAKE_HOST_WIN32)#on a window host path must be resolved
+    	separate_arguments(COMMAND_ARGS_AS_LIST WINDOWS_COMMAND "${calling_defs}")
+    else()#if not on windows use a UNIX like command syntax
+    	separate_arguments(COMMAND_ARGS_AS_LIST UNIX_COMMAND "${calling_defs}")#always from host perpective
+    endif()
+    #3) evaluate
+    execute_process(COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} ${COMMAND_ARGS_AS_LIST} ..
+                    WORKING_DIRECTORY ${eval_folder} ${options})
+    unset(COMMAND_ARGS_AS_LIST)
   endif()
 
-  if(CMAKE_HOST_WIN32)#on a window host path must be resolved
-  	separate_arguments(COMMAND_ARGS_AS_LIST WINDOWS_COMMAND "${calling_defs}")
-  else()#if not on windows use a UNIX like command syntax
-  	separate_arguments(COMMAND_ARGS_AS_LIST UNIX_COMMAND "${calling_defs}")#always from host perpective
-  endif()
-  #2) evaluate
-  if(EXISTS ${eval_result_file})#remove result file if evaluating again
-    file(REMOVE ${eval_result_file})
-  endif()
-  execute_process(COMMAND ${CMAKE_COMMAND} -DWORKSPACE_DIR=${WORKSPACE_DIR} ${COMMAND_ARGS_AS_LIST} ..
-                  WORKING_DIRECTORY ${eval_folder} ${options})
-  unset(COMMAND_ARGS_AS_LIST)
-  unset(calling_defs)
-  #3) get the result
+  #3) get the result anytime
+  set(eval_result_file ${path_to_config}/build/output_vars_${result_index}.cmake)
   if(EXISTS ${eval_result_file})
     include(${eval_result_file})#may set ${config}_CONFIG_FOUND to TRUE AND load returned variables
     if(${config}_CONFIG_FOUND)
@@ -1822,7 +2063,7 @@ macro(install_Platform_Configuration config path_to_config)
       unset(DO_NOT_INSTALL)
     endif()
     #now evaluate configuration check after install
-    evaluate_Platform_Configuration(${config} ${path_to_config})
+    evaluate_Platform_Configuration(${config} ${path_to_config} TRUE)
     if(${config}_CONFIG_FOUND)
       message("[PID] INFO : configuration ${config} installed !")
       set(${config}_INSTALLED TRUE)

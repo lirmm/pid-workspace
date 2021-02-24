@@ -833,8 +833,6 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/src/system)
 			 -P ${WORKSPACE_DIR}/cmake/commands/Eval_PID_System_Configuration.cmake
 			 VERBATIM
 	)
-	add_dependencies(eval_system_check gen_system_check)
-
 	add_custom_target(rem_system_check
 		COMMAND ${CMAKE_COMMAND} -E remove_directory ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/__system__/${PROJECT_NAME}
 	  VERBATIM
