@@ -922,28 +922,89 @@ endfunction(register_Repository_Version)
 #
 # .. ifmode:: internal
 #
+#  .. |commit_Contribution_Space_Updates| replace:: ``commit_Contribution_Space_Updates``
+#  .. _commit_Contribution_Space_Updates:
+#
+#  commit_Contribution_Space_Updates
+#  ------------------------------------
+#
+#   .. command:: commit_Contribution_Space_Updates(contrib_space)
+#
+#     Commit local changes in the repository of a contribution space
+#
+#     :contrib_space: the name of target contribution space
+#
+function(commit_Contribution_Space_Updates contrib_space)
+  get_Path_To_Contribution_Space(PATH_TO_DIR ${contrib_space})
+  get_Contribution_Space_Repository_Status(TO_ADD TO_COMMIT TO_RESET ${contrib_space})
+  list(APPEND TO_COMMIT ${TO_ADD})
+  if(TO_COMMIT)#there is content to commit
+    foreach(a_file IN LISTS TO_ADD)
+      execute_process(COMMAND git add ${a_file}
+                      WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
+    endforeach()
+    foreach(a_file IN LISTS TO_COMMIT)
+      execute_process(COMMAND git add ${a_file}
+                      WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
+      if(a_file MATCHES "^(finds/Find|references/Refer|references/ReferExternal)(.+)\\.cmake")
+        execute_process(COMMAND git commit -m "auto updated reference to package ${CMAKE_MATCH_2}"
+                        WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
+      elseif(a_file MATCHES "^references/ReferFramework(.+)\\.cmake")
+        execute_process(COMMAND git commit -m "auto updated reference to framework ${CMAKE_MATCH_1}"
+                        WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
+      elseif(a_file MATCHES "^references/ReferEnvironment(.+)\\.cmake")
+        execute_process(COMMAND git commit -m "auto updated reference to environment ${CMAKE_MATCH_1}"
+                        WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
+      elseif(a_file MATCHES "licenses/License(.+).cmake")
+        execute_process(COMMAND git commit -m "auto updated reference to license ${CMAKE_MATCH_1}"
+                        WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
+      elseif(a_file MATCHES "formats/\\.clang-format\\.(.+)")
+        execute_process(COMMAND git commit -m "auto updated reference to format ${CMAKE_MATCH_1}"
+                        WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
+      endif()
+    endforeach()
+    execute_process(COMMAND git reset --hard
+                    WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
+  endif()
+
+endfunction(commit_Contribution_Space_Updates)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |update_Contribution_Space_Repository| replace:: ``update_Contribution_Space_Repository``
 #  .. _update_Contribution_Space_Repository:
 #
 #  update_Contribution_Space_Repository
 #  ------------------------------------
 #
-#   .. command:: update_Contribution_Space_Repository(contrib_space)
+#   .. command:: update_Contribution_Space_Repository(contrib_space allow_conflict)
 #
 #     Update local contrbution space's repository (pull).
 #
 #     :contrib_space: the name of target contribution space
+#     :allow_conflict: if TRUE merge conflicts are allowed, false otherwise
 #
-function(update_Contribution_Space_Repository contrib_space)
+function(update_Contribution_Space_Repository contrib_space allow_conflict)
   get_Path_To_Contribution_Space(PATH_TO_DIR ${contrib_space})
   if(PATH_TO_DIR)
+    #1) check if connection wit remote can be established
     test_Remote_Connection(CONNECTED ${PATH_TO_DIR} origin)
     if(NOT CONNECTED)
       message("[PID] ERROR: cannot update contribution space ${contrib_space}. Reason: No connection to remote available.")
       return()
     endif()
-    #merge official content with local one
-    execute_Silent_Process(GIT_OUT GIT_RES ${PATH_TO_DIR} git pull origin master)
+    #2) create commits if there are changes
+    commit_Contribution_Space_Updates(${contrib_space})
+    #3) merge official content with local one
+    execute_Silent_Process(GIT_OUT GIT_RES ${PATH_TO_DIR} git fetch origin)
+    if(allow_conflict)
+      execute_Silent_Process(GIT_OUT GIT_RES ${PATH_TO_DIR} git merge origin/master)
+    else()
+      execute_Silent_Process(GIT_OUT GIT_RES ${PATH_TO_DIR} git merge -ff-only origin/master)
+    endif()
     if(GIT_RES)
       message("[PID] ERROR: cannot update contribution space ${contrib_space}. Reason: ${GIT_OUT}. Check the status of ${contrib_space}.")
     endif()
@@ -976,7 +1037,7 @@ function(publish_Package_References_In_Contribution_Spaces_Repositories package)
                       WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
     	execute_process(COMMAND git add ${PATH_TO_REF}
                       WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
-    	execute_process(COMMAND git commit -m "${package} registered"
+    	execute_process(COMMAND git commit -m "references of package ${package} published"
                       WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
     	execute_process(COMMAND git push origin master
                       WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
@@ -1133,7 +1194,7 @@ endfunction(publish_All_In_Contribution_Space_Repository)
 #  get_Contribution_Space_Repository_Status
 #  --------------------------------------------
 #
-#   .. command:: get_Contribution_Space_Repository_Status(TO_REFERENCE cs)
+#   .. command:: get_Contribution_Space_Repository_Status(TO_ADD TO_COMMIT TO_RESET cs)
 #
 #     get the list of reference of a contribution space that must eb updated.
 #
@@ -1141,16 +1202,19 @@ endfunction(publish_All_In_Contribution_Space_Repository)
 #
 #     :TO_ADD: the output variable that contains the list of contribution path to files (relative to contribution space) that need to be added with git add.
 #     :TO_COMMIT: the output variable that contains the list of contribution path to files (relative to contribution space) that need to be committed
+#     :TO_RESET: the output variable that contains the list of contribution path to files (relative to contribution space) that need to be reset
 #
-function(get_Contribution_Space_Repository_Status TO_ADD TO_COMMIT cs)
+function(get_Contribution_Space_Repository_Status TO_ADD TO_COMMIT TO_RESET cs)
   get_Path_To_Contribution_Space(PATH_TO_CS ${cs})
   set(${TO_ADD} PARENT_SCOPE)
   set(${TO_COMMIT} PARENT_SCOPE)
+  set(${TO_RESET} PARENT_SCOPE)
   if(PATH_TO_CS)
     execute_Silent_Process(OUT_STATUS RES_STATUS ${PATH_TO_CS} git status --porcelain)
     if(RES_STATUS EQUAL 0)
       string(REPLACE "\n" ";" list_of_lines "${OUT_STATUS}")
       #FIRST run: add the folder to get names of files inside
+      set(RERUN_STATUS FALSE)
       foreach(line IN LISTS list_of_lines)
         if(line MATCHES "^[ \t]*\\?\\?[ \t]+(finds|references|formats|licenses)/$")
           #NOTE ?? => untracked folder, we must add it to get its content
@@ -1159,8 +1223,13 @@ function(get_Contribution_Space_Repository_Status TO_ADD TO_COMMIT cs)
       endforeach()
 
       #SECOND run: add the folder to get names of files inside
+      if(RERUN_STATUS)
+        execute_Silent_Process(OUT_STATUS RES_STATUS ${PATH_TO_CS} git status --porcelain)
+        string(REPLACE "\n" ";" list_of_lines "${OUT_STATUS}")
+      endif()
       set(files_to_add)
       set(files_to_commit)
+      set(files_folders_to_reset)
       foreach(line IN LISTS list_of_lines)
         if(line MATCHES "^([ \t]|A|\\?)(M|\\?|D|[ \t])[ \t]+(finds|references|formats|licenses)/(.+)$")
           if(CMAKE_MATCH_1 STREQUAL "A")#already added
@@ -1173,10 +1242,13 @@ function(get_Contribution_Space_Repository_Status TO_ADD TO_COMMIT cs)
           else()
             list(APPEND files_to_add ${CMAKE_MATCH_3}/${CMAKE_MATCH_4})
           endif()
+        else()
+          list(APPEND files_folders_to_reset ${line})
         endif()
       endforeach()
       set(${TO_ADD} ${files_to_add} PARENT_SCOPE)
       set(${TO_COMMIT} ${files_to_commit} PARENT_SCOPE)
+      set(${TO_RESET} ${files_folders_to_reset} PARENT_SCOPE)
       return()
     endif()
   endif()
