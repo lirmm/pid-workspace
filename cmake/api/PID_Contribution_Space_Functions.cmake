@@ -68,7 +68,7 @@ endmacro(set_Project_Module_Path_From_Workspace)
 #
 #      AUxiliary funciton to find a file or directory in the contribution space with highest priority and returns its path and the path to its contribution space
 #
-#      :file_type: type of the file (licenses, formats, plugins, references, finds)
+#      :file_type: type of the file (licenses, formats, references, finds)
 #      :file_name: name of file or folder
 #
 #      :RESULT_FILE_PATH: output variable containing path to the file if found, empty otherwise.
@@ -193,7 +193,7 @@ function(get_Available_Licenses_For_Contribution_Space RES_LIST contribution_spa
   set(${RES_LIST} PARENT_SCOPE)
   set(PATH_TO_LICENSE ${WORKSPACE_DIR}/contributions/${contribution_space}/licenses)
   if(EXISTS ${PATH_TO_LICENSE} AND IS_DIRECTORY ${PATH_TO_LICENSE})
-    file(GLOB AVAILABLE_LICENSES RELATIVE ${PATH_TO_LICENSE} ${PATH_TO_LICENSE}/*) #getting plugins container folders names
+    file(GLOB AVAILABLE_LICENSES RELATIVE ${PATH_TO_LICENSE} ${PATH_TO_LICENSE}/*) #getting license file name
     set(${RES_LIST} ${AVAILABLE_LICENSES} PARENT_SCOPE)
   endif()
 endfunction(get_Available_Licenses_For_Contribution_Space)
@@ -603,7 +603,7 @@ function(get_Available_References_For_Contribution_Space RES_LIST contribution_s
   set(${RES_LIST} PARENT_SCOPE)
   set(PATH_TO_REF ${WORKSPACE_DIR}/contributions/${contribution_space}/references)
   if(EXISTS ${PATH_TO_REF} AND IS_DIRECTORY ${PATH_TO_REF})
-    file(GLOB AVAILABLE_REFS RELATIVE ${PATH_TO_REF} ${PATH_TO_REF}/Refer${prefix}*) #getting plugins container folders names
+    file(GLOB AVAILABLE_REFS RELATIVE ${PATH_TO_REF} ${PATH_TO_REF}/Refer${prefix}*) #getting reference file path
     set(${RES_LIST} ${AVAILABLE_REFS} PARENT_SCOPE)
   endif()
 endfunction(get_Available_References_For_Contribution_Space)
@@ -776,7 +776,7 @@ function(get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spac
   endif()
 
   foreach(cs IN LISTS CONTRIBUTION_SPACES)
-    get_All_Matching_Contributions(LICENSE REFERENCE FIND FORMAT PLUGIN ${cs} ${deployment_unit})
+    get_All_Matching_Contributions(LICENSE REFERENCE FIND FORMAT ${cs} ${deployment_unit})
     if(REFERENCE OR FIND)
       list(APPEND list_of_spaces ${WORKSPACE_DIR}/contributions/${cs})
     endif()
@@ -1089,9 +1089,8 @@ endfunction(write_Contribution_Spaces_Description_File)
 #      :REFERENCE: output variable that contains a reference file name if anyone matches, empty otherwise.
 #      :FIND: output variable that contains a find file name if anyone matches, empty otherwise.
 #      :FORMAT: output variable that contains a format file name if anyone matches, empty otherwise.
-#      :PLUGIN: output variable that contains a plugin folder name if anyone matches, empty otherwise.
 #
-function(get_All_Matching_Contributions LICENSE REFERENCE FIND FORMAT PLUGIN cs name)
+function(get_All_Matching_Contributions LICENSE REFERENCE FIND FORMAT cs name)
   get_Path_To_Contribution_Space(PATH_TO_CS ${cs})
   #checking licenses
   if(EXISTS ${PATH_TO_CS}/licenses/License${name}.cmake)
@@ -1104,12 +1103,6 @@ function(get_All_Matching_Contributions LICENSE REFERENCE FIND FORMAT PLUGIN cs 
     set(${FORMAT} .clang-format.${name} PARENT_SCOPE)
   else()
     set(${FORMAT} PARENT_SCOPE)
-  endif()
-  #checking plugins
-  if(EXISTS ${PATH_TO_CS}/plugins/${name} AND IS_DIRECTORY ${PATH_TO_CS}/plugins/${name})
-    set(${PLUGIN} ${name} PARENT_SCOPE)
-  else()
-    set(${PLUGIN} PARENT_SCOPE)
   endif()
   #checking find files
   if(EXISTS ${PATH_TO_CS}/finds/Find${name}.cmake)
