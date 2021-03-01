@@ -1348,3 +1348,57 @@ function(find_Provider_Contribution_Space PROVIDER_CS content type default_cs)
     endforeach()
   endif()
 endfunction(find_Provider_Contribution_Space)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Name_Of_Contributions_From_Modified_Files| replace:: ``get_Name_Of_Contributions_From_Modified_Files``
+#  .. _get_Name_Of_Contributions_From_Modified_Files:
+#
+#  get_Name_Of_Contributions_From_Modified_Files
+#  ---------------------------------------------
+#
+#   .. command:: get_Name_Of_Contributions_From_Modified_Files(LIST_OF_PACKAGES LIST_OF_FRAMEWORKS
+#                                                              LIST_OF_ENVIRONMENTS LIST_OF_LICENSES LIST_OF_FORMATS
+#                                                              list_of_updated_files)
+#
+#      Generate the list of name of contributions to be updated from a list of files
+#
+#      :list_of_updated_files: list of path to update in repository
+#
+#      :LIST_OF_PACKAGES: output variable that contains the list of name of packages contributions to update
+#      :LIST_OF_FRAMEWORKS: output variable that contains the list of name of frameworks contributions to update
+#      :LIST_OF_ENVIRONMENTS: output variable that contains the list of name of environments contributions to update
+#      :LIST_OF_LICENSES: output variable that contains the list of name of licenses contributions to update
+#      :LIST_OF_FORMATS: output variable that contains the list of name of formats contributions to update
+#
+function(get_Name_Of_Contributions_From_Modified_Files LIST_OF_PACKAGES LIST_OF_FRAMEWORKS LIST_OF_ENVIRONMENTS LIST_OF_LICENSES LIST_OF_FORMATS list_of_updated_files)
+  set(res_packages)
+  set(res_frameworks)
+  set(res_environments)
+  set(res_licenses)
+  set(res_formats)
+  foreach(a_file IN LISTS list_of_updated_files)
+    if(a_file MATCHES "^(finds/Find|references/Refer|references/ReferExternal)(.+)\\.cmake")
+      list(APPEND res_packages ${CMAKE_MATCH_2})
+    elseif(a_file MATCHES "^references/ReferFramework(.+)\\.cmake")
+      list(APPEND res_frameworks ${CMAKE_MATCH_1})
+    elseif(a_file MATCHES "^references/ReferEnvironment(.+)\\.cmake")
+      list(APPEND res_environments ${CMAKE_MATCH_1})
+    elseif(a_file MATCHES "licenses/License(.+).cmake")
+        list(APPEND res_licenses ${CMAKE_MATCH_1})
+    elseif(a_file MATCHES "formats/\\.clang-format\\.(.+)")
+        list(APPEND res_formats ${CMAKE_MATCH_1})
+    endif()
+  endforeach()
+  if(res_packages)
+    list(REMOVE_DUPLICATES res_packages)
+  endif()
+  set(${LIST_OF_PACKAGES} ${res_packages} PARENT_SCOPE)
+  set(${LIST_OF_FRAMEWORKS} ${res_frameworks} PARENT_SCOPE)
+  set(${LIST_OF_ENVIRONMENTS} ${res_environments} PARENT_SCOPE)
+  set(${LIST_OF_LICENSES} ${res_licenses} PARENT_SCOPE)
+  set(${LIST_OF_FORMATS} ${res_formats} PARENT_SCOPE)
+endfunction(get_Name_Of_Contributions_From_Modified_Files)

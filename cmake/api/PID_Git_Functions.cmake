@@ -1133,20 +1133,55 @@ endfunction(publish_All_In_Contribution_Space_Repository)
 #  get_Contribution_Space_Repository_Status
 #  --------------------------------------------
 #
-#   .. command:: get_Contribution_Space_Repository_Status(cs)
+#   .. command:: get_Contribution_Space_Repository_Status(TO_REFERENCE cs)
 #
-#     get the git status of a contribution space.
+#     get the list of reference of a contribution space that must eb updated.
 #
 #     :cs: the name of target contribution space
 #
-function(get_Contribution_Space_Repository_Status cs)
+#     :TO_ADD: the output variable that contains the list of contribution path to files (relative to contribution space) that need to be added with git add.
+#     :TO_COMMIT: the output variable that contains the list of contribution path to files (relative to contribution space) that need to be committed
+#
+function(get_Contribution_Space_Repository_Status TO_ADD TO_COMMIT cs)
   get_Path_To_Contribution_Space(PATH_TO_CS ${cs})
+  set(${TO_ADD} PARENT_SCOPE)
+  set(${TO_COMMIT} PARENT_SCOPE)
   if(PATH_TO_CS)
-    execute_process(COMMAND git status WORKING_DIRECTORY ${PATH_TO_CS})
-  else()
-    message("[PID] ERROR : problem getting status of ${cs} contribution space.")
+    execute_Silent_Process(OUT_STATUS RES_STATUS ${PATH_TO_CS} git status --porcelain)
+    if(RES_STATUS EQUAL 0)
+      string(REPLACE "\n" ";" list_of_lines "${OUT_STATUS}")
+      #FIRST run: add the folder to get names of files inside
+      foreach(line IN LISTS list_of_lines)
+        if(line MATCHES "^[ \t]*\\?\\?[ \t]+(finds|references|formats|licenses)/$")
+          #NOTE ?? => untracked folder, we must add it to get its content
+          execute_Silent_Process(OUT_STATUS RES_STATUS ${PATH_TO_CS} git add ${CMAKE_MATCH_1})
+        endif()
+      endforeach()
+
+      #SECOND run: add the folder to get names of files inside
+      set(files_to_add)
+      set(files_to_commit)
+      foreach(line IN LISTS list_of_lines)
+        if(line MATCHES "^([ \t]|A|\\?)(M|\\?|D|[ \t])[ \t]+(finds|references|formats|licenses)/(.+)$")
+          if(CMAKE_MATCH_1 STREQUAL "A")#already added
+            if(CMAKE_MATCH_2 STREQUAL "D")#NOTE: very rare situation where file has been added then deleted
+              execute_Silent_Process(OUT_STATUS RES_STATUS ${PATH_TO_CS} git add ${CMAKE_MATCH_3}/${CMAKE_MATCH_4})
+              #efter this call the file does no more belong to the repo => to need to list it
+            else()
+              list(APPEND files_to_commit ${CMAKE_MATCH_3}/${CMAKE_MATCH_4})
+            endif()
+          else()
+            list(APPEND files_to_add ${CMAKE_MATCH_3}/${CMAKE_MATCH_4})
+          endif()
+        endif()
+      endforeach()
+      set(${TO_ADD} ${files_to_add} PARENT_SCOPE)
+      set(${TO_COMMIT} ${files_to_commit} PARENT_SCOPE)
+      return()
+    endif()
   endif()
-endfunction(get_Contribution_Space_Repository_Status cs)
+  message("[PID] ERROR : problem getting status of ${cs} contribution space: repository does not exist.")
+endfunction(get_Contribution_Space_Repository_Status)
 
 #.rst:
 #
