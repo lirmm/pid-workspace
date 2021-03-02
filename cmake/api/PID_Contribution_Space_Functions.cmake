@@ -882,6 +882,27 @@ function(deploy_Contribution_Space DEPLOYED name update publish)
   endif()
   #finally set the update address
   configure_Remote(${WORKSPACE_DIR}/contributions/${name} origin ${update} ${publish})
+  # initialize repo if needed => create the README file
+  file(GLOB REPO_CONTENT ${WORKSPACE_DIR}/contributions/${name}/*)
+  list(REMOVE_ITEM REPO_CONTENT "${WORKSPACE_DIR}/contributions/${name}/.git")#remove the .git folder
+  if(NOT REPO_CONTENT)#repository is not not initialize
+    file(WRITE ${WORKSPACE_DIR}/contributions/${name}/README.md "To use this contribution space inside your workspace:\n```\n")
+    if(publish AND update AND (NOT publish STREQUAL update))
+      file(APPEND ${WORKSPACE_DIR}/contributions/${name}/README.md "pid contributions cmd=add space=${name} publish=${publish} update=${update}")
+    elseif(publish)
+      file(APPEND ${WORKSPACE_DIR}/contributions/${name}/README.md "pid contributions cmd=add space=${name} publish=${publish}")
+    elseif(update)
+      file(APPEND ${WORKSPACE_DIR}/contributions/${name}/README.md "pid contributions cmd=add space=${name} update=${update}")
+    endif()
+    file(APPEND ${WORKSPACE_DIR}/contributions/${name}/README.md "\n```\n")
+    execute_process(COMMAND git add README.md
+                    WORKING_DIRECTORY ${WORKSPACE_DIR}/contributions/${name} ERROR_QUIET OUTPUT_QUIET)
+    execute_process(COMMAND git commit -m "initializing contribution space with a README"
+                    WORKING_DIRECTORY ${WORKSPACE_DIR}/contributions/${name} ERROR_QUIET OUTPUT_QUIET)
+    execute_process(COMMAND git push origin master
+                    WORKING_DIRECTORY ${WORKSPACE_DIR}/contributions/${name} ERROR_QUIET OUTPUT_QUIET)
+  endif()
+
   set(${DEPLOYED} TRUE PARENT_SCOPE)
 endfunction(deploy_Contribution_Space)
 

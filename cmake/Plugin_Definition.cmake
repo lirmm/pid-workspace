@@ -1451,7 +1451,6 @@ endfunction(get_Package_Component_Language_Standard)
 #      :component: The target component
 #
 #      :RET_SOURCE_PATH: The output variable containing the path to component internal sources directory
-#
 #      :RET_HEADER_PATH: The output variable containing the path to component exported headers directory
 #
 #     .. admonition:: Constraints
@@ -1498,6 +1497,7 @@ endfunction(get_Dir_Path_For_Component)
 #   .. command:: create_In_Source_Symlink(source_dir file_to_symlink_from_build_tree)
 #
 #    Create a symlink in source folder pointing to a file generated into build folder.
+#    The generated symlink is automatically dereferenced by ignore rules of package.
 #
 #      :source_dir: path to the source folder to create symlink in
 #
