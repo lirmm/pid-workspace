@@ -936,13 +936,8 @@ endfunction(register_Repository_Version)
 #
 function(commit_Contribution_Space_Updates contrib_space)
   get_Path_To_Contribution_Space(PATH_TO_DIR ${contrib_space})
-  get_Contribution_Space_Repository_Status(TO_ADD TO_COMMIT TO_RESET ${contrib_space})
-  list(APPEND TO_COMMIT ${TO_ADD})
+  get_Contribution_Space_Repository_Status(TO_COMMIT TO_RESET ${contrib_space})
   if(TO_COMMIT)#there is content to commit
-    foreach(a_file IN LISTS TO_ADD)
-      execute_process(COMMAND git add ${a_file}
-                      WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
-    endforeach()
     foreach(a_file IN LISTS TO_COMMIT)
       execute_process(COMMAND git add ${a_file}
                       WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
@@ -1006,7 +1001,16 @@ function(update_Contribution_Space_Repository UPDATED contrib_space allow_confli
     if(allow_conflict)
       execute_Silent_Process(GIT_OUT GIT_RES ${PATH_TO_DIR} git merge origin/master)
     else()
+      #check if a merge will occur by simply using --ff-only option (faster option)
       execute_Silent_Process(GIT_OUT GIT_RES ${PATH_TO_DIR} git merge --ff-only origin/master)
+      if(GIT_RES)#so --ff-only failed => means a merge will take place
+        #now check the result of a merge to see if conflicts would appear
+        execute_Silent_Process(GIT_OUT GIT_RES ${PATH_TO_DIR} git merge origin/master)
+        if(GIT_RES)
+          #merge fail due to conflict => reset to previous state (previous head)
+          execute_Silent_Process(RESET_OUT RESET_RES ${PATH_TO_DIR} git reset --hard master)
+        endif()
+      endif()
     endif()
     if(GIT_RES)
       message("[PID] ERROR: cannot update contribution space ${contrib_space}. Reason: ${GIT_OUT}. Check the status of ${contrib_space}.")
@@ -1248,19 +1252,17 @@ endfunction(publish_All_In_Contribution_Space_Repository)
 #  get_Contribution_Space_Repository_Status
 #  --------------------------------------------
 #
-#   .. command:: get_Contribution_Space_Repository_Status(TO_ADD TO_COMMIT TO_RESET cs)
+#   .. command:: get_Contribution_Space_Repository_Status(TO_COMMIT TO_RESET cs)
 #
 #     get the list of reference of a contribution space that must eb updated.
 #
 #     :cs: the name of target contribution space
 #
-#     :TO_ADD: the output variable that contains the list of contribution path to files (relative to contribution space) that need to be added with git add.
 #     :TO_COMMIT: the output variable that contains the list of contribution path to files (relative to contribution space) that need to be committed
 #     :TO_RESET: the output variable that contains the list of contribution path to files (relative to contribution space) that need to be reset
 #
-function(get_Contribution_Space_Repository_Status TO_ADD TO_COMMIT TO_RESET cs)
+function(get_Contribution_Space_Repository_Status TO_COMMIT TO_RESET cs)
   get_Path_To_Contribution_Space(PATH_TO_CS ${cs})
-  set(${TO_ADD} PARENT_SCOPE)
   set(${TO_COMMIT} PARENT_SCOPE)
   set(${TO_RESET} PARENT_SCOPE)
   if(PATH_TO_CS)
@@ -1273,6 +1275,7 @@ function(get_Contribution_Space_Repository_Status TO_ADD TO_COMMIT TO_RESET cs)
         if(line MATCHES "^[ \t]*\\?\\?[ \t]+(finds|references|formats|licenses)/$")
           #NOTE ?? => untracked folder, we must add it to get its content
           execute_Silent_Process(OUT_STATUS RES_STATUS ${PATH_TO_CS} git add ${CMAKE_MATCH_1})
+          set(RERUN_STATUS TRUE)
         endif()
       endforeach()
 
@@ -1281,7 +1284,6 @@ function(get_Contribution_Space_Repository_Status TO_ADD TO_COMMIT TO_RESET cs)
         execute_Silent_Process(OUT_STATUS RES_STATUS ${PATH_TO_CS} git status --porcelain)
         string(REPLACE "\n" ";" list_of_lines "${OUT_STATUS}")
       endif()
-      set(files_to_add)
       set(files_to_commit)
       set(files_folders_to_reset)
       foreach(line IN LISTS list_of_lines)
@@ -1294,13 +1296,12 @@ function(get_Contribution_Space_Repository_Status TO_ADD TO_COMMIT TO_RESET cs)
               list(APPEND files_to_commit ${CMAKE_MATCH_3}/${CMAKE_MATCH_4})
             endif()
           else()
-            list(APPEND files_to_add ${CMAKE_MATCH_3}/${CMAKE_MATCH_4})
+            list(APPEND files_to_commit ${CMAKE_MATCH_3}/${CMAKE_MATCH_4})
           endif()
         else()
           list(APPEND files_folders_to_reset ${line})
         endif()
       endforeach()
-      set(${TO_ADD} ${files_to_add} PARENT_SCOPE)
       set(${TO_COMMIT} ${files_to_commit} PARENT_SCOPE)
       set(${TO_RESET} ${files_folders_to_reset} PARENT_SCOPE)
       return()
