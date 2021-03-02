@@ -186,7 +186,7 @@ elseif(TARGET_COMMAND STREQUAL "update")
     message(FATAL_ERROR "[PID] ERROR : cannot update content of ${TARGET_CS} because this contribution space is not used.")
   endif()
   #if this situation we allow confltcs as it is an intentional action from the user
-  update_Contribution_Space_Repository(${TARGET_CS} TRUE)
+  update_Contribution_Space_Repository(UPDATE_OK ${TARGET_CS} TRUE)
 elseif(TARGET_COMMAND STREQUAL "status")
   find_In_CS_List(FOUND ${TARGET_CS})
   if(NOT FOUND)

@@ -980,15 +980,18 @@ endfunction(commit_Contribution_Space_Updates)
 #  update_Contribution_Space_Repository
 #  ------------------------------------
 #
-#   .. command:: update_Contribution_Space_Repository(contrib_space allow_conflict)
+#   .. command:: update_Contribution_Space_Repository(UPDATED contrib_space allow_conflict)
 #
 #     Update local contrbution space's repository (pull).
 #
 #     :contrib_space: the name of target contribution space
 #     :allow_conflict: if TRUE merge conflicts are allowed, false otherwise
 #
-function(update_Contribution_Space_Repository contrib_space allow_conflict)
+#     :UPDATED: output variable that is TRUE if updated succeeded, false otherwise
+#
+function(update_Contribution_Space_Repository UPDATED contrib_space allow_conflict)
   get_Path_To_Contribution_Space(PATH_TO_DIR ${contrib_space})
+  set(${UPDATED} FALSE PARENT_SCOPE)
   if(PATH_TO_DIR)
     #1) check if connection wit remote can be established
     test_Remote_Connection(CONNECTED ${PATH_TO_DIR} origin)
@@ -1003,13 +1006,16 @@ function(update_Contribution_Space_Repository contrib_space allow_conflict)
     if(allow_conflict)
       execute_Silent_Process(GIT_OUT GIT_RES ${PATH_TO_DIR} git merge origin/master)
     else()
-      execute_Silent_Process(GIT_OUT GIT_RES ${PATH_TO_DIR} git merge -ff-only origin/master)
+      execute_Silent_Process(GIT_OUT GIT_RES ${PATH_TO_DIR} git merge --ff-only origin/master)
     endif()
     if(GIT_RES)
       message("[PID] ERROR: cannot update contribution space ${contrib_space}. Reason: ${GIT_OUT}. Check the status of ${contrib_space}.")
+      return()
     endif()
+    set(${UPDATED} TRUE PARENT_SCOPE)
   endif()
 endfunction(update_Contribution_Space_Repository)
+
 
 #.rst:
 #
@@ -1029,6 +1035,7 @@ endfunction(update_Contribution_Space_Repository)
 #
 function(publish_Package_References_In_Contribution_Spaces_Repositories package)
   get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${package} "")
+  set(LIST_OF_CS_TO_PUSH)
   foreach(cs IN LISTS ALL_CONTRIB)
     set(PATH_TO_REF ${cs}/references/Refer${package}.cmake)
     set(PATH_TO_FIND ${cs}/finds/Find${package}.cmake)
@@ -1037,13 +1044,23 @@ function(publish_Package_References_In_Contribution_Spaces_Repositories package)
                       WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
     	execute_process(COMMAND git add ${PATH_TO_REF}
                       WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
-    	execute_process(COMMAND git commit -m "references of package ${package} published"
+    	execute_process(COMMAND git commit -m "references for package ${package} published"
                       WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
-    	execute_process(COMMAND git push origin master
-                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+      #second update before push (non explicit commit created)
+      update_Contribution_Space_Repository(UPDATE_OK ${cs} FALSE)
+      if(UPDATE_OK)
+        list(APPEND LIST_OF_CS_TO_PUSH ${cs})
+      else()
+        message("[PID] WARNING : problem publishing references for package ${package}, cannot find adequate cmake files in workspace.")
+      endif()
     else()
     	message("[PID] WARNING : problem registering package ${package}, cannot find adequate cmake files in contribution space ${cs}.")
     endif()
+  endforeach()
+  #finally : pushing to each space we can publish to
+  foreach(cs IN LISTS LIST_OF_CS_TO_PUSH)
+    execute_process(COMMAND git push origin master
+                    WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
   endforeach()
 endfunction(publish_Package_References_In_Contribution_Spaces_Repositories)
 
@@ -1065,21 +1082,33 @@ endfunction(publish_Package_References_In_Contribution_Spaces_Repositories)
 #
 function(publish_Wrapper_References_In_Contribution_Spaces_Repositories wrapper)
   get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${wrapper} "")
+  set(LIST_OF_CS_TO_PUSH)
   foreach(cs IN LISTS ALL_CONTRIB)
     set(PATH_TO_REF ${cs}/references/ReferExternal${wrapper}.cmake)
     set(PATH_TO_FIND ${cs}/finds/Find${wrapper}.cmake)
     if(EXISTS ${PATH_TO_REF} AND EXISTS ${PATH_TO_FIND})
+        #first: explicit commit for targetted reference
     	execute_process(COMMAND git add ${PATH_TO_FIND}
                       WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
     	execute_process(COMMAND git add ${PATH_TO_REF}
                       WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
-    	execute_process(COMMAND git commit -m "${wrapper} registered"
+    	execute_process(COMMAND git commit -m "references for external package ${wrapper} published"
                       WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
-    	execute_process(COMMAND git push origin master
-                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+      #second update before push (non explicit commit created)
+      update_Contribution_Space_Repository(UPDATE_OK ${cs} FALSE)
+      if(UPDATE_OK)
+        list(APPEND LIST_OF_CS_TO_PUSH ${cs})
+      else()
+        message("[PID] WARNING : problem publishing references for external package ${wrapper}, cannot find adequate cmake files in workspace.")
+      endif()
     else()
-    	message("[PID] WARNING : problem registering wrapper ${wrapper}, cannot find adequate cmake files in contribution spaces.")
+    	message("[PID] WARNING : problem publishing references for external package ${wrapper}, cannot find adequate cmake files in contribution spaces.")
     endif()
+  endforeach()
+  #finally : pushing to each space we can publish to
+  foreach(cs IN LISTS LIST_OF_CS_TO_PUSH)
+    execute_process(COMMAND git push origin master
+                    WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
   endforeach()
 endfunction(publish_Wrapper_References_In_Contribution_Spaces_Repositories)
 
@@ -1101,18 +1130,30 @@ endfunction(publish_Wrapper_References_In_Contribution_Spaces_Repositories)
 #
 function(publish_Framework_References_In_Contribution_Spaces_Repositories framework)
   get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${framework} "")
+  set(LIST_OF_CS_TO_PUSH)
   foreach(cs IN LISTS ALL_CONTRIB)
     set(PATH_TO_REF ${cs}/references/ReferFramework${framework}.cmake)
     if(EXISTS ${PATH_TO_REF})
+      #first: explicit commit for targetted reference
       execute_process(COMMAND git add ${PATH_TO_REF}
                       WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
-    	execute_process(COMMAND git commit -m "framework ${framework} registered"
+    	execute_process(COMMAND git commit -m "references for framework ${framework} published"
                       WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
-    	execute_process(COMMAND git push origin master
-                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+      #second update before push (non explicit commit created)
+      update_Contribution_Space_Repository(UPDATE_OK ${cs} FALSE)
+      if(UPDATE_OK)
+        list(APPEND LIST_OF_CS_TO_PUSH ${cs})
+      else()
+        message("[PID] WARNING : problem publishing references for framework ${environment}, cannot find adequate cmake files in workspace.")
+      endif()
     else()
-    	message("[PID] WARNING : problem registering framework ${framework}, cannot find adequate cmake files in contribution spaces.")
+    	message("[PID] WARNING : problem publishing reference for framework ${framework}, cannot find adequate cmake files in contribution spaces.")
     endif()
+  endforeach()
+  #finally : pushing to each space we can publish to
+  foreach(cs IN LISTS LIST_OF_CS_TO_PUSH)
+    execute_process(COMMAND git push origin master
+                    WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
   endforeach()
 endfunction(publish_Framework_References_In_Contribution_Spaces_Repositories)
 
@@ -1134,18 +1175,30 @@ endfunction(publish_Framework_References_In_Contribution_Spaces_Repositories)
 #
 function(publish_Environment_References_In_Contribution_Spaces_Repositories environment)
   get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${environment} "")
+  set(LIST_OF_CS_TO_PUSH)
   foreach(cs IN LISTS ALL_CONTRIB)
     set(PATH_TO_REF ${cs}/references/ReferEnvironment${environment}.cmake)
     if(EXISTS ${PATH_TO_REF})
+      #first: explicit commit for targetted reference
       execute_process(COMMAND git add ${PATH_TO_REF}
                       WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
-    	execute_process(COMMAND git commit -m "environment ${environment} registered"
+    	execute_process(COMMAND git commit -m "references for environment ${environment} published"
                       WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
-    	execute_process(COMMAND git push origin master
-                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+      #second update before push  (non explicit commit created)
+      update_Contribution_Space_Repository(UPDATE_OK ${cs} FALSE)
+      if(UPDATE_OK)
+        list(APPEND LIST_OF_CS_TO_PUSH ${cs})
+      else()
+        message("[PID] WARNING : problem publishing references for environment ${environment}, cannot find adequate cmake files in workspace.")
+      endif()
     else()
-    	message("[PID] WARNING : problem registering environment ${environment}, cannot find adequate cmake files in workspace.")
+    	message("[PID] WARNING : problem publishing references for environment ${environment}, cannot find adequate cmake files in workspace.")
     endif()
+  endforeach()
+  #finally : pushing to each space we can publish to
+  foreach(cs IN LISTS LIST_OF_CS_TO_PUSH)
+    execute_process(COMMAND git push origin master
+                    WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
   endforeach()
 endfunction(publish_Environment_References_In_Contribution_Spaces_Repositories)
 
@@ -1167,12 +1220,13 @@ endfunction(publish_Environment_References_In_Contribution_Spaces_Repositories)
 #     :cs: the name of target contribution space
 #
 function(publish_All_In_Contribution_Space_Repository cs)
+  update_Contribution_Space_Repository(UPDATE_OK ${cs} FALSE)
+  if(NOT UPDATE_OK)
+    message("[PID] ERROR : problem publishing in ${cs} contribution space. Cannot update contribution space before publishing (see previous logs).")
+    return()
+  endif()
   get_Path_To_Contribution_Space(PATH_TO_CS ${cs})
   if(PATH_TO_CS)
-  	execute_process(COMMAND git add --all
-                    WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
-  	execute_process(COMMAND git commit -m "global update"
-                    WORKING_DIRECTORY ${PATH_TO_CS} OUTPUT_QUIET ERROR_QUIET)
   	execute_process(COMMAND git push origin master
                     WORKING_DIRECTORY ${PATH_TO_CS}
                     OUTPUT_QUIET ERROR_VARIABLE out RESULT_VARIABLE res)
