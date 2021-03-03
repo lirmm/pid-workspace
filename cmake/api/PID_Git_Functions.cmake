@@ -1025,6 +1025,47 @@ endfunction(update_Contribution_Space_Repository)
 #
 # .. ifmode:: internal
 #
+#  .. |commit_Files| replace:: ``commit_Files``
+#  .. _commit_Files:
+#
+#  commit_Files
+#  -------------
+#
+#   .. command:: commit_Files(repo list_of_files message check)
+#
+#     Commit modified files into a given repository.
+#
+#     :repo: the absolute path to repository
+#     :list_of_files: the set of path to file, relative to repo, to be commited
+#     :message: the commit message
+#     :check: if TRUE check that the file exists in repo, otherwise does no check
+#
+#     :COMMIT_OK: the output variable that is true if commit created, false otherwise
+#
+function(commit_Files COMMIT_OK repo list_of_files message check)
+  set(${COMMIT_OK} FALSE PARENT_SCOPE)
+  if(check)
+    foreach(a_file IN LISTS list_of_files)
+      if(NOT EXISTS ${repo}/${a_file})
+        return()
+      endif()
+    endforeach()
+  endif()
+  #if all path OK then proceed to add these files (even if not modified)
+  foreach(a_file IN LISTS list_of_files)
+    execute_process(COMMAND git add ${repo}/${a_file}
+                    WORKING_DIRECTORY ${repo} OUTPUT_QUIET ERROR_QUIET)
+  endforeach()
+  execute_process(COMMAND git commit -m "${message}"
+                  WORKING_DIRECTORY ${repo} OUTPUT_QUIET ERROR_QUIET)
+  set(${COMMIT_OK} TRUE PARENT_SCOPE)
+endfunction(commit_Files)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |publish_Package_References_In_Contribution_Spaces_Repositories| replace:: ``publish_Package_References_In_Contribution_Spaces_Repositories``
 #  .. _publish_Package_References_In_Contribution_Spaces_Repositories:
 #
@@ -1041,15 +1082,8 @@ function(publish_Package_References_In_Contribution_Spaces_Repositories package)
   get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${package} "")
   set(LIST_OF_CS_TO_PUSH)
   foreach(cs IN LISTS ALL_CONTRIB)
-    set(PATH_TO_REF ${cs}/references/Refer${package}.cmake)
-    set(PATH_TO_FIND ${cs}/finds/Find${package}.cmake)
-    if(EXISTS ${PATH_TO_REF} AND EXISTS ${PATH_TO_FIND})
-    	execute_process(COMMAND git add ${PATH_TO_FIND}
-                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
-    	execute_process(COMMAND git add ${PATH_TO_REF}
-                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
-    	execute_process(COMMAND git commit -m "references for package ${package} published"
-                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    commit_Files(COMMIT_RES ${cs} "references/Refer${package}.cmake;finds/Find${package}.cmake" "references for package ${package} published" TRUE)
+    if(COMMIT_RES)
       #second update before push (non explicit commit created)
       update_Contribution_Space_Repository(UPDATE_OK ${cs} FALSE)
       if(UPDATE_OK)
@@ -1088,16 +1122,8 @@ function(publish_Wrapper_References_In_Contribution_Spaces_Repositories wrapper)
   get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${wrapper} "")
   set(LIST_OF_CS_TO_PUSH)
   foreach(cs IN LISTS ALL_CONTRIB)
-    set(PATH_TO_REF ${cs}/references/ReferExternal${wrapper}.cmake)
-    set(PATH_TO_FIND ${cs}/finds/Find${wrapper}.cmake)
-    if(EXISTS ${PATH_TO_REF} AND EXISTS ${PATH_TO_FIND})
-        #first: explicit commit for targetted reference
-    	execute_process(COMMAND git add ${PATH_TO_FIND}
-                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
-    	execute_process(COMMAND git add ${PATH_TO_REF}
-                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
-    	execute_process(COMMAND git commit -m "references for external package ${wrapper} published"
-                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    commit_Files(COMMIT_RES ${cs} "references/ReferExternal${wrapper}.cmake;finds/Find${wrapper}.cmake" "references for external package ${wrapper} published" TRUE)
+    if(COMMIT_RES)
       #second update before push (non explicit commit created)
       update_Contribution_Space_Repository(UPDATE_OK ${cs} FALSE)
       if(UPDATE_OK)
@@ -1136,13 +1162,8 @@ function(publish_Framework_References_In_Contribution_Spaces_Repositories framew
   get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${framework} "")
   set(LIST_OF_CS_TO_PUSH)
   foreach(cs IN LISTS ALL_CONTRIB)
-    set(PATH_TO_REF ${cs}/references/ReferFramework${framework}.cmake)
-    if(EXISTS ${PATH_TO_REF})
-      #first: explicit commit for targetted reference
-      execute_process(COMMAND git add ${PATH_TO_REF}
-                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
-    	execute_process(COMMAND git commit -m "references for framework ${framework} published"
-                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    commit_Files(COMMIT_RES ${cs} "references/ReferFramework${framework}.cmake" "references for framework ${framework} published" TRUE)
+    if(COMMIT_RES)
       #second update before push (non explicit commit created)
       update_Contribution_Space_Repository(UPDATE_OK ${cs} FALSE)
       if(UPDATE_OK)
@@ -1181,13 +1202,8 @@ function(publish_Environment_References_In_Contribution_Spaces_Repositories envi
   get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_CONTRIB ${environment} "")
   set(LIST_OF_CS_TO_PUSH)
   foreach(cs IN LISTS ALL_CONTRIB)
-    set(PATH_TO_REF ${cs}/references/ReferEnvironment${environment}.cmake)
-    if(EXISTS ${PATH_TO_REF})
-      #first: explicit commit for targetted reference
-      execute_process(COMMAND git add ${PATH_TO_REF}
-                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
-    	execute_process(COMMAND git commit -m "references for environment ${environment} published"
-                      WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    commit_Files(COMMIT_RES ${cs} "references/ReferEnvironment${environment}.cmake" "references for environment ${environment} published" TRUE)
+    if(COMMIT_RES)
       #second update before push  (non explicit commit created)
       update_Contribution_Space_Repository(UPDATE_OK ${cs} FALSE)
       if(UPDATE_OK)
