@@ -1368,6 +1368,84 @@ endfunction(find_Provider_Contribution_Space)
 #
 # .. ifmode:: internal
 #
+#  .. |get_Name_Of_Contributions| replace:: ``get_Name_Of_Contributions``
+#  .. get_Name_Of_Contributions:
+#
+#  get_Name_Of_Contributions
+#  --------------------------
+#
+#   .. command:: get_Name_Of_Contributions(LIST_OF_PACKAGES LIST_OF_FRAMEWORKS
+#                                          LIST_OF_ENVIRONMENTS LIST_OF_LICENSES LIST_OF_FORMATS
+#                                          path_to_contrib_space)
+#
+#      Generate the list of name of contributions referenced into a contribution space
+#
+#      :path_to_contrib_space: the path to contribution space repository
+#
+#      :LIST_OF_PACKAGES: output variable that contains the list of name of packages contributions to update
+#      :LIST_OF_FRAMEWORKS: output variable that contains the list of name of frameworks contributions to update
+#      :LIST_OF_ENVIRONMENTS: output variable that contains the list of name of environments contributions to update
+#      :LIST_OF_LICENSES: output variable that contains the list of name of licenses contributions to update
+#      :LIST_OF_FORMATS: output variable that contains the list of name of formats contributions to update
+#
+function(get_Name_Of_Contributions LIST_OF_PACKAGES LIST_OF_FRAMEWORKS LIST_OF_ENVIRONMENTS LIST_OF_LICENSES LIST_OF_FORMATS path_to_contrib_space)
+  set(res_packages)
+  set(res_frameworks)
+  set(res_environments)
+  set(res_licenses)
+  set(res_formats)
+  if(EXISTS ${path_to_contrib_space}/finds)
+    file(GLOB find_files RELATIVE ${path_to_contrib_space}/finds ${path_to_contrib_space}/finds/Find*.cmake)
+    foreach(a_file IN LISTS find_files)
+      if(a_file MATCHES "^Find(.+)\\.cmake$")
+          list(APPEND res_packages ${CMAKE_MATCH_1})
+      endif()
+    endforeach()
+  endif()
+  if(EXISTS ${path_to_contrib_space}/references)
+    file(GLOB ref_files RELATIVE ${path_to_contrib_space}/references ${path_to_contrib_space}/references/Refer*.cmake)
+    foreach(a_file IN LISTS ref_files)
+      if(a_file MATCHES "^ReferExternal(.+)\\.cmake$")
+        list(APPEND res_packages ${CMAKE_MATCH_1})
+      elseif(a_file MATCHES "^ReferFramework(.+)\\.cmake$")
+        list(APPEND res_frameworks ${CMAKE_MATCH_1})
+      elseif(a_file MATCHES "^ReferEnvironment(.+)\\.cmake$")
+        list(APPEND res_environments ${CMAKE_MATCH_1})
+      elseif(a_file MATCHES "^Refer(.+)\\.cmake$")
+        list(APPEND res_packages ${CMAKE_MATCH_1})
+      endif()
+    endforeach()
+  endif()
+  if(res_packages)
+    list(REMOVE_DUPLICATES res_packages)
+  endif()
+  if(EXISTS ${path_to_contrib_space}/licenses)
+    file(GLOB lic_files RELATIVE ${path_to_contrib_space}/licenses ${path_to_contrib_space}/licenses/License*.cmake)
+    foreach(a_file IN LISTS lic_files)
+      if(a_file MATCHES "^License(.+)\\.cmake$")
+          list(APPEND res_licenses ${CMAKE_MATCH_1})
+      endif()
+    endforeach()
+  endif()
+  if(EXISTS ${path_to_contrib_space}/formats)
+    file(GLOB form_files RELATIVE ${path_to_contrib_space}/formats ${path_to_contrib_space}/formats/.clang-format.*)
+    foreach(a_file IN LISTS form_files)
+      if(a_file MATCHES "^\\.clang-format\\.(.+)$")
+          list(APPEND res_formats ${CMAKE_MATCH_1})
+      endif()
+    endforeach()
+  endif()
+  set(${LIST_OF_PACKAGES} ${res_packages} PARENT_SCOPE)
+  set(${LIST_OF_FRAMEWORKS} ${res_frameworks} PARENT_SCOPE)
+  set(${LIST_OF_ENVIRONMENTS} ${res_environments} PARENT_SCOPE)
+  set(${LIST_OF_LICENSES} ${res_licenses} PARENT_SCOPE)
+  set(${LIST_OF_FORMATS} ${res_formats} PARENT_SCOPE)
+endfunction(get_Name_Of_Contributions)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |get_Name_Of_Contributions_From_Modified_Files| replace:: ``get_Name_Of_Contributions_From_Modified_Files``
 #  .. _get_Name_Of_Contributions_From_Modified_Files:
 #
