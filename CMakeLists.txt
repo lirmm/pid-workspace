@@ -292,6 +292,7 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "               - publish: publish the content the contribution space."
 	COMMAND ${CMAKE_COMMAND} -E echo "               - update: update the content the contribution space."
 	COMMAND ${CMAKE_COMMAND} -E echo "               - list: see the whole content referenced into a contribution space."
+	COMMAND ${CMAKE_COMMAND} -E echo "               - find: find the contribution space that reference a given contribution."
 	COMMAND ${CMAKE_COMMAND} -E echo "               - status: see the new content into a contribution space. Usefull in combination to move/copy"
 	COMMAND ${CMAKE_COMMAND} -E echo "                 and publish commands to migrate contributions from one contribution space to another."
 	COMMAND ${CMAKE_COMMAND} -E echo "               - move: move a contribution from one contribution space to another."
@@ -307,11 +308,11 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments for move and copy commands [mandatory]---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - from=*contribution space*: name of the contribution space to move or copy content from."
 	COMMAND ${CMAKE_COMMAND} -E echo "                target space is the one specified using space argument."
-	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments for move, copy and delete commands [mandatory]---"
+	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments for find, move, copy and delete commands [mandatory]---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - content=*name*: name of the content to move, copy or delete. This content must belong to contribution"
 	COMMAND ${CMAKE_COMMAND} -E echo "               space specified by from argument. The content may refer to configruation and or reference files,"
 	COMMAND ${CMAKE_COMMAND} -E echo "               and/or find files, and/or licenses and/or plugin. All files and folders matching the given name will"
-	COMMAND ${CMAKE_COMMAND} -E echo "               be moved / copied / deleted."
+	COMMAND ${CMAKE_COMMAND} -E echo "               be moved / copied / deleted / found."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
