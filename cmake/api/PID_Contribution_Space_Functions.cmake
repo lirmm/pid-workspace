@@ -885,7 +885,8 @@ function(deploy_Contribution_Space DEPLOYED name update publish)
   # initialize repo if needed => create the README file
   file(GLOB REPO_CONTENT ${WORKSPACE_DIR}/contributions/${name}/*)
   list(REMOVE_ITEM REPO_CONTENT "${WORKSPACE_DIR}/contributions/${name}/.git")#remove the .git folder
-  if(NOT REPO_CONTENT)#repository is not not initialize
+  if(NOT REPO_CONTENT)#repository is not initialized
+    #write the readle file
     file(WRITE ${WORKSPACE_DIR}/contributions/${name}/README.md "To use this contribution space inside your workspace:\n```\n")
     if(publish AND update AND (NOT publish STREQUAL update))
       file(APPEND ${WORKSPACE_DIR}/contributions/${name}/README.md "pid contributions cmd=add space=${name} publish=${publish} update=${update}")
@@ -898,6 +899,18 @@ function(deploy_Contribution_Space DEPLOYED name update publish)
     execute_process(COMMAND git add README.md
                     WORKING_DIRECTORY ${WORKSPACE_DIR}/contributions/${name} ERROR_QUIET OUTPUT_QUIET)
     execute_process(COMMAND git commit -m "initializing contribution space with a README"
+                    WORKING_DIRECTORY ${WORKSPACE_DIR}/contributions/${name} ERROR_QUIET OUTPUT_QUIET)
+    execute_process(COMMAND git push origin master
+                    WORKING_DIRECTORY ${WORKSPACE_DIR}/contributions/${name} ERROR_QUIET OUTPUT_QUIET)
+  endif()
+  #automatic corrective action => generate
+  if(NOT EXISTS ${WORKSPACE_DIR}/contributions/${name}/contribution_space_init.cmake)
+    file(WRITE ${WORKSPACE_DIR}/contributions/${name}/contribution_space_init.cmake "set(CONTRIBUTION_SPACE_OFFICIAL_NAME ${name})\n")
+    file(APPEND ${WORKSPACE_DIR}/contributions/${name}/contribution_space_init.cmake "set(CONTRIBUTION_SPACE_OFFICIAL_PUBLISH ${publish})\n")
+    file(APPEND ${WORKSPACE_DIR}/contributions/${name}/contribution_space_init.cmake "set(CONTRIBUTION_SPACE_OFFICIAL_UPDATE ${update})\n")
+    execute_process(COMMAND git add contribution_space_init.cmake
+                    WORKING_DIRECTORY ${WORKSPACE_DIR}/contributions/${name} ERROR_QUIET OUTPUT_QUIET)
+    execute_process(COMMAND git commit -m "adding contribution initialization script"
                     WORKING_DIRECTORY ${WORKSPACE_DIR}/contributions/${name} ERROR_QUIET OUTPUT_QUIET)
     execute_process(COMMAND git push origin master
                     WORKING_DIRECTORY ${WORKSPACE_DIR}/contributions/${name} ERROR_QUIET OUTPUT_QUIET)
@@ -956,7 +969,7 @@ macro(reset_Contribution_Spaces)
     else()
       deploy_Contribution_Space(IS_SUCCESS ${cs} ${CONTRIBUTION_SPACE_${cs}_UPDATE_REMOTE} ${CONTRIBUTION_SPACE_${cs}_PUBLISH_REMOTE})
       if(NOT IS_SUCCESS)
-        message(FATAL_ERROR "[PID] CRITICAL ERROR : cannot deploy contribution space ${cs}, probably due to bad address (${CONTRIBUTION_SPACE_${cs}_PUBLISH_REMOTE}) or connection problems.")
+        message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot deploy contribution space ${cs}, probably due to bad address (${CONTRIBUTION_SPACE_${cs}_PUBLISH_REMOTE}) or connection problems.")
       endif()
     endif()
   endforeach()

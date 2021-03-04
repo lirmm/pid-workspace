@@ -1,7 +1,7 @@
 before_script:
     - . share/pid.sh
     - pid configure -DIN_CI_PROCESS=ON -DADDITIONAL_DEBUG_INFO=ON
-    - pid contributions cmd=add space=pid-tests publish=git@gite.lirmm.fr:pid/tests/pid-tests.git
+    - pid contributions cmd=add update=git@gite.lirmm.fr:pid/tests/pid-tests.git
     - pid contributions cmd=prio_max space=pid-tests
 
 stages:

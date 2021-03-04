@@ -1972,20 +1972,20 @@ endfunction(is_Repository_Remote_Defined)
 #
 #     :url: the git url to clone
 #
-#     :IS_CLONED: the output variable that is TRUE if repository has been cloned, FALSE otherwise
+#     :PATH_TO_REPO: the output variable that contains the path to the cloned repository if clone succeeded, nothing otherwise
 #
-function(clone_Contribution_Space_Repository IS_CLONED url)
+function(clone_Contribution_Space_Repository PATH_TO_REPO url)
   set(PATH_TO_CONTRIB ${WORKSPACE_DIR}/contributions)
   execute_process(COMMAND git clone ${url}
                   WORKING_DIRECTORY ${PATH_TO_CONTRIB}
                   ERROR_QUIET OUTPUT_QUIET)#always quiet
   get_Repository_Name(RES_NAME ${url})
   if(NOT EXISTS ${PATH_TO_CONTRIB}/${RES_NAME} OR NOT IS_DIRECTORY ${PATH_TO_CONTRIB}/${RES_NAME})
-    set(${IS_CLONED} FALSE PARENT_SCOPE)
+    set(${PATH_TO_REPO} PARENT_SCOPE)
     message("[PID] ERROR : the url of the contribution space repository (${url}) cannot be cloned.")
     return()
   endif()
-  set(${IS_CLONED} TRUE PARENT_SCOPE)
+  set(${PATH_TO_REPO} ${PATH_TO_CONTRIB}/${RES_NAME} PARENT_SCOPE)
 endfunction(clone_Contribution_Space_Repository)
 
 #.rst:
