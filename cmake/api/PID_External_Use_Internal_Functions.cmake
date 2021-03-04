@@ -469,81 +469,259 @@ endfunction(generate_Local_Dependency_Symlinks)
 #
 # .. ifmode:: internal
 #
-#  .. |manage_Dependent_PID_Package| replace:: ``manage_Dependent_PID_Package``
-#  .. _manage_Dependent_PID_Package:
+#  .. |manage_Dependent_PID_Native_Package| replace:: ``manage_Dependent_PID_Native_Package``
+#  .. _manage_Dependent_PID_Native_Package:
 #
-#  manage_Dependent_PID_Package
-#  ----------------------------
+#  manage_Dependent_PID_Native_Package
+#  -----------------------------------
 #
-#   .. command:: manage_Dependent_PID_Package(DEPLOYED package version)
+#   .. command:: manage_Dependent_PID_Native_Package(DEPLOYED package possible_versions exact_versions)
 #
-#    Deploy a PID package into the PID workspace from a local (non PID) project.
+#    Find (and eventually deploy) a PID native package into the PID workspace from a local (non PID) project.
 #
 #     :package: the name of the package
-#     :version: the version of the package (may be left empty)
+#     :possible_versions: the possible_versions of the package (may be left empty)
+#     :exact_versions: among version those who are exact (may be left empty)
 #
 #     :DEPLOYED: the output variable that is TRUE if package has been deployed, FALSE otherwise.
 #
-function(manage_Dependent_PID_Package DEPLOYED package version)
-  append_Unique_In_Cache(${PROJECT_NAME}_PID_PACKAGES ${package})#reset list of packages
+function(manage_Dependent_PID_Native_Package DEPLOYED package possible_versions exact_versions)
+  set(${DEPLOYED} FALSE PARENT_SCOPE)
+  append_Unique_In_Cache(${PROJECT_NAME}_PID_PACKAGES ${package})#memorize in list of packages
   set(previous_mode ${CMAKE_BUILD_TYPE})
   set(CMAKE_BUILD_TYPE ${WORKSPACE_MODE})
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-  list(FIND DECLARED_SYSTEM_DEPENDENCIES ${package} INDEX_IN_DECLARED_OS_DEPS)
-  if(NOT INDEX_IN_DECLARED_OS_DEPS EQUAL -1)
-    set(${package}_FIND_VERSION_SYSTEM TRUE)
-    find_package_resolved(${package} ${${package}_VERSION_STRING} EXACT)
-  else()
-    set(${package}_FIND_VERSION_SYSTEM FALSE)
-    if(NOT version)
-      find_package_resolved(${package})
-    else()
-      find_package_resolved(${package} ${version} EXACT)
+
+  #normalize the version numers to avoid any problem
+  set(list_of_possible_versions)
+	set(list_of_exact_versions)
+  set(default_version) #version to use if no choice already made
+	if(possible_versions)
+		set(list_of_possible_versions)
+		set(list_of_exact_versions)
+		foreach(ver IN LISTS possible_versions)
+			normalize_Version_String(${ver} NORM_STR)
+			list(APPEND list_of_possible_versions ${NORM_STR})
+		endforeach()
+		foreach(ver IN LISTS exact_versions)
+			normalize_Version_String(${ver} NORM_STR)
+			list(APPEND list_of_exact_versions ${NORM_STR})
+		endforeach()
+		list(LENGTH list_of_possible_versions SIZE)
+		list(GET list_of_possible_versions 0 default_version) #by defaut this is the first element in the list that is taken
+	endif()
+
+  set(used_version)
+  set(used_exact)
+  get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${package})
+  if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
+		if(list_of_possible_versions) #list of possible versions is constrained
+			#finding the best compatible version, if any (otherwise returned "version" variable is empty)
+			find_Best_Compatible_Version(force_version FALSE ${package} ${REQUIRED_VERSION} "${IS_EXACT}" FALSE "${list_of_possible_versions}" "${list_of_exact_versions}")
+			if(NOT force_version)#the build context is a dependent build and no compatible version has been found
+        set(CMAKE_BUILD_TYPE ${previous_mode})#NOTE: to avoid any bug due to mode change in calling project
+				message("[PID] ERROR : In ${PROJECT_NAME} dependency ${package} is used in another package with version ${REQUIRED_VERSION}, but this version is not usable in this project that depends on versions : ${list_of_possible_versions}.")
+        return()
+      else()
+        set(used_version ${force_version})
+			endif()
+		else()#no constraint on version => use the already required one
+      set(used_version ${REQUIRED_VERSION})
+		endif()
+    if(IS_EXACT)
+	    set(used_exact EXACT)
     endif()
-  endif()
+	else()#classical build, the package is not already manage elsewhere
+  	if(list_of_possible_versions)#there is a constraint on usable versions
+      set(used_version ${default_version})
+      if(list_of_exact_versions)
+        list(FIND list_of_exact_versions ${default_version} INDEX)
+        if(NOT INDEX EQUAL -1 )#found in exact versions
+          set(used_exact EXACT)
+        endif()
+      endif()
+    #else no constraint on version
+    endif()
+	endif()
   if(NOT ${package}_FOUND${VAR_SUFFIX})
-    #TODO deploy from workspace
-    set(ENV{manage_progress} FALSE)
-    set(release_only FALSE)
-    if(CMAKE_BUILD_TYPE MATCHES Debug)
-      set(release_only FALSE)
-    endif()
-    #TODO need to check this
-    if(NOT INDEX_IN_DECLARED_OS_DEPS EQUAL -1)#deploying external dependency as os variant
-      execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=system release_only=${release_only}
-                      WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
-    else()
+    set(${package}_FIND_VERSION_SYSTEM FALSE)
+    #find first time !!
+    find_package_resolved(${package} ${used_version} ${used_exact} REQUIRED)
+    if(NOT ${package}_FOUND${VAR_SUFFIX})
+      #NOTE: need to deploy the paclkage into workspace
+      set(ENV{manage_progress} FALSE)#NOTE using specific argument to avoid deleting the curently used global progress file
+      set(release_only TRUE)
+      if(CMAKE_BUILD_TYPE MATCHES Debug)
+        set(release_only FALSE)
+      endif()
       if(version)
-        execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=${version} release_only=${release_only}
-        WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
+        execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=${used_version} release_only=${release_only}
+                        WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
       else()
         execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} release_only=${release_only}
-        WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
+                        WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
       endif()
+      unset(ENV{manage_progress})
+      #find again
+      find_package_resolved(${package} ${used_version} ${used_exact} REQUIRED)
     endif()
-    unset(ENV{manage_progress})
-    #find again to see if deployment process went well
-    if(NOT INDEX_IN_DECLARED_OS_DEPS EQUAL -1)
-      set(${package}_FIND_VERSION_SYSTEM TRUE)
-    else()
-      set(${package}_FIND_VERSION_SYSTEM FALSE)
-    endif()
-    if(NOT version)
-    	find_package_resolved(${package} REQUIRED)
-    else()
-    	find_package_resolved(${package} ${version} EXACT REQUIRED)
-    endif()
+    add_Chosen_Package_Version_In_Current_Process(${package})# report the choice made to global build process
   endif()
 
   if(${package}_FOUND${VAR_SUFFIX})
     set(${DEPLOYED} TRUE PARENT_SCOPE)
     resolve_Package_Dependencies(${package} ${WORKSPACE_MODE} TRUE "${release_only}")
     set(${package}_RPATH ${${package}_ROOT_DIR}/.rpath CACHE INTERNAL "")
-  else()
-    set(${DEPLOYED} FALSE PARENT_SCOPE)
   endif()
-  set(CMAKE_BUILD_TYPE ${previous_mode})
-endfunction(manage_Dependent_PID_Package)
+  set(CMAKE_BUILD_TYPE ${previous_mode})#NOTE: to avoid any bug due to mode change in calling project
+endfunction(manage_Dependent_PID_Native_Package)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Dependent_PID_External_Package| replace:: ``manage_Dependent_PID_External_Package``
+#  .. _manage_Dependent_PID_External_Package:
+#
+#  manage_Dependent_PID_External_Package
+#  -------------------------------------
+#
+#   .. command:: manage_Dependent_PID_External_Package(DEPLOYED package possible_versions exact_versions)
+#
+#    Find (and eventually deploy) a PID external package into the PID workspace from a local (non PID) project.
+#
+#     :package: the name of the package
+#     :possible_versions: the possible_versions of the package (may be left empty)
+#     :exact_versions: among version those who are exact (may be left empty)
+#
+#     :DEPLOYED: the output variable that is TRUE if package has been deployed, FALSE otherwise.
+#
+function(manage_Dependent_PID_External_Package DEPLOYED package possible_versions exact_versions)
+  set(${DEPLOYED} FALSE PARENT_SCOPE)
+  append_Unique_In_Cache(${PROJECT_NAME}_PID_PACKAGES ${package})#memorize in list of packages
+  set(previous_mode ${CMAKE_BUILD_TYPE})
+  set(CMAKE_BUILD_TYPE ${WORKSPACE_MODE})
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+
+  #normalize the version numers to avoid any problem
+  set(list_of_possible_versions)
+	set(list_of_exact_versions)
+  set(default_version) #version to use if no choice already made
+	if(possible_versions)
+		set(list_of_possible_versions)
+		set(list_of_exact_versions)
+		foreach(ver IN LISTS possible_versions)
+			normalize_Version_String(${ver} NORM_STR)
+			list(APPEND list_of_possible_versions ${NORM_STR})
+		endforeach()
+		foreach(ver IN LISTS exact_versions)
+			normalize_Version_String(${ver} NORM_STR)
+			list(APPEND list_of_exact_versions ${NORM_STR})
+		endforeach()
+		list(LENGTH list_of_possible_versions SIZE)
+		list(GET list_of_possible_versions 0 default_version) #by defaut this is the first element in the list that is taken
+	endif()
+
+  set(used_version)
+  set(used_exact)
+  #check if local project already used the package as an explicit system dependency
+  list(FIND DECLARED_SYSTEM_DEPENDENCIES ${package} INDEX_IN_DECLARED_OS_DEPS)
+  if(INDEX_IN_DECLARED_OS_DEPS EQUAL -1)
+    set(used_system FALSE)
+  else()
+    set(used_system TRUE)
+  endif()
+
+  ################
+  get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${package})
+  if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
+    if(used_system AND NOT IS_SYSTEM)
+      set(CMAKE_BUILD_TYPE ${previous_mode})#NOTE: to avoid any bug due to mode change in calling project
+      message("[PID] ERROR : In ${PROJECT_NAME} dependency ${package} is required to be system version while a NON system version is already required by other dependencies.")
+      return()
+    endif()
+    if(list_of_possible_versions) #list of possible versions is constrained
+  		#finding the best compatible version, if any (otherwise returned "version" variable is empty)
+  		find_Best_Compatible_Version(force_version TRUE ${package} ${REQUIRED_VERSION} "${IS_EXACT}" "${IS_SYSTEM}" "${list_of_possible_versions}" "${list_of_exact_versions}")
+  		if(NOT force_version)#the build context is a dependent build and no compatible version has been found
+        set(CMAKE_BUILD_TYPE ${previous_mode})#NOTE: to avoid any bug due to mode change in calling project
+				message("[PID] ERROR : In ${PROJECT_NAME} dependency ${package} is used in another package with version ${REQUIRED_VERSION}, but this version is not usable in this project that depends on versions : ${list_of_possible_versions}.")
+				return()
+  		else()#a version is forced
+        set(used_version ${force_version})
+  		endif()
+  	else()#no constraint on version => use the required one
+      set(used_version ${force_version})
+
+  		if(IS_SYSTEM)
+  			set(chosen_version_for_selection "SYSTEM")#specific keyword to use to specify that the SYSTEM version is in use
+  		else()
+  			set(chosen_version_for_selection ${REQUIRED_VERSION})
+  		endif()
+  		set(${dep_package}_ALTERNATIVE_VERSION_USED ${chosen_version_for_selection} CACHE STRING "${message_str}" FORCE)#explicitlty set the dependency to the chosen version number
+  	endif()
+    if(IS_EXACT)
+  	 set(used_exact EXACT)
+    endif()
+    set(used_system ${IS_SYSTEM})
+  else()
+    if(NOT used_system)
+      if(list_of_possible_versions)#there is a constraint on usable versions
+        set(used_version ${default_version})
+        if(list_of_exact_versions)
+          list(FIND list_of_exact_versions ${default_version} INDEX)
+          if(NOT INDEX EQUAL -1 )#found in exact versions
+            set(used_exact EXACT)
+          endif()
+        endif()
+      #else no constraint on version
+      endif()
+    else()
+      set(used_exact EXACT)
+    endif()
+  endif()
+
+  if(NOT ${package}_FOUND${VAR_SUFFIX})
+    find_package_resolved(${package} ${used_version} ${used_exact} REQUIRED)
+    if(NOT ${package}_FOUND${VAR_SUFFIX})
+      #NOTE: need to deploy the paclkage into workspace
+      set(ENV{manage_progress} FALSE)#NOTE using specific argument to avoid deleting the curently used global progress file
+      set(release_only TRUE)
+      if(CMAKE_BUILD_TYPE MATCHES Debug)
+        set(release_only FALSE)
+      endif()
+      if(used_system)#deploying external dependency as os variant
+        execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=system release_only=${release_only}
+                        WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
+      else()
+        if(version)
+          execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=${version} release_only=${release_only}
+                          WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
+        else()
+          execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} release_only=${release_only}
+                          WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
+        endif()
+      endif()
+      unset(ENV{manage_progress})
+      #find to see if deployment process went well
+      if(used_system)
+        set(${package}_FIND_VERSION_SYSTEM TRUE)
+      else()
+        set(${package}_FIND_VERSION_SYSTEM FALSE)
+      endif()
+      find_package_resolved(${package} ${used_version} ${used_exact} REQUIRED)
+    endif()
+    add_Chosen_Package_Version_In_Current_Process(${package})# report the choice made to global build process
+  endif()
+
+  if(${package}_FOUND${VAR_SUFFIX})
+    set(${DEPLOYED} TRUE PARENT_SCOPE)
+    resolve_Package_Dependencies(${package} ${WORKSPACE_MODE} TRUE "${release_only}")
+    set(${package}_RPATH ${${package}_ROOT_DIR}/.rpath CACHE INTERNAL "")
+  endif()
+  set(CMAKE_BUILD_TYPE ${previous_mode})#NOTE: to avoid any bug due to mode change in calling project
+endfunction(manage_Dependent_PID_External_Package)
 
 
 #.rst:

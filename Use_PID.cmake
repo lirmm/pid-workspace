@@ -196,11 +196,11 @@ macro(add_PID_Contribution_Space)
 	list(FIND CONTRIBUTION_SPACES ${ADD_PID_CONTRIBUTION_SPACE_NAME} INDEX)
 	if(INDEX EQUAL -1)
 		add_Contribution_Space(${ADD_PID_CONTRIBUTION_SPACE_NAME} "${ADD_PID_CONTRIBUTION_SPACE_URL}" "${ADD_PID_CONTRIBUTION_SPACE_URL}")
-		
+
 		if(ADD_PID_CONTRIBUTION_SPACE_PRIORITY)
 			set(temp_list ${CONTRIBUTION_SPACES})
 			list(REMOVE_ITEM temp_list ${ADD_PID_CONTRIBUTION_SPACE_NAME})
-			
+
 			if(ADD_PID_CONTRIBUTION_SPACE_PRIORITY STREQUAL MIN)
 				message("[PID] INFO : setting the contribution space ${ADD_PID_CONTRIBUTION_SPACE_NAME} priority to the minimum")
 				list(APPEND temp_list ${ADD_PID_CONTRIBUTION_SPACE_NAME}) # Put the CS at the end
@@ -223,7 +223,7 @@ macro(add_PID_Contribution_Space)
 		# Force a reload to make new references available
 		load_Platform_Info()
 	else()
-		message("[PID] INFO : contribution space ${ADD_PID_CONTRIBUTION_SPACE_NAME} already exists, doing nothing")						
+		message("[PID] INFO : contribution space ${ADD_PID_CONTRIBUTION_SPACE_NAME} already exists, doing nothing")
 	endif()
 endmacro(add_PID_Contribution_Space)
 
@@ -266,7 +266,8 @@ endmacro(add_PID_Contribution_Space)
 #      import_PID_Package(PACKAGE pid-rpath VERSION 2.1.1)
 #
 function(import_PID_Package)
-set(oneValueArgs PACKAGE NAME VERSION)
+set(options)
+set(oneValueArgs PACKAGE NAME)
 set(multiValueArgs)
 cmake_parse_arguments(IMPORT_PID_PACKAGE "" "${oneValueArgs}" "" ${ARGN})
 if(NOT IMPORT_PID_PACKAGE_PACKAGE AND NOT IMPORT_PID_PACKAGE_NAME)
@@ -276,13 +277,30 @@ elseif(IMPORT_PID_PACKAGE_PACKAGE)
 else()
 	set(package_name ${IMPORT_PID_PACKAGE_NAME})
 endif()
-if(NOT IMPORT_PID_PACKAGE_VERSION)
-	message("[PID] WARNING : no version given to import_PID_Package, last available version of ${package_name} will be used.")
+get_Package_Type(${package_name} PACK_TYPE)
+if(PACK_TYPE STREQUAL "UNKNOWN")
+	finish_Progress(${GLOBAL_PROGRESS_VAR})
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME}, declared dependency to package ${package_name}, has unknown type.")
+else()
+	set(package_type ${PACK_TYPE})
 endif()
-manage_Dependent_PID_Package(DEPLOYED ${package_name} "${IMPORT_PID_PACKAGE_VERSION}")
+if(IMPORT_PID_PACKAGE_UNPARSED_ARGUMENTS)
+  parse_Package_Dependency_All_Version_Arguments(${package_name} IMPORT_PID_PACKAGE_UNPARSED_ARGUMENTS list_of_versions exact_versions REMAINING_TO_PARSE PARSE_RESULT)
+  if(NOT PARSE_RESULT)#error during parsing process
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} bad arguments when calling import_PID_Package, declared dependency to package ${package_name}, see previous messages.")
+  endif()
+endif()
+
+if(package_type STREQUAL "EXTERNAL")#it is an external package
+  manage_Dependent_PID_External_Package(DEPLOYED ${package_name} "${list_of_versions}" "${exact_versions}")
+else()#otherwise a native package
+	manage_Dependent_PID_Native_Package(DEPLOYED ${package_name} "${list_of_versions}" "${exact_versions}")
+endif()
+
 if(NOT DEPLOYED)
 	finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling import_PID_Package, the package ${package_name} cannot be found and deployed.")
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} when calling import_PID_Package, the package ${package_name} cannot be found and deployed.")
 	return()
 endif()
 endfunction(import_PID_Package)
