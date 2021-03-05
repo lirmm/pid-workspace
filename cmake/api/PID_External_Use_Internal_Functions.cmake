@@ -677,8 +677,6 @@ function(manage_Dependent_PID_External_Package DEPLOYED package possible_version
         endif()
       #else no constraint on version
       endif()
-    else()
-      set(used_exact EXACT)
     endif()
   endif()
 
