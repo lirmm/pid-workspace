@@ -681,6 +681,7 @@ endfunction(check_Component_Elements_Exist)
 #
 function (all_Components FILE_NOTFOUND package version search_path)
 set(${FILE_NOTFOUND} FALSE PARENT_SCOPE)
+reset_Native_Package_Dependency_Cached_Variables_From_Use(${package} ${CMAKE_BUILD_TYPE} FALSE)#NOTE: no recursion, only clean info local to used package
 include(${search_path}/share/Use${package}-${version}.cmake  OPTIONAL RESULT_VARIABLE res)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
 if(	${res} STREQUAL NOTFOUND
 	OR NOT DEFINED ${package}_COMPONENTS) #if there is no component defined for the package there is an error
@@ -721,6 +722,7 @@ endfunction(all_Components)
 function (select_Components FILE_NOTFOUND ALL_COMPONENTS_FOUND package version search_path list_of_components)
 set(${FILE_NOTFOUND} FALSE PARENT_SCOPE)
 set(${ALL_COMPONENTS_FOUND} TRUE PARENT_SCOPE)
+reset_Native_Package_Dependency_Cached_Variables_From_Use(${package} ${CMAKE_BUILD_TYPE} FALSE)#NOTE: no recursion, only clean info local to used package
 include(${search_path}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
 if(${res} STREQUAL NOTFOUND)
 	set(${FILE_NOTFOUND} TRUE PARENT_SCOPE)
@@ -2043,6 +2045,7 @@ if(EXIST)
 	endif()
 	if(VERSION_TO_USE)#a good version of the package has been found
     set(${package}_ROOT_DIR ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH}/${VERSION_TO_USE} CACHE INTERNAL "")
+    reset_External_Package_Dependency_Cached_Variables_From_Use(${package} ${CMAKE_BUILD_TYPE} FALSE)
     include(${${package}_ROOT_DIR}/share/Use${package}-${VERSION_TO_USE}.cmake  OPTIONAL)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
     if(is_system)# an OS variant is required
       if(NOT ${package}_BUILT_OS_VARIANT)#the binary package is NOT an OS variant

@@ -74,9 +74,9 @@ function(reset_Local_Components_Info path mode)
     foreach(dep_package IN LISTS ${PROJECT_NAME}_PID_PACKAGES)
       get_Package_Type(${dep_package} PACK_TYPE)
       if(PACK_TYPE STREQUAL "EXTERNAL")
-        reset_External_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${WORKSPACE_MODE})
+        reset_External_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${WORKSPACE_MODE} TRUE)
       else()
-        reset_Native_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${WORKSPACE_MODE})
+        reset_Native_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${WORKSPACE_MODE} TRUE)
       endif()
     endforeach()
     set(${PROJECT_NAME}_PID_PACKAGES CACHE INTERNAL "")#reset list of packages
@@ -507,7 +507,6 @@ function(manage_Dependent_PID_Native_Package DEPLOYED package possible_versions 
 			normalize_Version_String(${ver} NORM_STR)
 			list(APPEND list_of_exact_versions ${NORM_STR})
 		endforeach()
-		list(LENGTH list_of_possible_versions SIZE)
 		list(GET list_of_possible_versions 0 default_version) #by defaut this is the first element in the list that is taken
 	endif()
 
@@ -546,7 +545,7 @@ function(manage_Dependent_PID_Native_Package DEPLOYED package possible_versions 
   if(NOT ${package}_FOUND${VAR_SUFFIX})
     set(${package}_FIND_VERSION_SYSTEM FALSE)
     #find first time !!
-    find_package_resolved(${package} ${used_version} ${used_exact} REQUIRED)
+    find_package_resolved(${package} ${used_version} ${used_exact})
     if(NOT ${package}_FOUND${VAR_SUFFIX})
       #NOTE: need to deploy the paclkage into workspace
       set(ENV{manage_progress} FALSE)#NOTE using specific argument to avoid deleting the curently used global progress file
@@ -619,7 +618,6 @@ function(manage_Dependent_PID_External_Package DEPLOYED package possible_version
 			normalize_Version_String(${ver} NORM_STR)
 			list(APPEND list_of_exact_versions ${NORM_STR})
 		endforeach()
-		list(LENGTH list_of_possible_versions SIZE)
 		list(GET list_of_possible_versions 0 default_version) #by defaut this is the first element in the list that is taken
 	endif()
 
@@ -652,18 +650,11 @@ function(manage_Dependent_PID_External_Package DEPLOYED package possible_version
         set(used_version ${force_version})
   		endif()
   	else()#no constraint on version => use the required one
-      set(used_version ${force_version})
-
-  		if(IS_SYSTEM)
-  			set(chosen_version_for_selection "SYSTEM")#specific keyword to use to specify that the SYSTEM version is in use
-  		else()
-  			set(chosen_version_for_selection ${REQUIRED_VERSION})
-  		endif()
-  		set(${dep_package}_ALTERNATIVE_VERSION_USED ${chosen_version_for_selection} CACHE STRING "${message_str}" FORCE)#explicitlty set the dependency to the chosen version number
+      set(used_version ${REQUIRED_VERSION})
+      if(IS_EXACT)
+        set(used_exact EXACT)
+      endif()
   	endif()
-    if(IS_EXACT)
-  	 set(used_exact EXACT)
-    endif()
     set(used_system ${IS_SYSTEM})
   else()
     if(NOT used_system)
@@ -681,7 +672,7 @@ function(manage_Dependent_PID_External_Package DEPLOYED package possible_version
   endif()
 
   if(NOT ${package}_FOUND${VAR_SUFFIX})
-    find_package_resolved(${package} ${used_version} ${used_exact} REQUIRED)
+    find_package_resolved(${package} ${used_version} ${used_exact})
     if(NOT ${package}_FOUND${VAR_SUFFIX})
       #NOTE: need to deploy the paclkage into workspace
       set(ENV{manage_progress} FALSE)#NOTE using specific argument to avoid deleting the curently used global progress file

@@ -1198,6 +1198,8 @@ function(reset_Build_Info_Cached_Variables_From_Use package mode)#common for ext
   #this is only usefull  avoid having BUGS in package build process after target platform ABI has been changed in workspace
   set(${package}_BUILT_FOR_DISTRIBUTION CACHE INTERNAL "")
   set(${package}_BUILT_FOR_DISTRIBUTION_VERSION CACHE INTERNAL "")
+  set(${package}_BUILT_FOR_INSTANCE  CACHE INTERNAL "")
+  set(${package}_BUILT_RELEASE_ONLY CACHE INTERNAL "")
   set(${package}_BUILT_OS_VARIANT CACHE INTERNAL "")#only for external but no side effects on natives
 
   foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX})
@@ -1216,14 +1218,15 @@ endfunction(reset_Build_Info_Cached_Variables_From_Use)
 #  reset_Native_Package_Dependency_Cached_Variables_From_Use
 #  ---------------------------------------------------------
 #
-#   .. command:: reset_Native_Package_Dependency_Cached_Variables_From_Use(package mode)
+#   .. command:: reset_Native_Package_Dependency_Cached_Variables_From_Use(package mode recursive)
 #
 #   Reset all cache internal variables coming from the use file of a native package used as a dependency in the current context.
 #
 #     :package: the name of the native package dependency.
 #     :mode: the build mode.
+#     :recursive: if TRUE the varoables of package dependencies will also be reset, otherwise only variables local to the component will be reset.
 #
-function(reset_Native_Package_Dependency_Cached_Variables_From_Use package mode)
+function(reset_Native_Package_Dependency_Cached_Variables_From_Use package mode recursive)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   reset_Build_Info_Cached_Variables_From_Use(${package} ${mode})
   #cleaning everything
@@ -1254,7 +1257,9 @@ function(reset_Native_Package_Dependency_Cached_Variables_From_Use package mode)
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_EXACT${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_SYSTEM${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_COMPONENTS${VAR_SUFFIX}  CACHE INTERNAL "")
-    reset_External_Package_Dependency_Cached_Variables_From_Use(${ext_dep} ${mode})#recursion !!
+    if(recursive)
+      reset_External_Package_Dependency_Cached_Variables_From_Use(${ext_dep} ${mode} TRUE)#recursion !!
+    endif()
   endforeach()
   set(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
 
@@ -1264,7 +1269,9 @@ function(reset_Native_Package_Dependency_Cached_Variables_From_Use package mode)
     set(${package}_DEPENDENCY_${nat_dep}_VERSION${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_DEPENDENCY_${nat_dep}_VERSION_EXACT${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_DEPENDENCY_${nat_dep}_COMPONENTS${VAR_SUFFIX} CACHE INTERNAL "")
-    reset_Native_Package_Dependency_Cached_Variables_From_Use(${nat_dep} ${mode})#recursion !!
+    if(recursive)
+      reset_Native_Package_Dependency_Cached_Variables_From_Use(${nat_dep} ${mode} TRUE)#recursion !!
+    endif()
   endforeach()
   set(${package}_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
 endfunction(reset_Native_Package_Dependency_Cached_Variables_From_Use)
@@ -1279,14 +1286,15 @@ endfunction(reset_Native_Package_Dependency_Cached_Variables_From_Use)
 #  reset_External_Package_Dependency_Cached_Variables_From_Use
 #  -----------------------------------------------------------
 #
-#   .. command:: reset_External_Package_Dependency_Cached_Variables_From_Use(package mode)
+#   .. command:: reset_External_Package_Dependency_Cached_Variables_From_Use(package mode recursive)
 #
 #   Reset all cache internal variables coming from the use file of an external package used as a dependency in the current context.
 #
 #     :package: the name of the external package dependency.
 #     :mode: the build mode.
+#     :recursive: if TRUE the varoables of package dependencies will also be reset, otherwise only variables local to the component will be reset.
 #
-function(reset_External_Package_Dependency_Cached_Variables_From_Use package mode)
+function(reset_External_Package_Dependency_Cached_Variables_From_Use package mode recursive)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   reset_Build_Info_Cached_Variables_From_Use(${package} ${mode})
   #cleaning
@@ -1332,7 +1340,9 @@ function(reset_External_Package_Dependency_Cached_Variables_From_Use package mod
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_EXACT${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_SYSTEM${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_COMPONENTS${VAR_SUFFIX}  CACHE INTERNAL "")
-    reset_External_Package_Dependency_Cached_Variables_From_Use(${ext_dep} ${mode})#recursion !!
+    if(recursive)
+      reset_External_Package_Dependency_Cached_Variables_From_Use(${ext_dep} ${mode} TRUE)#recursion !!
+    endif()
   endforeach()
   set(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
 
@@ -1403,7 +1413,7 @@ function(reset_Package_Description_Cached_Variables)
 		set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
-    reset_Native_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${CMAKE_BUILD_TYPE})
+    reset_Native_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${CMAKE_BUILD_TYPE} TRUE)
   endforeach()
 	set(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 
@@ -1415,7 +1425,7 @@ function(reset_Package_Description_Cached_Variables)
 		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_SYSTEM${USE_MODE_SUFFIX} CACHE INTERNAL "")
-    reset_External_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${CMAKE_BUILD_TYPE})
+    reset_External_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${CMAKE_BUILD_TYPE} TRUE)
   endforeach()
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 
