@@ -340,7 +340,8 @@ set(info_args "\
 	-DTARGET_FRAMEWORK=\${framework} \
 	-DTARGET_ENVIRONMENT=\${environment} \
 	-DTARGET_LANGUAGE=\${language} \
-	-DTARGET_LICENSE=\${license} ")
+	-DTARGET_LICENSE=\${license} \
+  -DSEARCH_EXPR=\${search} ")
 add_PID_Command(info Print_PID_Workspace_Info.cmake)
 
 ## deploying a package (either soure repository or binary package relocatable archive)
