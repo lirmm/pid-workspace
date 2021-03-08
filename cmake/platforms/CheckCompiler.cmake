@@ -19,6 +19,78 @@
 
 #check simply ised to have a clean and standardized way to get compiler identification in PID
 
+# adapted from https://github.com/lefticus/cpp_starter_project/blob/master/cmake/CompilerWarnings.cmake
+set(MSVC_MORE_WARNINGS
+  /W4 # Baseline reasonable warnings
+)
+set(MSVC_ALL_WARNINGS
+  ${MSVC_MORE_WARNINGS}
+  /w14242 # 'identifier': conversion from 'type1' to 'type1', possible loss of data
+  /w14254 # 'operator': conversion from 'type1:field_bits' to 'type2:field_bits', possible loss of data
+  /w14263 # 'function': member function does not override any base class virtual member function
+  /w14265 # 'classname': class has virtual functions, but destructor is not virtual instances of this class may not
+          # be destructed correctly
+  /w14287 # 'operator': unsigned/negative constant mismatch
+  /we4289 # nonstandard extension used: 'variable': loop control variable declared in the for-loop is used outside
+          # the for-loop scope
+  /w14296 # 'operator': expression is always 'boolean_value'
+  /w14311 # 'variable': pointer truncation from 'type1' to 'type2'
+  /w14545 # expression before comma evaluates to a function which is missing an argument list
+  /w14546 # function call before comma missing argument list
+  /w14547 # 'operator': operator before comma has no effect; expected operator with side-effect
+  /w14549 # 'operator': operator before comma has no effect; did you intend 'operator'?
+  /w14555 # expression has no effect; expected expression with side- effect
+  /w14619 # pragma warning: there is no warning number 'number'
+  /w14640 # Enable warning on thread un-safe static member initialization
+  /w14826 # Conversion from 'type1' to 'type_2' is sign-extended. This may cause unexpected runtime behavior.
+  /w14905 # wide string literal cast to 'LPSTR'
+  /w14906 # string literal cast to 'LPWSTR'
+  /w14928 # illegal copy-initialization; more than one user-defined conversion has been implicitly applied
+  /permissive- # standards conformance mode for MSVC compiler.
+)
+set(MSVC_WARNINGS_AS_ERRORS
+  /WX
+)
+
+set(CLANG_MORE_WARNINGS
+  -Wall
+  -Wextra # reasonable and standard
+)
+set(CLANG_ALL_WARNINGS
+  ${CLANG_MORE_WARNINGS}
+  -Wshadow # warn the user if a variable declaration shadows one from a parent context
+  -Wnon-virtual-dtor # warn the user if a class with virtual functions has a non-virtual destructor. This helps
+                    # catch hard to track down memory errors
+  -Wold-style-cast # warn for c-style casts
+  -Wcast-align # warn for potential performance problem casts
+  -Wunused # warn on anything being unused
+  -Woverloaded-virtual # warn if you overload (not override) a virtual function
+  -Wpedantic # warn if non-standard C++ is used
+  -Wconversion # warn on type conversions that may lose data
+  -Wsign-conversion # warn on sign conversions
+  -Wnull-dereference # warn if a null dereference is detected
+  -Wdouble-promotion # warn if float is implicit promoted to double
+  -Wformat=2 # warn on security issues around functions that format output (ie printf)
+)
+set(CLANG_WARNINGS_AS_ERRORS
+  -Werror
+)
+
+set(GCC_MORE_WARNINGS
+  ${CLANG_MORE_WARNINGS}
+)
+set(GCC_ALL_WARNINGS
+  ${CLANG_ALL_WARNINGS}
+  -Wmisleading-indentation # warn if indentation implies blocks where blocks do not exist
+  -Wduplicated-cond # warn if if / else chain has duplicated conditions
+  -Wduplicated-branches # warn if if / else branches have duplicated code
+  -Wlogical-op # warn about logical operations being used where bitwise were probably wanted
+  -Wuseless-cast # warn if you perform a cast to the same type
+)
+set(GCC_WARNINGS_AS_ERRORS
+  ${CLANG_WARNINGS_AS_ERRORS}
+)
+
 if (CMAKE_ASM_COMPILER_ID MATCHES "GNU" OR CMAKE_COMPILER_IS_GNUCXX)
   set(CURRENT_ASM_COMPILER "gcc")
 elseif(CMAKE_ASM_COMPILER_ID MATCHES "Clang|clang")
@@ -33,26 +105,28 @@ else()
   set(CURRENT_ASM_COMPILER ${CMAKE_ASM_COMPILER_ID})
 endif()
 
+macro(set_Compiler_Warnings_Options compiler)
+  set(CURRENT_CXX_COMPILER_WARN_MORE_OPTIONS ${${compiler}_MORE_WARNINGS})
+  set(CURRENT_CXX_COMPILER_WARN_ALL_OPTIONS ${${compiler}_ALL_WARNINGS})
+  set(CURRENT_CXX_COMPILER_WARN_AS_ERRORS_OPTIONS ${${compiler}_WARNINGS_AS_ERRORS})
+endmacro(set_Compiler_Warnings_Options)
+
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_COMPILER_IS_GNUCXX)
   set(CURRENT_CXX_COMPILER "gcc")
-  set(CURRENT_CXX_COMPILER_WARN_ALL_OPTIONS -Wall -Wextra)
-  set(CURRENT_CXX_COMPILER_WARN_AS_ERRORS_OPTIONS -Werror)
+  set_Compiler_Warnings_Options(GCC)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|clang")
   set(CURRENT_CXX_COMPILER "clang")
-  set(CURRENT_CXX_COMPILER_WARN_ALL_OPTIONS -Wall -Wextra)
-  set(CURRENT_CXX_COMPILER_WARN_AS_ERRORS_OPTIONS -Werror)
+  set_Compiler_Warnings_Options(CLANG)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
   set(CURRENT_CXX_COMPILER "appleclang")
-  set(CURRENT_CXX_COMPILER_WARN_ALL_OPTIONS -Wall -Wextra)
-  set(CURRENT_CXX_COMPILER_WARN_AS_ERRORS_OPTIONS -Werror)
+  set_Compiler_Warnings_Options(CLANG)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   set(CURRENT_CXX_COMPILER "msvc")
-  set(CURRENT_CXX_COMPILER_WARN_ALL_OPTIONS /Wall)
-  set(CURRENT_CXX_COMPILER_WARN_AS_ERRORS_OPTIONS /WX)
+  set_Compiler_Warnings_Options(MSVC)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "icc|icl|Intel|intel")
   set(CURRENT_CXX_COMPILER "icc")
-  set(CURRENT_CXX_COMPILER_WARN_ALL_OPTIONS -Wall -Wextra)
-  set(CURRENT_CXX_COMPILER_WARN_AS_ERRORS_OPTIONS -Werror)
+  set_Compiler_Warnings_Options(CLANG) # doesn't seem to handle GCC warnings according to this https://rubyci.org/logs/rubyci.s3.amazonaws.com/icc-x64/ruby-trunk/log/20171028T000002Z.fail.html.gz
 else()
   set(CURRENT_CXX_COMPILER ${CMAKE_CXX_COMPILER_ID})
 endif()
