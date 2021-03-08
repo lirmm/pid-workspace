@@ -2532,7 +2532,7 @@ if(branch)#if we use a specific branch for patching then do not merge into maste
 		message("[PID] ERROR : cannot release package ${package}, because your are not allowed to push version to its official remote !")
 		return()
 	endif()
-	register_PID_Package(${package})#automate the registering after release
+	register_PID_Package(${package} "")#automate the registering after release
 else()# check that integration branch is a fast forward of master
 	merge_Into_Master(MERGE_OK ${package} "integration" ${STRING})
 	if(NOT MERGE_OK)
@@ -2558,7 +2558,7 @@ else()# check that integration branch is a fast forward of master
 		go_To_Integration(${package})#always go back to original branch
 		return()
 	endif()
-	register_PID_Package(${package})#automate the registering after release
+	register_PID_Package(${package} "")#automate the registering after release
 
 	#remove the installed version built from integration branch
 	file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${STRING})
