@@ -117,6 +117,8 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "               then list all available licenses"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - language=*name of a language* or all: print information on the langague. If all is specified"
 	COMMAND ${CMAKE_COMMAND} -E echo "               then list all available languages"
+	COMMAND ${CMAKE_COMMAND} -E echo "             - search=\"expression\": search for package whose description matches the given expression."
+	COMMAND ${CMAKE_COMMAND} -E echo "               Expression is a comma separated list of words without spaces, each word can be a CMake regular expression."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
 	COMMAND ${CMAKE_COMMAND} -E echo " deploy:     deploy a deployment unit into workspace, either a package, a framework or an environment."
 	COMMAND ${CMAKE_COMMAND} -E echo "             For a package, either native or external, it can deploy it either from soure repository or"
