@@ -999,7 +999,7 @@ endmacro(build_PID_Package)
 #   :C_MAX_STANDARD <90|99|11>: Maximum C language standard that can be used when using the component.
 #   :CXX_STANDARD <98|11|14|17|20>: C++ language standard used to build the component. Defaults to ``98``.
 #   :CXX_MAX_STANDARD <98|11|14|17|20>: Maximum C++ language standard that can be used when using the component.
-#   :WARNING_LEVEL <DEFAULT|ALL>: Level of warning required when building the code, DEFAULT is defaut warnings and ALL maximize the number of warnings.
+#   :WARNING_LEVEL <DEFAULT|MORE|ALL>: Level of warning required when building the code, DEFAULT is the compiler's defaut warning level, MORE adds the most common ones and ALL maximizes the number of warnings.
 #   :RUNTIME_RESOURCES <files>: ``<files>`` is a list of files and folders relative to the ``share/resources`` folder. These files will be installed automatically and should be accessed in a PID component using the `pid-rpath <http://pid.lirmm.net/pid-framework/packages/pid-rpath>`_ package.
 #   :INTERNAL: This flag is used to introduce compilation options that are only used by this component.
 #   :EXPORTED: This flag is used to export compilation options. Meaning, components that later refer to this component will be using these options.
@@ -1210,6 +1210,9 @@ if(DECLARE_PID_COMPONENT_INTERNAL)
 		endif()
 		set(internal_link_flags ${DECLARE_PID_COMPONENT_INTERNAL_LINKS})
 	endif()
+endif()
+if(DECLARE_PID_COMPONENT_WARNING_LEVEL STREQUAL "MORE")
+  list(APPEND internal_compiler_options ${CURRENT_CXX_COMPILER_WARN_MORE_OPTIONS})
 endif()
 if(DECLARE_PID_COMPONENT_WARNING_LEVEL STREQUAL "ALL")
   list(APPEND internal_compiler_options ${CURRENT_CXX_COMPILER_WARN_ALL_OPTIONS})
