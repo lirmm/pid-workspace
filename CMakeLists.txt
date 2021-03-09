@@ -119,6 +119,8 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "               then list all available languages"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - search=\"expression\": search for package whose description matches the given expression."
 	COMMAND ${CMAKE_COMMAND} -E echo "               Expression is a comma separated list of words without spaces, each word can be a CMake regular expression."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - strict=true: Used with search argument. Tell wether the given terms of the expression must exactly matches."
+	COMMAND ${CMAKE_COMMAND} -E echo "               It is false by default, meaning that the search engine append some automatic regular expression to the given words."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
 	COMMAND ${CMAKE_COMMAND} -E echo " deploy:     deploy a deployment unit into workspace, either a package, a framework or an environment."
 	COMMAND ${CMAKE_COMMAND} -E echo "             For a package, either native or external, it can deploy it either from soure repository or"
