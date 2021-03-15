@@ -33,7 +33,6 @@ pid() {
     local to_unexport=""
 
     # Retreive current project and workspace locations
-    _pid_ws_get_project_dir
     _pid_ws_get_workspace_dir
 
     # Exit with an error if a project cannot be found
@@ -294,7 +293,6 @@ _pid_ws_get_project_dir() {
         project_dir=$(dirname $project_dir)
     done
     if [ "$project_dir" = "/" ]; then
-        echo "ERROR: you must run this command from somewhere inside a PID workspace"
         return 1
     else
         return 0
@@ -321,8 +319,12 @@ _pid_ws_get_workspace_dir() {
             ws_dir=$(dirname $ws_dir)
         done
         if [ "$ws_dir" = "/" ]; then
-            echo "ERROR: failed to locate the root of the PID workspace"
-            return 1
+            if [ "$PID_DEFAULT_WORKSPACE_PATH" ]; then
+                ws_dir=$PID_DEFAULT_WORKSPACE_PATH
+            else
+                echo "ERROR: failed to locate the root of the PID workspace and PID_DEFAULT_WORKSPACE_PATH is not defined"
+                return 1
+            fi
         else
             return 0
         fi
