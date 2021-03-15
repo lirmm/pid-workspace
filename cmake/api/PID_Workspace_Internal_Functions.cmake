@@ -1251,6 +1251,7 @@ function(print_Environment_Info env)
 		endif()
 	endif()
 endfunction(print_Environment_Info)
+
 ################################################################################
 #################### Deployment units lifecycle management #####################
 ################################################################################
@@ -1265,16 +1266,17 @@ endfunction(print_Environment_Info)
 #  create_PID_Environment
 #  ----------------------
 #
-#   .. command:: create_PID_Environment(environment author institution license)
+#   .. command:: create_PID_Environment(environment author institution  email license)
 #
 #   Create a environment project into workspace.
 #
 #      :environment: the name of the environment to create.
 #      :author: the name of the environment's author.
 #      :institution: the institution of the environment's author.
+#      :email: the email of the author.
 #      :license: the name of license applying to the environment.
 #
-function(create_PID_Environment environment author institution license)
+function(create_PID_Environment environment author institution email license)
 	#copying the pattern folder into the package folder and renaming it
 	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/cmake/patterns/environments/environment ${WORKSPACE_DIR}/environments/${environment}
 									WORKING_DIRECTORY ${WORKSPACE_DIR}/build
@@ -1283,20 +1285,25 @@ function(create_PID_Environment environment author institution license)
 	#setting variables
 	set(ENVIRONMENT_NAME ${environment})
 	if(author)
-		set(ENVIRONMENT_AUTHOR_NAME "${author}")
+		set(ENVIRONMENT_AUTHOR "${author}")
 	else()
-		set(ENVIRONMENT_AUTHOR_NAME "$ENV{USER}")
+		if(CMAKE_HOST_WIN32)
+			set(ENVIRONMENT_AUTHOR "$ENV{USERNAME}")
+		else()
+			set(ENVIRONMENT_AUTHOR "$ENV{USER}")
+		endif()
 	endif()
 	if(institution)
-		set(ENVIRONMENT_AUTHOR_INSTITUTION "INSTITUTION	${institution}")
-	else()
-		set(ENVIRONMENT_AUTHOR_INSTITUTION "")
+		set(ENVIRONMENT_AUTHOR "${ENVIRONMENT_AUTHOR}\n    INSTITUTION       ${institution}")
+	endif()
+	if(email)
+		set(ENVIRONMENT_AUTHOR "${ENVIRONMENT_AUTHOR}\n    EMAIL             ${email}")
 	endif()
 	if(license)
-		set(ENVIRONMENT_LICENSE "${license}")
+		set(ENVIRONMENT_CONTENT_META "${license}")
 	else()
 		message("[PID] WARNING: no license defined so using the default CeCILL license.")
-		set(ENVIRONMENT_LICENSE "CeCILL")#default license is CeCILL
+		set(ENVIRONMENT_CONTENT_META "CeCILL")#default license is CeCILL
 	endif()
 	set(ENVIRONMENT_DESCRIPTION "\"TODO: input a short description of environment ${environment} utility here\"")
 	string(TIMESTAMP date "%Y")
@@ -1320,16 +1327,17 @@ endfunction(create_PID_Environment)
 #  create_PID_Wrapper
 #  ------------------
 #
-#   .. command:: create_PID_Wrapper(wrapper author institution license)
+#   .. command:: create_PID_Wrapper(wrapper author institution email license)
 #
 #   Create a wrapper project into workspace.
 #
 #      :wrapper: the name of the wrapper to create.
 #      :author: the name of the wrapper's author.
 #      :institution: the institution of the wrapper's author.
+#      :email: the email of the author.
 #      :license: the name of license applying to the wrapper.
 #
-function(create_PID_Wrapper wrapper author institution license)
+function(create_PID_Wrapper wrapper author institution email license)
 #copying the pattern folder into the package folder and renaming it
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/cmake/patterns/wrappers/package ${WORKSPACE_DIR}/wrappers/${wrapper}
 								WORKING_DIRECTORY ${WORKSPACE_DIR}/build
@@ -1337,21 +1345,26 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/cmak
 
 #setting variables
 set(WRAPPER_NAME ${wrapper})
-if(author AND NOT author STREQUAL "")
-	set(WRAPPER_AUTHOR_NAME "${author}")
+if(author)
+	set(WRAPPER_AUTHOR "${author}")
 else()
-	set(WRAPPER_AUTHOR_NAME "$ENV{USER}")
+	if(CMAKE_HOST_WIN32)
+		set(WRAPPER_AUTHOR "$ENV{USERNAME}")
+	else()
+		set(WRAPPER_AUTHOR "$ENV{USER}")
+	endif()
 endif()
-if(institution AND NOT institution STREQUAL "")
-	set(WRAPPER_AUTHOR_INSTITUTION "INSTITUTION	${institution}")
-else()
-	set(WRAPPER_AUTHOR_INSTITUTION "")
+if(institution)
+	set(WRAPPER_AUTHOR "${WRAPPER_AUTHOR}\n    INSTITUTION       ${institution}")
 endif()
-if(license AND NOT license STREQUAL "")
-	set(WRAPPER_LICENSE "${license}")
+if(email)
+	set(WRAPPER_AUTHOR "${WRAPPER_AUTHOR}\n    EMAIL             ${email}")
+endif()
+if(license)
+	set(WRAPPER_CONTENT_META "${license}")
 else()
 	message("[PID] WARNING: no license defined so using the default CeCILL license.")
-	set(WRAPPER_LICENSE "CeCILL")#default license is CeCILL
+	set(WRAPPER_CONTENT_META "CeCILL")#default license is CeCILL
 endif()
 set(WRAPPER_DESCRIPTION "TODO: input a short description of wrapper ${wrapper} utility here")
 string(TIMESTAMP date "%Y")
@@ -1375,17 +1388,18 @@ endfunction(create_PID_Wrapper)
 #  create_PID_Framework
 #  --------------------
 #
-#   .. command:: create_PID_Framework(framework author institution license site)
+#   .. command:: create_PID_Framework(framework author institution email license site)
 #
 #   Create a framework project into workspace.
 #
 #      :framework: the name of the framework to create.
 #      :author: the name of the framework's author.
 #      :institution: the institution of the framework's author.
+#      :email: the email of the author.
 #      :license: the name of license applying to the framework.
 #      :site: the URL of the static site generated by the framework.
 #
-function(create_PID_Framework framework author institution license site)
+function(create_PID_Framework framework author institution email license site)
 #copying the pattern folder into the package folder and renaming it
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/cmake/patterns/frameworks/framework ${WORKSPACE_DIR}/sites/frameworks/${framework}
 								WORKING_DIRECTORY ${WORKSPACE_DIR}/build
@@ -1393,24 +1407,29 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/cmak
 
 #setting variables
 set(FRAMEWORK_NAME ${framework})
-if(author AND NOT author STREQUAL "")
-	set(FRAMEWORK_AUTHOR_NAME "${author}")
+if(author)
+	set(FRAMEWORK_AUTHOR "${author}")
 else()
-	set(FRAMEWORK_AUTHOR_NAME "$ENV{USER}")
+	if(CMAKE_HOST_WIN32)
+		set(FRAMEWORK_AUTHOR "$ENV{USERNAME}")
+	else()
+		set(FRAMEWORK_AUTHOR "$ENV{USER}")
+	endif()
 endif()
-if(institution AND NOT institution STREQUAL "")
-	set(FRAMEWORK_AUTHOR_INSTITUTION "INSTITUTION	${institution}")
-else()
-	set(FRAMEWORK_AUTHOR_INSTITUTION "")
+if(institution)
+	set(FRAMEWORK_AUTHOR "${FRAMEWORK_AUTHOR}\n    INSTITUTION       ${institution}")
 endif()
-if(license AND NOT license STREQUAL "")
-	set(FRAMEWORK_LICENSE "${license}")
+if(email)
+	set(FRAMEWORK_AUTHOR "${FRAMEWORK_AUTHOR}\n    EMAIL             ${email}")
+endif()
+if(license)
+	set(FRAMEWORK_CONTENT_META "${license}")
 else()
 	message("[PID] WARNING: no license defined so using the default CeCILL license.")
-	set(FRAMEWORK_LICENSE "CeCILL")#default license is CeCILL
+	set(FRAMEWORK_CONTENT_META "CeCILL")#default license is CeCILL
 endif()
 if(site)
-	set(FRAMEWORK_SITE "SITE ${site}")
+	set(FRAMEWORK_CONTENT_META "${FRAMEWORK_CONTENT_META}\n    SITE              ${site}")
 endif()
 set(FRAMEWORK_DESCRIPTION "\"TODO: input a short description of framework ${framework} utility here\"")
 string(TIMESTAMP date "%Y")
@@ -1434,16 +1453,18 @@ endfunction(create_PID_Framework)
 #  create_PID_Package
 #  ------------------
 #
-#   .. command:: create_PID_Package(package author institution license)
+#   .. command:: create_PID_Package(package author institution email license code_style)
 #
 #   Create a native package project into workspace.
 #
 #      :package: the name of the package to create.
 #      :author: the name of the package's author.
 #      :institution: the institution of the package's author.
+#      :email: the email of the author.
 #      :license: the name of license applying to the package.
+#      :code_style: the name of code_style.
 #
-function(create_PID_Package package author institution license)
+function(create_PID_Package package author institution email license code_style)
 #copying the pattern folder into the package folder and renaming it
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/cmake/patterns/packages/package ${WORKSPACE_DIR}/packages/${package}
 								WORKING_DIRECTORY ${WORKSPACE_DIR}/build
@@ -1452,24 +1473,28 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/cmak
 #setting variables
 set(PACKAGE_NAME ${package})
 if(author)
-	set(PACKAGE_AUTHOR_NAME "${author}")
+	set(PACKAGE_AUTHOR "${author}")
 else()
-	if(WIN32)
-		set(PACKAGE_AUTHOR_NAME "$ENV{USERNAME}")
+	if(CMAKE_HOST_WIN32)
+		set(PACKAGE_AUTHOR "$ENV{USERNAME}")
 	else()
-		set(PACKAGE_AUTHOR_NAME "$ENV{USER}")
+		set(PACKAGE_AUTHOR "$ENV{USER}")
 	endif()
 endif()
 if(institution)
-	set(PACKAGE_AUTHOR_INSTITUTION "INSTITUTION	${institution}")
-else()
-	set(PACKAGE_AUTHOR_INSTITUTION "")
+	set(PACKAGE_AUTHOR "${PACKAGE_AUTHOR}\n    INSTITUTION       ${institution}")
+endif()
+if(email)
+	set(PACKAGE_AUTHOR "${PACKAGE_AUTHOR}\n    EMAIL             ${email}")
 endif()
 if(license)
-	set(PACKAGE_LICENSE "${license}")
+	set(PACKAGE_CONTENT_META "${license}")
 else()
 	message("[PID] WARNING: no license defined so using the default CeCILL license.")
-	set(PACKAGE_LICENSE "CeCILL")#default license is CeCILL
+	set(PACKAGE_CONTENT_META "CeCILL")#default license is CeCILL
+endif()
+if(code_style)
+	set(PACKAGE_CONTENT_META "${PACKAGE_CONTENT_META}\n    CODE_STYLE        ${code_style}")
 endif()
 set(PACKAGE_DESCRIPTION "TODO: input a short description of package ${package} utility here")
 string(TIMESTAMP date "%Y")

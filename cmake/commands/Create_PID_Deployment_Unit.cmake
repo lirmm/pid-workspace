@@ -40,6 +40,10 @@ if(DEFINED ENV{license})
 	unset(ENV{license})
 endif()
 
+if(NOT OPTIONAL_LICENSE AND DEFINED ENV{PID_DEFAULT_LICENSE})
+set(OPTIONAL_LICENSE $ENV{PID_DEFAULT_LICENSE} CACHE INTERNAL "" FORCE)
+endif()
+
 if(NOT OPTIONNAL_GIT_URL AND DEFINED ENV{url})
 	set(OPTIONNAL_GIT_URL $ENV{url} CACHE INTERNAL "" FORCE)
 endif()
@@ -48,17 +52,48 @@ if(DEFINED ENV{url})
 endif()
 
 if(NOT OPTIONAL_AUTHOR AND DEFINED ENV{author})
-	set(OPTIONAL_AUTHOR $ENV{author} CACHE INTERNAL "" FORCE)
+	set(OPTIONAL_AUTHOR "$ENV{author}" CACHE INTERNAL "" FORCE)
 endif()
 if(DEFINED ENV{author})
 	unset(ENV{author})
 endif()
 
+if(NOT OPTIONAL_AUTHOR AND DEFINED ENV{PID_DEFAULT_AUTHOR})
+	set(OPTIONAL_AUTHOR "$ENV{PID_DEFAULT_AUTHOR}" CACHE INTERNAL "" FORCE)
+endif()
+
 if(NOT OPTIONAL_INSTITUTION AND DEFINED ENV{affiliation})
-	set(OPTIONAL_INSTITUTION $ENV{affiliation} CACHE INTERNAL "" FORCE)
+	set(OPTIONAL_INSTITUTION "$ENV{affiliation}" CACHE INTERNAL "" FORCE)
 endif()
 if(DEFINED ENV{affiliation})
 	unset(ENV{affiliation})
+endif()
+
+if(NOT OPTIONAL_INSTITUTION AND DEFINED ENV{PID_DEFAULT_INSTITUTION})
+	set(OPTIONAL_INSTITUTION "$ENV{PID_DEFAULT_INSTITUTION}" CACHE INTERNAL "" FORCE)
+endif()
+
+if(NOT OPTIONAL_EMAIL AND DEFINED ENV{email})
+	set(OPTIONAL_EMAIL $ENV{email} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{email})
+	unset(ENV{email})
+endif()
+
+if(NOT OPTIONAL_EMAIL AND DEFINED ENV{PID_DEFAULT_EMAIL})
+	set(OPTIONAL_EMAIL $ENV{PID_DEFAULT_EMAIL} CACHE INTERNAL "" FORCE)
+endif()
+
+
+if(NOT OPTIONAL_CODE_STYLE AND DEFINED ENV{code_style})
+	set(OPTIONAL_CODE_STYLE $ENV{code_style} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{code_style})
+	unset(ENV{code_style})
+endif()
+
+if(NOT OPTIONAL_CODE_STYLE AND DEFINED ENV{PID_DEFAULT_CODE_STYLE})
+	set(OPTIONAL_CODE_STYLE $ENV{PID_DEFAULT_CODE_STYLE} CACHE INTERNAL "" FORCE)
 endif()
 
 if(NOT OPTIONNAL_SITE AND DEFINED ENV{site})
@@ -96,7 +131,6 @@ if(DEFINED ENV{environment})
 	unset(ENV{environment})
 endif()
 
-
 #now verify that arguments are consistent and perform adequate actions
 
 if(TARGET_ENVIRONMENT)# a framework is created
@@ -128,13 +162,13 @@ if(TARGET_ENVIRONMENT)# a framework is created
 			clone_Environment_Repository(IS_DEPLOYED ${TARGET_ENVIRONMENT} ${OPTIONNAL_GIT_URL})
 			message("[PID] INFO : new environment ${TARGET_ENVIRONMENT} has just been cloned from official remote ${OPTIONNAL_GIT_URL}.")
 		else()#we need to synchronize normally with an empty repository
-			create_PID_Environment(${TARGET_ENVIRONMENT} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_LICENSE}")
+			create_PID_Environment(${TARGET_ENVIRONMENT} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_EMAIL}" "${OPTIONAL_LICENSE}")
 			connect_PID_Environment(${TARGET_ENVIRONMENT} ${OPTIONNAL_GIT_URL} TRUE)
 			message("[PID] INFO : new environment ${TARGET_ENVIRONMENT} has just been connected to official remote ${OPTIONNAL_GIT_URL}.")
 		endif()
 
 	else() #simply create the package locally
-		create_PID_Environment(${TARGET_ENVIRONMENT} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_LICENSE}")
+		create_PID_Environment(${TARGET_ENVIRONMENT} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_EMAIL}" "${OPTIONAL_LICENSE}")
 		message("[PID] INFO : new environment ${TARGET_ENVIRONMENT} has just been created locally.")
 	endif()
 
@@ -164,13 +198,13 @@ elseif(TARGET_FRAMEWORK)# a framework is created
 			clone_Framework_Repository(IS_DEPLOYED ${TARGET_FRAMEWORK} ${OPTIONNAL_GIT_URL})
 			message("[PID] INFO : new framework ${TARGET_FRAMEWORK} has just been cloned from official remote ${OPTIONNAL_GIT_URL}.")
 		else()#we need to synchronize normally with an empty repository
-			create_PID_Framework(${TARGET_FRAMEWORK} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_LICENSE}" "${OPTIONNAL_SITE}")
+			create_PID_Framework(${TARGET_FRAMEWORK} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_EMAIL}" "${OPTIONAL_LICENSE}" "${OPTIONNAL_SITE}")
 			connect_PID_Framework(${TARGET_FRAMEWORK} ${OPTIONNAL_GIT_URL} TRUE)
 			message("[PID] INFO : new framework ${TARGET_FRAMEWORK} has just been connected to official remote ${OPTIONNAL_GIT_URL}.")
 		endif()
 
 	else() #simply create the package locally
-		create_PID_Framework(${TARGET_FRAMEWORK} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_LICENSE}" "${OPTIONAL_SITE}")
+		create_PID_Framework(${TARGET_FRAMEWORK} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_EMAIL}" "${OPTIONAL_LICENSE}" "${OPTIONAL_SITE}")
 		message("[PID] INFO : new framework ${TARGET_FRAMEWORK} has just been created locally.")
 	endif()
 
@@ -203,13 +237,13 @@ elseif(TARGET_PACKAGE)
 			go_To_Integration(${TARGET_PACKAGE})
 			message("[PID] INFO : new package ${TARGET_PACKAGE} has just been cloned from official remote ${OPTIONNAL_GIT_URL}.")
 		else()#we need to synchronize normally with an empty repository
-			create_PID_Package(${TARGET_PACKAGE} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_LICENSE}")
+			create_PID_Package(${TARGET_PACKAGE} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_EMAIL}" "${OPTIONAL_LICENSE}" "${OPTIONAL_CODE_STYLE}")
 			connect_PID_Package(${TARGET_PACKAGE} ${OPTIONNAL_GIT_URL} TRUE)
 			message("[PID] INFO : new package ${TARGET_PACKAGE} has just been connected to official remote ${OPTIONNAL_GIT_URL}.")
 		endif()
 
 	else() #simply create the package locally
-		create_PID_Package(${TARGET_PACKAGE} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_LICENSE}")
+		create_PID_Package(${TARGET_PACKAGE} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_EMAIL}" "${OPTIONAL_LICENSE}" "${OPTIONAL_CODE_STYLE}")
 		message("[PID] INFO : new package ${TARGET_PACKAGE} has just been created locally.")
 	endif()
 
@@ -240,13 +274,13 @@ elseif(TARGET_WRAPPER)
 			clone_Wrapper_Repository(IS_DEPLOYED ${TARGET_WRAPPER} ${OPTIONNAL_GIT_URL})
 			message("[PID] INFO : new wrapper ${TARGET_WRAPPER} has just been cloned from official remote ${OPTIONNAL_GIT_URL}.")
 		else()#we need to synchronize normally with an empty repository
-			create_PID_Wrapper(${TARGET_WRAPPER} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_LICENSE}")
+			create_PID_Wrapper(${TARGET_WRAPPER} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_EMAIL}" "${OPTIONAL_LICENSE}")
 			connect_PID_Wrapper(${TARGET_WRAPPER} ${OPTIONNAL_GIT_URL} TRUE)
 			message("[PID] INFO : new wrapper ${TARGET_WRAPPER} has just been connected to official remote ${OPTIONNAL_GIT_URL}.")
 		endif()
 
 	else() #simply create the package locally
-		create_PID_Wrapper(${TARGET_WRAPPER} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_LICENSE}" "${OPTIONAL_SITE}")
+		create_PID_Wrapper(${TARGET_WRAPPER} "${OPTIONAL_AUTHOR}" "${OPTIONAL_INSTITUTION}" "${OPTIONAL_EMAIL}" "${OPTIONAL_LICENSE}")
 		message("[PID] INFO : new wrapper ${TARGET_WRAPPER} has just been created locally.")
 	endif()
 

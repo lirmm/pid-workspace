@@ -7,12 +7,10 @@ include(Environment_Definition NO_POLICY_SCOPE)
 project(@ENVIRONMENT_NAME@ C CXX ASM)
 
 PID_Environment(
-      AUTHOR 		        @ENVIRONMENT_AUTHOR_NAME@
-			YEAR 							@ENVIRONMENT_YEARS@
-			LICENSE 					@ENVIRONMENT_LICENSE@
-			DESCRIPTION 			@ENVIRONMENT_DESCRIPTION@
-		)
-
-# input environment description here
+    AUTHOR 		        @ENVIRONMENT_AUTHOR@
+    YEAR 							@ENVIRONMENT_YEARS@
+    LICENSE 					@ENVIRONMENT_CONTENT_META@
+    DESCRIPTION 			@ENVIRONMENT_DESCRIPTION@
+)
 
 build_PID_Environment()

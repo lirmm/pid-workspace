@@ -152,10 +152,12 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "             - wrapper=*name*: create an external package wrapper."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - framework=*name*: create a framework."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - environment=*name*: create an environment."
-	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [optional] ---"
+	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [optional, may default to PID_DEFAULT_* environment variables] ---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - author=*author name*: set the author name, default is current user."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - affiliation=*author affiliation*: set the author institution name."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - email=*author email*: set the author's email."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - license=*license name*: define a license for the project created, default is CeCILL."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - code_style=*code style name*: define a code style for the project created."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - url=*url*: set the official address of the remote repository to which the created"
 	COMMAND ${CMAKE_COMMAND} -E echo "               project is connected to. This mostly do the same as connect command."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments for frameworks [optional] ---"
@@ -386,7 +388,9 @@ set(create_args "\
 	-DTARGET_ENVIRONMENT=\${environment} \
 	-DOPTIONAL_AUTHOR=\${author} \
 	-DOPTIONAL_INSTITUTION=\${affiliation} \
+	-DOPTIONAL_EMAIL=\${email} \
 	-DOPTIONAL_LICENSE=\${license} \
+	-DOPTIONAL_CODE_STYLE=\${code_style} \
 	-DOPTIONNAL_GIT_URL=\${url} \
 	-DOPTIONNAL_SITE=\${site} ")
 add_PID_Command(create Create_PID_Deployment_Unit.cmake)

@@ -6,13 +6,11 @@ include(Package_Definition NO_POLICY_SCOPE)
 project(@PACKAGE_NAME@)
 
 PID_Package(
-			AUTHOR      @PACKAGE_AUTHOR_NAME@
-			YEAR        @PACKAGE_YEARS@
-			LICENSE     @PACKAGE_LICENSE@
-			DESCRIPTION @PACKAGE_DESCRIPTION@
-			VERSION     0.0.0
-		)
-
-#now finding packages
+    AUTHOR            @PACKAGE_AUTHOR@
+    YEAR              @PACKAGE_YEARS@
+    LICENSE           @PACKAGE_CONTENT_META@
+    DESCRIPTION       @PACKAGE_DESCRIPTION@
+    VERSION           0.0.0
+)
 
 build_PID_Package()
