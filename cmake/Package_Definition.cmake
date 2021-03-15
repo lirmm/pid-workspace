@@ -1540,7 +1540,7 @@ elseif(NOT DECLARE_PID_DEPENDENCY_EXTERNAL AND NOT DECLARE_PID_DEPENDENCY_NATIVE
   get_Package_Type(${name_of_dependency} PACK_TYPE)
   if(PACK_TYPE STREQUAL "UNKNOWN")
     finish_Progress(${GLOBAL_PROGRESS_VAR})
-  	message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} bad arguments when calling PID_Dependency, declared dependency to package ${name_of_dependency}, has both types EXTERNAL and NATIVE (use only one of these KEYWORDS).")
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} bad arguments when calling PID_Dependency, package ${name_of_dependency} is unknown. It means the package is not referenced in any contribution space of the workspace. Please verify the name of ${name_of_dependency} or ask its maintainers which contribution space should be used to make this package available.")
   else()
     set(package_type ${PACK_TYPE})
   endif()
