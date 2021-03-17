@@ -155,7 +155,7 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [optional, may default to PID_DEFAULT_* environment variables] ---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - author=*author name*: set the author name, default is current user."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - affiliation=*author affiliation*: set the author institution name."
-	COMMAND ${CMAKE_COMMAND} -E echo "             - email=*author email*: set the author's email."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - email=*author email*: set the author email."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - license=*license name*: define a license for the project created, default is CeCILL."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - code_style=*code style name*: define a code style for the project created."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - url=*url*: set the official address of the remote repository to which the created"
