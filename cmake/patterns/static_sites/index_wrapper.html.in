@@ -21,7 +21,7 @@ has_coverage: false
 
 <h2>First steps</h2>
 
-If your are a new user, you can start reading <a href="{{ site.baseurl }}/external/{{ page.package }}/pages/introduction.html">introduction section</a> and <a href="{{ site.baseurl }}/external/{{ page.package }}/pages/install.html">installation instructions</a>. Use the documentation tab to access usefull resources to start working with the package.
+If your are a new user, you can start reading <a href="{{ site.baseurl }}/external/{{ page.package }}/pages/introduction.html">introduction section</a> and <a href="{{ site.baseurl }}/external/{{ page.package }}/pages/install.html">installation instructions</a>. Use the documentation tab to access useful resources to start working with the package.
 <br>
 
 To get complete documentation about @PACKAGE_NAME@ please visit <a href="@PACKAGE_ORIGINAL_PROJECT_SITE@">the official website of the project</a>
