@@ -941,14 +941,17 @@ function(commit_Contribution_Space_Updates contrib_space)
     foreach(a_file IN LISTS TO_COMMIT)
       execute_process(COMMAND git add ${a_file}
                       WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
-      if(a_file MATCHES "^(finds/Find|references/Refer|references/ReferExternal)(.+)\\.cmake")
-        execute_process(COMMAND git commit -m "auto updated reference to package ${CMAKE_MATCH_2}"
-                        WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
-      elseif(a_file MATCHES "^references/ReferFramework(.+)\\.cmake")
+      if(a_file MATCHES "^references/ReferFramework(.+)\\.cmake")
         execute_process(COMMAND git commit -m "auto updated reference to framework ${CMAKE_MATCH_1}"
                         WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
       elseif(a_file MATCHES "^references/ReferEnvironment(.+)\\.cmake")
         execute_process(COMMAND git commit -m "auto updated reference to environment ${CMAKE_MATCH_1}"
+                        WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
+      elseif(a_file MATCHES "^references/ReferExternal(.+)\\.cmake")
+        execute_process(COMMAND git commit -m "auto updated reference to package ${CMAKE_MATCH_1}"
+                        WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
+      elseif(a_file MATCHES "^(finds/Find|references/Refer)(.+)\\.cmake")
+        execute_process(COMMAND git commit -m "auto updated reference to package ${CMAKE_MATCH_2}"
                         WORKING_DIRECTORY ${PATH_TO_DIR} OUTPUT_QUIET ERROR_QUIET)
       elseif(a_file MATCHES "licenses/License(.+).cmake")
         execute_process(COMMAND git commit -m "auto updated reference to license ${CMAKE_MATCH_1}"
