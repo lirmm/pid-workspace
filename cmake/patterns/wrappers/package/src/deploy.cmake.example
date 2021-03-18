@@ -1,0 +1,26 @@
+# All the functions commented below are documented here https://pid.lirmm.net/pid-framework/assets/apidoc/html/pages/Wrapper_API.html#script-functions
+# Ellipses (...) suggest you to read the documentation to find the appropriate syntax
+#
+# Common usage but tweek it to your needs
+#
+# install_External_Project(
+#   PROJECT wrapped-project
+#   VERSION x.y.z
+#   URL ...
+#   ARCHIVE ...
+#   FOLDER ...
+# )
+#
+# Depending on the wrapped project's build system you may call:
+#   - build_CMake_External_Project(...)
+#   - build_Autotools_External_Project(...)
+#   - build_B2_External_Project(...)
+#   - build_Waf_External_Project(...)
+#   - build_Bazel_External_Project(...)
+#   - execute_process(...) if none of the above applies
+#
+# Check that the installation was successful:
+# if(NOT EXISTS ${TARGET_INSTALL_DIR}/lib OR NOT EXISTS ${TARGET_INSTALL_DIR}/include)
+#   message("[PID] ERROR : failed to install wrapped-project version x.y.z in the worskpace.")
+#   return_External_Project_Error()
+# endif()

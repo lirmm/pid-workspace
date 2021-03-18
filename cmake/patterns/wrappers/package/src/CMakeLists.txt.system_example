@@ -1,0 +1,23 @@
+# All the functions commented below are documented here https://pid.lirmm.net/pid-framework/assets/apidoc/html/pages/Wrapper_API.html
+# Ellipses (...) suggest you to read the documentation to find the appropriate syntax
+# Only PID_Wrapper_System_Configuration and PID_Wrapper_System_Configuration_Constraints are mandatory
+#
+# Common usage but tweek it to your needs
+#
+# PID_Wrapper_System_Configuration(
+#   EVAL eval.cmake
+#   VARIABLES ...
+#   VALUES ...
+#   ...
+# )
+#
+# PID_Wrapper_System_Configuration_Constraints(
+#   IN_BINARY ...
+#   VALUE ...
+# )
+#
+# If dependencies to other system configurations exist, specify them with:
+# PID_Wrapper_System_Configuration_Dependencies(
+#   other_config_1
+#   other_config_2
+# )
