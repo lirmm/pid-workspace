@@ -955,7 +955,7 @@ if(REMAINING_TO_PARSE) #there are still expression to parse
 	set(multiValueArgs COMPONENTS)
 	cmake_parse_arguments(DECLARE_PID_WRAPPER_DEPENDENCY_MORE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${REMAINING_TO_PARSE})
 	if(DECLARE_PID_WRAPPER_DEPENDENCY_MORE_COMPONENTS)
-		list(LENGTH DECLARE_PID_WRAPPER_DEPENDENCY_COMPONENTS SIZE)
+		list(LENGTH DECLARE_PID_WRAPPER_DEPENDENCY_MORE_COMPONENTS SIZE)
 		if(SIZE LESS 1)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} bad arguments when calling PID_Wrapper_Dependency (for dependency ${package_name}), at least one component dependency must be defined when using the COMPONENTS keyword.")
