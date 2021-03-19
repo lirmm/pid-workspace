@@ -1138,7 +1138,7 @@ list(FIND already_installed_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) #not found in installed versions
 	check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
 	if(RES STREQUAL "UNKNOWN" OR RES STREQUAL "PROBLEM") # this package version has not been build since beginning of the process  OR this package version has FAILED TO be deployed from binary during current process
-		build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}" "${run_tests}" "${release_only}")
+    build_And_Install_Package(ALL_IS_OK ${package} "${RES_VERSION}" "${run_tests}" "${release_only}")
 		if(ALL_IS_OK)
       if(ADDITIONAL_DEBUG_INFO)
 	      message("[PID] INFO : package ${package} version ${RES_VERSION} has been deployed ...")
@@ -1400,10 +1400,10 @@ get_Version_String_Numbers(${version_or_branch} MAJOR MINOR PATCH)
 if(NOT DEFINED MAJOR)#not a version string => it is a branch
   track_Repository_Branch(${package} official ${version_or_branch} TRUE)
   go_To_Commit(${WORKSPACE_DIR}/packages/${package} ${version_or_branch})
-  build_And_Install_Source(IS_BUILT ${package} "" ${version_or_branch} "${run_tests}" ${release_only}) # 2) building sources from a branch
+  build_And_Install_Source(IS_BUILT ${package} "" ${version_or_branch} "${run_tests}" "${release_only}") # 2) building sources from a branch
 else()
   go_To_Version(${package} ${version_or_branch})# 1) going to the adequate git tag matching the selected version
-  build_And_Install_Source(IS_BUILT ${package} ${version_or_branch} "" "${run_tests}" ${release_only}) # 2) building sources from a version tag
+  build_And_Install_Source(IS_BUILT ${package} ${version_or_branch} "" "${run_tests}" "${release_only}") # 2) building sources from a version tag
 endif()
 
 if(IS_BUILT)
