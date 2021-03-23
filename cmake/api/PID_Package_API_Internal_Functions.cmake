@@ -602,7 +602,6 @@ if(NOT CMAKE_BUILD_TYPE MATCHES Release) # the documentation can be built in rel
 endif()
 
 package_License_Is_Closed_Source(CLOSED ${PROJECT_NAME} FALSE)
-get_Platform_Variables(BASENAME curr_platform INSTANCE curr_instance)
 set(INCLUDING_BINARIES FALSE)
 set(INCLUDING_COVERAGE FALSE)
 set(INCLUDING_STATIC_CHECKS FALSE)
@@ -632,8 +631,6 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done
 						-DIN_CI_PROCESS=${IN_CI_PROCESS}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
-						-DTARGET_PLATFORM=${curr_platform}
-						-DTARGET_INSTANCE=${curr_instance}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DINCLUDES_API_DOC=${BUILD_API_DOC}
@@ -659,8 +656,6 @@ elseif(${PROJECT_NAME}_FRAMEWORK) #the publication of the static site is done wi
 						-DIN_CI_PROCESS=${IN_CI_PROCESS}
 						-DTARGET_PACKAGE=${PROJECT_NAME}
 						-DTARGET_VERSION=${${PROJECT_NAME}_VERSION}
-						-DTARGET_PLATFORM=${curr_platform}
-						-DTARGET_INSTANCE=${curr_instance}
 						-DCMAKE_COMMAND=${CMAKE_COMMAND}
 						-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 						-DTARGET_FRAMEWORK=${${PROJECT_NAME}_FRAMEWORK}

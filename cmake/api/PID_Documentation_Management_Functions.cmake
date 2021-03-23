@@ -1655,7 +1655,7 @@ endfunction(generate_Component_Site_For_Package)
 #  produce_Package_Static_Site_Content
 #  -----------------------------------
 #
-#   .. command:: produce_Package_Static_Site_Content(package only_bin framework version platform include_api_doc include_coverage include_staticchecks include_installer force)
+#   .. command:: produce_Package_Static_Site_Content(package only_bin framework version include_api_doc include_coverage include_staticchecks include_installer force)
 #
 #      Copy generated documentation and binaries content to the package static site repository (framework or lone site).
 #
@@ -1663,14 +1663,15 @@ endfunction(generate_Component_Site_For_Package)
 #      :only_bin: if TRUE then only produce binaries into static site.
 #      :framework: the name of the framework (or empty string if package belongs to no framework).
 #      :version: the version for wich the documentation is generated.
-#      :platform: the platform for wich the published binaries is generated.
 #      :include_api_doc: TRUE if API documentation must be included in static site.
 #      :include_coverage: TRUE if coverage report must be included in static site.
 #      :include_staticchecks: TRUE if static checks report must be included in static site.
 #      :include_installer: TRUE if generated binaries are published by the static site.
 #      :force: if TRUE the whole content is copied, otherwise only detected modifications are copied.
 #
-function(produce_Package_Static_Site_Content package only_bin framework version platform include_api_doc include_coverage include_staticchecks include_installer force) # copy everything needed
+function(produce_Package_Static_Site_Content package only_bin framework version include_api_doc include_coverage include_staticchecks include_installer force) # copy everything needed
+
+  get_Platform_Variables(BASENAME current_platform_name)
 
   #### preparing the copy depending on the target: lone static site or framework ####
   if(framework)
@@ -1678,13 +1679,13 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
   	set(TARGET_APIDOC_PATH ${TARGET_PACKAGE_PATH}/api_doc)
   	set(TARGET_COVERAGE_PATH ${TARGET_PACKAGE_PATH}/coverage)
   	set(TARGET_STATICCHECKS_PATH ${TARGET_PACKAGE_PATH}/static_checks)
-    set(TARGET_BINARIES_PATH ${TARGET_PACKAGE_PATH}/binaries/${version}/${platform})
+    set(TARGET_BINARIES_PATH ${TARGET_PACKAGE_PATH}/binaries/${version}/${CURRENT_PLATFORM})
     set(TARGET_PAGES_PATH ${TARGET_PACKAGE_PATH}/pages)
   	set(TARGET_POSTS_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework}/src/_posts)
 
   else()#it is a lone static site (no need to adapt the path as they work the same for external wrappers and native packages)
   	set(TARGET_PACKAGE_PATH ${WORKSPACE_DIR}/sites/packages/${package}/src)
-    set(TARGET_BINARIES_PATH ${TARGET_PACKAGE_PATH}/_binaries/${version}/${platform})
+    set(TARGET_BINARIES_PATH ${TARGET_PACKAGE_PATH}/_binaries/${version}/${CURRENT_PLATFORM})
     set(TARGET_APIDOC_PATH ${TARGET_PACKAGE_PATH}/api_doc)
   	set(TARGET_COVERAGE_PATH ${TARGET_PACKAGE_PATH}/coverage)
   	set(TARGET_STATICCHECKS_PATH ${TARGET_PACKAGE_PATH}/static_checks)
@@ -1747,25 +1748,26 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
 
   ######### copy the new binaries ##############
   if(	include_installer
-  	AND EXISTS ${PATH_TO_PACKAGE_BUILD}/release/${package}-${version}-${platform}.tar.gz)#at least a release version has been generated previously
+  	AND EXISTS ${PATH_TO_PACKAGE_BUILD}/release/${package}-${version}-${current_platform_name}.tar.gz)#at least a release version has been generated previously
 
   	# update the site content only if necessary
     if(NOT EXISTS ${TARGET_BINARIES_PATH})
       file(MAKE_DIRECTORY ${TARGET_BINARIES_PATH})#create the target folder if it does not exist
     endif()
 
-  	file(COPY ${PATH_TO_PACKAGE_BUILD}/release/${package}-${version}-${platform}.tar.gz
-  	   DESTINATION  ${TARGET_BINARIES_PATH})#copy the release archive
+  	file(COPY ${PATH_TO_PACKAGE_BUILD}/release/${package}-${version}-${current_platform_name}.tar.gz
+  	     DESTINATION  ${TARGET_BINARIES_PATH})#copy the release archive
 
-  	if(EXISTS ${PATH_TO_PACKAGE_BUILD}/debug/${package}-${version}-dbg-${platform}.tar.gz)#copy debug archive if it exist
-  			file(COPY ${PATH_TO_PACKAGE_BUILD}/debug/${package}-${version}-dbg-${platform}.tar.gz
-  			DESTINATION  ${TARGET_BINARIES_PATH})#copy the binaries
+  	if(EXISTS ${PATH_TO_PACKAGE_BUILD}/debug/${package}-${version}-dbg-${current_platform_name}.tar.gz)#copy debug archive if it exist
+  			file(COPY ${PATH_TO_PACKAGE_BUILD}/debug/${package}-${version}-dbg-${current_platform_name}.tar.gz
+  			     DESTINATION  ${TARGET_BINARIES_PATH})#copy the binaries
   	endif()
   	# configure the file used to reference the binary in jekyll
     set(BINARY_VERSION ${version})
     set(BINARY_PACKAGE ${package})
-    set(BINARY_PLATFORM ${platform})
-  	configure_file(${WORKSPACE_DIR}/cmake/patterns/static_sites/binary.md.in ${TARGET_BINARIES_PATH}/binary.md @ONLY)#adding to the static site project the markdown file describing the binary package (to be used by jekyll)
+    set(BINARY_PLATFORM ${CURRENT_PLATFORM})
+    #adding to the static site project the markdown file describing the binary package (to be used by jekyll)
+  	configure_file(${WORKSPACE_DIR}/cmake/patterns/static_sites/binary.md.in ${TARGET_BINARIES_PATH}/binary.md @ONLY)
 
   	set(NEW_POST_CONTENT_BINARY TRUE)
   endif()
@@ -1812,7 +1814,7 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
   ######### configure the post used to describe the update ##############
   string(TIMESTAMP POST_DATE "%Y-%m-%d" UTC)
   string(TIMESTAMP POST_HOUR "%H-%M-%S" UTC)
-  set(POST_FILENAME "${POST_DATE}-${POST_HOUR}-${package}-${version}-${platform}-update.markdown")
+  set(POST_FILENAME "${POST_DATE}-${POST_HOUR}-${package}-${version}-${CURRENT_PLATFORM}-update.markdown")
   set(POST_PACKAGE ${package})
   if(force)
   	set(POST_TITLE "The update of package ${package} has been forced !")
@@ -1830,7 +1832,7 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
   	set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### The static checks report has been updated for version ${version}\n\n")
   endif()
   if(NEW_POST_CONTENT_BINARY)
-  	set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### A binary version of the package targetting ${platform} platform has been added for version ${version}\n\n")
+  	set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### A binary version of the package targetting ${CURRENT_PLATFORM} platform has been added for version ${version}\n\n")
   endif()
   if(NEW_POST_CONTENT_PAGES)
   	set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### The pages documenting the package have been updated\n\n")
@@ -2073,7 +2075,7 @@ endfunction(configure_Wrapper_Pages)
 #  produce_Wrapper_Static_Site_Content
 #  -----------------------------------
 #
-#   .. command:: produce_Wrapper_Static_Site_Content(package only_bin framework version platform include_installer force)
+#   .. command:: produce_Wrapper_Static_Site_Content(package only_bin framework version include_installer force)
 #
 #      Copy generated documentation and binaries content to the external package static site repository (framework or lone site).
 #
@@ -2081,11 +2083,12 @@ endfunction(configure_Wrapper_Pages)
 #      :only_bin: if TRUE then only produce binaries into static site.
 #      :framework: the name of the framework (or empty string if package belongs to no framework).
 #      :versions: the version for wich the documentation is generated.
-#      :platform: the platform for wich the published binaries is generated.
 #      :include_installer: TRUE if generated binaries are published by the static site.
 #      :force: if TRUE the whole content is copied, otherwise only detected modifications are copied.
 #
-function(produce_Wrapper_Static_Site_Content package only_bin framework versions platform include_installer force)
+function(produce_Wrapper_Static_Site_Content package only_bin framework versions include_installer force)
+
+  get_Platform_Variables(BASENAME current_platform_name)
 
   #### preparing the copy depending on the target: lone static site or framework ####
   if(framework)
@@ -2103,10 +2106,10 @@ function(produce_Wrapper_Static_Site_Content package only_bin framework versions
   set(NEW_POST_CONTENT_BINARY_VERSIONS)
   if(include_installer) #reinstall all the binary archives that lie in the wrapper build folder
     foreach(version IN LISTS versions)
-      set(target_archive_path ${PATH_TO_WRAPPER_BUILD}/${version}/installer/${package}-${version}-${platform}.tar.gz)
-      set(target_dbg_archive_path ${PATH_TO_WRAPPER_BUILD}/${version}/installer/${package}-${version}-dbg-${platform}.tar.gz)
+      set(target_archive_path ${PATH_TO_WRAPPER_BUILD}/${version}/installer/${package}-${version}-${current_platform_name}.tar.gz)
+      set(target_dbg_archive_path ${PATH_TO_WRAPPER_BUILD}/${version}/installer/${package}-${version}-dbg-${current_platform_name}.tar.gz)
       if(EXISTS ${target_archive_path})#an archive has been generated for this package version by the wrapper
-        set(target_bin_path ${TARGET_BINARIES_PATH}/${version}/${platform})
+        set(target_bin_path ${TARGET_BINARIES_PATH}/${version}/${CURRENT_PLATFORM})
         if(NOT EXISTS ${target_bin_path})
           file(MAKE_DIRECTORY ${target_bin_path})#create the target folder
         endif()
@@ -2116,9 +2119,10 @@ function(produce_Wrapper_Static_Site_Content package only_bin framework versions
       	endif()
       	set(BINARY_VERSION ${version})
         set(BINARY_PACKAGE ${package})
-        set(BINARY_PLATFORM ${platform})
+        set(BINARY_PLATFORM ${CURRENT_PLATFORM})
         # configure the file used to reference the binary in jekyll
-        configure_file(${WORKSPACE_DIR}/cmake/patterns/static_sites/binary.md.in ${target_bin_path}/binary.md @ONLY)#adding to the static site project the markdown file describing the binary package (to be used by jekyll)
+        #adding to the static site project the markdown file describing the binary package (to be used by jekyll)
+        configure_file(${WORKSPACE_DIR}/cmake/patterns/static_sites/binary.md.in ${target_bin_path}/binary.md @ONLY)
         list(APPEND NEW_POST_CONTENT_BINARY_VERSIONS ${version})
       endif()
     endforeach()
@@ -2167,7 +2171,7 @@ function(produce_Wrapper_Static_Site_Content package only_bin framework versions
   ######### configure the post used to describe the update ##############
   string(TIMESTAMP POST_DATE "%Y-%m-%d" UTC)
   string(TIMESTAMP POST_HOUR "%H-%M-%S" UTC)
-  set(POST_FILENAME "${POST_DATE}-${POST_HOUR}-${package}-${platform}-update.markdown")
+  set(POST_FILENAME "${POST_DATE}-${POST_HOUR}-${package}-${CURRENT_PLATFORM}-update.markdown")
   set(POST_PACKAGE ${package})
   if(force)
   	set(POST_TITLE "The update of external package ${package} has been forced !")
@@ -2177,7 +2181,7 @@ function(produce_Wrapper_Static_Site_Content package only_bin framework versions
   set(POST_UPDATE_STRING "")
   if(NEW_POST_CONTENT_BINARY_VERSIONS)
     fill_String_From_List(ALL_VERSIONS_STR NEW_POST_CONTENT_BINARY_VERSIONS " ")
-    set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### Binary versions of the external package targetting ${platform} platform have been added/updated : ${ALL_VERSIONS_STR}\n\n")
+    set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### Binary versions of the external package targetting ${CURRENT_PLATFORM} platform have been added/updated : ${ALL_VERSIONS_STR}\n\n")
   endif()
   if(NEW_POST_CONTENT_PAGES)
   	set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### The pages documenting the external package have been updated\n\n")

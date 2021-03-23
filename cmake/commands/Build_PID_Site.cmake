@@ -105,6 +105,7 @@ else()
 	set(include_installer FALSE)
 endif()
 
+
 #two different behaviors depending on what to do
 if(TARGET_FRAMEWORK) # the package site is put into a more global site that references all packages of the same framework
 
@@ -136,9 +137,9 @@ endif()
 
 #2) clean generate and copy files according to project documentation
 if(is_native)
-	produce_Package_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${TARGET_VERSION}" ${TARGET_PLATFORM} ${include_api_doc}  ${include_coverage} ${include_staticchecks} ${include_installer} ${forced_update}) # copy everything needed
+	produce_Package_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${TARGET_VERSION}" ${include_api_doc}  ${include_coverage} ${include_staticchecks} ${include_installer} ${forced_update}) # copy everything needed
 else()
-	produce_Wrapper_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${KNOWN_VERSIONS}" ${TARGET_PLATFORM} ${include_installer} ${forced_update}) # copy everything needed
+	produce_Wrapper_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${KNOWN_VERSIONS}" ${include_installer} ${forced_update}) # copy everything needed
 endif()
 
 #3) build static site
