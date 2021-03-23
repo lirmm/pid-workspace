@@ -163,7 +163,7 @@ endfunction(write_Platform_Reporting_File)
 #     Puts into cmake variables the description of current platform, deduced from current environment.
 #
 macro(detect_Current_Platform)
-	# Now detect the current platform maccording to host environemnt selection (call to script for platform detection)
+	# Now detect the current platform according to host environemnt selection (call to script for platform detection)
 	include(CheckTYPE)
 	include(CheckARCH)
 	include(CheckOS)

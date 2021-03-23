@@ -3897,18 +3897,25 @@ function(manage_Platforms)
 if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")#need to reevaluate the main environment if profile is not haost default
 	parse_Configuration_Expression(ENV_NAME ENV_ARGS ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
 	set(default_env_name ${ENV_NAME})
+	set(PID_USE_INSTANCE_NAME ${${default_env_name}_TARGET_INSTANCE} CACHE INTERNAL "" FORCE)
+	set(PID_USE_DISTRIBUTION ${${default_env_name}_TARGET_DISTRIBUTION} CACHE INTERNAL "" FORCE)
+	set(PID_USE_DISTRIB_VERSION ${${default_env_name}_TARGET_DISTRIBUTION_VERSION} CACHE INTERNAL "" FORCE)
+	if(${default_env_name}_CROSSCOMPILATION)
+	  set(PID_CROSSCOMPILATION TRUE CACHE INTERNAL "" FORCE)
+	else()
+		set(PID_CROSSCOMPILATION FALSE CACHE INTERNAL "" FORCE)
+	endif()
 else()
 	set(default_env_name host)
+	# by definition host environment never allows for crosscompilation
+	set(PID_CROSSCOMPILATION FALSE CACHE INTERNAL "" FORCE)
+	# host is never evaluated directly, so we need to get information directly from profile
+
+	set(PID_USE_INSTANCE_NAME ${PROFILE_${CURRENT_PROFILE}_TARGET_INSTANCE} CACHE INTERNAL "" FORCE)
+	set(PID_USE_DISTRIBUTION ${PROFILE_${CURRENT_PROFILE}_TARGET_DISTRIBUTION} CACHE INTERNAL "" FORCE)
+	set(PID_USE_DISTRIB_VERSION ${PROFILE_${CURRENT_PROFILE}_TARGET_DISTRIBUTION_VERSION} CACHE INTERNAL "" FORCE)
 endif()
 	# include(${dir}/Workspace_Solution_File.cmake)#use the solution file to set global variables
-if(${default_env_name}_CROSSCOMPILATION)
-  set(PID_CROSSCOMPILATION TRUE CACHE INTERNAL "" FORCE)
-else()
-	set(PID_CROSSCOMPILATION FALSE CACHE INTERNAL "" FORCE)
-endif()
-set(PID_USE_INSTANCE_NAME ${${default_env_name}_TARGET_INSTANCE} CACHE INTERNAL "" FORCE)
-set(PID_USE_DISTRIBUTION ${${default_env_name}_TARGET_DISTRIBUTION} CACHE INTERNAL "" FORCE)
-set(PID_USE_DISTRIB_VERSION ${${default_env_name}_TARGET_DISTRIBUTION_VERSION} CACHE INTERNAL "" FORCE)
 
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER) # during local profile evaluation, program MUST be in host system
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE NEVER) # during local profile evaluation, packages MUST be found in host system
