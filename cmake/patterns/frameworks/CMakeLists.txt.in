@@ -10,7 +10,17 @@ PID_Framework(
     YEAR              @FRAMEWORK_YEARS@
     LICENSE           @FRAMEWORK_CONTENT_META@
     DESCRIPTION       @FRAMEWORK_DESCRIPTION@
+#   You should list the categories defined by the framework to allow the resulting static  
+#   site to classify packages and wrappers belonging to this framework
+#   CATEGORIES        category
+#                     category/subcategory
+#                     ...
 )
 
+# All the functions commented below documented here https://pid.lirmm.net/pid-framework/assets/apidoc/html/pages/Framework_API.html
+# Ellipses (...) suggest you to read the documentation to find the appropriate syntax
+#
+# You can declare additional authors with:
+# PID_Framework_Author(AUTHOR John Doe ...)
 
 build_PID_Framework()

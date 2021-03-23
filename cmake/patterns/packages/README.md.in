@@ -1,24 +1,38 @@
 
-Overview
-=========
+@PROJECT_NAME@
+==============
 
 @README_OVERVIEW@
 
+@README_TABLE_OF_CONTENTS@
+
 @README_USER_CONTENT@
 
-@PACKAGE_LICENSE_FOR_README@
+Package Overview
+================
+
+@README_PACKAGE_CONTENT@
 
 Installation and Usage
-=======================
+======================
 
 @INSTALL_USE_IN_README@
 
-About authors
-=====================
+@ONLINE_DOCUMENTATION_IN_README@
 
-@PROJECT_NAME@ has been developped by following authors: @README_AUTHORS_LIST@
+Offline API Documentation
+=========================
+
+@API_DOCUMENTATION_IN_README@
+
+License
+=======
+
+@PACKAGE_LICENSE_FOR_README@
+
+Authors
+=======
+
+**@PROJECT_NAME@** has been developed by the following authors: @README_AUTHORS_LIST@
 
 Please contact @README_CONTACT_AUTHOR@ for more information or questions.
-
-
-@PACKAGE_SITE_REF_IN_README@

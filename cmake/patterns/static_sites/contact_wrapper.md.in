@@ -6,7 +6,7 @@ package: @PACKAGE_NAME@
 
 To get information about this site or the way it is managed, please contact <a href="mailto: @PACKAGE_MAINTAINER_MAIL@ ">@PACKAGE_MAINTAINER_NAME@</a>
 
-If you have adequate access rights you can also visit the PID wrapper repository [project repository](@PACKAGE_PROJECT_REPOSITORY_PAGE@) and use issue reporting functionnalities to interact with all authors.
+If you have adequate access rights you can also visit the PID wrapper repository [project repository](@PACKAGE_PROJECT_REPOSITORY_PAGE@) and use issue reporting functionalities to interact with all authors.
 
 <br>
 <br>

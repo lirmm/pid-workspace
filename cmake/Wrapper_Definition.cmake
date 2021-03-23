@@ -158,9 +158,9 @@ endmacro(declare_PID_Wrapper)
 #  PID_Original_Project
 #  --------------------
 #
-#   .. command:: PID_Original_Project(AUTHORS ... LICENSE ... URL ...)
+#   .. command:: PID_Original_Project(AUTHORS ... LICENSES ... URL ...)
 #
-#   .. command:: define_PID_Wrapper_Original_Project_Info(AUTHORS ... LICENSE ... URL ...)
+#   .. command:: define_PID_Wrapper_Original_Project_Info(AUTHORS ... LICENSES ... URL ...)
 #
 #      Set the meta information about original project being wrapped by current project.
 #
@@ -168,7 +168,7 @@ endmacro(declare_PID_Wrapper)
 #
 #     :AUTHORS <string>: Defines who are the authors of the original project.
 #
-#     :LICENSE <string>: The license that applies to the original project content.
+#     :LICENSES <string>: The licenses that applies to the original project content.
 #
 #     :URL <url>: this is the index URL of the original project.
 #
@@ -339,7 +339,7 @@ endmacro(add_PID_Wrapper_Category)
 #
 #   .. command:: define_PID_Wrapper_User_Option(OPTION ... TYPE ... DEFAULT ... [DESCRIPTION ...])
 #
-#      Declare that the current wrapper generates external packages that belong to a given category.
+#      Define an option to configure the build of the wrapped project.
 #
 #     .. rubric:: Required parameters
 #
@@ -1540,15 +1540,11 @@ endfunction(declare_PID_Wrapper_System_Configuration)
 #  PID_Wrapper_System_Configuration_Constraints
 #  --------------------------------------------
 #
-#   .. command:: PID_Wrapper_System_Configuration_Constraints(name  [OPTIONS...])
+#   .. command:: PID_Wrapper_System_Configuration_Constraints([OPTIONS...])
 #
-#   .. command:: declare_PID_Wrapper_System_Configuration_Constraints(name [OPTIONS...])
+#   .. command:: declare_PID_Wrapper_System_Configuration_Constraints([OPTIONS...])
 #
 #      To be used in check files of configuration. Used to declare the list of constraints managed by the configuration.
-#
-#     .. rubric:: Required parameters
-#
-#     :<name>: the name of the configuration.
 #
 #     .. rubric:: Optional parameters
 #
@@ -1612,9 +1608,9 @@ endfunction(declare_PID_Wrapper_System_Configuration_Constraints)
 #  PID_Wrapper_System_Configuration_Dependencies
 #  ---------------------------------------------
 #
-#   .. command:: PID_Wrapper_System_Configuration_Dependencies(name  [OPTIONS...])
+#   .. command:: PID_Wrapper_System_Configuration_Dependencies(DEPEND ...)
 #
-#   .. command:: declare_PID_Wrapper_System_Configuration_Dependencies(name [OPTIONS...])
+#   .. command:: declare_PID_Wrapper_System_Configuration_Dependencies(DEPEND ...)
 #
 #      To be used in check files of configuration. Used to declare the list of configuration that the given configuration depends on.
 #

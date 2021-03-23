@@ -12,5 +12,26 @@ PID_Wrapper(
     DESCRIPTION       @WRAPPER_DESCRIPTION@
 )
 
+# All the functions commented below are optional and documented here https://pid.lirmm.net/pid-framework/assets/apidoc/html/pages/Wrapper_API.html
+# Ellipses (...) suggest you to read the documentation to find the appropriate syntax
+#
+# Give information on the original project with:
+# PID_Original_Project(
+#   AUTHORS ...    
+#   LICENSES ...    
+#   URL ...    
+# )
+#
+# You can declare additional authors with:
+# PID_Wrapper_Author(AUTHOR John Doe ...)
+#
+# You may define options to configure the build using:
+# PID_Wrapper_Option(...)
+#
+# Declare the wrapper dependencies using:
+# PID_Wrapper_Dependency(package-name ...)
+#
+# Publish the documentation, and optionally binaries, online with:
+# PID_Wrapper_Publishing(...)
 
 build_PID_Wrapper()

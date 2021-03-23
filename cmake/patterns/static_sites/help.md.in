@@ -8,7 +8,7 @@ package: @PACKAGE_NAME@
 
 This is the documentation site of the {{ site.data.package.package_name}} package. A **package** is a git project defining a set of libraries, executables and other software artifacts. 
 
-The site has been automatically generated using jenkins, configured using CMake and updated/published using gitlab, based on a dedicated development environment called **PID**. Technically, this site has been generated from <a href="{{site.data.package.package_git_project}}" target="_blank">this source repository</a> (you may have no access to the repository project).
+The site has been automatically generated using Jekyll, configured using CMake and updated/published using GitLab, based on a dedicated development environment called **PID**. Technically, this site has been generated from <a href="{{site.data.package.package_git_project}}" target="_blank">this source repository</a> (you may have no access to the repository project).
 
 In **PID** environment each **package** contains any kind of software artifacts (libraries, executables, configuration files and more generally any kind of filesystem resources). They allow to put into a common place any information about a given project.
 
@@ -21,9 +21,9 @@ This site has the same general "look and feel" as any other [package site in PID
   - **Documentation** provides submenus to access all kind of documentation of the framework:
     + *Introduction* : quick introduction to the package purpose.
     + *Install* : to get installation instructions.
-    + *Use* : to know of to use libraries in your own programs
+    + *Use* : to know how to use libraries in your own programs
     {% if site.data.package.tutorial != "" %}
-    + *Tutorial* : to get information about how to usie the package.
+    + *Tutorial* : to get information about how to use the package.
     {% endif %}
     {% if site.data.package.details != "" %}
     + *More* : to get more information on advanced topics.
@@ -31,7 +31,7 @@ This site has the same general "look and feel" as any other [package site in PID
 {% if site.data.package.has_developper_info %}
   - **Developers** provides submenus to get info about the development of the package
     {% if site.data.package.has_apidoc %}
-    + *API documentation* lets you consult the **doxygen** generated documentation of the package (last release version only).
+    + *API documentation* lets you consult the **Doxygen** generated documentation of the package (last release version only).
     {% endif %}
     {% if site.data.package.has_checks %}
     + *Static Cheks* lets you consult the **cppcheck** generated report of static checks on the package (last release version only).
@@ -43,6 +43,6 @@ This site has the same general "look and feel" as any other [package site in PID
     + *Binaries* lets you navigate between all available binaries (different versions for different platforms).
     {% endif %}
 {% endif %}
-  - **Activity** provides the history of last activities in the package, anytime the package content has significantly evolved.
+  - **Activity** provides the history of all activities in the package, anytime the package content has significantly evolved a new entry is added.
   - **About** provides this help page and a contact page.
 

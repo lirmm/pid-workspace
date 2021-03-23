@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.8.2)
 set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR}/../.. CACHE PATH "root of the PID workspace directory")
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake) # using generic scripts/modules of the workspace
@@ -7,10 +6,28 @@ include(Environment_Definition NO_POLICY_SCOPE)
 project(@ENVIRONMENT_NAME@ C CXX ASM)
 
 PID_Environment(
-    AUTHOR 		        @ENVIRONMENT_AUTHOR@
-    YEAR 							@ENVIRONMENT_YEARS@
-    LICENSE 					@ENVIRONMENT_CONTENT_META@
-    DESCRIPTION 			@ENVIRONMENT_DESCRIPTION@
+    AUTHOR            @ENVIRONMENT_AUTHOR@
+    YEAR              @ENVIRONMENT_YEARS@
+    LICENSE           @ENVIRONMENT_CONTENT_META@
+    DESCRIPTION       @ENVIRONMENT_DESCRIPTION@
 )
+
+# All the functions commented below documented here https://pid.lirmm.net/pid-framework/assets/apidoc/html/pages/Environment_API.html
+# Ellipses (...) suggest you to read the documentation to find the appropriate syntax
+#
+# You can declare additional authors with:
+# PID_Environment_Author(AUTHOR John Doe ...)
+#
+# You can specify on which platform this environment has to be evaluated using:
+# PID_Environment_Platform(...)
+# 
+# Specify your environment evaluation script and its options with:
+# PID_Environment_Constraints(...)
+#
+# To specify how to configure the environment for a given platform use:
+# PID_Environment_Solution(...)
+#
+# You may add dependencies to other environments using:
+# PID_Environment_Dependencies(other-environment)
 
 build_PID_Environment()

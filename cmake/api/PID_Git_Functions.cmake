@@ -3709,10 +3709,18 @@ function(publish_Static_Site_Repository PUBLISHED package trials)
     set(${PUBLISHED} TRUE PARENT_SCOPE)
     return()
   endif()
-  execute_process(COMMAND git pull --ff-only  origin master
+
+  # detect if empty repo
+  execute_process(COMMAND git ls-remote -q
                   WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET
-                  RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
-  if(PULL_RESULT EQUAL 0)# pull is OK
+                  RESULT_VARIABLE LS_REMOTE_RESULT)#output is empty if repo is empty
+
+  if(NOT LS_REMOTE_RESULT STREQUAL "")
+    execute_process(COMMAND git pull --ff-only  origin master
+                    WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET
+                    RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+  endif()
+  if(PULL_RESULT EQUAL 0 OR LS_REMOTE_RESULT STREQUAL "")# pull is OK or empty repo
     execute_process(COMMAND git lfs pull origin master
                     WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
     execute_process(COMMAND git push origin master

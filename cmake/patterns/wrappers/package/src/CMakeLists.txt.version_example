@@ -1,0 +1,28 @@
+# All the functions commented below are documented here https://pid.lirmm.net/pid-framework/assets/apidoc/html/pages/Wrapper_API.html
+# Ellipses (...) suggest you to read the documentation to find the appropriate syntax
+# Only PID_Wrapper_Version and PID_Wrapper_Component are mandatory
+#
+# Common usage but tweek it to your needs
+#
+# PID_Wrapper_Version(
+#   x.y.z
+#   DEPLOY deploy.cmake
+#   ...
+# )
+#
+# If system configurations (e.g system libraries) are required, specify them with:
+# PID_Wrapper_Configuration(...)
+#
+# If checks on the build environment (e.g needed tool, compiler version, etc) are needed, use:
+# PID_Wrapper_Environment(...)
+#
+# PID_Wrapper_Component(
+#   wrapped-component
+#   INCLUDES <list of include directories>
+#   SHARED_LINKS <list of shared libraries>
+#   STATIC_LINKS <list of static libraries>
+#   DEPEND <list of internal dependencies>
+#   EXPORT <list of public dependencies>
+#   C_STANDARD ...
+#   CXX_STANDARD ...
+# )
