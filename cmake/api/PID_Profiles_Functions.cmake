@@ -550,7 +550,7 @@ endmacro(reset_Profiles)
 #     :RESULT: The result variable that contains the name of the environment if it has been correctly evaluated, and that is FALSE otherwise
 #
 function(evaluate_Environment_From_Profile RESULT profile environment is_default)
-  set(${RESULT} FALSE PARENT_SCOPE)
+  set(${RESULT} PARENT_SCOPE)
   parse_Configuration_Expression(ENV_NAME ENV_ARGS ${environment})
   # 1. load the environment into current context
 	load_Environment(IS_LOADED ${ENV_NAME})

@@ -309,5 +309,9 @@ if(need_reconfigure)
 									-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
 									-DFORCE_CURRENT_PROFILE_EVALUATION=TRUE
 									${WORKSPACE_DIR}
-									WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
+									WORKING_DIRECTORY ${WORKSPACE_DIR}/build
+									RESULT_VARIABLE res)
+	if(res)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : using profiles command, workspace configruation failed after action ${TARGET_COMMAND} !")
+	endif()
 endif()
