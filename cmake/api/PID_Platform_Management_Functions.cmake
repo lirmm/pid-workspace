@@ -1113,7 +1113,7 @@ function(get_Soname_Symbols_Values SONAME SYMBOLS binary_config_args_var)
     list(GET var_val_pair_list 1 value)
     list(REMOVE_AT var_val_pair_list 0 1)#update the list of arguments in parent scope
     if( name STREQUAL "soname"
-        OR name STREQUAL "symbols")#only check for soname and symbols compatibility if any
+        OR name STREQUAL "symbol")#only check for soname and symbols compatibility if any
 
       if(value AND NOT value STREQUAL \"\")#special case of an empty list (represented with \"\") must be avoided
         string(REPLACE " " "" VAL_LIST ${value})#remove the spaces in the string if any
@@ -1164,10 +1164,10 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
     #get SONAME and SYMBOLS coming from language configuration
     #WARNING Note: use same arguments as binary (soname and symbol are not used to directly check validity of the configuration) !!
     check_Language_Configuration_With_Arguments(SYSCHECK_RESULT LANG_SPECS TARGET_PLATFORM_SPECS ${lang} PACKAGE_SPECS ${mode})
+
     #get SONAME and SYMBOLS coming from package configuration
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS LANG_SPECS)
     get_Soname_Symbols_Values(PACKAGE_SONAME PACKAGE_SYMBOLS PACKAGE_SPECS)
-
     #from here we have the value to compare with
     if(PACKAGE_SONAME)#package defines constraints on SONAMES
       test_Soname_Compatibility(SONAME_COMPATIBLE PACKAGE_SONAME PLATFORM_SONAME)
@@ -1610,6 +1610,42 @@ function(is_Allowed_Platform_Configuration ALLOWED config_name config_args)
   endif()
   set(${ALLOWED} TRUE PARENT_SCOPE)
 endfunction(is_Allowed_Platform_Configuration)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Allowed_Language_Configuration| replace:: ``is_Allowed_Language_Configuration``
+#  .. _is_Allowed_Language_Configuration:
+#
+#  is_Allowed_Language_Configuration
+#  ----------------------------------
+#
+#   .. command:: is_Allowed_Language_Configuration(ALLOWED lang_name lang_args)
+#
+#    Test if a configuration can be used with current platform.
+#
+#     :lang_name: the name of the language (without argument, according to CMake standard).
+#     :lang_args: the constraints passed as arguments by the user of the configuration.
+#
+#     :ALLOWED: the output variable that is TRUE if configuration can be used.
+#
+function(is_Allowed_Language_Configuration ALLOWED lang_name lang_args)
+  set(${ALLOWED} FALSE PARENT_SCOPE)
+  import_Language_Parameters(${lang_name})
+  set(lang_constraints ${LANG_${lang_name}_OPTIONAL_CONSTRAINTS} ${LANG_${lang_name}_IN_BINARY_CONSTRAINTS})
+  if(lang_constraints)
+    list(REMOVE_DUPLICATES lang_constraints)
+    prepare_Configuration_Expression_Arguments(${lang_name} ${lang_args} lang_constraints)
+  endif()
+  evaluate_Language_Configuration(${lang_name})#evaluation takes place here (call to platforms/eval/eval_${lang_name}.cmake)
+
+  if(NOT ${lang_name}_EVAL_RESULT)#language configuration cannot be satisfied
+    return()
+  endif()
+  set(${ALLOWED} TRUE PARENT_SCOPE)
+endfunction(is_Allowed_Language_Configuration)
 
 
 #.rst:

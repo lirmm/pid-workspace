@@ -788,6 +788,131 @@ else()#using references
 endif()
 endfunction(install_Native_Package)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |unload_Binary_Package_Install_Manifest| replace:: ``unload_Binary_Package_Install_Manifest``
+#  .. _unload_Binary_Package_Install_Manifest:
+#
+#  unload_Binary_Package_Install_Manifest
+#  --------------------------------------
+#
+#   .. command:: unload_Binary_Package_Install_Manifest(package version platform)
+#
+#    Unload info coming from aninstall manifest (use file) provided by a binary package.
+#
+#      :package: The name of the package.
+#      :version: The version of the package.
+#      :platform: platform for which the binary has been built for.
+#
+function(unload_Binary_Package_Install_Manifest package)
+  get_Package_Type(${package} PACK_TYPE)
+  if(PACK_TYPE STREQUAL "NATIVE")
+    reset_Native_Package_Dependency_Cached_Variables_From_Use(${package} Release FALSE)
+    reset_Native_Package_Dependency_Cached_Variables_From_Use(${package} Debug FALSE)
+  elseif(PACK_TYPE STREQUAL "EXTERNAL")
+    reset_External_Package_Dependency_Cached_Variables_From_Use(${package} Release FALSE)
+    reset_External_Package_Dependency_Cached_Variables_From_Use(${package} Debug FALSE)
+  endif()
+endfunction(unload_Binary_Package_Install_Manifest)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |load_Binary_Package_Install_Manifest| replace:: ``load_Binary_Package_Install_Manifest``
+#  .. _load_Binary_Package_Install_Manifest:
+#
+#  load_Binary_Package_Install_Manifest
+#  ------------------------------------
+#
+#   .. command:: load_Binary_Package_Install_Manifest(MANIFEST_FOUND package version platform)
+#
+#    Get the manifest file provided with a package binary reference.
+#
+#      :package: The name of the package.
+#      :version: The version of the package.
+#      :platform: platform for which the binary has been built for.
+#
+#      :MANIFEST_FOUND: the output variable that is TRUE is manifest file has been found, FALSE otherwise.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        The binaries referencing file must be loaded before this call. No automatic automatic (re)load id performed to improve performance.
+#
+function(load_Binary_Package_Install_Manifest MANIFEST_FOUND package version platform)
+set(${MANIFEST_FOUND} FALSE PARENT_SCOPE)
+set(ws_download_folder ${WORKSPACE_DIR}/build/downloaded)
+set(manifest_name Use${package}-${version}.cmake)
+if(NOT EXISTS ${ws_download_folder})
+  file(MAKE_DIRECTORY ${ws_download_folder})
+endif()
+if(EXISTS ${ws_download_folder}/${manifest_name})
+  file(REMOVE ${ws_download_folder}/${manifest_name})
+endif()
+unload_Binary_Package_Install_Manifest(${package})
+set(to_include)
+if(${package}_FRAMEWORK) #references are deployed in a framework
+	set(FRAMEWORK_ADDRESS ${${${package}_FRAMEWORK}_SITE})#get the address of the framework static site
+  get_Package_Type(${package} PACK_TYPE)
+  set(manifest_address)
+  if(PACK_TYPE STREQUAL "NATIVE")
+    set(manifest_address ${FRAMEWORK_ADDRESS}/packages/${package}/binaries/${version}/${platform}/${manifest_name})
+  elseif(PACK_TYPE STREQUAL "EXTERNAL")
+    set(manifest_address ${FRAMEWORK_ADDRESS}/external/${package}/binaries/${version}/${platform}/${manifest_name})
+  endif()
+  if(manifest_address)
+    file(DOWNLOAD ${manifest_address} ${ws_download_folder}/${manifest_name} STATUS res TLS_VERIFY OFF)
+		list(GET res 0 numeric_error)
+		if(numeric_error EQUAL 0 #framework site is online & reference available.
+		  AND EXISTS ${ws_download_folder}/${manifest_name})
+      set(to_include ${ws_download_folder}/${manifest_name})
+		else() #it may be an external package, try this
+      if(ADDITIONAL_DEBUG_INFO)
+        message("[PID] INFO: no manifest found for ${package} version ${version} for platform ${platform}. Binary is possibly incompatible.")
+      endif()
+    endif()
+  else()
+    if(ADDITIONAL_DEBUG_INFO)
+      message("[PID] WARNING: cannot download install manifest for unknown package ${package}")
+    endif()
+  endif()
+elseif(${package}_SITE_GIT_ADDRESS)  #references are deployed in a lone static site
+	#when package has a lone static site, the reference file can be directly downloaded
+	file(DOWNLOAD ${${package}_SITE_ROOT_PAGE}/binaries/${version}/${platform}/${manifest_name}
+                ${ws_download_folder}/${manifest_name} STATUS res TLS_VERIFY OFF)
+	list(GET res 0 numeric_error)
+	if(numeric_error EQUAL 0 #static site online & reference available.
+    AND EXISTS ${ws_download_folder}/${manifest_name})
+		set(to_include ${ws_download_folder}/${manifest_name})
+  else() #it may be an external package, try this
+    if(ADDITIONAL_DEBUG_INFO)
+      message("[PID] INFO: no manifest found for ${package} version ${version} for platform ${platform}. Binary is possibly incompatible.")
+    endif()
+	endif()
+endif()
+
+if(to_include)#there is a file to include but if static site is private it may have returned an invalid file (HTML connection ERROR response)
+  file(STRINGS ${to_include} LINES)
+  set(erroneous_file FALSE)
+  foreach(line IN LISTS LINES)
+    if(NOT line MATCHES "^(#.+|set\(.+\))")
+      set(erroneous_file TRUE)
+      break()
+    endif()
+  endforeach()
+  if(NOT erroneous_file)
+    include(${to_include})
+    set(${MANIFEST_FOUND} TRUE PARENT_SCOPE)
+  endif()
+endif()
+endfunction(load_Binary_Package_Install_Manifest)
+
+
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -1427,16 +1552,17 @@ endfunction(build_And_Install_Package)
 #  check_Package_Platform_Against_Current
 #  --------------------------------------
 #
-#   .. command:: check_Package_Platform_Against_Current(package platform CHECK_OK)
+#   .. command:: check_Package_Platform_Against_Current(CHECK_OK package platform)
 #
 #    Check whether platform configurations defined for binary packages are matching the current platform.
 #
 #      :package: The name of the package.
 #      :platform: The platform string used to filter configuation constraints. If different from current platform then configurations defined for that platorm are not checked.
+#      :version: The version of the package.
 #
 #      :CHECK_OK: the output variable that is TRUE if current platform conforms to package required configurations, FALSE otherwise.
 #
-function(check_Package_Platform_Against_Current package platform CHECK_OK)
+function(check_Package_Platform_Against_Current CHECK_OK package platform version)
   set(${CHECK_OK} TRUE PARENT_SCOPE)
   set(checking_config FALSE)
   # the platform may have an instance name so we need first to get the base name of the platform
@@ -1457,7 +1583,27 @@ function(check_Package_Platform_Against_Current package platform CHECK_OK)
     set(${CHECK_OK} FALSE PARENT_SCOPE)
   	return()
   endif()
+  load_Binary_Package_Install_Manifest(MANIFEST_LOADED ${package} ${version} ${platform})
+  #load the install manifest to get info about the binary
+  if(NOT MANIFEST_LOADED)
+    #cannot say much more so let's say it is OK, further checks will operate on Use file provided by the binary package
+    return()
+  endif()
 
+  # need to check for its platform configuration to be sure it can be used locally
+  set(LANGS_TO_CHECK)
+  if(${package}_LANGUAGE_CONFIGURATIONS)
+  	set(LANGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS})
+    list(REMOVE_DUPLICATES LANGS_TO_CHECK)
+  endif()
+  foreach(lang IN LISTS LANGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
+    parse_Configuration_Expression_Arguments(args_as_list ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS)
+    is_Allowed_Language_Configuration(ALLOWED ${lang} args_as_list)
+    if(NOT ALLOWED)
+      set(${CHECK_OK} FALSE PARENT_SCOPE)
+      return()
+    endif()
+  endforeach()
   # need to check for its platform configuration to be sure it can be used locally
   set(CONFIGS_TO_CHECK)
   if(${package}_PLATFORM_CONFIGURATIONS)
@@ -1465,13 +1611,22 @@ function(check_Package_Platform_Against_Current package platform CHECK_OK)
     list(REMOVE_DUPLICATES CONFIGS_TO_CHECK)
   endif()
   foreach(config IN LISTS CONFIGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
-    parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+    parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS)
     is_Allowed_Platform_Configuration(ALLOWED ${config} args_as_list)
     if(NOT ALLOWED)
       set(${CHECK_OK} FALSE PARENT_SCOPE)
       return()
     endif()
   endforeach()
+  #Finally check that the ABI is compatible which is not guaranteed
+  is_Compatible_With_Current_ABI(COMPATIBLE ${package} Release)
+  if(NOT COMPATIBLE)
+    set(${CHECK_OK} FALSE PARENT_SCOPE)
+    return()
+  endif()
+
+  unload_Binary_Package_Install_Manifest(${package})
+
 endfunction(check_Package_Platform_Against_Current)
 
 #.rst:
@@ -1498,9 +1653,8 @@ function(get_Available_Binary_Package_Versions package LIST_OF_VERSIONS LIST_OF_
 set(available_binary_package_version)
 foreach(ref_version IN LISTS ${package}_REFERENCES)
 	foreach(ref_platform IN LISTS ${package}_REFERENCE_${ref_version})
-		set(BINARY_OK FALSE)
-		check_Package_Platform_Against_Current(${package} ${ref_platform} BINARY_OK)#will return TRUE if the platform conforms to current one
-		if(BINARY_OK)
+		check_Package_Platform_Against_Current(BINARY_OK ${package} ${ref_platform} ${ref_version})#will return TRUE if the platform conforms to current one
+    if(BINARY_OK)
 			list(APPEND available_binary_package_version "${ref_version}")
 			list(APPEND available_binary_package_version_with_platform "${ref_version}/${ref_platform}")
 			# need to test for following platform because many instances may match

@@ -1755,7 +1755,8 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
       file(MAKE_DIRECTORY ${TARGET_BINARIES_PATH})#create the target folder if it does not exist
     endif()
 
-  	file(COPY ${PATH_TO_PACKAGE_BUILD}/release/${package}-${version}-${current_platform_name}.tar.gz
+  	file(COPY ${PATH_TO_PACKAGE_BUILD}/release/${package}-${version}-${current_platform_name}.tar.gz #copying archive
+              ${PATH_TO_PACKAGE_BUILD}/release/share/Use${package}-${version}.cmake             #copying install manifest
   	     DESTINATION  ${TARGET_BINARIES_PATH})#copy the release archive
 
   	if(EXISTS ${PATH_TO_PACKAGE_BUILD}/debug/${package}-${version}-dbg-${current_platform_name}.tar.gz)#copy debug archive if it exist
@@ -2107,13 +2108,15 @@ function(produce_Wrapper_Static_Site_Content package only_bin framework versions
   if(include_installer) #reinstall all the binary archives that lie in the wrapper build folder
     foreach(version IN LISTS versions)
       set(target_archive_path ${PATH_TO_WRAPPER_BUILD}/${version}/installer/${package}-${version}-${current_platform_name}.tar.gz)
+      set(target_install_manifest ${PATH_TO_WRAPPER_BUILD}/Use${package}-${version}.cmake)
       set(target_dbg_archive_path ${PATH_TO_WRAPPER_BUILD}/${version}/installer/${package}-${version}-dbg-${current_platform_name}.tar.gz)
       if(EXISTS ${target_archive_path})#an archive has been generated for this package version by the wrapper
         set(target_bin_path ${TARGET_BINARIES_PATH}/${version}/${CURRENT_PLATFORM})
         if(NOT EXISTS ${target_bin_path})
           file(MAKE_DIRECTORY ${target_bin_path})#create the target folder
         endif()
-        file(COPY ${target_archive_path} DESTINATION ${target_bin_path})#copy the release archive
+        file(COPY ${target_archive_path} ${target_install_manifest}
+            DESTINATION ${target_bin_path})#copy the release archive and install manifest
         if(EXISTS ${target_dbg_archive_path})#copy debug archive if it exist
     			file(COPY ${target_dbg_archive_path} DESTINATION ${target_bin_path})#copy the debug archive
       	endif()

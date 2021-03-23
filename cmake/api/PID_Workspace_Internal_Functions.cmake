@@ -1037,7 +1037,7 @@ function(print_Package_Binaries package)
 	foreach(version IN LISTS ${package}_REFERENCES)
 		message("	${version}: ")
 		foreach(platform IN LISTS ${package}_REFERENCE_${version})
-			print_Platform_Compatible_Binary(${package} ${platform})
+			print_Platform_Compatible_Binary(${package} ${platform} ${version})
 		endforeach()
 	endforeach()
 endfunction(print_Package_Binaries)
@@ -1138,16 +1138,17 @@ endfunction(greatest_Version_Archive)
 #
 #      :package: the name of the package.
 #      :platform: the identifier of the platform.
+#      :version: the version of the binary package.
 #
 #     .. admonition:: Constraints
 #        :class: warning
 #
 #        The reference file of the given package must be loaded before this call. No automatic automatic (re)load id performed to improve performance.
 #
-function(print_Platform_Compatible_Binary package platform)
+function(print_Platform_Compatible_Binary package platform version)
 	set(printed_string "		${platform}:")
 	#1) testing if binary can be installed
-	check_Package_Platform_Against_Current(${package} ${platform} BINARY_OK)
+	check_Package_Platform_Against_Current(BINARY_OK ${package} ${platform} ${version})
 	if(BINARY_OK)
 		set(printed_string "${printed_string} CAN BE INSTALLED")
 	else()
