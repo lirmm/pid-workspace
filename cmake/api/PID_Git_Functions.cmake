@@ -764,7 +764,7 @@ endfunction(merge_Into_Master)
 #  tag_Version
 #  -----------
 #
-#   .. command:: tag_Version(package version_string)
+#   .. command:: tag_Version(package version_string add_it)
 #
 #     Tag the given package repository with given version..
 #
@@ -932,11 +932,15 @@ endfunction(register_Repository_Version)
 #
 #     Commit local changes in the repository of a contribution space
 #
-#     :contrib_space: the name of target contribution space
+#     :contrib_space: the name of or path to target contribution space
 #
 function(commit_Contribution_Space_Updates contrib_space)
-  get_Path_To_Contribution_Space(PATH_TO_DIR ${contrib_space})
-  get_Contribution_Space_Repository_Status(TO_COMMIT TO_RESET ${contrib_space})
+  if(EXISTS ${contrib_space})
+    set(PATH_TO_DIR ${contrib_space})
+  else()
+    get_Path_To_Contribution_Space(PATH_TO_DIR ${contrib_space})
+  endif()
+  get_Contribution_Space_Repository_Status(TO_COMMIT TO_RESET ${PATH_TO_DIR})
   if(TO_COMMIT)#there is content to commit
     foreach(a_file IN LISTS TO_COMMIT)
       execute_process(COMMAND git add ${a_file}
@@ -982,23 +986,27 @@ endfunction(commit_Contribution_Space_Updates)
 #
 #     Update local contrbution space's repository (pull).
 #
-#     :contrib_space: the name of target contribution space
+#     :contrib_space: the name of or path to target contribution space
 #     :allow_conflict: if TRUE merge conflicts are allowed, false otherwise
 #
 #     :UPDATED: output variable that is TRUE if updated succeeded, false otherwise
 #
 function(update_Contribution_Space_Repository UPDATED contrib_space allow_conflict)
-  get_Path_To_Contribution_Space(PATH_TO_DIR ${contrib_space})
   set(${UPDATED} FALSE PARENT_SCOPE)
+  if(EXISTS ${contrib_space})#if argument given is directly a path
+    set(PATH_TO_DIR ${contrib_space})
+  else()#otherwise compute the path
+    get_Path_To_Contribution_Space(PATH_TO_DIR ${contrib_space})
+  endif()
   if(PATH_TO_DIR)
     #1) check if connection wit remote can be established
     test_Remote_Connection(CONNECTED ${PATH_TO_DIR} origin)
     if(NOT CONNECTED)
-      message("[PID] ERROR: cannot update contribution space ${contrib_space}. Reason: No connection to remote available.")
+      message("[PID] ERROR: cannot update contribution space in ${PATH_TO_DIR}. Reason: No connection to remote available.")
       return()
     endif()
     #2) create commits if there are changes
-    commit_Contribution_Space_Updates(${contrib_space})
+    commit_Contribution_Space_Updates(${PATH_TO_DIR})
     #3) merge official content with local one
     execute_Silent_Process(GIT_OUT GIT_RES ${PATH_TO_DIR} git fetch origin)
     if(allow_conflict)
@@ -1016,7 +1024,7 @@ function(update_Contribution_Space_Repository UPDATED contrib_space allow_confli
       endif()
     endif()
     if(GIT_RES)
-      message("[PID] ERROR: cannot update contribution space ${contrib_space}. Reason: ${GIT_OUT}. Check the status of ${contrib_space}.")
+      message("[PID] ERROR: cannot update contribution space in ${PATH_TO_DIR}. Reason: ${GIT_OUT}. Check the status of ${contrib_space}.")
       return()
     endif()
     set(${UPDATED} TRUE PARENT_SCOPE)
@@ -1056,11 +1064,14 @@ function(commit_Files COMMIT_OK repo list_of_files message check)
   endif()
   #if all path OK then proceed to add these files (even if not modified)
   foreach(a_file IN LISTS list_of_files)
-    execute_process(COMMAND git add ${repo}/${a_file}
+    execute_process(COMMAND git add ${repo}/${a_file} #if file not updated then no problem
                     WORKING_DIRECTORY ${repo} OUTPUT_QUIET ERROR_QUIET)
   endforeach()
-  execute_process(COMMAND git commit -m "${message}"
-                  WORKING_DIRECTORY ${repo} OUTPUT_QUIET ERROR_QUIET)
+  execute_Silent_Process(GIT_OUT GIT_RES ${repo} git commit -m "${message}")
+  if(GIT_RES)
+    message("[PID] WARNING : cannot commit in ${repo}. Reason: ${GIT_OUT}")
+    return()
+  endif()
   set(${COMMIT_OK} TRUE PARENT_SCOPE)
 endfunction(commit_Files)
 
@@ -1087,21 +1098,16 @@ function(publish_Package_References_In_Contribution_Spaces_Repositories package)
   foreach(cs IN LISTS ALL_CONTRIB)
     commit_Files(COMMIT_RES ${cs} "references/Refer${package}.cmake;finds/Find${package}.cmake" "references for package ${package} published" TRUE)
     if(COMMIT_RES)
-      #second update before push (non explicit commit created)
+      list(APPEND LIST_OF_CS_TO_PUSH ${cs})
+      #second update before push (non explicit commits created)
       update_Contribution_Space_Repository(UPDATE_OK ${cs} FALSE)
-      if(UPDATE_OK)
-        list(APPEND LIST_OF_CS_TO_PUSH ${cs})
-      else()
-        message("[PID] WARNING : problem publishing references for package ${package}, cannot find adequate cmake files in workspace.")
-      endif()
     else()
     	message("[PID] WARNING : problem registering package ${package}, cannot find adequate cmake files in contribution space ${cs}.")
     endif()
   endforeach()
   #finally : pushing to each space we can publish to
   foreach(cs IN LISTS LIST_OF_CS_TO_PUSH)
-    execute_process(COMMAND git push origin master
-                    WORKING_DIRECTORY ${cs} OUTPUT_QUIET ERROR_QUIET)
+    execute_Silent_Process(GIT_OUT GIT_RES ${cs} git push origin master)
   endforeach()
 endfunction(publish_Package_References_In_Contribution_Spaces_Repositories)
 
@@ -1250,12 +1256,10 @@ function(publish_All_In_Contribution_Space_Repository cs)
   endif()
   get_Path_To_Contribution_Space(PATH_TO_CS ${cs})
   if(PATH_TO_CS)
-  	execute_process(COMMAND git push origin master
-                    WORKING_DIRECTORY ${PATH_TO_CS}
-                    OUTPUT_QUIET ERROR_VARIABLE out RESULT_VARIABLE res)
-   if(res)
-     message("[PID] ERROR : problem publishing in ${cs} contribution space. Reason: ${out}. Check the status of ${cs}.")
-   endif()
+    execute_Silent_Process(GIT_OUT GIT_RES ${PATH_TO_CS} git push origin master)
+    if(GIT_RES)
+      message("[PID] ERROR : problem publishing in ${cs} contribution space. Reason: ${GIT_OUT}. Check the status of ${cs}.")
+    endif()
   else()
   	message("[PID] ERROR : problem publishing in ${cs} contribution space because contribution space cannot be found in local workspace.")
   endif()
@@ -1281,9 +1285,13 @@ endfunction(publish_All_In_Contribution_Space_Repository)
 #     :TO_RESET: the output variable that contains the list of contribution path to files (relative to contribution space) that need to be reset
 #
 function(get_Contribution_Space_Repository_Status TO_COMMIT TO_RESET cs)
-  get_Path_To_Contribution_Space(PATH_TO_CS ${cs})
   set(${TO_COMMIT} PARENT_SCOPE)
   set(${TO_RESET} PARENT_SCOPE)
+  if(EXISTS ${cs})
+    set(PATH_TO_CS ${cs})
+  else()
+    get_Path_To_Contribution_Space(PATH_TO_CS ${cs})
+  endif()
   if(PATH_TO_CS)
     execute_Silent_Process(OUT_STATUS RES_STATUS ${PATH_TO_CS} git status --porcelain)
     if(RES_STATUS EQUAL 0)
