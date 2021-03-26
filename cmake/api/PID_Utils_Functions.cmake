@@ -1298,16 +1298,25 @@ endfunction(copy_Package_Install_Folder)
 #     :FORMAT: the output variable that is set to DIGITS if string_to_parse was given by a sequence of digits, set to DOTTED_STRING if string_to_parse was written with dotted notation or empty otherwise (bad version argument given).
 #
 function(parse_Version_Argument string_to_parse VERSION FORMAT)
-  string(REGEX REPLACE "^[ \t]*([0-9]+)[ \t]+([0-9]+)[ \t]*([0-9]*)[ \t]*$" "\\1;\\2;\\3" A_VERSION ${string_to_parse})
-  if(NOT string_to_parse STREQUAL A_VERSION)#the replacement took place so the version is defined with 2 ou 3 digits
-    set(${VERSION} ${A_VERSION} PARENT_SCOPE)#only taking the last instruction since it shadows previous ones
+  unset(CMAKE_MATCH_3)
+  if(string_to_parse MATCHES "^[ \t]*([0-9]+)[ \t]+([0-9]+)[ \t]*([0-9]+)?[ \t]*$")#the replacement took place so the version is defined with 2 ou 3 digits
+    if(CMAKE_MATCH_3)
+      set(${VERSION} "${CMAKE_MATCH_1};${CMAKE_MATCH_2};${CMAKE_MATCH_3}" PARENT_SCOPE)#only taking the last instruction since it shadows previous ones
+    else()
+      set(${VERSION} "${CMAKE_MATCH_1};${CMAKE_MATCH_2}" PARENT_SCOPE)#only taking the last instruction since it shadows previous ones
+    endif()
     set(${FORMAT} "DIGITS" PARENT_SCOPE)#also specify it is under digits format
     return()
   endif()
   #OK so maybe it is under dotted notation
-  string(REGEX REPLACE "^[ \t]*([0-9]+).([0-9]+).([0-9]+)[ \t]*$" "\\1;\\2;\\3" A_VERSION ${string_to_parse})
-  if(NOT string_to_parse STREQUAL A_VERSION)#the replacement took place so the version is defined with a 3 digits dotted notation
-    set(${VERSION} ${A_VERSION} PARENT_SCOPE)
+  unset(CMAKE_MATCH_3)
+  unset(CMAKE_MATCH_4)
+  if(string_to_parse MATCHES "^[ \t]*([0-9]+)\\.([0-9]+)(\\.([0-9]+))?[ \t]*$")#the replacement took place so the version is defined with a 3 digits dotted notation
+    if(CMAKE_MATCH_4)
+      set(${VERSION} "${CMAKE_MATCH_1};${CMAKE_MATCH_2};${CMAKE_MATCH_4}" PARENT_SCOPE)#only taking the last instruction since it shadows previous ones
+    else()
+      set(${VERSION} "${CMAKE_MATCH_1};${CMAKE_MATCH_2}" PARENT_SCOPE)#only taking the last instruction since it shadows previous ones
+    endif()
     set(${FORMAT} "DOTTED_STRING" PARENT_SCOPE)#also specify it has been found under dotted notation format
     return()
   endif()
@@ -3969,7 +3978,7 @@ foreach(line IN LISTS PACKAGE_METADATA)
       set(WITH_FUNCTION TRUE)
     elseif(IN_DECLARE AND
       (line MATCHES "^[^#]*ADDRESS[ \t]+([^ \t]+\\.git).*"))
-      set(${ADDRESS} ${CMAKE_MATCH_1} PARENT_SCOPE)#an address had been found
+      set(${ADDRESS} ${CMAKE_MATCH_1} PARENT_SCOPE)#an address has been found
       set(ADDR_OK TRUE)
     elseif(IN_DECLARE AND (NOT WITH_ARG)
       AND (line MATCHES "^[^#]*VERSION[ \t]+([0-9][0-9\\. \t]+).*$"))
@@ -3989,7 +3998,7 @@ if(VERSION_DIGITS)
 	list(GET VERSION_DIGITS 0 MAJOR)
 	list(GET VERSION_DIGITS 1 MINOR)
 	list(LENGTH VERSION_DIGITS size_of_version)
-	if(NOT size_of_version GREATER 2)
+	if(size_of_version LESS 3)# no patch version defined
 		set(PATCH 0)
 		list(APPEND VERSION_DIGITS 0)
 	else()

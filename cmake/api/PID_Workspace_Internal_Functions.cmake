@@ -2309,15 +2309,18 @@ endfunction(remove_PID_Environment)
 #      :space: the name of the contribution space where package will be referenced in addition to all spaces where it is already referenced.
 #
 function(register_PID_Package package space)
-execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} installing WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
-set(ENV{space} ${space})
-execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
-unset(ENV{space})
-#only publish if the package has an address and/or a public address
-include_Package_Reference_File(PATH_TO_FILE ${package})
-if(PATH_TO_FILE AND (${package}_PUBLIC_ADDRESS OR ${package}_ADDRESS))#means included and an address is defined
-	publish_Package_References_In_Contribution_Spaces_Repositories(${package})
-endif()
+	#force the reconfiguration of the package to be sure possily newly created tags are created
+	execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR}/packages/${package}
+									WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
+	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} installing WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
+	set(ENV{space} ${space})
+	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build)
+	unset(ENV{space})
+	#only publish if the package has an address and/or a public address
+	include_Package_Reference_File(PATH_TO_FILE ${package})
+	if(PATH_TO_FILE AND (${package}_PUBLIC_ADDRESS OR ${package}_ADDRESS))#means included and an address is defined
+		publish_Package_References_In_Contribution_Spaces_Repositories(${package})
+	endif()
 endfunction(register_PID_Package)
 
 #.rst:
@@ -2419,7 +2422,7 @@ endfunction(register_PID_Environment)
 #  release_PID_Package
 #  -------------------
 #
-#   .. command:: release_PID_Package(RESULT package next)
+#   .. command:: release_PID_Package(RESULT package next manage_deps)
 #
 #     Release the currently developed package version. This results in marking the currnt version with a git tag.
 #
@@ -2482,6 +2485,12 @@ if(NOT DIGITS)#version number is not well defined
 elseif(NOT ADDRESS)#there is no connected repository ?
 	message("[PID] ERROR : problem releasing package ${package}, no address for official remote repository found in your package description.")
 	return()
+else()
+	test_Remote_Connection(CONNECTED ${WORKSPACE_DIR}/packages/${package} official)
+	if(NOT CONNECTED)
+		message("[PID] ERROR: problem releasing package ${package}, cannot connect to its official remote. Please check you internet connection.")
+		return()
+	endif()
 endif()
 
 # check that version is not already released on official/master branch
@@ -2494,7 +2503,7 @@ if(NOT VERSION_NUMBERS)
 endif()
 foreach(version IN LISTS VERSION_NUMBERS)
 	if(version STREQUAL STRING)
-		message("[PID] ERROR : cannot release version ${STRING} for package ${package}, because this version already exists.")
+		message("[PID] ERROR : cannot release version ${STRING} for package ${package}, because this version already exists. Please check that the development branch is up to date or change the new version number to release in package description.")
 		return()
 	endif()
 endforeach()
@@ -2503,7 +2512,7 @@ if(NOT branch)# if the target branch branch is not integration then check that t
 	# check that there are things to commit to master
 	check_For_New_Commits_To_Release(COMMITS_AVAILABLE ${package})
 	if(NOT COMMITS_AVAILABLE)
-		message("[PID] WARNING : cannot release package ${package} because integration branch has no commits to contribute to new version.")
+		message("[PID] ERROR : cannot release package ${package} because integration branch has no commits to contribute to new version.")
 		return()
 	endif()
 endif()
@@ -2517,7 +2526,7 @@ if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
 			extract_All_Words(${dep} "#" RES_LIST)#extract with # because this is the separator used in check_For_Dependencies_Version
 			list(GET RES_LIST 0 DEP_PACKAGE)
 			list(GET RES_LIST 1 DEP_VERSION)
-			message("[PID] releasing dependency ${DEP_PACKAGE} of ${package}...")
+			message("[PID] INFO: releasing dependency ${DEP_PACKAGE} of ${package}...")
 			release_PID_Package(DEP_RESULT ${DEP_PACKAGE} "${next}" "" TRUE)#do not use a specific branch as we do not know it (integration is used)
 			if(NOT DEP_RESULT)
 				list(APPEND unreleased_dependencies ${dep})
@@ -2602,10 +2611,8 @@ else()# check that integration branch is a fast forward of master
 	#rebuild package from master branch to get a clean installed version (getting clean use file)
 	build_And_Install_Source(IS_BUILT ${package} ${STRING} "" FALSE FALSE)
 	if(NOT IS_BUILT AND STRING VERSION_GREATER_EQUAL "1.0.0")#if the package is in a preliminary development state do not stop the versionning if package does not build
-		message("[PID] ERROR : cannot release package ${package}, because its version ${STRING} does not build.")
-		tag_Version(${package} ${STRING} FALSE)#remove local tag
 		go_To_Integration(${package})#always go back to original branch
-		return()
+		message("[PID] WARNING : during release of package ${package}, its version ${STRING} does not build on master branch.")
 	endif()
 	#merge back master into integration
 	merge_Into_Integration(${package})
@@ -2655,6 +2662,114 @@ set(${RESULT} ${STRING} PARENT_SCOPE)
 update_Package_Repository_From_Remotes(${package}) #synchronize information on remotes with local one (sanity process, not mandatory)
 
 endfunction(release_PID_Package)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deprecate_PID_Package| replace:: ``deprecate_PID_Package``
+#  .. _deprecate_PID_Package:
+#
+#  deprecate_PID_Package
+#  ---------------------
+#
+#   .. command:: deprecate_PID_Package(DEPRECTAED_VERSIONS package version)
+#
+#     Release the currently developed package version. This results in marking the currnt version with a git tag.
+#
+#      :package: the name of the package to release.
+#      :major_versions: list of major versions to deprecate.
+#      :minor_versions: list of minor versions to deprecate.
+#
+#      :RET_DEPRECATED_VERSIONS: the output variable that contains the list of deprecated versions, empty otherwise.
+#
+function(deprecate_PID_Package RET_DEPRECATED_VERSIONS package major_versions minor_versions)
+set(${RET_DEPRECATED_VERSIONS} PARENT_SCOPE)
+
+# to ensure major and minor versions specified only contain one or two number respectively
+set(to_deprecate_major)
+set(to_deprecate_minor)
+foreach(maj IN LISTS major_versions)
+	get_Version_String_Numbers(${maj} MAJOR MINOR PATCH)
+	list(APPEND to_deprecate_major ${MAJOR})
+endforeach()
+if(to_deprecate_major)
+	list(REMOVE_DUPLICATES to_deprecate_major)
+endif()
+foreach(min IN LISTS minor_versions)
+	get_Version_String_Numbers(${min} MAJOR MINOR PATCH)
+	if(MINOR)
+		list(APPEND to_deprecate_minor ${MAJOR}.${MINOR})
+	endif()
+endforeach()
+if(to_deprecate_minor)
+	list(REMOVE_DUPLICATES to_deprecate_minor)
+endif()
+
+# 1) remove corresponding versions from install tree (if they exist)
+set(package_path_in_install ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
+list_Version_Subdirectories(all_installed_versions ${package_path_in_install})
+foreach(a_version IN LISTS all_installed_versions)
+	get_Version_String_Numbers(${a_version} MAJOR MINOR PATCH)
+	if(to_deprecate_major)
+		list(FIND to_deprecate_major ${MAJOR} INDEX)
+		if(NOT INDEX EQUAL -1)#major version is matching to one given to deprecate so uninstall it
+			file(REMOVE_RECURSE ${package_path_in_install}/${a_version})
+			continue()
+		endif()
+	endif()
+	if(to_deprecate_minor)
+		list(FIND to_deprecate_minor "${MAJOR}.${MINOR}" INDEX)
+		if(NOT INDEX EQUAL -1)#minor version is matching the one given to deprecate so uninstall it
+			file(REMOVE_RECURSE ${package_path_in_install}/${a_version})
+			continue()
+		endif()
+	endif()
+endforeach()
+
+# 2) remove version tags in repository
+set(tags_removed FALSE)
+get_Repository_Version_Tags(released_versions ${package})#getting version numbers depending on value of tags
+foreach(a_version IN LISTS released_versions)
+	get_Version_String_Numbers(${a_version} MAJOR MINOR PATCH)
+	if(to_deprecate_major OR to_deprecate_major EQUAL 0)
+		if(to_deprecate_major EQUAL 0 AND a_version VERSION_EQUAL 0.0.0)
+			# specific case v0.0.0 is a special version (initial repository version)
+			# that should stay in the repository even if major version 0 is deprecated
+			continue()
+		endif()
+		list(FIND to_deprecate_major ${MAJOR} INDEX)
+		if(NOT INDEX EQUAL -1)#major version is matching to one given to deprecate so uninstall it
+			tag_Version(${package} ${a_version} FALSE)# delete the tag
+			set(tags_removed TRUE)
+			continue()
+		endif()
+	endif()
+	if(to_deprecate_minor)
+		if(to_deprecate_minor VERSION_EQUAL 0.0 AND a_version VERSION_EQUAL 0.0.0)
+			# specific case v0.0.0 is a special version (initial repository version)
+			# that should stay in the repository even if major version 0 is deprecated
+			continue()
+		endif()
+		list(FIND to_deprecate_minor "${MAJOR}.${MINOR}" INDEX)
+		if(NOT INDEX EQUAL -1)#minor version is matching the one given to deprecate so uninstall it
+			tag_Version(${package} ${a_version} FALSE)# delete the tag
+			set(tags_removed TRUE)
+			continue()
+		endif()
+	endif()
+endforeach()
+
+#3) generating the new reference file and publishing it in adequate spaces
+register_PID_Package(${package} "")
+
+#4) pushing tags
+set(package_repo ${WORKSPACE_DIR}/packages/${package})
+execute_process(COMMAND git push official --tags
+                WORKING_DIRECTORY ${package_repo} OUTPUT_QUIET ERROR_QUIET)
+
+endfunction(deprecate_PID_Package)
 
 ##########################################
 ############ updating packages ###########
