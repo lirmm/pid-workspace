@@ -215,6 +215,15 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "             - patch=*patch version*: alternative to branch argument. Perform the release from a patch branch"
 	COMMAND ${CMAKE_COMMAND} -E echo "               that has been created using patching command -e.g. with name patch-0.5.4."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
+	COMMAND ${CMAKE_COMMAND} -E echo " deprecate:    deprecate versions of the target native package. It consists in:"
+	COMMAND ${CMAKE_COMMAND} -E echo "             - untagging the package repository."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - regenerating find file."
+	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [mandatory] ---"
+	COMMAND ${CMAKE_COMMAND} -E echo "             - package=*name of the package*: target package to deprecate."
+	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [optional, use at least one of them] ---"
+	COMMAND ${CMAKE_COMMAND} -E echo "             - major=*version*: target major versions to deprecate (may be a comma separated list of versions)."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - minor=*version*: target minor versions to deprecate (may be a comma separated list of versions)."
+	COMMAND ${CMAKE_COMMAND} -E echo ""
 	COMMAND ${CMAKE_COMMAND} -E echo " build:      build target native package."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [mandatory] ---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - package=*name of the package* or all: target package to build. If all is used then"
@@ -443,6 +452,12 @@ set(release_args "\
 	-DFROM_PATCH=\${patch} \
 	-DAUTOMATIC_RELEASE=\${recursive} ")
 add_PID_Command(release Release_PID_Package.cmake)
+
+## deprecate package versions (kind of unrelease operation)
+set(release_args "\
+	-DTARGET_PACKAGE=\${package} \
+	-DTARGET_VERSION=\${version} \ ")
+add_PID_Command(deprecate Deprecate_PID_Package_Versions.cmake)
 
 ## updating a package
 set(update_args "\

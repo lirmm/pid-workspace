@@ -170,6 +170,17 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		COMMENT "[PID] memorizing existing version ..."
 	)
 
+	# target used to deprecate versions
+	add_custom_target(deprecate
+		COMMAND ${CMAKE_COMMAND}	-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						-DTARGET_PACKAGE=${PROJECT_NAME}
+						-DTARGET_MAJOR=\${major}
+						-DTARGET_MINOR=\${minor}
+						-P ${WORKSPACE_DIR}/cmake/commands/Deprecate_PID_Package_Versions.cmake
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+		COMMENT "[PID] deprecating versions ..."
+	)
+
 	# update target (update the package from upstream git repository)
 	add_custom_target(update
 		COMMAND ${CMAKE_COMMAND}

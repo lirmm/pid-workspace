@@ -2729,7 +2729,8 @@ foreach(a_version IN LISTS all_installed_versions)
 endforeach()
 
 # 2) remove version tags in repository
-set(tags_removed FALSE)
+set(untagged_versions)
+set(package_repo ${WORKSPACE_DIR}/packages/${package})
 get_Repository_Version_Tags(released_versions ${package})#getting version numbers depending on value of tags
 foreach(a_version IN LISTS released_versions)
 	get_Version_String_Numbers(${a_version} MAJOR MINOR PATCH)
@@ -2742,7 +2743,10 @@ foreach(a_version IN LISTS released_versions)
 		list(FIND to_deprecate_major ${MAJOR} INDEX)
 		if(NOT INDEX EQUAL -1)#major version is matching to one given to deprecate so uninstall it
 			tag_Version(${package} ${a_version} FALSE)# delete the tag
-			set(tags_removed TRUE)
+			execute_Silent_Process(GIT_OUT GIT_RES ${package_repo} git push --delete official v${a_version})
+			if(GIT_RES EQUAL 0)
+				list(APPEND untagged_versions ${a_version})
+			endif()
 			continue()
 		endif()
 	endif()
@@ -2755,20 +2759,24 @@ foreach(a_version IN LISTS released_versions)
 		list(FIND to_deprecate_minor "${MAJOR}.${MINOR}" INDEX)
 		if(NOT INDEX EQUAL -1)#minor version is matching the one given to deprecate so uninstall it
 			tag_Version(${package} ${a_version} FALSE)# delete the tag
-			set(tags_removed TRUE)
+			execute_Silent_Process(GIT_OUT GIT_RES ${package_repo} git push --delete official v${a_version})
+			if(GIT_RES EQUAL 0)
+				list(APPEND untagged_versions ${a_version})
+			endif()
 			continue()
 		endif()
 	endif()
 endforeach()
 
+#sanity operation to retrieve tag locally removed but not delete in official due to problems
+execute_Silent_Process(GIT_OUT GIT_RES ${package_repo} git fetch official --tags)
+if(NOT untagged_versions)
+	return()
+endif()
 #3) generating the new reference file and publishing it in adequate spaces
 register_PID_Package(${package} "")
 
-#4) pushing tags
-set(package_repo ${WORKSPACE_DIR}/packages/${package})
-execute_process(COMMAND git push official --tags
-                WORKING_DIRECTORY ${package_repo} OUTPUT_QUIET ERROR_QUIET)
-
+set(${RET_DEPRECATED_VERSIONS} ${untagged_versions} PARENT_SCOPE)
 endfunction(deprecate_PID_Package)
 
 ##########################################
