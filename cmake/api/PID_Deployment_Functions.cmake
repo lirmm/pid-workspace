@@ -1245,14 +1245,13 @@ if(NOT UPDATE_OK)
 	restore_Repository_Context(${package} FALSE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
-get_Repository_Version_Tags(GIT_VERSIONS ${package})
-if(NOT GIT_VERSIONS) #no version available => BUG
+get_Repository_Version_Tags(VERSION_NUMBERS ${package}) #getting standard version number depending on value of tags
+if(NOT VERSION_NUMBERS) #no version available => BUG
 	message("[PID] ERROR : no version available for source package ${package}. Maybe this is a malformed package, please contact the administrator of this package.")
 	restore_Repository_Context(${package} FALSE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
 
-normalize_Version_Tags(VERSION_NUMBERS "${GIT_VERSIONS}") #getting standard version number depending on value of tags
 select_Last_Version(RES_VERSION "${VERSION_NUMBERS}")
 if(NOT RES_VERSION)
 	message("[PID] WARNING : no adequate version found for source package ${package} !! Maybe this is due to a malformed package (contact the administrator of this package). Otherwise that may mean you use a non released version of ${package} (in development version).")
@@ -1429,14 +1428,12 @@ if(NOT UPDATE_OK)
 	return()
 endif()
 
-get_Repository_Version_Tags(GIT_VERSIONS ${package}) #get all version tags
-if(NOT GIT_VERSIONS) #no version available => BUG
+get_Repository_Version_Tags(VERSION_NUMBERS ${package}) #get all version tags
+if(NOT VERSION_NUMBERS) #no version available => BUG
 	message("[PID] ERROR : no version available for source package ${package}. Maybe this is a malformed package, please contact the administrator of this package.")
 	restore_Repository_Context(${package} FALSE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
-
-normalize_Version_Tags(VERSION_NUMBERS "${GIT_VERSIONS}")
 
 if(is_exact)
 	select_Exact_Native_Version(RES_VERSION ${min_version} "${VERSION_NUMBERS}")

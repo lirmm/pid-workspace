@@ -453,6 +453,33 @@ endfunction(go_To_Version)
 #
 # .. ifmode:: internal
 #
+#  .. |normalize_Version_Tags| replace:: ``normalize_Version_Tags``
+#  .. _normalize_Version_Tags:
+#
+#  normalize_Version_Tags
+#  ----------------------
+#
+#   .. command:: normalize_Version_Tags(VERSION_NUMBERS version_tags)
+#
+#     Produce normalized version numbers from a list of version tags
+#
+#     :version_tags: list of version tags to normalize
+#
+#     :VERSION_NUMBERS: the output variable that contains the list of normalized versions.
+#
+function(normalize_Version_Tags VERSION_NUMBERS version_tags)
+foreach(tag IN LISTS version_tags)
+  if(tag MATCHES "^v([0-9]+\\.[0-9]+\\.[0-9]+)$")
+  	list(APPEND result ${CMAKE_MATCH_1})
+  endif()
+endforeach()
+set(${VERSION_NUMBERS} ${result} PARENT_SCOPE)
+endfunction(normalize_Version_Tags)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |get_Repository_Version_Tags| replace:: ``get_Repository_Version_Tags``
 #  .. _get_Repository_Version_Tags:
 #
@@ -461,9 +488,9 @@ endfunction(go_To_Version)
 #
 #   .. command:: get_Repository_Version_Tags(AVAILABLE_VERSION package)
 #
-#     Get all version tags of a package.
+#     Get all version tags of a package or wrapper.
 #
-#     :package: The target package
+#     :package: The target package or wrapper
 #
 #     :AVAILABLE_VERSIONS: the variable that contains the list of all tagged versions
 #
@@ -484,34 +511,10 @@ function(get_Repository_Version_Tags AVAILABLE_VERSIONS package)
   	return()
   endif()
   string(REPLACE "\n" ";" GIT_VERSIONS ${res})
-  set(${AVAILABLE_VERSIONS} ${GIT_VERSIONS} PARENT_SCOPE)
+  normalize_Version_Tags(VERSION_NUMBERS "${GIT_VERSIONS}")
+  set(${AVAILABLE_VERSIONS} ${VERSION_NUMBERS} PARENT_SCOPE)
 endfunction(get_Repository_Version_Tags)
 
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |normalize_Version_Tags| replace:: ``normalize_Version_Tags``
-#  .. _normalize_Version_Tags:
-#
-#  normalize_Version_Tags
-#  ----------------------
-#
-#   .. command:: normalize_Version_Tags(AVAILABLE_VERSION package)
-#
-#     Get all version tags of a package.
-#
-#     :package: The target source package
-#
-#     :AVAILABLE_VERSIONS: the output variable that contains the list of all tagged versions
-#
-function(normalize_Version_Tags VERSION_NUMBERS VERSIONS_TAGS)
-foreach(tag IN LISTS VERSIONS_TAGS)
-	string(REGEX REPLACE "^v(.*)$" "\\1" VNUMBERS ${tag})
-	list(APPEND result ${VNUMBERS})
-endforeach()
-set(${VERSION_NUMBERS} ${result} PARENT_SCOPE)
-endfunction(normalize_Version_Tags)
 
 #.rst:
 #

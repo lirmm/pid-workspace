@@ -74,13 +74,12 @@ endif()
 
 #check if the version tag existed before
 set(add_tag FALSE)
-get_Repository_Version_Tags(AVAILABLE_VERSIONS ${TARGET_PACKAGE})
-if(NOT AVAILABLE_VERSIONS)
+get_Repository_Version_Tags(VERSION_NUMBERS ${TARGET_PACKAGE})
+if(NOT VERSION_NUMBERS)
   set(add_tag TRUE)
 else()
-  normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}")
   list(FIND VERSION_NUMBERS ${TARGET_VERSION} INDEX)
-  if(INDEX EQUAL -1)#verison tag not find in existing version tags
+  if(INDEX EQUAL -1)#version tag not found in existing version tags
     set(add_tag TRUE)
   endif()
 endif()

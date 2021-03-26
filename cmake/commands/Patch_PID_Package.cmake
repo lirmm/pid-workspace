@@ -87,8 +87,7 @@ endif() #from here graph of commits and version tags are OK
 checkout_From_Master_To_Commit(${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} ${CURRENT_COMMIT_OR_BRANCH} IGNORED_ON_INITIAL_COMMIT)
 
 # check that version is not already released on official/master branch
-get_Repository_Version_Tags(AVAILABLE_VERSION_TAGS ${TARGET_PACKAGE})
-normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSION_TAGS}")
+get_Repository_Version_Tags(VERSION_NUMBERS ${TARGET_PACKAGE})
 if(NOT VERSION_NUMBERS)
 	message("[PID] ERROR : malformed package ${TARGET_PACKAGE}, no version tag detected in ${TARGET_PACKAGE} repository ! This denote a bad state of your repository. Maybe this repository has been cloned by hand wthout pulling its version tags.\n
 	1) you can try doing the command `update` into ${TARGET_PACKAGE} project, then try patching again.\n

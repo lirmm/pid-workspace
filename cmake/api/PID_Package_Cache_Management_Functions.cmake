@@ -2592,8 +2592,7 @@ endfunction(generate_Info_File)
 function(generate_Package_Find_File)
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	# generating/installing the generic cmake find file for the package
-  get_Repository_Version_Tags(AVAILABLE_VERSIONS ${PROJECT_NAME})
-  normalize_Version_Tags(VERSION_NUMBERS "${AVAILABLE_VERSIONS}") #getting standard version number depending on value of tags
+  get_Repository_Version_Tags(VERSION_NUMBERS ${PROJECT_NAME})#getting standard version number depending on value of tags
   set(FIND_FILE_KNOWN_VERSIONS ${VERSION_NUMBERS})#only write release versions
 	configure_file(${WORKSPACE_DIR}/cmake/patterns/packages/FindPackage.cmake.in ${CMAKE_BINARY_DIR}/share/Find${PROJECT_NAME}.cmake @ONLY)
   get_Path_To_All_Deployment_Unit_References_Publishing_Contribution_Spaces(ALL_PUBLISHING_CS ${PROJECT_NAME} "")
