@@ -28,6 +28,7 @@ set(PID_CONTRIBUTION_SPACE_FUNCTIONS_INCLUDED TRUE)
 include(CMakeParseArguments)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
+include(PID_Finding_Functions NO_POLICY_SCOPE)
 include(PID_Progress_Management_Functions NO_POLICY_SCOPE)
 
 #.rst:

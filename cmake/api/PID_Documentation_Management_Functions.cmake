@@ -454,7 +454,7 @@ if(${package}_PUBLIC_ADDRESS OR ${package}_ADDRESS)
   set(DOC_STR "${DOC_STR}Please read [this page](https://pid.lirmm.net/pid-framework/pages/external_API_tutorial.html#using-cmake) for more information.\n\n")
   set(DOC_STR "${DOC_STR}The second option is more traditional as it installs the package and its dependencies in a given system folder which can then be retrived using `find_package(${package})`.\n")
   set(DOC_STR "${DOC_STR}You can pass the `--install <path>` option to the installation script to perform the installation and then follow [these steps](https://pid.lirmm.net/pid-framework/pages/external_API_tutorial.html#third-step--extra-system-configuration-required) to configure your environment, find PID packages and link with their components.\n")
-  
+
   if(NB_LIBS GREATER 0)
     set(DOC_STR "${DOC_STR}### Using **${package}** with pkg-config\n")
     set(DOC_STR "${DOC_STR}You can pass `--pkg-config on` to the installation script to generate the necessary pkg-config files.\n")
@@ -480,7 +480,7 @@ if(${package}_PUBLIC_ADDRESS OR ${package}_ADDRESS)
       endforeach()
     endif()
   endif()
-    
+
   set(INST_STR "Once the package and its dependencies are installed, you can consume it in different ways.\n")
   set(INST_STR "${INST_STR}## From another PID package\n")
   set(INST_STR "${INST_STR}\nSimply add `PID_Dependency(${package})` or `PID_Dependency(PACKAGE VERSION x.y.z)` in your root *CMakeLists.txt* and then declare one of **${package}**'s components as a dependency in your `PID_Component` calls\n")
@@ -1679,13 +1679,15 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
   	set(TARGET_APIDOC_PATH ${TARGET_PACKAGE_PATH}/api_doc)
   	set(TARGET_COVERAGE_PATH ${TARGET_PACKAGE_PATH}/coverage)
   	set(TARGET_STATICCHECKS_PATH ${TARGET_PACKAGE_PATH}/static_checks)
-    set(TARGET_BINARIES_PATH ${TARGET_PACKAGE_PATH}/binaries/${version}/${CURRENT_PLATFORM})
+    set(TARGET_ALL_BINARIES ${TARGET_PACKAGE_PATH}/binaries)
+    set(TARGET_BINARIES_PATH ${TARGET_ALL_BINARIES}/${version}/${CURRENT_PLATFORM})
     set(TARGET_PAGES_PATH ${TARGET_PACKAGE_PATH}/pages)
   	set(TARGET_POSTS_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework}/src/_posts)
 
   else()#it is a lone static site (no need to adapt the path as they work the same for external wrappers and native packages)
   	set(TARGET_PACKAGE_PATH ${WORKSPACE_DIR}/sites/packages/${package}/src)
-    set(TARGET_BINARIES_PATH ${TARGET_PACKAGE_PATH}/_binaries/${version}/${CURRENT_PLATFORM})
+    set(TARGET_ALL_BINARIES ${TARGET_PACKAGE_PATH}/_binaries)
+    set(TARGET_BINARIES_PATH ${TARGET_ALL_BINARIES}/${version}/${CURRENT_PLATFORM})
     set(TARGET_APIDOC_PATH ${TARGET_PACKAGE_PATH}/api_doc)
   	set(TARGET_COVERAGE_PATH ${TARGET_PACKAGE_PATH}/coverage)
   	set(TARGET_STATICCHECKS_PATH ${TARGET_PACKAGE_PATH}/static_checks)
@@ -1773,6 +1775,28 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
   	set(NEW_POST_CONTENT_BINARY TRUE)
   endif()
 
+  # finally whether binaries have been produced or not this time
+  # remove all versions not referenced in find file (except eventually current version)
+  set(NEW_POST_CONTENT_REMOVED_BINS)
+  if(EXISTS ${TARGET_ALL_BINARIES})
+    set(DO_NOT_FIND_${package} TRUE)
+    include_Find_File(${package})
+    set(versions_to_allow ${${package}_PID_KNOWN_VERSION})
+    list(APPEND versions_to_allow ${version})
+    list(REMOVE_ITEM versions_to_allow 0.0.0)
+    if(versions_to_allow)
+      list_Version_Subdirectories(all_published_versions ${TARGET_ALL_BINARIES})
+      foreach(a_version IN LISTS all_published_versions)
+        list(FIND versions_to_allow ${a_version} INDEX)
+        if(INDEX EQUAL -1)#version not found (deprecated or patch version proposed)
+          #remove the crresponding directory
+          file(REMOVE_RECURSE ${TARGET_ALL_BINARIES}/${a_version})
+          list(APPEND NEW_POST_CONTENT_REMOVED_BINS ${a_version})
+        endif()
+      endforeach()
+    endif()
+  endif()
+
   ######### copy the license file (only for lone static sites, framework have their own) ##############
   if(NOT framework)
   	set(ARE_SAME FALSE)
@@ -1834,6 +1858,10 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
   endif()
   if(NEW_POST_CONTENT_BINARY)
   	set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### A binary version of the package targetting ${CURRENT_PLATFORM} platform has been added for version ${version}\n\n")
+  endif()
+  if(NEW_POST_CONTENT_REMOVED_BINS)
+    fill_String_From_List(RES_TO_PRINT NEW_POST_CONTENT_REMOVED_BINS ", ")
+    set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### Binaries have been removed for deprecated versions : ${RES_TO_PRINT}\n\n")
   endif()
   if(NEW_POST_CONTENT_PAGES)
   	set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### The pages documenting the package have been updated\n\n")
@@ -2131,6 +2159,18 @@ function(produce_Wrapper_Static_Site_Content package only_bin framework versions
     endforeach()
   endif()
 
+  # whether a binary package installer is generated for this version or not
+  set(NEW_POST_CONTENT_REMOVED_BINS)
+  list_Version_Subdirectories(all_published_versions ${TARGET_BINARIES_PATH})
+  foreach(a_version IN LISTS all_published_versions)
+    list(FIND versions ${a_version} INDEX)
+    if(INDEX EQUAL -1) #support for this version has been deprecated
+      #remove the folder
+      file(REMOVE_RECURSE ${TARGET_BINARIES_PATH}/${a_version})
+      list(APPEND NEW_POST_CONTENT_REMOVED_BINS ${a_version})
+    endif()
+  endforeach()
+
   ######### copy the license file (only for lone static sites, framework have their own) ##############
   if(NOT framework)
   	set(ARE_SAME FALSE)
@@ -2185,6 +2225,10 @@ function(produce_Wrapper_Static_Site_Content package only_bin framework versions
   if(NEW_POST_CONTENT_BINARY_VERSIONS)
     fill_String_From_List(ALL_VERSIONS_STR NEW_POST_CONTENT_BINARY_VERSIONS " ")
     set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### Binary versions of the external package targetting ${CURRENT_PLATFORM} platform have been added/updated : ${ALL_VERSIONS_STR}\n\n")
+  endif()
+  if(NEW_POST_CONTENT_REMOVED_BINS)
+    fill_String_From_List(RES_TO_PRINT NEW_POST_CONTENT_REMOVED_BINS ", ")
+    set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### Binaries have been removed for deprecated versions: ${RES_TO_PRINT}\n\n")
   endif()
   if(NEW_POST_CONTENT_PAGES)
   	set(POST_UPDATE_STRING "${POST_UPDATE_STRING}### The pages documenting the external package have been updated\n\n")

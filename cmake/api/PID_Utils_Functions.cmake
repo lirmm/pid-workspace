@@ -1594,7 +1594,7 @@ endfunction(get_Version_String_Numbers)
 #
 #     :curdir: the path to a folder that may contain version subfolders.
 #
-#     :RESULT: the output variable scontaining the list of all version sufolders.
+#     :RESULT: the output variable scontaining the list of all version sufolders relative to currdir.
 #
 function(list_Version_Subdirectories RESULT curdir)
 	file(GLOB children RELATIVE ${curdir} ${curdir}/*)
