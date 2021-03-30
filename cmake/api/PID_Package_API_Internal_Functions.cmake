@@ -391,21 +391,21 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 				add_dependencies(site coverage) #when the site is built with such options activated it means that the coverage report must be built first
 
 				add_custom_target(testing #basic tests only in release
-					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
+					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 					COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
 					VERBATIM
 				)
 			else()
 				add_custom_target(testing
-					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
-					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
+					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
+					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 					COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
 					VERBATIM
 				)
 			endif()
 		else()
 			add_custom_target(testing
-				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
+				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 				COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
 				VERBATIM
 			)

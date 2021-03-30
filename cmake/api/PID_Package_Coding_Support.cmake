@@ -96,7 +96,7 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 		add_custom_target(coverage
 
 			COMMAND ${LCOV_EXECUTABLE} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --zerocounters #prepare coverage generation
-			COMMAND ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG} # Run tests
+			COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG} # Run tests
 			COMMAND ${LCOV_EXECUTABLE} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --capture --output-file ${coverage_info} --no-external
 			#configure the filter of output (remove everything that is not related to the libraries)
 			COMMAND ${LCOV_EXECUTABLE} --remove ${coverage_info} '/usr/*' '${WORKSPACE_DIR}/install/*' '${CMAKE_SOURCE_DIR}/test/*' --output-file ${coverage_cleaned}

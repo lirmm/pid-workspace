@@ -76,7 +76,7 @@ if(gen_install)
 				else()# basic test
 					add_custom_target(build
 						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
 						COMMAND ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
@@ -103,7 +103,7 @@ if(gen_install)
 				else()# basic test
 					add_custom_target(build
 						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
 						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
@@ -128,7 +128,7 @@ if(gen_install)
 				else()# basic test
 					add_custom_target(build
 						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
 						COMMAND ${CMAKE_MAKE_PROGRAM} install
 					)
@@ -148,7 +148,7 @@ if(gen_install)
 				else()# basic test
 					add_custom_target(build
 						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} install
 					)
 				endif()
@@ -174,7 +174,7 @@ if(gen_install)
 					)
 				else()# basic test
 					add_custom_target(build
-						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
 						COMMAND ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
@@ -197,7 +197,7 @@ if(gen_install)
 					)
 				else()# basic test
 					add_custom_target(build
-						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
 						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
@@ -219,7 +219,7 @@ if(gen_install)
 					)
 				else()# basic test
 					add_custom_target(build
-						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
 						COMMAND ${CMAKE_MAKE_PROGRAM} install
 					)
@@ -236,7 +236,7 @@ if(gen_install)
 					)
 				else()# basic test
 					add_custom_target(build
-						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
+						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} install
 					)
 				endif()
