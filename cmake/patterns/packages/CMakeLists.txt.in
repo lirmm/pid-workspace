@@ -6,11 +6,11 @@ include(Package_Definition NO_POLICY_SCOPE)
 project(@PACKAGE_NAME@)
 
 PID_Package(
-    AUTHOR            @PACKAGE_AUTHOR@
-    YEAR              @PACKAGE_YEARS@
-    LICENSE           @PACKAGE_CONTENT_META@
-    DESCRIPTION       @PACKAGE_DESCRIPTION@
-    VERSION           0.0.0
+    AUTHOR             @PACKAGE_AUTHOR@
+    YEAR               @PACKAGE_YEARS@
+    LICENSE            @PACKAGE_CONTENT_META@
+    DESCRIPTION        @PACKAGE_DESCRIPTION@
+    VERSION            0.0.0
 )
 
 # All the functions commented below are optional and documented here https://pid.lirmm.net/pid-framework/assets/apidoc/html/pages/Package_API.html

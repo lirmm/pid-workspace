@@ -6,10 +6,10 @@ include(Environment_Definition NO_POLICY_SCOPE)
 project(@ENVIRONMENT_NAME@ C CXX ASM)
 
 PID_Environment(
-    AUTHOR            @ENVIRONMENT_AUTHOR@
-    YEAR              @ENVIRONMENT_YEARS@
-    LICENSE           @ENVIRONMENT_CONTENT_META@
-    DESCRIPTION       @ENVIRONMENT_DESCRIPTION@
+    AUTHOR             @ENVIRONMENT_AUTHOR@
+    YEAR               @ENVIRONMENT_YEARS@
+    LICENSE            @ENVIRONMENT_CONTENT_META@
+    DESCRIPTION        @ENVIRONMENT_DESCRIPTION@
 )
 
 # All the functions commented below documented here https://pid.lirmm.net/pid-framework/assets/apidoc/html/pages/Environment_API.html

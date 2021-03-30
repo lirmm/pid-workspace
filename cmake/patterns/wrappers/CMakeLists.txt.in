@@ -6,10 +6,10 @@ include(Wrapper_Definition NO_POLICY_SCOPE)
 project(@WRAPPER_NAME@)
 
 PID_Wrapper(
-    AUTHOR            @WRAPPER_AUTHOR@
-    YEAR              @WRAPPER_YEARS@
-    LICENSE           @WRAPPER_CONTENT_META@
-    DESCRIPTION       @WRAPPER_DESCRIPTION@
+    AUTHOR             @WRAPPER_AUTHOR@
+    YEAR               @WRAPPER_YEARS@
+    LICENSE            @WRAPPER_CONTENT_META@
+    DESCRIPTION        @WRAPPER_DESCRIPTION@
 )
 
 # All the functions commented below are optional and documented here https://pid.lirmm.net/pid-framework/assets/apidoc/html/pages/Wrapper_API.html

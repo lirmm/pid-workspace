@@ -6,15 +6,15 @@ include(Framework_Definition NO_POLICY_SCOPE)
 project(@FRAMEWORK_NAME@)
 
 PID_Framework(
-    AUTHOR            @FRAMEWORK_AUTHOR@
-    YEAR              @FRAMEWORK_YEARS@
-    LICENSE           @FRAMEWORK_CONTENT_META@
-    DESCRIPTION       @FRAMEWORK_DESCRIPTION@
+    AUTHOR             @FRAMEWORK_AUTHOR@
+    YEAR               @FRAMEWORK_YEARS@
+    LICENSE            @FRAMEWORK_CONTENT_META@
+    DESCRIPTION        @FRAMEWORK_DESCRIPTION@
 #   You should list the categories defined by the framework to allow the resulting static  
 #   site to classify packages and wrappers belonging to this framework
-#   CATEGORIES        category
-#                     category/subcategory
-#                     ...
+#   CATEGORIES         category
+#                      category/subcategory
+#                      ...
 )
 
 # All the functions commented below documented here https://pid.lirmm.net/pid-framework/assets/apidoc/html/pages/Framework_API.html
