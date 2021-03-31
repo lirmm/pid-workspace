@@ -1946,10 +1946,13 @@ if(EXIST)
 		endif()
 
 		#registering PID system version for that package
-		include(${PATH_TO_PACKAGE_VERSION}/share/cmake/${package}_PID_VERSION.cmake OPTIONAL RESULT_VARIABLE res)#using the installed PID version file to know which version is used
-		if(${res} STREQUAL NOTFOUND) #no bound to the package (maybe old package style before versionning)
-			set(${package}_PID_VERSION 0 CACHE INTERNAL "")#default version is 0
-		endif()
+    list_Regular_Files(ALL_CMAKE_FILES ${PATH_TO_PACKAGE_VERSION}/share/cmake)
+    set(${package}_PID_VERSION 0 CACHE INTERNAL "")#default version is 0
+    foreach(a_file IN LISTS ALL_CMAKE_FILES)
+      if(a_file MATCHES "^.+\\.cmake$")
+        include(${PATH_TO_PACKAGE_VERSION}/share/cmake/${a_file})
+      endif()
+    endforeach()
 	else()#no adequate version found
     exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the package ${package} with version ${${package}_FIND_VERSION} cannot be found in the workspace.")
 	endif()
