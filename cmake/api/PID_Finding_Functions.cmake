@@ -396,9 +396,9 @@ if(version_dirs)#seaking for a good version only if there are versions installed
     set(curr_patch_version 0)
   endif()
   update_Package_Installed_Version(${package} ${major} ${minor} "${patch}" false "${version_dirs}" "${BUILD_RELEASE_ONLY}")#updating only if there are installed versions
-	foreach(version IN LISTS version_dirs)
+  foreach(version IN LISTS version_dirs)
 		if(version MATCHES "^${major}\\.${minor}\\.([0-9]+)$")
-			if(NOT (CMAKE_MATCH_1 LESS curr_patch_version)) #=minor >= patch
+			if(CMAKE_MATCH_1 GREATER_EQUAL curr_patch_version) #=minor AND >= patch
 				set(result TRUE)
 				#a more recent patch version found with same minor version
 				set(curr_patch_version ${CMAKE_MATCH_1})
@@ -1261,7 +1261,7 @@ else()#package already required as "to install"
 		elseif(version_exact) #if this version was previously not exact it becomes exact if exact is required
 			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
 		endif()
-	else()# when there is a problem !! (maybe a warning could be cgood idea)
+	else()# when there is a problem !! (maybe a warning could be a good idea)
 		set(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
 		if(version_exact)
 			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
@@ -1920,10 +1920,13 @@ if(EXIST)
 				exitFindScript(${package} "[PID] CRITICAL ERROR when configuring ${PROJECT_NAME} : the  selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted.")
 			endif()
 		endif()
-
     #need to check if debug binaries are provided (based on ${package}_BUILT_RELEASE_ONLY variable provided in Use file)
     if(CMAKE_BUILD_TYPE MATCHES Debug)
       if(${package}_BUILT_RELEASE_ONLY)#debug binaries are not available, so package is not found
+        if(${package}_FIND_VERSION)#force the version patch to be the one resolved
+          #Note: this is to ensure that the rebuild of dependency is done on adequate patch version even if this version is not released yet
+          set(${package}_FIND_VERSION_PATCH ${${package}_VERSION_PATCH})
+        endif()
         exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the package ${package} with version ${${package}_FIND_VERSION} has been found but does not provide debug artifacts as required. Considered as not found.")
       endif()
     endif()
