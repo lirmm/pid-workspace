@@ -91,7 +91,10 @@ activate_Adequate_Languages()
 #################################################
 ############ Managing options ###################
 #################################################
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake) # adding the cmake scripts files from the package
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake) # adding the cmake scripts files from the package
+if(EXISTS ${CMAKE_SOURCE_DIR}/cmake)
+	list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake) # adding a user defined folder containing cmake scripts files from the package
+endif()
 
 configure_Git()
 if(NOT GIT_CONFIGURED)
