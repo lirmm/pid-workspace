@@ -438,6 +438,50 @@ else()
 endif()
 endmacro(execute_OS_Command)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |execute_System_Packaging_Command| replace:: ``execute_System_Packaging_Command``
+#  .. _execute_System_Packaging_Command:
+#
+#  execute_System_Packaging_Command
+#  --------------------------------
+#
+#   .. command:: execute_System_Packaging_Command([list_of_packages])
+#
+#      invoque the system packager in use. Either execute a system update/upggrade or install given packages.
+#
+#     :list_of_packages: the system package to install. If none given a system update/upgrade will be performed.
+#
+function(execute_System_Packaging_Command)
+  message("executing execute_System_Packaging_Command args = ${ARGN}")
+  set(sys_pack_commands)
+  if(NOT ARGN)#no parameters it is an update/upgrade command
+    if(CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS)
+      set(sys_pack_commands CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS)
+    endif()
+    list(APPEND sys_pack_commands CURRENT_PACKAGING_SYSTEM_EXE_UPGRADE_OPTIONS)
+  else()
+    set(sys_pack_commands CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS)
+  endif()
+  foreach(command IN LISTS sys_pack_commands)
+    if(IN_CI_PROCESS)
+      if(CURRENT_PACKAGING_SYSTEM_FORCE_NON_ROOT_USER)
+        execute_process(COMMAND sudo -u builduser ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN})#use the specific user called builduser
+      else()#directly use the root user
+        execute_process(COMMAND ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN})#use root user
+      endif()
+    else()
+      if(CURRENT_PACKAGING_SYSTEM_FORCE_NON_ROOT_USER)
+        execute_process(COMMAND ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN})#use the current user
+      else()
+        execute_process(COMMAND sudo ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN})#need to have super user privileges except in CI where sudo is forbidden
+      endif()
+    endif()
+  endforeach()
+endfunction(execute_System_Packaging_Command)
+
 #############################################################
 ########### general utilities for build management ##########
 #############################################################
