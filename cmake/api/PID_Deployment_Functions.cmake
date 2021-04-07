@@ -1590,7 +1590,7 @@ function(check_Package_Platform_Against_Current CHECK_OK package platform versio
   # need to check for its platform configuration to be sure it can be used locally
   set(LANGS_TO_CHECK)
   if(${package}_LANGUAGE_CONFIGURATIONS)
-  	set(LANGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS})
+  	set(LANGS_TO_CHECK ${${package}_LANGUAGE_CONFIGURATIONS})
     list(REMOVE_DUPLICATES LANGS_TO_CHECK)
   endif()
   foreach(lang IN LISTS LANGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
