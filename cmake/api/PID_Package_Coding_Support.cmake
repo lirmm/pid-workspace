@@ -100,7 +100,7 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 			COMMAND ${LCOV_EXECUTABLE} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --capture --output-file ${coverage_info} --no-external
 			#configure the filter of output (remove everything that is not related to the libraries)
 			COMMAND ${LCOV_EXECUTABLE} --remove ${coverage_info} '/usr/*' '${WORKSPACE_DIR}/install/*' '${CMAKE_SOURCE_DIR}/test/*' --output-file ${coverage_cleaned}
-			COMMAND ${GENHTML_EXECUTABLE} -o ${coverage_dir} ${coverage_cleaned} #generating output
+			COMMAND ${GENHTML_EXECUTABLE} -o ${coverage_dir} ${coverage_cleaned} | true #generating output, TODO find a better alternative to | true to handle empty coverage reports
 			COMMAND ${CMAKE_COMMAND} -E remove ${coverage_info} ${coverage_cleaned} #cleanup lcov files
 
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
