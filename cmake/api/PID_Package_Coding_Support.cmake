@@ -87,22 +87,21 @@ if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
 
 	if(CMAKE_BUILD_TYPE MATCHES Debug)
 
-		set(coverage_info "${CMAKE_BINARY_DIR}/lcovoutput.info")
-		set(coverage_cleaned "${CMAKE_BINARY_DIR}/${PROJECT_NAME}_coverage")
 		set(coverage_dir "${CMAKE_BINARY_DIR}/share/coverage_report")
 
     message("[PID] INFO : Allowing coverage checks ...")
-		# Setup coverage target
+    # Setup coverage target
 		add_custom_target(coverage
-
-			COMMAND ${LCOV_EXECUTABLE} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --zerocounters #prepare coverage generation
-			COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG} # Run tests
-			COMMAND ${LCOV_EXECUTABLE} --base-directory ${CMAKE_SOURCE_DIR} --directory ${CMAKE_BINARY_DIR} --capture --output-file ${coverage_info} --no-external
-			#configure the filter of output (remove everything that is not related to the libraries)
-			COMMAND ${LCOV_EXECUTABLE} --remove ${coverage_info} '/usr/*' '${WORKSPACE_DIR}/install/*' '${CMAKE_SOURCE_DIR}/test/*' --output-file ${coverage_cleaned}
-			COMMAND ${GENHTML_EXECUTABLE} -o ${coverage_dir} ${coverage_cleaned} | true #generating output, TODO find a better alternative to | true to handle empty coverage reports
-			COMMAND ${CMAKE_COMMAND} -E remove ${coverage_info} ${coverage_cleaned} #cleanup lcov files
-
+        COMMAND ${CMAKE_COMMAND}
+        -DWORKSPACE_DIR=${WORKSPACE_DIR}
+			  -DPROJECT_NAME=${PROJECT_NAME}
+        -DTARGET_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+        -DTARGET_BINARY_DIR=${CMAKE_BINARY_DIR}
+        -DLCOV_EXECUTABLE=${LCOV_EXECUTABLE}
+        -DGENHTML_EXECUTABLE=${GENHTML_EXECUTABLE}
+        -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+        -DPARALLEL_JOBS_FLAG=${PARALLEL_JOBS_FLAG}
+        -P ${WORKSPACE_DIR}/cmake/commands/Generate_PID_Coverage.cmake
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 			COMMENT "Generating code coverage report."
 		)
