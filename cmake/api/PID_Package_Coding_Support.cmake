@@ -171,7 +171,7 @@ function(add_Static_Check component is_library)
 
   #filtering sources to keep only C/C++ sources
   filter_All_Sources(SOURCES_TO_CHECK)
-
+  if(SOURCES_TO_CHECK)
 	# getting specific settings of the target (using generator expression to make it robust)
 	is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${component})#no need to check for alias as in current project component only base component names (by construction)
 	if(NOT IS_HF)#component has a public interface
@@ -201,6 +201,13 @@ function(add_Static_Check component is_library)
 		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 		COMMENT "[PID] INFO: Running cppcheck on target ${component}..."
 		VERBATIM)
+  else()
+	#adding a dummy target since the component doesn't have C or C++ source files
+	add_custom_command(TARGET staticchecks PRE_BUILD
+		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+		COMMENT "[PID] INFO: Skipping cppcheck for target ${component} since it has no source files"
+		VERBATIM)
+  endif()
 endfunction(add_Static_Check)
 
 #.rst:
