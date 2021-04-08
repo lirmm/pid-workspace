@@ -2557,10 +2557,17 @@ if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
 	endif()
 endif()
 
+# memorize current cache value
+if(NOT EXISTS ${WORKSPACE_DIR}/build/tmp)
+	file(MAKE_DIRECTORY ${WORKSPACE_DIR}/build/tmp)
+endif()
+file(COPY ${WORKSPACE_DIR}/packages/${package}/build/CMakeCache.txt DESTINATION ${WORKSPACE_DIR}/build)
+
 # build one time to be sure it builds and tests pass (force build in both Debug and Release)
 build_And_Install_Source(IS_BUILT ${package} "" "${CURRENT_BRANCH}" TRUE FALSE)
 if(NOT IS_BUILT)
 	message("[PID] ERROR : cannot release package ${package}, because its branch ${CURRENT_BRANCH} does not build.")
+	file(COPY ${WORKSPACE_DIR}/build/CMakeCache.txt DESTINATION ${WORKSPACE_DIR}/packages/${package}/build)
 	return()
 endif()
 
@@ -2568,6 +2575,7 @@ if(branch)#if we use a specific branch for patching then do not merge into maste
 	publish_Package_Temporary_Branch(PUBLISH_OK ${package} ${CURRENT_BRANCH})
 	if(NOT PUBLISH_OK)
 		message("[PID] ERROR : cannot release package ${package}, because you are probably not allowed to push new branches to official package repository.")
+		file(COPY ${WORKSPACE_DIR}/build/CMakeCache.txt DESTINATION ${WORKSPACE_DIR}/packages/${package}/build)
 		return()
 	endif()
 	tag_Version(${package} ${STRING} TRUE)#create the version tag
@@ -2576,6 +2584,7 @@ if(branch)#if we use a specific branch for patching then do not merge into maste
 		delete_Package_Temporary_Branch(${package} ${CURRENT_BRANCH})#delete the temporary branch in official remote when the push failed
 		tag_Version(${package} ${STRING} FALSE)#remove local tag
 		message("[PID] ERROR : cannot release package ${package}, because your are not allowed to push version to its official remote !")
+		file(COPY ${WORKSPACE_DIR}/build/CMakeCache.txt DESTINATION ${WORKSPACE_DIR}/packages/${package}/build)
 		return()
 	endif()
 	register_PID_Package(${package} "")#automate the registering after release
@@ -2602,6 +2611,7 @@ else()# check that integration branch is a fast forward of master
 		tag_Version(${package} ${STRING} FALSE)#remove local tag
 		message("[PID] ERROR : cannot release package ${package}, because your are not allowed to push to its master branch !")
 		go_To_Integration(${package})#always go back to original branch
+		file(COPY ${WORKSPACE_DIR}/build/CMakeCache.txt DESTINATION ${WORKSPACE_DIR}/packages/${package}/build)#restore previous cache
 		return()
 	endif()
 	register_PID_Package(${package} "")#automate the registering after release
@@ -2654,9 +2664,11 @@ else()# check that integration branch is a fast forward of master
 		set(${RESULT} FALSE PARENT_SCOPE)
 	endif()
 endif()
-set(debug FALSE)
-set(run_tests FALSE)
-set(release_only TRUE)#TODO for there option we should keep those already used !!!!
+#put back the package into previous configuration
+unset(debug)
+unset(run_tests)
+unset(release_only)
+file(COPY ${WORKSPACE_DIR}/build/CMakeCache.txt DESTINATION ${WORKSPACE_DIR}/packages/${package}/build)#restore previous cache
 configure_Source(IS_CONFIGURED ${package} debug run_tests release_only)
 set(${RESULT} ${STRING} PARENT_SCOPE)
 update_Package_Repository_From_Remotes(${package}) #synchronize information on remotes with local one (sanity process, not mandatory)
