@@ -1762,6 +1762,9 @@ if(GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE)#only direct dependencies can be targett
   set(package_info ${GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE})
   set(prefix ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${TARGET_EXTERNAL_VERSION}_DEPENDENCY_${GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE})
   set(dep_version ${${prefix}_VERSION_USED_FOR_BUILD})
+  if(NOT dep_version)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling get_External_Dependency_Info, ${GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE} is not part of the declared dependencies.")
+  endif()
   set(ext_package_root ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE}/${dep_version})
   if(GET_EXTERNAL_DEPENDENCY_INFO_COMPONENT)#only direct component dependencies can be targetted
     set(prefix ${prefix}_COMPONENT_${GET_EXTERNAL_DEPENDENCY_INFO_COMPONENT})#refine the prefix !!
