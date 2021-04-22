@@ -299,15 +299,24 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	endif()
 
 	# cleaning target (cleaning the build tree)
-	add_custom_target(cleaning
-		COMMAND ${CMAKE_COMMAND} -E  touch ${CMAKE_BINARY_DIR}/share/checksources
-		COMMAND ${CMAKE_COMMAND} -E  touch ${CMAKE_BINARY_DIR}/share/rebuilt
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} clean
-		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} clean
-		COMMENT "[PID] Cleaning package ${PROJECT_NAME} (Debug and Release modes) ..."
-		VERBATIM
-	)
-
+	if(BUILD_RELEASE_ONLY)
+		add_custom_target(cleaning
+			COMMAND ${CMAKE_COMMAND} -E  touch ${CMAKE_BINARY_DIR}/share/checksources
+			COMMAND ${CMAKE_COMMAND} -E  touch ${CMAKE_BINARY_DIR}/share/rebuilt
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} clean
+			COMMENT "[PID] Cleaning package ${PROJECT_NAME} (Release mode only) ..."
+			VERBATIM
+		)
+	else()
+		add_custom_target(cleaning
+			COMMAND ${CMAKE_COMMAND} -E  touch ${CMAKE_BINARY_DIR}/share/checksources
+			COMMAND ${CMAKE_COMMAND} -E  touch ${CMAKE_BINARY_DIR}/share/rebuilt
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} clean
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} clean
+			COMMENT "[PID] Cleaning package ${PROJECT_NAME} (Debug and Release modes) ..."
+			VERBATIM
+		)
+	endif()
 	# hard clean (remove content of the build tree including cmake generated configuration files)
   add_custom_target(hard_clean
   	COMMAND ${CMAKE_COMMAND}
