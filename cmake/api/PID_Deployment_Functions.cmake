@@ -1064,50 +1064,72 @@ endfunction(deploy_Package_Repository)
 #  configure_Source
 #  -----------------
 #
-#   .. command:: configure_Source(package debug_info running_tests force_release_only)
+#   .. command:: configure_Source(package non_essential_opts_in_var optim_build_in_var build_examples_in_var debug_info
+#                                         running_tests_in_var force_release_only_in_var)
 #
 #     Configure the source package
 #
 #      :package: The name of the package.
-#      :debug_info: input variable that if defined will set the value of the cache variable that control the debug info printing at configuration time.
-#      :running_tests: input variable that if defined will tell if tests will be built.
-#      :force_release_only: input variable that if defined will tell if only release binaries will be built.
+#      :non_essential_opts_in_var: input variable that if defined will set the value of the cache variables that some of non essential options.
+#      :optim_build_in_var: input variable that if defined will set the value of the cache variable that control the optimization of build time at configuration time.
+#      :build_examples_in_var: input variable that if defined will set the value of the cache variable that control the build of examples at configuration time.
+#      :debug_info_in_var: input variable that if defined will set the value of the cache variable that control the debug info printing at configuration time.
+#      :running_tests_in_var: input variable that if defined will tell if tests will be built.
+#      :force_release_only_in_var: input variable that if defined will tell if only release binaries will be built.
 #
 #      :CONFIGURED: the output variable that is TRUE if package has been configured.
 #
-function(configure_Source CONFIGURED package debug_info running_tests force_release_only)
-  set(controllable_options )
-  if(DEFINED ${debug_info})
-    if(${debug_info})
-      set(DEBUG_USED ON)
+function(configure_Source CONFIGURED package non_essential_opts_in_var optim_build_in_var build_examples_in_var debug_info_in_var running_tests_in_var force_release_only_in_var)
+  set(controllable_options)
+  if(DEFINED ${non_essential_opts_in_var})
+    if(${non_essential_opts_in_var})
+      list(APPEND controllable_options -DGENERATE_INSTALLER=ON -DBUILD_API_DOC=ON -DBUILD_LATEX_API_DOC=ON -DWARNINGS_AS_ERRORS=ON -DREQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=ON -DBUILD_DEPENDENT_PACKAGES=ON)
     else()
-      set(DEBUG_USED OFF)
+      list(APPEND controllable_options -DGENERATE_INSTALLER=OFF -DBUILD_API_DOC=OFF -DBUILD_LATEX_API_DOC=OFF -DWARNINGS_AS_ERRORS=OFF -DREQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=ON -DBUILD_DEPENDENT_PACKAGES=OFF)
     endif()
-    list(APPEND controllable_options -D ADDITIONAL_DEBUG_INFO:BOOL=${DEBUG_USED})
+
   endif()
-  if(DEFINED ${running_tests})
-    if(${running_tests})
-      set(TESTS_USED ON)
+  if(DEFINED ${optim_build_in_var})
+    if(${optim_build_in_var})
+      list(APPEND controllable_options -DENABLE_PARALLEL_BUILD=ON)
     else()
-      set(TESTS_USED OFF)
+      list(APPEND controllable_options -DENABLE_PARALLEL_BUILD=OFF)
     endif()
-    list(APPEND controllable_options -D BUILD_AND_RUN_TESTS:BOOL=${TESTS_USED})
+
   endif()
-  if(DEFINED ${force_release_only})
-    if(${force_release_only})
-      set(RELEASE_ONLY ON)
+  if(DEFINED ${build_examples_in_var})
+    if(${build_examples_in_var})
+      list(APPEND controllable_options -DBUILD_EXAMPLES=ON)
     else()
-      set(RELEASE_ONLY OFF)
+      list(APPEND controllable_options -DBUILD_EXAMPLES=OFF)
     endif()
-    list(APPEND controllable_options -D BUILD_RELEASE_ONLY:BOOL=${RELEASE_ONLY})
+  endif()
+  if(DEFINED ${debug_info_in_var})
+    if(${debug_info_in_var})
+      list(APPEND controllable_options -DADDITIONAL_DEBUG_INFO=ON)
+    else()
+      list(APPEND controllable_options -DADDITIONAL_DEBUG_INFO=OFF)
+    endif()
+
+  endif()
+  if(DEFINED ${running_tests_in_var})
+    if(${running_tests_in_var})
+      list(APPEND controllable_options -DBUILD_AND_RUN_TESTS=ON)
+    else()
+      list(APPEND controllable_options -DBUILD_AND_RUN_TESTS=OFF)
+    endif()
+  endif()
+  if(DEFINED ${force_release_only_in_var})
+    if(${force_release_only_in_var})
+      list(APPEND controllable_options -DBUILD_RELEASE_ONLY=ON)
+    else()
+      list(APPEND controllable_options -DBUILD_RELEASE_ONLY=OFF)
+    endif()
   endif()
   # Configure the project twice to properly set then use all workspace variables (e.g. generator)
   foreach(_ RANGE 1)
       execute_process(
-          COMMAND ${CMAKE_COMMAND} -D BUILD_EXAMPLES:BOOL=OFF -D GENERATE_INSTALLER:BOOL=OFF
-          -D BUILD_API_DOC:BOOL=OFF -D BUILD_LATEX_API_DOC:BOOL=OFF
-          -D WARNINGS_AS_ERRORS:BOOL=OFF
-          -D REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD:BOOL=ON -D ENABLE_PARALLEL_BUILD:BOOL=ON -D BUILD_DEPENDENT_PACKAGES:BOOL=OFF
+          COMMAND ${CMAKE_COMMAND}
           ${controllable_options}
           ..
           WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build
@@ -1153,7 +1175,10 @@ function(build_And_Install_Source DEPLOYED package version branch run_tests rele
       message("[PID] INFO : configuring package ${package} (from branch ${branch}) ...")
     endif()
 	endif()
-  configure_Source(IS_CONFIGURED ${package} ADDITIONAL_DEBUG_INFO run_tests release_only)
+  set(build_examples FALSE) #do not build examples when automatically building
+  set(optim TRUE) #optimize the build when automatically building
+  set(non_essential FALSE) #do not use essential options when automatically building
+  configure_Source(IS_CONFIGURED ${package} non_essential optim build_examples ADDITIONAL_DEBUG_INFO run_tests release_only)
 
 	if(IS_CONFIGURED)
 		if(ADDITIONAL_DEBUG_INFO)

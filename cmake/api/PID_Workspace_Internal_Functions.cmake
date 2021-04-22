@@ -2558,16 +2558,13 @@ if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
 endif()
 
 # memorize current cache value
-if(NOT EXISTS ${WORKSPACE_DIR}/build/tmp)
-	file(MAKE_DIRECTORY ${WORKSPACE_DIR}/build/tmp)
-endif()
-file(COPY ${WORKSPACE_DIR}/packages/${package}/build/CMakeCache.txt DESTINATION ${WORKSPACE_DIR}/build/tmp)
+mem_Package_Cache(${package})
 
 # build one time to be sure it builds and tests pass (force build in both Debug and Release)
 build_And_Install_Source(IS_BUILT ${package} "" "${CURRENT_BRANCH}" TRUE FALSE)
 if(NOT IS_BUILT)
 	message("[PID] ERROR : cannot release package ${package}, because its branch ${CURRENT_BRANCH} does not build.")
-	file(COPY ${WORKSPACE_DIR}/build/tmp/CMakeCache.txt DESTINATION ${WORKSPACE_DIR}/packages/${package}/build)
+	reset_Package_Cache(${package})
 	return()
 endif()
 
@@ -2575,7 +2572,7 @@ if(branch)#if we use a specific branch for patching then do not merge into maste
 	publish_Package_Temporary_Branch(PUBLISH_OK ${package} ${CURRENT_BRANCH})
 	if(NOT PUBLISH_OK)
 		message("[PID] ERROR : cannot release package ${package}, because you are probably not allowed to push new branches to official package repository.")
-		file(COPY ${WORKSPACE_DIR}/build/tmp/CMakeCache.txt DESTINATION ${WORKSPACE_DIR}/packages/${package}/build)
+		reset_Package_Cache(${package})
 		return()
 	endif()
 	tag_Version(${package} ${STRING} TRUE)#create the version tag
@@ -2584,7 +2581,7 @@ if(branch)#if we use a specific branch for patching then do not merge into maste
 		delete_Package_Temporary_Branch(${package} ${CURRENT_BRANCH})#delete the temporary branch in official remote when the push failed
 		tag_Version(${package} ${STRING} FALSE)#remove local tag
 		message("[PID] ERROR : cannot release package ${package}, because your are not allowed to push version to its official remote !")
-		file(COPY ${WORKSPACE_DIR}/build/tmp/CMakeCache.txt DESTINATION ${WORKSPACE_DIR}/packages/${package}/build)
+		reset_Package_Cache(${package})
 		return()
 	endif()
 	register_PID_Package(${package} "")#automate the registering after release
@@ -2599,6 +2596,7 @@ else()# check that integration branch is a fast forward of master
 		if(list_of_stashed_files)
 			restore_Untracked_Files(${WORKSPACE_DIR}/packages/${package} list_of_stashed_files)
 		endif()
+		reset_Package_Cache(${package})
 		return()
 	endif()
 	tag_Version(${package} ${STRING} TRUE)#create the version tag
@@ -2611,7 +2609,7 @@ else()# check that integration branch is a fast forward of master
 		tag_Version(${package} ${STRING} FALSE)#remove local tag
 		message("[PID] ERROR : cannot release package ${package}, because your are not allowed to push to its master branch !")
 		go_To_Integration(${package})#always go back to original branch
-		file(COPY ${WORKSPACE_DIR}/build/tmp/CMakeCache.txt DESTINATION ${WORKSPACE_DIR}/packages/${package}/build)#restore previous cache
+		reset_Package_Cache(${package})
 		return()
 	endif()
 	register_PID_Package(${package} "")#automate the registering after release
@@ -2666,15 +2664,62 @@ else()# check that integration branch is a fast forward of master
 endif()
 #put back the package into previous configuration
 unset(debug)
+unset(non_essential)
+unset(optim)
+unset(examples)
 unset(run_tests)
 unset(release_only)
-file(COPY ${WORKSPACE_DIR}/build/tmp/CMakeCache.txt DESTINATION ${WORKSPACE_DIR}/packages/${package}/build)#restore previous cache
-configure_Source(IS_CONFIGURED ${package} debug run_tests release_only)
+reset_Package_Cache(${package})#reset packaeg cache to its initial state
+configure_Source(IS_CONFIGURED ${package} non_essential optim examples debug run_tests release_only)
 set(${RESULT} ${STRING} PARENT_SCOPE)
 update_Package_Repository_From_Remotes(${package}) #synchronize information on remotes with local one (sanity process, not mandatory)
-
 endfunction(release_PID_Package)
 
+function(mem_Package_Cache package)
+	set(tmp_dir ${WORKSPACE_DIR}/build/tmp/${package})
+	if(NOT EXISTS ${tmp_dir}/release)
+		file(MAKE_DIRECTORY ${tmp_dir}/release)
+	endif()
+	if(NOT EXISTS ${tmp_dir}/debug)
+		file(MAKE_DIRECTORY ${tmp_dir}/debug)
+	endif()
+
+	set(main_cache_file ${tmp_dir}/CMakeCache.txt)
+	set(release_cache_file ${tmp_dir}/release/CMakeCache.txt)
+	set(debug_cache_file ${tmp_dir}/debug/CMakeCache.txt)
+
+	if(EXISTS ${main_cache_file})
+		file(REMOVE ${main_cache_file})
+	endif()
+	if(EXISTS ${release_cache_file})
+		file(REMOVE ${release_cache_file})
+	endif()
+	if(EXISTS ${debug_cache_file})
+		file(REMOVE ${debug_cache_file})
+	endif()
+
+	# FINALLY copying cache files into workspace temporary folder
+	set(path_to_pack ${WORKSPACE_DIR}/packages/${package}/build)
+	file(COPY ${path_to_pack}/CMakeCache.txt DESTINATION ${tmp_dir})
+	if(EXISTS ${path_to_pack}/release/CMakeCache.txt)
+		file(COPY ${path_to_pack}/release/CMakeCache.txt DESTINATION ${tmp_dir}/release)
+	endif()
+	if(EXISTS ${path_to_pack}/debug/CMakeCache.txt)
+		file(COPY ${path_to_pack}/debug/CMakeCache.txt DESTINATION ${tmp_dir}/debug)
+	endif()
+endfunction(mem_Package_Cache)
+
+function(reset_Package_Cache package)
+	set(tmp_dir ${WORKSPACE_DIR}/build/tmp/${package})
+	set(path_to_pack ${WORKSPACE_DIR}/packages/${package}/build)
+	file(COPY ${tmp_dir}/CMakeCache.txt DESTINATION ${path_to_pack})#restore previous cache
+	if(EXISTS ${tmp_dir}/release/CMakeCache.txt)
+		file(COPY ${tmp_dir}/release/CMakeCache.txt DESTINATION ${path_to_pack}/release)#restore previous cache
+	endif()
+	if(EXISTS ${tmp_dir}/debug/CMakeCache.txt)
+		file(COPY ${tmp_dir}/debug/CMakeCache.txt DESTINATION ${path_to_pack}/debug)#restore previous cache
+	endif()
+endfunction(reset_Package_Cache)
 
 #.rst:
 #
