@@ -25,7 +25,6 @@ include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 load_Workspace_Info() #loading the current platform configuration
 
 if(NOT TARGET_MAJOR AND DEFINED ENV{major} AND (NOT TARGET_MAJOR EQUAL 0))#to manage the call for non UNIX makefile generators
-  message("PLOP")
   set(TARGET_MAJOR "$ENV{major}" CACHE INTERNAL "" FORCE)
 endif()
 if(DEFINED ENV{major})
