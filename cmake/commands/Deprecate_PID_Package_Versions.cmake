@@ -24,8 +24,9 @@ include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 load_Workspace_Info() #loading the current platform configuration
 
-if(NOT TARGET_MAJOR AND DEFINED ENV{major})#to manage the call for non UNIX makefile generators
-  set(TARGET_MAJOR $ENV{major} CACHE INTERNAL "" FORCE)
+if(NOT TARGET_MAJOR AND DEFINED ENV{major} AND (NOT TARGET_MAJOR EQUAL 0))#to manage the call for non UNIX makefile generators
+  message("PLOP")
+  set(TARGET_MAJOR "$ENV{major}" CACHE INTERNAL "" FORCE)
 endif()
 if(DEFINED ENV{major})
 	unset(ENV{major})
@@ -46,7 +47,8 @@ if(NOT TARGET_PACKAGE)
   message("[PID] CRITICAL ERROR : cannot deprecate no package given. Use package argument to define package to deprecate !")
   return()
 endif()
-if(NOT TARGET_MAJOR AND NOT TARGET_MINOR)
+if(NOT TARGET_MAJOR AND (NOT TARGET_MAJOR EQUAL 0)
+   AND NOT TARGET_MINOR)
   message("[PID] CRITICAL ERROR : cannot deprecate versions of ${TARGET_PACKAGE} since no version given. Use major and/or minor argument to define which versions must be deprecated.")
   return()
 else()#
