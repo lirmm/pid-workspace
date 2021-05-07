@@ -455,7 +455,6 @@ endmacro(execute_OS_Command)
 #     :list_of_packages: the system package to install. If none given a system update/upgrade will be performed.
 #
 function(execute_System_Packaging_Command)
-  message("executing execute_System_Packaging_Command args = ${ARGN}")
   set(sys_pack_commands)
   if(NOT ARGN)#no parameters it is an update/upgrade command
     if(CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS)
