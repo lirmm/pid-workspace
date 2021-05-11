@@ -996,13 +996,13 @@ endfunction(commit_Contribution_Space_Updates)
 #
 function(update_Contribution_Space_Repository UPDATED contrib_space allow_conflict)
   set(${UPDATED} FALSE PARENT_SCOPE)
-  if(EXISTS ${contrib_space})#if argument given is directly a path
+  if(EXISTS ${contrib_space} AND IS_DIRECTORY ${contrib_space})#if argument given is directly a path
     set(PATH_TO_DIR ${contrib_space})
   else()#otherwise compute the path
     get_Path_To_Contribution_Space(PATH_TO_DIR ${contrib_space})
   endif()
   if(PATH_TO_DIR)
-    #1) check if connection wit remote can be established
+    #1) check if connection with remote can be established
     test_Remote_Connection(CONNECTED ${PATH_TO_DIR} origin)
     if(NOT CONNECTED)
       message("[PID] ERROR: cannot update contribution space in ${PATH_TO_DIR}. Reason: No connection to remote available.")
