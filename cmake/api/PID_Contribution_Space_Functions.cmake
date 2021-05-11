@@ -653,16 +653,21 @@ endfunction(get_All_Available_References)
 #  update_Contribution_Spaces
 #  --------------------------
 #
-#   .. command:: update_Contribution_Spaces()
+#   .. command:: update_Contribution_Spaces(UPDATED)
 #
 #      Update repositories of all contribution spaces in use.
 #
-function(update_Contribution_Spaces)
+#      :CHECK_CS_UPDATED: the output variable that is TRUE if at least one contribution space has been updated by this call, FALSE otherwise
+#
+function(update_Contribution_Spaces CHECK_CS_UPDATED)
+  set(${CHECK_CS_UPDATED} FALSE PARENT_SCOPE)
   check_Contribution_Spaces_Updated_In_Current_Process(ALREADY_UPDATED)
   if(NOT ALREADY_UPDATED)
     foreach(contrib IN LISTS CONTRIBUTION_SPACES)
-      update_Contribution_Space_Repository(UPDATE_OK ${contrib} FALSE)
+      update_Contribution_Space_Repository(CS_UPDATE_OK ${contrib} FALSE)
+      #update is tried bit update is considered as done whatever the result
     endforeach()
+    set(${CHECK_CS_UPDATED} TRUE PARENT_SCOPE)
     set_Contribution_Spaces_Updated_In_Current_Process()
   endif()
 endfunction(update_Contribution_Spaces)

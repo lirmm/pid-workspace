@@ -320,7 +320,7 @@ function(set_Contribution_Spaces_Updated_In_Current_Process)
 set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 if(EXISTS ${thefile})
 	include (${thefile})
-  set(CONTRBUTION_SPACES_UPDATED TRUE)
+  set(CONTRIBUTION_SPACES_UPDATED TRUE)
   update_Progress_File()
   return()
 endif()
@@ -351,7 +351,7 @@ set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 set(${RESULT} FALSE PARENT_SCOPE) #not already managed of no file exists
 if(EXISTS ${thefile})
 	include (${thefile})
-  set(${RESULT} ${CONTRBUTION_SPACES_UPDATED} PARENT_SCOPE) #not already managed of no file exists
+  set(${RESULT} ${CONTRIBUTION_SPACES_UPDATED} PARENT_SCOPE) #not already managed of no file exists
 endif()
 endfunction(check_Contribution_Spaces_Updated_In_Current_Process)
 
