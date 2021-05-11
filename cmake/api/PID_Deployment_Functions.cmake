@@ -2607,8 +2607,10 @@ set(IS_EXISTING)
 get_Package_Type(${package} PACK_TYPE)
 if(PACK_TYPE STREQUAL "UNKNOWN")
   #means no reference of it
-  #TODO CONTRIB update contrib space and retry
-  get_Package_Type(${package} PACK_TYPE)
+  update_Contribution_Spaces(NEWLY_UPDATED)
+  if(NEWLY_UPDATED)
+    get_Package_Type(${package} PACK_TYPE)
+  endif()
 endif()
 if(PACK_TYPE STREQUAL "NATIVE")
   include_Package_Reference_File(PATH_TO_FILE ${package})
