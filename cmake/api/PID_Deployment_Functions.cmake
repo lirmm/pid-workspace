@@ -1784,16 +1784,16 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
       endif()
       #checking and resolving package dependencies and constraints
       if(NOT release_only)
-        configure_Binary_Package(RESULT_DEBUG ${package} FALSE ${RES_VERSION} ${RES_PLATFORM} Debug)
+        configure_Binary_Package(RESULT_DEBUG ${package} FALSE ${RES_VERSION} ${CURRENT_PLATFORM} Debug)
       else()
         set(RESULT_DEBUG TRUE)
       endif()
-      configure_Binary_Package(RESULT_RELEASE  ${package} FALSE ${RES_VERSION} ${RES_PLATFORM} Release)
+      configure_Binary_Package(RESULT_RELEASE  ${package} FALSE ${RES_VERSION} ${CURRENT_PLATFORM} Release)
 
       if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
         add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
         #need to remove the package because it cannot be configured
-        uninstall_Binary_Package(${package} ${RES_VERSION} ${RES_PLATFORM})
+        uninstall_Binary_Package(${package} ${RES_VERSION} ${CURRENT_PLATFORM})
         message("[PID] ERROR : cannot configure version ${version} of native package ${package}.")
       	return()
       endif()
@@ -1885,16 +1885,16 @@ if(INDEX EQUAL -1) # selected version not found in versions to exclude
       endif()
       #checking and resolving package dependencies and constraints
       if(NOT release_only)
-        configure_Binary_Package(RESULT_DEBUG ${package} FALSE ${RES_VERSION} ${RES_PLATFORM} Debug)
+        configure_Binary_Package(RESULT_DEBUG ${package} FALSE ${RES_VERSION} ${CURRENT_PLATFORM} Debug)
       else()
         set(RESULT_DEBUG TRUE)
       endif()
-      configure_Binary_Package(RESULT_RELEASE  ${package} FALSE ${RES_VERSION} ${RES_PLATFORM} Release)
+      configure_Binary_Package(RESULT_RELEASE  ${package} FALSE ${RES_VERSION} ${CURRENT_PLATFORM} Release)
 
       if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
         add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" FALSE)
         #need to remove the package because it cannot be configured
-        uninstall_Binary_Package(${package} ${RES_VERSION} ${RES_PLATFORM})
+        uninstall_Binary_Package(${package} ${RES_VERSION} ${CURRENT_PLATFORM})
         message("[PID] ERROR : cannot configure version ${RES_VERSION} of native package ${package}.")
       	return()
       endif()
@@ -2013,7 +2013,8 @@ else()
 endif()
 
 ######## installing the package ##########
-set(target_install_folder ${WORKSPACE_DIR}/install/${platform}/${package})
+extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI res_instance platform_base_name ${CURRENT_PLATFORM})
+set(target_install_folder ${WORKSPACE_DIR}/install/${platform_base_name}/${package})
 # 1) creating the package root install folder
 if(NOT EXISTS ${target_install_folder})
   file(MAKE_DIRECTORY ${target_install_folder})
@@ -2887,16 +2888,16 @@ if(INDEX EQUAL -1) # selected version not found in versions already installed
 		endif()
     #checking and resolving external package dependencies and constraints
     if(NOT release_only)
-      configure_Binary_Package(RESULT_DEBUG ${package} TRUE ${RES_VERSION} ${TARGET_PLATFORM} Debug)
+      configure_Binary_Package(RESULT_DEBUG ${package} TRUE ${RES_VERSION} ${CURRENT_PLATFORM} Debug)
     else()
       set(RESULT_DEBUG TRUE)
     endif()
-    configure_Binary_Package(RESULT_RELEASE  ${package} TRUE ${RES_VERSION} ${TARGET_PLATFORM} Release)
+    configure_Binary_Package(RESULT_RELEASE  ${package} TRUE ${RES_VERSION} ${CURRENT_PLATFORM} Release)
 
     if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
       add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "PROBLEM" TRUE)
       #need to remove the package because it cannot be configured
-      uninstall_Binary_Package(${package} ${RES_VERSION} ${TARGET_PLATFORM})
+      uninstall_Binary_Package(${package} ${RES_VERSION} ${CURRENT_PLATFORM})
       message("[PID] ERROR : cannot configure version ${RES_VERSION} of external package ${package}.")
       return()
     endif()
@@ -2980,16 +2981,16 @@ if(RES STREQUAL "UNKNOWN")
 
   #5) checking for platform constraints
   if(NOT release_only)
-    configure_Binary_Package(RESULT_DEBUG ${package} TRUE ${version} ${TARGET_PLATFORM} Debug)
+    configure_Binary_Package(RESULT_DEBUG ${package} TRUE ${version} ${CURRENT_PLATFORM} Debug)
   else()
     set(RESULT_DEBUG TRUE)
   endif()
-  configure_Binary_Package(RESULT_RELEASE ${package} TRUE ${version} ${TARGET_PLATFORM} Release)
+  configure_Binary_Package(RESULT_RELEASE ${package} TRUE ${version} ${CURRENT_PLATFORM} Release)
 
   if(NOT RESULT_DEBUG OR NOT RESULT_RELEASE)
     add_Managed_Package_In_Current_Process(${package} ${version} "PROBLEM" TRUE)
     #need to remove the package because it cannot be configured
-    uninstall_Binary_Package(${package} ${version} ${TARGET_PLATFORM})
+    uninstall_Binary_Package(${package} ${version} ${CURRENT_PLATFORM})
     message("[PID] ERROR : cannot configure version ${version} of external package ${package}.")
     return()
   endif()
@@ -3161,7 +3162,8 @@ endfunction(download_And_Install_Binary_External_Package)
 #      :platform: target platform for archive binary content (name may contain also instance extension).
 #
 function(uninstall_Binary_Package package version platform)
-  set(path_to_install ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
+  extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI res_instance platform_base_name ${platform})
+  set(path_to_install ${WORKSPACE_DIR}/install/${platform_base_name}/${package}/${version})
   if(EXISTS ${path_to_install})
     file(REMOVE_RECURSE ${path_to_install})
   endif()
@@ -3194,7 +3196,8 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(${RESULT} FALSE PARENT_SCOPE)
 
 #using the hand written Use<package>-<version>.cmake file to get adequate version information about plaforms
-include(${WORKSPACE_DIR}/install/${platform}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
+extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI res_instance platform_base_name ${platform})
+include(${WORKSPACE_DIR}/install/${platform_base_name}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
 if(res STREQUAL NOTFOUND)#file not found
   if(external)
     # Note: a native package MUST have a use file BUT an external package may have no usefile (even if it should be rare)
@@ -3249,7 +3252,7 @@ foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #check 
 endforeach()
 
 if(external)#external packages may be provided with specific script to use when deploying binaries
-  set(TARGET_INSTALL_DIR ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
+  set(TARGET_INSTALL_DIR ${WORKSPACE_DIR}/install/${platform_base_name}/${package}/${version})
   if(${package}_SCRIPT_POST_INSTALL)
     message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/cmake_script/${${package}_SCRIPT_POST_INSTALL} ...")
     include(${TARGET_INSTALL_DIR}/cmake_script/${${package}_SCRIPT_POST_INSTALL} NO_POLICY_SCOPE)#execute the script
