@@ -3704,10 +3704,14 @@ function(get_Deployment_Unit_Reference_Info path_to_repo REF_EXISTS RES_URL RES_
       elseif(DU_TYPE STREQUAL "environment")
         get_Path_To_Environment_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
       endif()
+      if(NOT PATH_TO_FILE)
+        return()
+      endif()
     else()
       return()
     endif()
   endif()
+
   set(${REF_EXISTS} TRUE PARENT_SCOPE)
 
   #MEMORIZATION INTO temporary variables
