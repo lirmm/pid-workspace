@@ -2760,21 +2760,11 @@ if(NOT REPOSITORY_IN_WORKSPACE)# if the external wrapper repository does not ly 
 	endif()
 endif()
 
-#get the list of already installed versions used to avoid installation if not mandatory
-set(list_of_installed_versions)
-if(EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/)
-	list_Version_Subdirectories(RES_VERSIONS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
-	set(list_of_installed_versions ${RES_VERSIONS})
-  if(FORCE_REBUILD)
-    list(REMOVE_ITEM list_of_installed_versions ${SELECTED})
-  endif()
-endif()
-
 #now deploy
 if(NO_VERSION)
-	deploy_Source_External_Package(SOURCE_DEPLOYED ${package} "${list_of_installed_versions}" "${release_only}")
+	deploy_Source_External_Package(SOURCE_DEPLOYED ${package} "" "${release_only}")
 else()
-	deploy_Source_External_Package_Version(SOURCE_DEPLOYED ${package} ${SELECTED} "${IS_EXACT}" "${IS_SYSTEM}" "${list_of_installed_versions}" "${release_only}")
+	deploy_Source_External_Package_Version(SOURCE_DEPLOYED ${package} ${SELECTED} "${IS_EXACT}" "${IS_SYSTEM}" "" "${release_only}")
 endif()
 
 if(SOURCE_DEPLOYED)
