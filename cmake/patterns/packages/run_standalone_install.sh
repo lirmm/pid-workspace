@@ -24,7 +24,7 @@ print_usage() {
 }
 
 validate_boolean() {
-    if [ ! "$2" = "on" ] && [ ! "$2" = "off" ]; then 
+    if [ ! "$2" = "on" ] && [ ! "$2" = "off" ]; then
         echo "[ERROR] Invalid value for argument $1 ($2)."
         echo ""
         print_usage
@@ -32,7 +32,7 @@ validate_boolean() {
 }
 
 validate_build_type() {
-    if [ ! "$2" = "both" ] && [ ! "$2" = "debug" ] && [ ! "$2" = "release" ]; then 
+    if [ ! "$2" = "both" ] && [ ! "$2" = "debug" ] && [ ! "$2" = "release" ]; then
         echo "[ERROR] Invalid value for argument $1 ($2)."
         echo ""
         print_usage
@@ -194,6 +194,14 @@ if [ "$?" = 0 ]; then
     if [ "$install" ]; then
         echo ""
         echo "Installing $package_name inside $install"
-        (cd $package_root_path/build && cmake --build . --target sysinstall -- folder=$install mode=${build_type^})
+        touch $install/pid_test_write_access 2> /dev/null
+        if [ "$?" = 0 ]; then
+            # user has write access to install dir
+            rm $install/pid_test_write_access
+            (cd $package_root_path/build && cmake --build . --target sysinstall -- folder=$install mode=${build_type^})
+        else
+            # sudo is required
+            (cd $package_root_path/build && sudo cmake --build . --target sysinstall -- folder=$install mode=${build_type^})
+        fi
     fi
 fi
