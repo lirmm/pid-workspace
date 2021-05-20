@@ -3525,9 +3525,9 @@ if(NOT IS_SYSTEM_DEPENDENCY_WRAPPER)#for OS variant version of external packages
 			endif()
 		endforeach()
 		if(ext_res)
-			resolve_External_Resources_Path(COMPLETE_RESOURCES_PATH "${ext_res}" ${CMAKE_BUILD_TYPE})
-			if(COMPLETE_RESOURCES_PATH)
-				file(COPY ${COMPLETE_RESOURCES_PATH} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/runtime_resources)#putting all runtime resource directly in the folder runtime_resources
+			resolve_External_Package_Runtime_Resources(EXT_RUNTIME_RES "${ext_res}" ${CMAKE_BUILD_TYPE})
+			if(EXT_RUNTIME_RES)
+				file(COPY ${EXT_RUNTIME_RES} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/runtime_resources)#putting all runtime resource directly in the folder runtime_resources
 			endif()
 		endif()
 	else()#it is a native package
@@ -3571,7 +3571,7 @@ endfunction(install_Package_Content_In_Folder)
 #
 function(install_Package_In_Folder package)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-if(${package}_PREPARE_RUNTIME${VAR_SUFFIX})#this is a guard to limit recursion -> the runtime has already been prepared
+if(${package}_PREPARE_INSTALL${VAR_SUFFIX})#this is a guard to limit recursion -> the runtime has already been prepared
 	return()
 endif()
 
@@ -3584,11 +3584,11 @@ set(${package}_DURING_PREPARE_INSTALL${VAR_SUFFIX} TRUE)
 
 #installing packages dependency
 foreach(dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
-	install_Package_In_Folder(${dep} ${${package}_VERSION_STRING})
+	install_Package_In_Folder(${dep} ${${dep}_VERSION_STRING})
 endforeach()
 
 foreach(dep IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})#only for native packages
-	install_Package_In_Folder(${dep} ${${package}_VERSION_STRING})
+	install_Package_In_Folder(${dep} ${${dep}_VERSION_STRING})
 endforeach()
 
 # 2) installing package's own content

@@ -3440,6 +3440,45 @@ endfunction(resolve_External_Resources_Path)
 #
 # .. ifmode:: internal
 #
+#  .. |resolve_External_Package_Runtime_Resources| replace:: ``resolve_External_Package_Runtime_Resources``
+#  .. _resolve_External_Package_Runtime_Resources:
+#
+#  resolve_External_Package_Runtime_Resources
+#  ------------------------------------------
+#
+#   .. command:: resolve_External_Package_Runtime_Resources(COMPLETE_RESOURCES_PATH ext_resources mode)
+#
+#    Resolve path to runtime resources provided by an external package.
+#    Differs from resolve_External_Resources_Path as it will only include runtime reousrces that are local to the external package
+#
+#     :ext_resources: the path to runtime resources to resolve.
+#     :mode: the given build mode.
+#
+#     :COMPLETE_RUN_RES_PATH: the output variable that contains the resolved paths to local runtime resources.
+#
+function(resolve_External_Package_Runtime_Resources COMPLETE_RUN_RES_PATH ext_resources mode)
+  set(res_resources)
+  foreach(resource IN LISTS ext_resources)
+    set(CMAKE_MATCH_1)
+    set(CMAKE_MATCH_2)
+  	if(resource MATCHES "^<([^>]+)>(.*)")# a replacement has taken place => this is a relative path to an external package resource
+  		set(ext_package_name ${CMAKE_MATCH_1})
+  		is_External_Package_Defined(PATHTO ${ext_package_name} ${mode})
+  		if(NOT PATHTO)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
+  			message(FATAL_ERROR "[PID] CRITICAL ERROR : undefined external package ${ext_package_name} used for resource ${resource}!! Please set the path to this external package.")
+  		else()
+  			list(APPEND res_resources ${PATHTO}${CMAKE_MATCH_2})
+  		endif()
+  	endif()
+  endforeach()
+  set(${COMPLETE_RUN_RES_PATH} ${res_resources} PARENT_SCOPE)
+endfunction(resolve_External_Package_Runtime_Resources)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |resolve_External_Resources_Relative_Path| replace:: ``resolve_External_Resources_Relative_Path``
 #  .. _resolve_External_Resources_Relative_Path:
 #
