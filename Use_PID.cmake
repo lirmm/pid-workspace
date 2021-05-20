@@ -126,6 +126,8 @@ execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}
 						WORKING_DIRECTORY ${WORKSPACE_DIR}/build)#force reconfiguration (in case workspace was deployed as a submodule and never configured)
 
 load_Platform_Info()
+enable_language(CXX) # CXX is mandatory
+enable_language(C) # C is mandatory
 #need to reset the variables used to describe dependencies
 reset_Local_Components_Info(${WORKSPACE_DIR} ${mode})
 #enforce constraints before finding packages
