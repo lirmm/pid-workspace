@@ -515,6 +515,9 @@ macro(reset_Profiles)
   else()
     set(subcommand_option OUTPUT_QUIET ERROR_QUIET)
   endif()
+  if(EXISTS ${dir}/Platform_Description.txt)
+    file(REMOVE ${dir}/Platform_Description.txt)
+  endif()
   execute_process(COMMAND ${CMAKE_COMMAND}
                   ${args}
                   ../..
@@ -526,6 +529,17 @@ macro(reset_Profiles)
   if(EXISTS ${dir}/Platform_Description.txt)
     file(READ ${dir}/Platform_Description.txt DESCRIPTION_FILE)
     message("${DESCRIPTION_FILE}")
+  else()
+    if(ADDITIONAL_DEBUG_INFO)
+      message("[PID] WARNING: evaluation of profile ${CURRENT_PROFILE} failed. Please look at previous outputs.")
+    else()
+      message("[PID] WARNING: evaluation of profile ${CURRENT_PROFILE} failed. Rerun profile evaluation with logs enabled.")
+      execute_process(COMMAND ${CMAKE_COMMAND}
+                      ${args}
+                      ../..
+                      WORKING_DIRECTORY ${dir}
+      )
+    endif()
   endif()
 endmacro(reset_Profiles)
 
