@@ -949,7 +949,7 @@ endif()
 set(configurations_to_memorize)
 if(NOT SKIP AND constraints)
 	foreach(config IN LISTS constraints) ## all configuration constraints must be satisfied
-		check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${config}" ${CMAKE_BUILD_TYPE})
+		check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${PROJECT_NAME} "${config}" ${CMAKE_BUILD_TYPE})
 		if(NOT RESULT_OK)
 			set(${RESULT} FALSE PARENT_SCOPE)#returns false as soon as one config check fails
 		endif()
@@ -1135,7 +1135,7 @@ foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent external package ${dep_pack} with an ABI compatible with current platform. This may mean that you have no access to ${dep_pack} wrapper and no binary package for ${dep_pack} match current platform ABI")
 			return()
 		else()#OK resolution took place !!
-			add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
+			add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${PROJECT_NAME})#memorize chosen version in progress file to share this information with dependent packages
 			if(${dep_pack}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}) #are there any dependency (external only) for this external package
 				resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE "${BUILD_RELEASE_ONLY}")#recursion : resolving dependencies for each external package dependency
 			endif()
@@ -1171,7 +1171,7 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent native package ${dep_pack} with an ABI compatible with current platform. This may mean that you have no access to ${dep_pack} repository and no binary package for ${dep_pack} matches current platform ABI")
 				return()
 			else()#OK resolution took place !!
-				add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
+				add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${PROJECT_NAME})#memorize chosen version in progress file to share this information with dependent packages
 				if(${dep_pack}_DEPENDENCIES${USE_MODE_SUFFIX}
 					OR ${dep_pack}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX}) #are there any dependency for this package
 					resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE "${BUILD_RELEASE_ONLY}")#recursion : resolving dependencies for each external package dependency
@@ -1998,7 +1998,7 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 	### 2) check and set the value of the user cache entry dependening on constraints coming from the build context (dependent build or classical build) #####
 	# check if a version of this dependency is required by another package used in the current build process and memorize this version
 	set(USE_EXACT FALSE)
-	get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${dep_package})
+	get_Chosen_Version_In_Current_Process(REQUIRED_VERSION VERSION_REQUESTORS IS_EXACT IS_SYSTEM ${dep_package})
 	if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
 		if(list_of_possible_versions) #list of possible versions is constrained
 			#finding the best compatible version, if any (otherwise returned "version" variable is empty)
@@ -2009,7 +2009,8 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 					message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated as its version (${force_version}) is not compatible with version ${REQUIRED_VERSION} previously required by other packages.")
 				else()#this is to ensure that on a dependent build an adequate version has been chosen from the list of possible versions
 					finish_Progress(${GLOBAL_PROGRESS_VAR})
-					message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is used in another package with version ${REQUIRED_VERSION}, but this version is not usable in this project that depends on versions : ${available_versions}.")
+					fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
+					message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
 					return()
 				endif()
 			else()
@@ -2093,7 +2094,7 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 				return()
 			elseif(${dep_package}_FOUND${USE_MODE_SUFFIX})
 				if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#do not propagate choice if none made
-					add_Chosen_Package_Version_In_Current_Process(${dep_package})
+					add_Chosen_Package_Version_In_Current_Process(${dep_package} ${PROJECT_NAME})
 				endif()
 				if(NOT IS_ABI_COMPATIBLE)#need to reinstall the package anyway because it is not compatible with current platform
 					if(NOT REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
@@ -2106,7 +2107,7 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 			endif()#if not found after resolution simply wait it to be installed automatically
 		else()#if found before this call (security when a basic find_package has been used previously)
 			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#do not propagate choice if none made
-				add_Chosen_Package_Version_In_Current_Process(${dep_package})#FOR compatibility: report the choice made to global build process
+				add_Chosen_Package_Version_In_Current_Process(${dep_package} ${PROJECT_NAME})#FOR compatibility: report the choice made to global build process
 			endif()
 		endif()#otherwise nothing more to do
 	endif()
@@ -2174,7 +2175,7 @@ endif()
 set(USE_EXACT FALSE)
 set(chosen_version_for_selection)
 # check if a version of this dependency is required by another package used in the current build process and memorize this version
-get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${dep_package})
+get_Chosen_Version_In_Current_Process(REQUIRED_VERSION VERSION_REQUESTORS IS_EXACT IS_SYSTEM ${dep_package})
 if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
 	if(list_of_possible_versions) #list of possible versions is constrained
 		#finding the best compatible version, if any (otherwise returned "version" variable is empty)
@@ -2185,7 +2186,8 @@ if(REQUIRED_VERSION) #the package is already used as a dependency in the current
 				message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated as its version (${force_version}) is not compatible with version ${REQUIRED_VERSION} previously required by other packages.")
 			else()#this is to ensure that on a dependent build an adequate version has been chosen from the list of possible versions
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is used in another package with version ${REQUIRED_VERSION}, but this version is not usable in this project that depends on versions : ${available_versions}.")
+				fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
 				return()
 			endif()
 		else()#a version is forced
@@ -2268,7 +2270,7 @@ if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
 	set(unused TRUE)
 elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")#the system version has been selected => need to perform specific actions
 	#need to check the equivalent OS configuration to get the OS installed version
-	check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${dep_package}" ${CMAKE_BUILD_TYPE})
+	check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${PROJECT_NAME} "${dep_package}" ${CMAKE_BUILD_TYPE})
 	if(NOT RESULT_OK OR NOT ${dep_package}_VERSION)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
@@ -2303,7 +2305,7 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 			return()
 		elseif(${dep_package}_FOUND${USE_MODE_SUFFIX})#dependency has been found in workspace after resolution
 			if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")
-				add_Chosen_Package_Version_In_Current_Process(${dep_package})#report the choice made to global build process
+				add_Chosen_Package_Version_In_Current_Process(${dep_package} ${PROJECT_NAME})#report the choice made to global build process
 			endif()
 			if(NOT IS_ABI_COMPATIBLE)#need to reinstall the package anyway because it is not compatible with current platform
 				if(NOT REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
@@ -2320,7 +2322,7 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 		endif()
 	else()#if was found prior to this call
 		if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")
-			add_Chosen_Package_Version_In_Current_Process(${dep_package})#report the choice made to global build process
+			add_Chosen_Package_Version_In_Current_Process(${dep_package} ${PROJECT_NAME})#report the choice made to global build process
 		endif()
 	endif()
 endif()

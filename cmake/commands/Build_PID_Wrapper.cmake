@@ -131,7 +131,8 @@ if(use_os_variant)#instead of building the project using its variant coming from
 	#only thing to resolve: the external package equivalent configuration,
 	# that is used to check if external package is installed on system
 	#this resolution is based on the standard "version" argument of corresponding configuration
-	check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${TARGET_EXTERNAL_PACKAGE}[version=${version}]" Release)
+	#NOTE: evaluation context is the wrapper itself (so ${TARGET_EXTERNAL_PACKAGE} is passed as calling package)
+	check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${TARGET_EXTERNAL_PACKAGE} "${TARGET_EXTERNAL_PACKAGE}[version=${version}]" Release)
 	if(NOT RESULT_OK)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message("[PID] ERROR : Cannot deploy OS variant of ${TARGET_EXTERNAL_PACKAGE} with version ${version} because of platform configuration error !")

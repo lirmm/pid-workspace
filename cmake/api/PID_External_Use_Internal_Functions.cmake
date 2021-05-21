@@ -166,7 +166,8 @@ endfunction(reset_Local_Components_Info)
 function(enforce_System_Dependencies NOT_ENFORCED list_of_os_deps)
 foreach(os_variant IN LISTS list_of_os_deps)
 	#check if this configuration is matching an external package defined in PID
-  check_Platform_Configuration(CHECK_CONFIG_OK CONFIG_NAME CONFIG_CONSTRAINTS "${os_variant}" ${WORKSPACE_MODE})
+  #NOTE: evaluation context is the current project
+  check_Platform_Configuration(CHECK_CONFIG_OK CONFIG_NAME CONFIG_CONSTRAINTS ${PROJECT_NAME} "${os_variant}" ${WORKSPACE_MODE})
   if(NOT CHECK_CONFIG_OK)
     set(${NOT_ENFORCED} ${os_variant} PARENT_SCOPE)
     return()
@@ -552,14 +553,15 @@ function(manage_Dependent_PID_Native_Package DEPLOYED package possible_versions 
 
   set(used_version)
   set(used_exact)
-  get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${package})
+  get_Chosen_Version_In_Current_Process(REQUIRED_VERSION VERSION_REQUESTORS IS_EXACT IS_SYSTEM ${package})
   if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
 		if(list_of_possible_versions) #list of possible versions is constrained
 			#finding the best compatible version, if any (otherwise returned "version" variable is empty)
 			find_Best_Compatible_Version(force_version FALSE ${package} ${REQUIRED_VERSION} "${IS_EXACT}" FALSE "${list_of_possible_versions}" "${list_of_exact_versions}")
 			if(NOT force_version)#the build context is a dependent build and no compatible version has been found
         set(CMAKE_BUILD_TYPE ${previous_mode})#NOTE: to avoid any bug due to mode change in calling project
-				message("[PID] ERROR : In ${PROJECT_NAME} dependency ${package} is used in another package with version ${REQUIRED_VERSION}, but this version is not usable in this project that depends on versions : ${list_of_possible_versions}.")
+        fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
+				message("[PID] ERROR : In ${PROJECT_NAME}, dependency ${package} is used with possible versions: ${list_of_possible_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
         return()
       else()
         set(used_version ${force_version})
@@ -604,7 +606,7 @@ function(manage_Dependent_PID_Native_Package DEPLOYED package possible_versions 
       #find again
       find_package_resolved(${package} ${used_version} ${used_exact} REQUIRED)
     endif()
-    add_Chosen_Package_Version_In_Current_Process(${package})# report the choice made to global build process
+    add_Chosen_Package_Version_In_Current_Process(${package} ${PROJECT_NAME})# report the choice made to global build process
   endif()
 
   if(${package}_FOUND${VAR_SUFFIX})
@@ -672,7 +674,7 @@ function(manage_Dependent_PID_External_Package DEPLOYED package possible_version
   endif()
 
   ################
-  get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${package})
+  get_Chosen_Version_In_Current_Process(REQUIRED_VERSION VERSION_REQUESTORS IS_EXACT IS_SYSTEM ${package})
   if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
     if(used_system AND NOT IS_SYSTEM)
       set(CMAKE_BUILD_TYPE ${previous_mode})#NOTE: to avoid any bug due to mode change in calling project
@@ -684,7 +686,8 @@ function(manage_Dependent_PID_External_Package DEPLOYED package possible_version
   		find_Best_Compatible_Version(force_version TRUE ${package} ${REQUIRED_VERSION} "${IS_EXACT}" "${IS_SYSTEM}" "${list_of_possible_versions}" "${list_of_exact_versions}")
   		if(NOT force_version)#the build context is a dependent build and no compatible version has been found
         set(CMAKE_BUILD_TYPE ${previous_mode})#NOTE: to avoid any bug due to mode change in calling project
-				message("[PID] ERROR : In ${PROJECT_NAME} dependency ${package} is used in another package with version ${REQUIRED_VERSION}, but this version is not usable in this project that depends on versions : ${list_of_possible_versions}.")
+        fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
+				message("[PID] ERROR : In ${PROJECT_NAME}, dependency ${package} is used with possible versions: ${list_of_possible_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
 				return()
   		else()#a version is forced
         set(used_version ${force_version})
@@ -741,7 +744,7 @@ function(manage_Dependent_PID_External_Package DEPLOYED package possible_version
       endif()
       find_package_resolved(${package} ${used_version} ${used_exact} REQUIRED)
     endif()
-    add_Chosen_Package_Version_In_Current_Process(${package})# report the choice made to global build process
+    add_Chosen_Package_Version_In_Current_Process(${package} ${PROJECT_NAME})# report the choice made to global build process
   endif()
 
   if(${package}_FOUND${VAR_SUFFIX})

@@ -1075,7 +1075,7 @@ function(declare_Wrapped_Platform_Configuration NEED_EXIT platform configuration
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
 			endif()
-			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
+			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS ${PROJECT_NAME} "${config}" Release)
 			set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
 			if(NOT RESULT_OK)
 				set(${NEED_EXIT} TRUE PARENT_SCOPE)
@@ -1090,7 +1090,7 @@ function(declare_Wrapped_Platform_Configuration NEED_EXIT platform configuration
 
 		#now dealing with options
 		foreach(config IN LISTS options)
-			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
+			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS ${PROJECT_NAME} "${config}" Release)
 			if(RESULT_OK)
 				set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
 			else()
@@ -1116,7 +1116,7 @@ function(declare_Wrapped_Platform_Configuration NEED_EXIT platform configuration
 				return()
 			endif()
 			set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
-			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
+			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS ${PROJECT_NAME} "${config}" Release)
 			if(NOT RESULT_OK)
 				set(${NEED_EXIT} TRUE PARENT_SCOPE)
 				message("[PID] ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satisfy configuration ${config} with current platform!")
@@ -1136,7 +1136,7 @@ function(declare_Wrapped_Platform_Configuration NEED_EXIT platform configuration
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] ERROR : configuration check ${config} is ill formed. Configuration being optional it is skipped automatically.")
 			endif()
-			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS "${config}" Release)
+			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS ${PROJECT_NAME} "${config}" Release)
 			if(RESULT_OK)
 				set(${CONFIG_NAME}_AVAILABLE TRUE CACHE INTERNAL "")#this variable will be usable in deploy scripts
 			else()
@@ -1250,7 +1250,7 @@ endif()
 set(USE_EXACT FALSE)
 set(chosen_version_for_selection)
 # check if a version of this dependency is required by another package used in the current build process and memorize this version
-get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${dep_package})
+get_Chosen_Version_In_Current_Process(REQUIRED_VERSION VERSION_REQUESTORS IS_EXACT IS_SYSTEM ${dep_package})
 if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
 	if(list_of_versions) #list of possible versions is constrained
 		#finding the best compatible version, if any (otherwise returned "version" variable is empty)
@@ -1261,7 +1261,8 @@ if(REQUIRED_VERSION) #the package is already used as a dependency in the current
 				message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated as its version (${force_version}) is not compatible with version ${REQUIRED_VERSION} previously required by other packages.")
 			else()#this is to ensure that on a dependent build an adequate version has been chosen from the list of possible versions
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} dependency ${dep_package} is used in another package with version ${REQUIRED_VERSION}, but this version is not usable in this project that depends on versions : ${available_versions}.")
+				fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
 				return()
 			endif()
 		endif()
@@ -3531,7 +3532,7 @@ endfunction(resolve_Wrapper_Language_Configuration)
 function(resolve_Wrapper_Platform_Configuration CONFIGURED package version)
 	set(IS_CONFIGURED TRUE)
 	foreach(config IN LISTS ${package}_KNOWN_VERSION_${version}_CONFIGURATIONS)
-		check_Platform_Configuration_With_Arguments(RESULT_WITH_ARGS BINARY_CONSTRAINTS ${config} ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS Release)
+		check_Platform_Configuration_With_Arguments(RESULT_WITH_ARGS BINARY_CONSTRAINTS ${package} ${config} ${package}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS Release)
 		if(NOT RESULT_WITH_ARGS)
 			set(IS_CONFIGURED FALSE)
 			set(${config}_AVAILABLE FALSE CACHE INTERNAL "")
@@ -3575,7 +3576,7 @@ if(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
 elseif(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM" #the system version has been selected => need to perform specific actions
 			OR os_variant)#the wrapper is generating an os variant so all its dependencies are os variant too
 	#need to check the equivalent OS configuration to get the OS installed version
-	check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${dep_package}" Release)
+	check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${package} "${dep_package}" Release)
 	if(NOT RESULT_OK OR NOT ${dep_package}_VERSION)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
@@ -3615,7 +3616,7 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding versions constraints. Search ended when trying to satisfy version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} coming from package ${PROJECT_NAME}. ${message_versions}. Try to put this dependency as first dependency in your CMakeLists.txt in order to force its version constraint before any other.")
 		return()
 	elseif(${dep_package}_FOUND)#dependency has been found in workspace after resolution
-		add_Chosen_Package_Version_In_Current_Process(${dep_package})#report the choice made to global build process
+		add_Chosen_Package_Version_In_Current_Process(${dep_package} ${package})#report the choice made to global build process
 		#set the variables used at build time
 		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD ${${dep_package}_VERSION_STRING} CACHE INTERNAL "")
 		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD_IS_SYSTEM ${${dep_package}_REQUIRED_VERSION_SYSTEM} CACHE INTERNAL "")
@@ -3686,7 +3687,7 @@ function(resolve_Wrapper_Dependencies package version os_variant)
 				#set the variables used at build time
 				set(${prefix}_DEPENDENCY_${dep_pack}_VERSION_USED_FOR_BUILD ${${dep_pack}_VERSION_STRING} CACHE INTERNAL "")
 				set(${prefix}_DEPENDENCY_${dep_pack}_VERSION_USED_FOR_BUILD_IS_SYSTEM ${${dep_pack}_REQUIRED_VERSION_SYSTEM} CACHE INTERNAL "")
-				add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
+				add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
 				if(${dep_pack}_EXTERNAL_DEPENDENCIES) #are there any dependency (external only) for this external package
 					resolve_Package_Dependencies(${dep_pack} Release TRUE "${BUILD_RELEASE_ONLY}")#recursion : resolving dependencies for each external package dependency
 				endif()
@@ -3818,7 +3819,8 @@ if(first_arg_done)
 endif()
 set(${INPUT_CONSTRAINTS} ${list_of_inputs} PARENT_SCOPE)
 # 2. evaluate the system check as usual
-check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS "${wrapper}${constraints}" Release)
+#NOTE: evaluation context is the wrapper itself
+check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${wrapper} "${wrapper}${constraints}" Release)
 # 1.2 import variable description file
 if(NOT RESULT_OK)
   return()

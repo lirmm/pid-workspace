@@ -193,7 +193,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(list_of_unresolved_configs)
 foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX}) ## all configuration constraints must be satisfied
   parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
-  check_Platform_Configuration_With_Arguments(SYSCHECK_RESULT BINARY_CONTRAINTS ${config} args_as_list ${mode})
+  check_Platform_Configuration_With_Arguments(SYSCHECK_RESULT BINARY_CONTRAINTS ${package} ${config} args_as_list ${mode})
   if(NOT SYSCHECK_RESULT)
     if(NOT first_time)# we are currently trying to reinstall the same package !!
       finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -275,7 +275,7 @@ foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent external package ${dep_ext_pack} with an ABI compatible with current platform. This may mean there is no wrapper for ${package} and no available binary package is compliant with current platform ABI.")
       else()#OK resolution took place !!
-        add_Chosen_Package_Version_In_Current_Process(${dep_ext_pack})#memorize chosen version in progress file to share this information with dependent packages
+        add_Chosen_Package_Version_In_Current_Process(${dep_ext_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
         if(${dep_ext_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
           resolve_Package_Dependencies(${dep_ext_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
         endif()
@@ -288,7 +288,7 @@ foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   elseif(NOT IS_VERSION_COMPATIBLE OR NOT IS_ABI_COMPATIBLE)#the dependency version is not compatible with previous constraints set by other packages
     list(APPEND list_of_conflicting_dependencies ${dep_ext_pack})#try to reinstall it from sources if possible, simply add it to the list of packages to install
   else()#OK resolution took place and is OK
-    add_Chosen_Package_Version_In_Current_Process(${dep_ext_pack})#memorize chosen version in progress file to share this information with dependent packages
+    add_Chosen_Package_Version_In_Current_Process(${dep_ext_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
     if(${dep_ext_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})#the external package has external dependencies !!
       resolve_Package_Dependencies(${dep_ext_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
     endif()
@@ -320,7 +320,7 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent native package ${dep_pack} with an ABI compatible with current platform. This may mean you have no access to ${package} repository and no available binary package is compliant with current platform ABI.")
       else()#OK resolution took place !!
-        add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
+        add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
         if(${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} OR ${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
           resolve_Package_Dependencies(${dep_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
         endif()
@@ -340,7 +340,7 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
     endif()
     list(APPEND list_of_conflicting_dependencies ${dep_pack})
 	else()# resolution took place and is OK
-    add_Chosen_Package_Version_In_Current_Process(${dep_pack})#memorize chosen version in progress file to share this information with dependent packages
+    add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
     if(${dep_pack}_DEPENDENCIES${VAR_SUFFIX} OR ${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (native or external) for this package
 			resolve_Package_Dependencies(${dep_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each package dependency
 		endif()
@@ -3218,7 +3218,7 @@ endif()
 # 2) checking constraints on configuration
 foreach(config IN LISTS CONFIGS_TO_CHECK)#if empty no configuration for this platform is supposed to be necessary
   parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
-  check_Platform_Configuration_With_Arguments(RESULT_OK BINARY_CONSTRAINTS ${config} args_as_list ${mode})
+  check_Platform_Configuration_With_Arguments(RESULT_OK BINARY_CONSTRAINTS ${package} ${config} args_as_list ${mode})
   if(RESULT_OK)
     message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
   else()
@@ -3230,11 +3230,12 @@ endforeach()
 # Manage external package dependencies => need to check direct external dependencies
 foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #check that version of these dependencies is OK
   if(${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX})#there is a specific version to target (should be most common case)
-    get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${dep_pack})
+    get_Chosen_Version_In_Current_Process(REQUIRED_VERSION VERSION_REQUESTORS IS_EXACT IS_SYSTEM ${dep_pack})
   	if(REQUIRED_VERSION)#if a version of the same package is already required then check their compatibility
       get_Compatible_Version(IS_COMPATIBLE TRUE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} ${IS_SYSTEM} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}" "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_SYSTEM${VAR_SUFFIX}}")
       if(NOT IS_COMPATIBLE)
-        message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}, and this version is not compatible with already used version ${REQUIRED_VERSION}.")
+        fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
+        message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}, and this version is not compatible with version ${REQUIRED_VERSION} already used by packages: ${RES_REQ}.")
         return()
       endif()
     endif()
@@ -3252,11 +3253,12 @@ else()
   # Manage native package dependencies => need to check direct native dependencies
 	foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX}) #check that version of these dependencies is OK
     if(${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX})#there is a specific version to target (should be most common case)
-      get_Chosen_Version_In_Current_Process(REQUIRED_VERSION IS_EXACT IS_SYSTEM ${dep_pack})
+      get_Chosen_Version_In_Current_Process(REQUIRED_VERSION VERSION_REQUESTORS IS_EXACT IS_SYSTEM ${dep_pack})
     	if(REQUIRED_VERSION)#if a version of the same native package is already required then check their compatibility
         get_Compatible_Version(IS_COMPATIBLE FALSE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} FALSE ${${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_DEPENDENCIY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}" FALSE)
         if(NOT IS_COMPATIBLE)
-          message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}, and this version is not compatible with already used version ${REQUIRED_VERSION}.")
+          fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
+          message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}, and this version is not compatible with version ${REQUIRED_VERSION} already used by packages: ${RES_REQ}.")
           return()
         endif()
       endif()

@@ -192,6 +192,7 @@ endforeach()
 file(APPEND ${thefile} "set(CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS})\n")
 foreach(pack IN LISTS CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS)
   file(APPEND ${thefile} "set(${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS ${${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS})\n")
+  file(APPEND ${thefile} "set(${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS ${${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS})\n")
   file(APPEND ${thefile} "set(${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT ${${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT})\n")
   file(APPEND ${thefile} "set(${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM ${${pack}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM})\n")
 endforeach()
@@ -265,7 +266,7 @@ endfunction(add_Managed_Package_In_Current_Process)
 #      :exact: if TRUE package version chosen is exact.
 #      :external: if TRUE package is an external package.
 #
-function(add_Chosen_Package_Version_In_Current_Process package)
+function(add_Chosen_Package_Version_In_Current_Process package requestor)
 set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 if(EXISTS ${thefile})
 	include (${thefile})
@@ -286,14 +287,17 @@ if(EXISTS ${thefile})
   if(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS)#the variable already exists (i.e. a version has already been selected)
     if(version VERSION_GREATER ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS)#update chosen version only if greater than current one
       set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS "${version}")
+      set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS "${requestor}")
       set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
       set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM "${system}")
     elseif(version VERSION_EQUAL ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS AND exact)#the new version constraint is exact so set it
+      append_Unique_In_cache(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS "${requestor}")
       set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
       set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM "${system}")
     endif()
   else()#not found already so simply set the variables without check
     set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS "${version}")
+    set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS "${requestor}")
     set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
     set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM "${system}")
   endif()
@@ -491,17 +495,18 @@ endfunction(check_Package_Managed_In_Current_Process)
 #  get_Chosen_Version_In_Current_Process
 #  -------------------------------------
 #
-#   .. command:: get_Chosen_Version_In_Current_Process(VERSION IS_EXACT package)
+#   .. command:: get_Chosen_Version_In_Current_Process(VERSION REQUESTORS IS_EXACT IS_SYSTEM package)
 #
 #    Get the version of the given package that has been previously selected during the build process.
 #
 #      :package: the name of the given package.
 #
 #      :VERSION: the output variable that contains the chosen version number.
+#      :REQUESTORS: the output variable that contains the list of packages that require the chosen version.
 #      :IS_EXACT: the output variable that is TRUE if the chosen version must be exact.
 #      :IS_SYSTEM: the output variable that is TRUE if the chosen version is the OS installed version.
 #
-function(get_Chosen_Version_In_Current_Process VERSION IS_EXACT IS_SYSTEM package)
+function(get_Chosen_Version_In_Current_Process VERSION REQUESTORS IS_EXACT IS_SYSTEM package)
 set(${VERSION} PARENT_SCOPE)
 set(${IS_EXACT} FALSE PARENT_SCOPE)
 set(${IS_SYSTEM} FALSE PARENT_SCOPE)
@@ -511,6 +516,7 @@ if(EXISTS ${thefile})
   list(FIND CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${package} FOUND)
 	if(NOT FOUND EQUAL -1)# there is a chosen version for that package
     set(${VERSION} ${${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS} PARENT_SCOPE)
+    set(${REQUESTORS} ${${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS} PARENT_SCOPE)
 		set(${IS_EXACT} ${${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT} PARENT_SCOPE)
     set(${IS_SYSTEM} ${${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM} PARENT_SCOPE)
 		return()
