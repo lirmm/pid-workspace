@@ -71,12 +71,21 @@ endif()
 set(CUDA_Language_AVAILABLE TRUE CACHE INTERNAL "")
 
 #memorizing build variables
-set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE INTERNAL "" FORCE)
 unset(CMAKE_CUDA_FLAGS)
 set(CMAKE_CUDA_FLAGS CACHE INTERNAL "" FORCE) #for security, avoid setting flags when language is checked (otherwise if errors occurs they will be persistent)
-if(NOT PID_CROSSCOMPILATION)
+if(NOT PID_CROSSCOMPILATION)#when crosscompiling simply do not check language and use what is provided
+  set(CUDA_INCLUDE_DIRS ${CUDA_INCLUDE_DIRS} CACHE INTERNAL "" FORCE)
   check_language(CUDA)#only check for language if crosscompilation is not active
+  if(NOT CMAKE_CUDA_COMPILER)
+    set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE INTERNAL "" FORCE)
+  endif()
+  check_language(CUDA)
+  if(NOT CMAKE_CUDA_HOST_COMPILER)
+    set(CMAKE_CUDA_HOST_COMPILER ${CUDA_HOST_COMPILER} CACHE FILEPATH "Path to CUDA host CC compiler" FORCE)
+  endif()
+  #if language automatic detection failed then force it a bit
 endif()
+
 if(CMAKE_CUDA_COMPILER)
   enable_language(CUDA)
 else()#create the variable from the one created by find_package(CUDA)
@@ -85,8 +94,6 @@ else()#create the variable from the one created by find_package(CUDA)
 endif()
 
 set(CUDA_LIBRARIES ${CUDA_LIBRARIES} CACHE INTERNAL "" FORCE)
-set(CUDA_INCLUDE_DIRS ${CUDA_INCLUDE_DIRS} CACHE INTERNAL "" FORCE)
-set(CMAKE_CUDA_HOST_COMPILER ${CUDA_HOST_COMPILER} CACHE FILEPATH "" FORCE)
 mark_as_advanced(CMAKE_CUDA_COMPILER CMAKE_CUDA_HOST_COMPILER)
 
 #manage soname to test for binary compatibility
