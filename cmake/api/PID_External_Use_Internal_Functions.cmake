@@ -45,6 +45,46 @@ macro(load_Platform_Info)
   load_Current_Contribution_Spaces()
   load_Profile_Info()
   include(${WORKSPACE_DIR}/build/${CURRENT_PROFILE}/Workspace_Platforms_Description.cmake) #loading the workspace description configuration
+  #enabling mandatory languages
+  enable_language(CXX) # CXX is mandatory
+  enable_language(C) # C is mandatory
+  enable_language(ASM)#use assembler (by default will be set to C compiler)
+  #enabling other languages
+  if(Fortran_Language_AVAILABLE)
+    enable_language(Fortran)#use fortran
+  endif()
+  if(CUDA_Language_AVAILABLE)
+    find_package(CUDA)
+    if(NOT CUDA_FOUND)#simply stop the configuration
+      if(CUDA_NVCC_EXECUTABLE AND CUDA_VERSION)
+        #situation where runtime things have been found but toolkit "things" have not been found
+        #try to find again but automatically setting the toolkit root dir from
+        get_filename_component(PATH_TO_BIN ${CUDA_NVCC_EXECUTABLE} REALPATH)#get the path with symlinks resolved
+        get_filename_component(PATH_TO_BIN_FOLDER ${PATH_TO_BIN} DIRECTORY)#get the path with symlinks resolved
+        if(PATH_TO_BIN_FOLDER MATCHES "^.*/bin(32|64)?$")#if path finishes with bin or bin32 or bin 64
+          #remove the binary folder
+          get_filename_component(PATH_TO_TOOLKIT ${PATH_TO_BIN_FOLDER} DIRECTORY)#get folder containing the bin folder
+        endif()
+
+        if(PATH_TO_TOOLKIT AND EXISTS ${PATH_TO_TOOLKIT})
+          set(CUDA_TOOLKIT_ROOT_DIR ${PATH_TO_TOOLKIT} CACHE PATH "" FORCE)
+        endif()
+        find_package(CUDA)
+      endif()
+    endif()
+    if(NOT CUDA_FOUND)#simply stop the configuration
+      message(WARNING "[PID] WARNING : CUDA language is supported by PID environment you are using but NOT configured for current projet ${PROJECT_NAME}. This may cause troubles if some of the PID dependencies you are using themselves use CUDA. Please set your CUDA environment appropriately for instance by setting CUDA_TOOLKIT_ROOT_DIR variable.")
+    else()
+      if(CUDA_NVCC_EXECUTABLE)
+        set(CMAKE_CUDA_COMPILER ${CUDA_NVCC_EXECUTABLE} CACHE PATH "Path to CUDA compiler" FORCE)
+      endif()
+      if(CUDA_HOST_COMPILER)
+        set(CMAKE_CUDA_HOST_COMPILER ${CUDA_HOST_COMPILER} CACHE PATH "Path to CUDA host cc compiler" FORCE)
+      endif()
+      set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE INTERNAL "")
+      enable_language(CUDA)#use cuda compiler
+    endif()
+  endif()
 endmacro(load_Platform_Info)
 
 #.rst:
