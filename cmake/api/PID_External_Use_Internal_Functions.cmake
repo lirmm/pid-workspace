@@ -593,7 +593,7 @@ function(manage_Dependent_PID_Native_Package DEPLOYED package possible_versions 
       if(CMAKE_BUILD_TYPE MATCHES Debug)
         set(release_only FALSE)
       endif()
-      if(version)
+      if(used_version)
         execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=${used_version} release_only=${release_only}
                         WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
       else()
