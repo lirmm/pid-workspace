@@ -381,6 +381,9 @@ macro(declare_Wrapper_Global_Cache_Options)
 option(ADDITIONAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
 option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
 option(BUILD_RELEASE_ONLY "Package is built in release mode" ON)
+if(FORCE_DUAL_MODE)#if dual mode forced
+  set(BUILD_RELEASE_ONLY OFF CACHE BOOL "Package is built in release mode" FORCE)
+endif()
 endmacro(declare_Wrapper_Global_Cache_Options)
 
 #.rst:

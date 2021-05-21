@@ -35,6 +35,7 @@ if(DIR_NAME STREQUAL "build")
 	option(IN_CI_PROCESS "Determine wether the build takes place in a CI environment (ON) or not (default to OFF)." OFF)
 	option(ADDITIONAL_DEBUG_INFO "Get debug infi from configuration" OFF)
 	set(LIMITED_JOBS_PACKAGES "" CACHE STRING "List of packages to build with only one job")
+	option(FORCE_DUAL_MODE "Force all build and deployment to be made in dual mode -Release and Debug" OFF)
 	mark_as_advanced(IN_CI_PROCESS)
 	set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
 	# write the configuration file to memorize at global scope (in build folder) the global workspace configuration information
