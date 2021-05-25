@@ -58,88 +58,88 @@ include(CMakeParseArguments)
 #      import_PID_Workspace(MODE Release SYSTEM_DEPENDENCIES eigen boost)
 #
 macro(import_PID_Workspace)
-save_Original_Modules_Path()
-#interpret user arguments
-set(oneValueArgs PATH MODE)
-set(multiValueArgs SYSTEM_DEPENDENCIES)
-cmake_parse_arguments(IMPORT_PID_WORKSPACE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-if(${ARGC} EQUAL 0)
-	set(path)
-elseif(${ARGC} EQUAL 1)
-	set(path "${ARGV0}")
-else()#there are arguments specified in CMake style
-	if(IMPORT_PID_WORKSPACE_PATH)
-		set(path "${IMPORT_PID_WORKSPACE_PATH}")
-	else()
+	save_Original_Modules_Path()
+	#interpret user arguments
+	set(oneValueArgs PATH MODE)
+	set(multiValueArgs SYSTEM_DEPENDENCIES)
+	cmake_parse_arguments(IMPORT_PID_WORKSPACE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+	if(${ARGC} EQUAL 0)
 		set(path)
+	elseif(${ARGC} EQUAL 1)
+		set(path "${ARGV0}")
+	else()#there are arguments specified in CMake style
+		if(IMPORT_PID_WORKSPACE_PATH)
+			set(path "${IMPORT_PID_WORKSPACE_PATH}")
+		else()
+			set(path)
+		endif()
 	endif()
-endif()
 
-if(NOT path)
-	#test if the workspace has been deployed has a submodule directly inside the external project
-	if(EXISTS ${CMAKE_SOURCE_DIR}/pid-workspace AND IS_DIRECTORY ${CMAKE_SOURCE_DIR}/pid-workspace)
-		set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR}/pid-workspace CACHE INTERNAL "")
-	else()
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling import_PID_Workspace, a path must be given to import_PID_Workspace OR you can directly deploy the pid-workspace at the root of your project.")
-	endif()
-else()
-	if(NOT EXISTS ${path})
+	if(NOT path)
+		#test if the workspace has been deployed has a submodule directly inside the external project
 		if(EXISTS ${CMAKE_SOURCE_DIR}/pid-workspace AND IS_DIRECTORY ${CMAKE_SOURCE_DIR}/pid-workspace)
 			set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR}/pid-workspace CACHE INTERNAL "")
 		else()
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling import_PID_Workspace, the path to the PID workspace ${path} does not exist.")
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments when calling import_PID_Workspace, a path must be given to import_PID_Workspace OR you can directly deploy the pid-workspace at the root of your project.")
 		endif()
-	else()#otherwise use the user provided path
-		set(WORKSPACE_DIR ${path} CACHE INTERNAL "")
-	endif()
-endif()
-
-if(IMPORT_PID_WORKSPACE_MODE)
-	set(mode "${IMPORT_PID_WORKSPACE_MODE}")
-else()
-	if(CMAKE_BUILD_TYPE AND CMAKE_BUILD_TYPE STREQUAL Release OR CMAKE_BUILD_TYPE STREQUAL Debug)
-		set(mode ${CMAKE_BUILD_TYPE})
 	else()
-		set(mode Release)
+		if(NOT EXISTS ${path})
+			if(EXISTS ${CMAKE_SOURCE_DIR}/pid-workspace AND IS_DIRECTORY ${CMAKE_SOURCE_DIR}/pid-workspace)
+				set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR}/pid-workspace CACHE INTERNAL "")
+			else()
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling import_PID_Workspace, the path to the PID workspace ${path} does not exist.")
+			endif()
+		else()#otherwise use the user provided path
+			set(WORKSPACE_DIR ${path} CACHE INTERNAL "")
+		endif()
 	endif()
-endif()
 
-if(NOT CMAKE_BUILD_TYPE)
-	message("[PID] WARNING : when calling import_PID_Workspace, no known build type defined by project (Release or Debug) ${PROJECT_NAME} and none specified using MODE argument: the Release build is selected by default.")
-	set(CMAKE_BUILD_TYPE Release CACHE STRING "build mode (Release or Debug)" FORCE)
-endif()
-
-cmake_minimum_required(VERSION 3.8.2)#just to ensure that version of CMake tool used in external projects if high enough (supports language standards)
-
-########################################################################
-############ all PID system path are put into the cmake path ###########
-########################################################################
-list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
-
-########################################################################
-############ inclusion of required macros and functions ################
-########################################################################
-include(PID_Set_Modules_Path NO_POLICY_SCOPE)
-include(PID_Set_Policies NO_POLICY_SCOPE)
-include(PID_External_Use_Internal_Functions NO_POLICY_SCOPE)
-
-execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}
-						WORKING_DIRECTORY ${WORKSPACE_DIR}/build)#force reconfiguration (in case workspace was deployed as a submodule and never configured)
-
-load_Platform_Info()
-#need to reset the variables used to describe dependencies
-reset_Local_Components_Info(${WORKSPACE_DIR} ${mode})
-#enforce constraints before finding packages
-begin_Progress(workspace GLOBAL_PROGRESS_VAR)
-if(IMPORT_PID_WORKSPACE_SYSTEM_DEPENDENCIES)
-	enforce_System_Dependencies(NOT_ENFORCED "${IMPORT_PID_WORKSPACE_SYSTEM_DEPENDENCIES}")
-	if(NOT_ENFORCED)
-		finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : System dependencies ${NOT_ENFORCED} cannot be found.")
+	if(IMPORT_PID_WORKSPACE_MODE)
+		set(mode "${IMPORT_PID_WORKSPACE_MODE}")
+	else()
+		if(CMAKE_BUILD_TYPE AND CMAKE_BUILD_TYPE STREQUAL Release OR CMAKE_BUILD_TYPE STREQUAL Debug)
+			set(mode ${CMAKE_BUILD_TYPE})
+		else()
+			set(mode Release)
+		endif()
 	endif()
-endif()
-save_PID_Modules_Path()
-restore_Original_Modules_Path()
+
+	if(NOT CMAKE_BUILD_TYPE)
+		message("[PID] WARNING : when calling import_PID_Workspace, no known build type defined by project (Release or Debug) ${PROJECT_NAME} and none specified using MODE argument: the Release build is selected by default.")
+		set(CMAKE_BUILD_TYPE Release CACHE STRING "build mode (Release or Debug)" FORCE)
+	endif()
+
+	cmake_minimum_required(VERSION 3.8.2)#just to ensure that version of CMake tool used in external projects if high enough (supports language standards)
+
+	########################################################################
+	############ all PID system path are put into the cmake path ###########
+	########################################################################
+	list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
+
+	########################################################################
+	############ inclusion of required macros and functions ################
+	########################################################################
+	include(PID_Set_Modules_Path NO_POLICY_SCOPE)
+	include(PID_Set_Policies NO_POLICY_SCOPE)
+	include(PID_External_Use_Internal_Functions NO_POLICY_SCOPE)
+
+	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}
+							WORKING_DIRECTORY ${WORKSPACE_DIR}/build)#force reconfiguration (in case workspace was deployed as a submodule and never configured)
+
+	load_Platform_Info()
+	#need to reset the variables used to describe dependencies
+	reset_Local_Components_Info(${WORKSPACE_DIR} ${mode})
+	#enforce constraints before finding packages
+	begin_Progress(workspace GLOBAL_PROGRESS_VAR)
+	if(IMPORT_PID_WORKSPACE_SYSTEM_DEPENDENCIES)
+		enforce_System_Dependencies(NOT_ENFORCED "${IMPORT_PID_WORKSPACE_SYSTEM_DEPENDENCIES}")
+		if(NOT_ENFORCED)
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : System dependencies ${NOT_ENFORCED} cannot be found.")
+		endif()
+	endif()
+	save_PID_Modules_Path()
+	restore_Original_Modules_Path()
 endmacro(import_PID_Workspace)
 
 #.rst:
@@ -273,46 +273,46 @@ endmacro(add_PID_Contribution_Space)
 #      import_PID_Package(PACKAGE pid-rpath VERSION 2.1.1)
 #
 function(import_PID_Package)
-save_Original_Modules_Path()
-set_PID_Modules_Path()
-set(options)
-set(oneValueArgs PACKAGE NAME)
-set(multiValueArgs)
-cmake_parse_arguments(IMPORT_PID_PACKAGE "" "${oneValueArgs}" "" ${ARGN})
-if(NOT IMPORT_PID_PACKAGE_PACKAGE AND NOT IMPORT_PID_PACKAGE_NAME)
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments passed to import_PID_Package, a package name must be given to using NAME keyword.")
-elseif(IMPORT_PID_PACKAGE_PACKAGE)
-	set(package_name ${IMPORT_PID_PACKAGE_PACKAGE})
-else()
-	set(package_name ${IMPORT_PID_PACKAGE_NAME})
-endif()
-get_Package_Type(${package_name} PACK_TYPE)
-if(PACK_TYPE STREQUAL "UNKNOWN")
-	finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME}, declared dependency to package ${package_name}, has unknown type.")
-else()
-	set(package_type ${PACK_TYPE})
-endif()
-if(IMPORT_PID_PACKAGE_UNPARSED_ARGUMENTS)
-  parse_Package_Dependency_All_Version_Arguments(${package_name} IMPORT_PID_PACKAGE_UNPARSED_ARGUMENTS list_of_versions exact_versions REMAINING_TO_PARSE PARSE_RESULT)
-  if(NOT PARSE_RESULT)#error during parsing process
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} bad arguments when calling import_PID_Package, declared dependency to package ${package_name}, see previous messages.")
-  endif()
-endif()
+	save_Original_Modules_Path()
+	set_PID_Modules_Path()
+	set(options)
+	set(oneValueArgs PACKAGE NAME)
+	set(multiValueArgs)
+	cmake_parse_arguments(IMPORT_PID_PACKAGE "" "${oneValueArgs}" "" ${ARGN})
+	if(NOT IMPORT_PID_PACKAGE_PACKAGE AND NOT IMPORT_PID_PACKAGE_NAME)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments passed to import_PID_Package, a package name must be given to using NAME keyword.")
+	elseif(IMPORT_PID_PACKAGE_PACKAGE)
+		set(package_name ${IMPORT_PID_PACKAGE_PACKAGE})
+	else()
+		set(package_name ${IMPORT_PID_PACKAGE_NAME})
+	endif()
+	get_Package_Type(${package_name} PACK_TYPE)
+	if(PACK_TYPE STREQUAL "UNKNOWN")
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME}, declared dependency to package ${package_name}, has unknown type.")
+	else()
+		set(package_type ${PACK_TYPE})
+	endif()
+	if(IMPORT_PID_PACKAGE_UNPARSED_ARGUMENTS)
+	parse_Package_Dependency_All_Version_Arguments(${package_name} IMPORT_PID_PACKAGE_UNPARSED_ARGUMENTS list_of_versions exact_versions REMAINING_TO_PARSE PARSE_RESULT)
+	if(NOT PARSE_RESULT)#error during parsing process
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} bad arguments when calling import_PID_Package, declared dependency to package ${package_name}, see previous messages.")
+	endif()
+	endif()
 
-if(package_type STREQUAL "EXTERNAL")#it is an external package
-  manage_Dependent_PID_External_Package(DEPLOYED ${package_name} "${list_of_versions}" "${exact_versions}")
-else()#otherwise a native package
-	manage_Dependent_PID_Native_Package(DEPLOYED ${package_name} "${list_of_versions}" "${exact_versions}")
-endif()
+	if(package_type STREQUAL "EXTERNAL")#it is an external package
+	manage_Dependent_PID_External_Package(DEPLOYED ${package_name} "${list_of_versions}" "${exact_versions}")
+	else()#otherwise a native package
+		manage_Dependent_PID_Native_Package(DEPLOYED ${package_name} "${list_of_versions}" "${exact_versions}")
+	endif()
 
-if(NOT DEPLOYED)
-	finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} when calling import_PID_Package, the package ${package_name} cannot be found and deployed.")
-	return()
-endif()
-restore_Original_Modules_Path()
+	if(NOT DEPLOYED)
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} when calling import_PID_Package, the package ${package_name} cannot be found and deployed.")
+		return()
+	endif()
+	restore_Original_Modules_Path()
 endfunction(import_PID_Package)
 
 #.rst:
