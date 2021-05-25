@@ -58,6 +58,7 @@ include(CMakeParseArguments)
 #      import_PID_Workspace(MODE Release SYSTEM_DEPENDENCIES eigen boost)
 #
 macro(import_PID_Workspace)
+save_Original_Modules_Path()
 #interpret user arguments
 set(oneValueArgs PATH MODE)
 set(multiValueArgs SYSTEM_DEPENDENCIES)
@@ -137,6 +138,8 @@ if(IMPORT_PID_WORKSPACE_SYSTEM_DEPENDENCIES)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : System dependencies ${NOT_ENFORCED} cannot be found.")
 	endif()
 endif()
+save_PID_Modules_Path()
+restore_Original_Modules_Path()
 endmacro(import_PID_Workspace)
 
 #.rst:
@@ -179,6 +182,8 @@ endmacro(import_PID_Workspace)
 #      add_PID_Contribution_Space(NAME mycs URL https://gite.lirmm.fr/user/mycs.git PRIORITY MAX)
 #
 macro(add_PID_Contribution_Space)
+	save_Original_Modules_Path()
+	set_PID_Modules_Path()
 	# Interpret user arguments
 	set(oneValueArgs NAME URL PRIORITY)
 	cmake_parse_arguments(ADD_PID_CONTRIBUTION_SPACE "" "${oneValueArgs}" "" ${ARGN})
@@ -225,6 +230,8 @@ macro(add_PID_Contribution_Space)
 	else()
 		message("[PID] INFO : contribution space ${ADD_PID_CONTRIBUTION_SPACE_NAME} already exists, doing nothing")
 	endif()
+	save_PID_Modules_Path()
+	restore_Original_Modules_Path()
 endmacro(add_PID_Contribution_Space)
 
 
@@ -266,6 +273,8 @@ endmacro(add_PID_Contribution_Space)
 #      import_PID_Package(PACKAGE pid-rpath VERSION 2.1.1)
 #
 function(import_PID_Package)
+save_Original_Modules_Path()
+set_PID_Modules_Path()
 set(options)
 set(oneValueArgs PACKAGE NAME)
 set(multiValueArgs)
@@ -303,6 +312,7 @@ if(NOT DEPLOYED)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} when calling import_PID_Package, the package ${package_name} cannot be found and deployed.")
 	return()
 endif()
+restore_Original_Modules_Path()
 endfunction(import_PID_Package)
 
 #.rst:
@@ -340,6 +350,8 @@ endfunction(import_PID_Package)
 #      bind_PID_Components(NAME my-target COMPONENTS pid-rpath/rpathlib)
 #
 function(bind_PID_Components)
+	save_Original_Modules_Path()
+	set_PID_Modules_Path()
 	finish_Progress(${GLOBAL_PROGRESS_VAR})#force finishing progress from first call of bind_PID_Components
 	set(oneValueArgs EXE LIB AR)
 	set(multiValueArgs COMPONENTS)
@@ -371,6 +383,7 @@ function(bind_PID_Components)
 	endif()
 	prepare_Local_Target_Configuration(${name} "${target_type}")
 	configure_Local_Target_With_PID_Components(${name} ${target_type} "${BIND_PID_COMPONENTS_COMPONENTS}" ${WORKSPACE_MODE})
+	restore_Original_Modules_Path()
 endfunction(bind_PID_Components)
 
 #.rst:
@@ -403,6 +416,8 @@ endfunction(bind_PID_Components)
 #      bind_Local_Component(EXE local COMPONENT mylib)
 #
 function(bind_Local_Component)
+	save_Original_Modules_Path()
+	set_PID_Modules_Path()
 	set(oneValueArgs EXE LIB AR COMPONENT)
 	cmake_parse_arguments(BIND_LOCAL_COMPONENT "" "${oneValueArgs}" "" ${ARGN})
 	if(NOT BIND_LOCAL_COMPONENT_EXE AND NOT BIND_LOCAL_COMPONENT_LIB AND NOT BIND_LOCAL_COMPONENT_AR)
@@ -431,6 +446,7 @@ function(bind_Local_Component)
 	#prepare the local target to be bounded with PID components
 	prepare_Local_Target_Configuration(${component} ${target_type})
 	configure_Local_Target_With_Local_Component(${component} ${target_type} ${BIND_LOCAL_COMPONENT_COMPONENT} ${WORKSPACE_MODE})
+	restore_Original_Modules_Path()
 endfunction(bind_Local_Component)
 
 #.rst:
@@ -459,6 +475,8 @@ endfunction(bind_Local_Component)
 #      add_Runtime_Resources(TARGET my-target FILES my_config.yaml DIRECTORIES config params)
 #
 function(add_Runtime_Resources)
+	save_Original_Modules_Path()
+	set_PID_Modules_Path()
 	set(oneValueArgs TARGET)
 	set(multiValueArgs FILES DIRECTORIES)
 	cmake_parse_arguments(ADD_RUNTIME_RESOURCES "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
@@ -487,4 +505,21 @@ function(add_Runtime_Resources)
 
 	#OK we can proceed
 	add_Managed_PID_Resources(${ADD_RUNTIME_RESOURCES_TARGET} "${ADD_RUNTIME_RESOURCES_FILES}" "${ADD_RUNTIME_RESOURCES_DIRECTORIES}")
+	restore_Original_Modules_Path()
 endfunction(add_Runtime_Resources)
+
+macro(save_PID_Modules_Path)
+	set(PID_CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH})
+endmacro(save_PID_Modules_Path)
+
+macro(save_Original_Modules_Path)
+	set(SAVED_CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH})
+endmacro(save_Original_Modules_Path)
+
+macro(set_PID_Modules_Path)
+	set(CMAKE_MODULE_PATH ${PID_CMAKE_MODULE_PATH})
+endmacro(set_PID_Modules_Path)
+
+macro(restore_Original_Modules_Path)
+	set(CMAKE_MODULE_PATH ${SAVED_CMAKE_MODULE_PATH})
+endmacro(restore_Original_Modules_Path)
