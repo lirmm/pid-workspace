@@ -1578,9 +1578,9 @@ function(is_Allowed_Platform_Configuration ALLOWED config_name config_args)
   include(${PATH_TO_CONFIG}/check_${config_name}.cmake)#get the description of the configuration check
 
   #now preparing args passed to the configruation (generate cmake variables)
-  set(possible_args ${${config_name}_OPTIONAL_CONSTRAINTS} ${${config_name}_OPTIONAL_CONSTRAINTS} ${${config_name}_IN_BINARY_CONSTRAINTS})
+  set(possible_args ${${config_name}_OPTIONAL_CONSTRAINTS} ${${config_name}_REQUIRED_CONSTRAINTS} ${${config_name}_IN_BINARY_CONSTRAINTS})
   if(possible_args)
-    list(REMOVE_DUPLICATES all_constraints)
+    list(REMOVE_DUPLICATES possible_args)
     prepare_Configuration_Expression_Arguments(${config_name} ${config_args} possible_args)#setting variables that correspond to the arguments passed to the check script
   endif()
 
