@@ -126,6 +126,15 @@ if(use_os_variant OR (NOT DO_NOT_EXECUTE_SCRIPT OR NOT DO_NOT_EXECUTE_SCRIPT STR
 endif()
 
 set(TARGET_INSTALL_DIR ${package_version_install_dir})
+#define the build mode
+if(NOT TARGET_BUILD_MODE
+	 OR (NOT TARGET_BUILD_MODE STREQUAL "Debug" AND NOT TARGET_BUILD_MODE STREQUAL "debug")
+	 OR BUILD_RELEASE_ONLY)
+	set(CMAKE_BUILD_TYPE Release)
+else()#debug only if exlicitly asked for
+	message("[PID] INFO: building ${TARGET_EXTERNAL_PACKAGE} in Debug mode...")
+	set(CMAKE_BUILD_TYPE Debug)
+endif()
 
 if(use_os_variant)#instead of building the project using its variant coming from the current OS/distribution
 	#only thing to resolve: the external package equivalent configuration,
@@ -149,15 +158,6 @@ if(use_os_variant)#instead of building the project using its variant coming from
 	generate_OS_Variant_Symlinks(${TARGET_EXTERNAL_PACKAGE} ${CURRENT_PLATFORM} ${version} ${TARGET_INSTALL_DIR})
 
 else()#by default build the given package version using external project specific build process
-	#define the build mode
-	if(NOT TARGET_BUILD_MODE
-		 OR (NOT TARGET_BUILD_MODE STREQUAL "Debug" AND NOT TARGET_BUILD_MODE STREQUAL "debug")
-	   OR BUILD_RELEASE_ONLY)
-	  set(CMAKE_BUILD_TYPE Release)
-	else()#debug only if exlicitly asked for
-	  message("[PID] INFO: building ${TARGET_EXTERNAL_PACKAGE} in Debug mode...")
-	  set(CMAKE_BUILD_TYPE Debug)
-	endif()
 
 	# prepare script execution
 	set(deploy_script_file ${${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT})
