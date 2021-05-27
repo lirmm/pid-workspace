@@ -968,7 +968,12 @@ if(REMAINING_TO_PARSE) #there are still expression to parse
 	endif()
 endif()
 
-declare_Wrapped_External_Dependency("${package_name}" "${DECLARE_PID_WRAPPER_DEPENDENCY_OPTIONAL}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
+declare_Wrapped_External_Dependency(DO_EXIT "${package_name}" "${DECLARE_PID_WRAPPER_DEPENDENCY_OPTIONAL}" "${list_of_versions}" "${exact_versions}" "${list_of_components}")
+if(DO_EXIT)
+  unset(DO_EXIT)
+  declare_Current_Version_Unavailable()
+  return()
+endif()
 #avoid propagating variables to other functions
 unset(list_of_components)
 unset(list_of_versions)

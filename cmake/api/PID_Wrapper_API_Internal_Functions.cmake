@@ -1034,7 +1034,7 @@ endfunction(declare_Wrapped_Environment_Configuration)
 macro(declare_Current_Version_Unavailable)
 	reset_Wrapper_Version_Info(${CURRENT_MANAGED_VERSION} "" "" "" "" "")
 	remove_From_Cache(${PROJECT_NAME}_KNOWN_VERSIONS ${CURRENT_MANAGED_VERSION})
-	message(WARNING "[PID] WARNING: version ${CURRENT_MANAGED_VERSION} of ${PROJECT_NAME} cannot be generated since some of its platform or environments required contraints cannot be resolved (see previous outputs). This version cannot be built.")
+	message(WARNING "[PID] WARNING: version ${CURRENT_MANAGED_VERSION} of ${PROJECT_NAME} cannot be generated since some of its platform or environments required contraints or required dependncies cannot be resolved (see previous outputs). This version cannot be built.")
 	unset(CURRENT_MANAGED_VERSION)
 endmacro(declare_Current_Version_Unavailable)
 
@@ -1196,7 +1196,7 @@ endfunction(add_External_Package_Dependency_To_Wrapper)
 #  declare_Wrapped_External_Dependency
 #  -----------------------------------
 #
-#   .. command:: declare_Wrapped_External_Dependency(dep_package optional list_of_versions exact_versions list_of_components)
+#   .. command:: declare_Wrapped_External_Dependency(NEED_EXIT dep_package optional list_of_versions exact_versions list_of_components)
 #
 #    Define a dependency between the currenlty defined version of the external package and another external package. Internal counterpart of declare_PID_Wrapper_External_Dependency.
 #
@@ -1206,7 +1206,10 @@ endfunction(add_External_Package_Dependency_To_Wrapper)
 #      :exact_versions: the list of exact versions among possible ones for the dependency.
 #      :list_of_components: the list of components that must exist in dependency.
 #
-function(declare_Wrapped_External_Dependency dep_package optional list_of_versions exact_versions list_of_components)
+#      :NEED_EXIT: output variable that is TRUE if current version description has be to exitted
+#
+function(declare_Wrapped_External_Dependency NEED_EXIT dep_package optional list_of_versions exact_versions list_of_components)
+set(${NEED_EXIT} FALSE PARENT_SCOPE)
 if(NOT CURRENT_MANAGED_VERSION)#may be necessary to avoid errors at first configuration
 	return()
 endif()
@@ -1261,11 +1264,11 @@ if(REQUIRED_VERSION) #the package is already used as a dependency in the current
 		if(NOT force_version)#the build context is a dependent build and no compatible version has been found
 			if(optional)#hopefully the dependency is optional so we can deactivate it
 				set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}" FORCE)
-				message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated as its version (${force_version}) is not compatible with version ${REQUIRED_VERSION} previously required by other packages.")
+				message("[PID] INFO :  In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is optional and has been automatically deactivated as its version (${force_version}) is not compatible with version ${REQUIRED_VERSION} previously required by other packages.")
 			else()#this is to ensure that on a dependent build an adequate version has been chosen from the list of possible versions
-				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
+				message("[PID] INFO : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
+				set(${NEED_EXIT} TRUE PARENT_SCOPE)
 				return()
 			endif()
 		endif()
@@ -1294,7 +1297,7 @@ else()#classical build => perform only corrective actions if cache variable is n
 	if(NOT ${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED)#SPECIAL CASE: no value set by user (i.e. error of the user)!!
 		if(optional)#hopefully the dependency is optional so we can force its deactivation
 			set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}" FORCE)#explicitlty deactivate the optional dependency (corrective action)
-			message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated because no version was specified by the user.")
+			message("[PID] INFO : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated because no version was specified by the user.")
 		elseif(list_of_possible_versions)#set if to default version
 			if(SIZE EQUAL 1)#only one possible version => do not provide it to to user
 				set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
