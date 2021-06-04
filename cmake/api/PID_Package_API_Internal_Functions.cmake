@@ -1216,9 +1216,9 @@ if(BUILD_AND_RUN_TESTS)
 		OR (CMAKE_BUILD_TYPE MATCHES Debug AND BUILD_TESTS_IN_DEBUG))
 		enable_testing()
 	endif()
-	add_subdirectory(test)
 endif()
 add_subdirectory(share)
+add_subdirectory(test)
 
 # specific case : resolve which compile option to use to enable the adequate language standard
 resolve_Build_Options_For_Targets()
