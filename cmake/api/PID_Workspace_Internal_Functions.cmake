@@ -1639,9 +1639,9 @@ function(bind_Installed_Package BOUND platform package version only_resolve rele
 	set(${package}_VERSION_STRING ${version} CACHE INTERNAL "")
 	set(PROJECT_NAME workspace)
 	if(only_resolve)
-		set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE CACHE INTERNAL "" FORCE)
+		set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD OFF CACHE BOOL "" FORCE)
 	else()
-		set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD TRUE CACHE INTERNAL "" FORCE)
+		set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE BOOL "" FORCE)
 	endif()
 	if(NOT release_only)
 		set(CMAKE_BUILD_TYPE Debug)#to adequately interpret external packages description
@@ -1684,7 +1684,7 @@ endfunction(bind_Installed_Package)
 #
 function(deploy_PID_Native_Package DEPLOYED package version verbose deploy_mode branch run_tests release_only)
 set(PROJECT_NAME ${package})
-set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON)
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE BOOL "" FORCE)
 if(verbose)
 	set(ADDITIONAL_DEBUG_INFO ON)
 else()
@@ -1829,7 +1829,7 @@ if(NOT REFERENCES_FOUND AND deploy_mode STREQUAL "BINARY")
 	return()
 endif()
 set(PROJECT_NAME ${package})
-set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON)
+set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE BOOL "" FORCE)
 #check if the repository of the external package wrapper lies in the workspace
 set(REPOSITORY_IN_WORKSPACE FALSE)
 if(EXISTS ${WORKSPACE_DIR}/wrappers/${package})
@@ -3660,7 +3660,7 @@ function(install_Package_In_System IS_INSTALLED package version)
 	set(${package}_ROOT_DIR ${BIN_PACKAGE_PATH} CACHE INTERNAL "")
 
 	set(PROJECT_NAME workspace)
-	set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE)#do not install this must be done before
+	set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD OFF CACHE BOOL "" FORCE)#do not install this must be done before
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 	set(${package}_FOUND${VAR_SUFFIX} TRUE CACHE INTERNAL "")
 	set(${package}_VERSION_STRING ${version} CACHE INTERNAL "")

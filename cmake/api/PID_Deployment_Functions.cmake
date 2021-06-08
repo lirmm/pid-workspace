@@ -283,7 +283,6 @@ foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
     else()
       finish_Progress(${GLOBAL_PROGRESS_VAR})
       message(FATAL_ERROR "[PID] CRITICAL ERROR :  external package dependency to ${dep_ext_pack} cannot be resolved since the automatic download of packages is not activated in ${PROJECT_NAME}. You may set the REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD option to ON.")
-      return()
     endif()
   elseif(NOT IS_VERSION_COMPATIBLE OR NOT IS_ABI_COMPATIBLE)#the dependency version is not compatible with previous constraints set by other packages
     list(APPEND list_of_conflicting_dependencies ${dep_ext_pack})#try to reinstall it from sources if possible, simply add it to the list of packages to install
