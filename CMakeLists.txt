@@ -190,7 +190,7 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "             - framework=*name of the framework*: remove target framework."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - environment=*name of the environment*: remove target environment."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
-	COMMAND ${CMAKE_COMMAND} -E echo " register:   register a deployment unit into workspace. This results in updating the contribution space"
+	COMMAND ${CMAKE_COMMAND} -E echo " register:   register a deployment unit into from contribution space, updates the contribution space"
 	COMMAND ${CMAKE_COMMAND} -E echo "             that contains  or will contain the references to the deployment unit. After this operation"
 	COMMAND ${CMAKE_COMMAND} -E echo "             the deployment unit can now be deployed by people owning the adequate rights, or anyone if"
 	COMMAND ${CMAKE_COMMAND} -E echo "             deployment unit is public."
@@ -200,6 +200,16 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "             - environment=*name of the environment*: register an environment."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Optional argument ---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - space=*name of cotribution space*: force to register into a given contribution space."
+	COMMAND ${CMAKE_COMMAND} -E echo ""
+	COMMAND ${CMAKE_COMMAND} -E echo " unregister: unregister a deployment unit from contribution space, updates the contribution space that"
+	COMMAND ${CMAKE_COMMAND} -E echo "             contains, and will no more contain  the references to the deployment unit. After this operation"
+	COMMAND ${CMAKE_COMMAND} -E echo "             the deployment unit can no more be deployed using the contribution space(s)."
+	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [choose one of them] ---"
+	COMMAND ${CMAKE_COMMAND} -E echo "             - package=*name of the package*: unregister a native or external package."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - framework=*name of the framework*: unregister a framework."
+	COMMAND ${CMAKE_COMMAND} -E echo "             - environment=*name of the environment*: unregister an environment."
+	COMMAND ${CMAKE_COMMAND} -E echo "             --- Optional argument ---"
+	COMMAND ${CMAKE_COMMAND} -E echo "             - space=*name of contribution space*: force to unregister only for the given contribution space."
 	COMMAND ${CMAKE_COMMAND} -E echo ""
 	COMMAND ${CMAKE_COMMAND} -E echo " release:    release the target native package. Release process consists in:"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - merging branches and tagging the package repository."
@@ -444,6 +454,14 @@ set(register_args "\
 	-DTARGET_ENVIRONMENT=\${environment} \
   -DTARGET_CS=\${space} ")
 add_PID_Command(register Register_PID_Deployment_Unit.cmake)
+
+## unregister a package
+set(unregister_args "\
+	-DTARGET_PACKAGE=\${package} \
+	-DTARGET_FRAMEWORK=\${framework} \
+	-DTARGET_ENVIRONMENT=\${environment} \
+  -DTARGET_CS=\${space} ")
+add_PID_Command(unregister Unregister_PID_Deployment_Unit.cmake)
 
 ## releasing a package
 set(release_args "\

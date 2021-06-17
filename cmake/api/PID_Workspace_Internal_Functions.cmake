@@ -2323,6 +2323,55 @@ function(register_PID_Package package space)
 	endif()
 endfunction(register_PID_Package)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |unregister_PID_Deployment_Unit| replace:: ``unregister_PID_Deployment_Unit``
+#  .. _unregister_PID_Deployment_Unit:
+#
+#  unregister_PID_Deployment_Unit
+#  ------------------------------
+#
+#   .. command:: unregister_PID_Deployment_Unit(RESULT deployment_unit space)
+#
+#     Updating the workspace contributions space(s) with removed reference and find files for a given package.
+#
+#      :deployment_unit: the name of the deployment unit (package, wrapper) to unregister.
+#      :space: the space from which the deployment unit will be uregister or all known spaces in workspace if empty.
+#      :RESULT: the output variabl that is TRUE if something as been unregistered, FALSE otherwse.
+#
+function(unregister_PID_Deployment_Unit RESULT deployment_unit space)
+	if(space)
+		set(list_of_spaces ${space})
+	else()
+		set(list_of_space ${CONTRIBUTION_SPACES})
+	endif()
+	set(found FALSE)
+	foreach(cs IN LISTS list_of_spaces)
+		get_Path_To_Contribution_Space(SOURCE_PATH ${cs})
+		get_All_Matching_Contributions(LICENSE REFERENCE FIND FORMAT ${cs} ${deployment_unit})
+		if(REFERENCE OR FIND)#manage find and reference "all in one" if required
+	    set(removed_files)
+			set(type_of_contrib)
+			set(found TRUE)
+	    if(FIND)
+	      file(REMOVE ${SOURCE_PATH}/finds/${FIND})
+	      list(APPEND removed_files finds/${FIND})
+				set(type_of_contrib "package")#only native and external packages have find files
+	    endif()
+	    if(REFERENCE)
+	      file(REMOVE ${SOURCE_PATH}/references/${REFERENCE})
+	      list(APPEND removed_files references/${REFERENCE})
+				get_Type_Of_Contribution(type_of_contrib ${REFERENCE})
+	    endif()
+	    commit_Files(SOURCE_COMMIT_RES ${SOURCE_PATH} "${removed_files}" "removed references for ${type_of_contrib} ${deployment_unit}" FALSE)
+	  endif()
+	endforeach()
+	set(${RESULT} ${found} PARENT_SCOPE)
+endfunction(unregister_PID_Deployment_Unit)
+
 #.rst:
 #
 # .. ifmode:: internal
