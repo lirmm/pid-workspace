@@ -368,7 +368,10 @@ endfunction(manage_Python_Scripts)
 #  create_Module_Lib_Target
 #  ------------------------
 #
-#   .. command:: create_Module_Lib_Target(c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
+#   .. command:: create_Module_Lib_Target(c_name c_standard cxx_standard sources
+#                                         internal_inc_dirs internal_defs
+#                                         internal_compiler_options internal_links
+#                                         hide_symbols)
 #
 #     Create a target for a module library (shared object without a specific header and supposed to be used only at runtime to implement plugin like mechanism). Modules export nothing as they do not have public headers.
 #
@@ -380,10 +383,21 @@ endfunction(manage_Python_Scripts)
 #     :internal_defs: list of private definitions to use when building the library.
 #     :internal_compiler_options: list of private compiler options to use when building the library.
 #     :internal_links: list of private linker options to use when building the library.
+#     :hide_symbols: if TRUE symbols are all hidden by default, otherwise they are all visible.
 #
-function(create_Module_Lib_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
+function(create_Module_Lib_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links hide_symbols)
 	add_library(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} MODULE ${sources})
-	install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX}
+  if(hide_symbols)
+    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES VISIBILITY_INLINES_HIDDEN ON)
+    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES C_VISIBILITY_PRESET hidden)
+    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES CXX_VISIBILITY_PRESET hidden)
+  else()
+    #NOTE: on UNIX by default all symbols are exported
+    #on Windows symbols are hifdden by default so we need to export all of them explicitly to get homogeneous behavior
+    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  endif()
+  install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX}
 		LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
 	)
 	#setting the default rpath for the target (rpath target a specific folder of the binary package for the installed version of the component)
@@ -405,7 +419,12 @@ endfunction(create_Module_Lib_Target)
 #  create_Shared_Lib_Target
 #  ------------------------
 #
-#   .. command:: create_Shared_Lib_Target(c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links internal_links)
+#   .. command:: create_Shared_Lib_Target(c_name c_standard cxx_standard sources
+#                                         exported_inc_dirs internal_inc_dirs
+#                                         exported_defs internal_defs
+#                                         exported_compiler_options internal_compiler_options
+#                                         exported_links internal_links
+#                                         hide_symbols)
 #
 #     Create a target for a shared library.
 #
@@ -421,11 +440,18 @@ endfunction(create_Module_Lib_Target)
 #     :internal_compiler_options: list of private compiler options to use when building the library.
 #     :exported_links: list of linker options exported by the library.
 #     :internal_links: list of private linker options to use when building the library.
+#     :hide_symbols: if TRUE symbols are all hidden by default, otherwise they are all visible.
 #
-function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links internal_links)
-	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links internal_links hide_symbols)
 	add_library(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} SHARED ${sources})
-
+  if(hide_symbols)
+    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES VISIBILITY_INLINES_HIDDEN ON)
+    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES C_VISIBILITY_PRESET hidden)
+    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES CXX_VISIBILITY_PRESET hidden)
+  else()
+    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  endif()
   if(WIN32)
   	install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .dll
   	install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .lib

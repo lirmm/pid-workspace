@@ -1009,6 +1009,7 @@ endmacro(build_PID_Package)
 #   :EXPORT ...: Specify a list of components that the current component depends on and exports.
 #   :LOGGABLE: specifies that the component generate logs using the pid-log system.
 #   :ALIAS ...: specifies the alias names of the component.
+#   :MANAGE_SYMBOLS: Tell the system that the code will manage symbol export by specifying the path (relative to DIRECTORY) where the generated header defining macro for exporting symbols will be put. All symbols of the library will be hidden instead of default behavior where all symbols are exported.
 #
 #   The following options are supported by the ``INTERNAL`` and ``EXPORTED`` commands:
 #
@@ -1045,7 +1046,7 @@ endmacro(PID_Component)
 
 macro(declare_PID_Component)
 set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER APPLICATION APP EXAMPLE_APPLICATION EXAMPLE TEST_APPLICATION TEST PYTHON_PACK PYTHON LOGGABLE)
-set(oneValueArgs NAME DIRECTORY C_STANDARD C_MAX_STANDARD CXX_STANDARD CXX_MAX_STANDARD DOCUMENTATION WARNING_LEVEL)
+set(oneValueArgs MANAGE_SYMBOLS NAME DIRECTORY C_STANDARD C_MAX_STANDARD CXX_STANDARD CXX_MAX_STANDARD DOCUMENTATION WARNING_LEVEL)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES DEPEND EXPORT ALIAS)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -1345,6 +1346,7 @@ else() #it is a library
       message("[PID] WARNING: in package ${PROJECT_NAME} when calling PID_Component to declare library ${comp_name}, ${MESS}")
     endif()
   endif()
+
 	declare_Library_Component(${comp_name}
 					"${dir_name}"
 					${type}
@@ -1363,7 +1365,8 @@ else() #it is a library
           "${DECLARE_PID_COMPONENT_SPECIAL_HEADERS}"
           "${DECLARE_PID_COMPONENT_AUXILIARY_SOURCES}"
           "${DECLARE_PID_COMPONENT_LOGGABLE}"
-          "${DECLARE_PID_COMPONENT_ALIAS}")
+          "${DECLARE_PID_COMPONENT_ALIAS}"
+          "${DECLARE_PID_COMPONENT_MANAGE_SYMBOLS}")
 endif()
 if(DECLARE_PID_COMPONENT_DESCRIPTION)
 	init_Component_Description(${comp_name} "${DECLARE_PID_COMPONENT_DESCRIPTION}" "${DECLARE_PID_COMPONENT_USAGE}")

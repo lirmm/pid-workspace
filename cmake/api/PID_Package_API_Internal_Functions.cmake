@@ -1540,7 +1540,7 @@ endmacro(build_Package)
 #																				   exported_defs exported_compiler_options
 #																				   internal_links exported_links
 #																				   runtime_resources more_headers more_sources
-#                                          is_loggable aliases)
+#                                          is_loggable aliases manage_symbols)
 #
 #     Declare a library in the currently defined package.
 #
@@ -1563,6 +1563,7 @@ endmacro(build_Package)
 #     :more_sources: list of path to files and folders relative to src folder, containing auxiliary sources to be used for building the library.
 #     :is_loggable: if TRUE the componnet can be uniquely identified by the logging system.
 #     :aliases: the list of alias for the component.
+#     :manage_symbols: if not empty export of symbols of the library will be managed by hand and are all hidden by default, the path given will contain the generated header defining macro for exporting symbols. Otherwise if empty all symbols are exported.
 #
 function(declare_Library_Component c_name dirname type
 																	 c_standard c_max_standard cxx_standard cxx_max_standard
@@ -1570,7 +1571,8 @@ function(declare_Library_Component c_name dirname type
 																	 exported_defs exported_compiler_options
 																   internal_links exported_links
 																	 runtime_resources more_headers more_sources
-																 	is_loggable aliases)
+																 	 is_loggable aliases
+																   manage_symbols)
 
 #indicating that the component has been declared and need to be completed
 is_Library_Type(RES "${type}")
@@ -1679,7 +1681,7 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 		create_Static_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}"  "${use_includes}" "${exported_defs}" "${internal_defs}" "${exported_compiler_options}" "${internal_compiler_options}" "${exported_links}")
 		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "SHARED")
-		create_Shared_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${use_includes}" "${exported_defs}" "${internal_defs}" "${exported_compiler_options}" "${internal_compiler_options}" "${exported_links}" "${internal_links}")
+		create_Shared_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${use_includes}" "${exported_defs}" "${internal_defs}" "${exported_compiler_options}" "${internal_compiler_options}" "${exported_links}" "${internal_links}" "${manage_symbols}")
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") #a static library has no exported links (no interface)
@@ -1691,9 +1693,9 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 			#adding adequate path to pyhton librairies
 			list(APPEND INCLUDE_DIRS_WITH_PYTHON ${use_includes} ${CURRENT_PYTHON_INCLUDE_DIRS})
 			list(APPEND LIBRARIES_WITH_PYTHON ${internal_links} ${CURRENT_PYTHON_LIBRARIES})
-			create_Module_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${INCLUDE_DIRS_WITH_PYTHON}" "${internal_defs}" "${internal_compiler_options}" "${LIBRARIES_WITH_PYTHON}")
+			create_Module_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${INCLUDE_DIRS_WITH_PYTHON}" "${internal_defs}" "${internal_compiler_options}" "${LIBRARIES_WITH_PYTHON}" "${manage_symbols}")
 		else()
-			create_Module_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
+			create_Module_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}" "${manage_symbols}")
 		endif()
 		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
 		register_Component_Binary(${c_name})#need to register before calling manage python
@@ -1708,6 +1710,25 @@ else()#simply creating a "fake" target for header only library
 	create_Header_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
 endif()
 
+if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE")
+	#NOTE: a module does not define an interface, just implement an existing one so no need to generate
+	if(manage_symbols)
+		#NOTE: if symbols are managed then we need to generate the header defining macros used for exporting symbols
+		include(GenerateExportHeader)#using CMake dedicated module
+		GENERATE_EXPORT_HEADER(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX}
+													 BASE_NAME ${PROJECT_NAME}_${c_name})
+		set(target_exporting_header ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_${c_name}_export.h)
+		set(exporting_header_path_in_build_tree ${CMAKE_CURRENT_BINARY_DIR}/include/${${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME}/${manage_symbols})
+		file(COPY ${target_exporting_header}
+		     DESTINATION ${exporting_header_path_in_build_tree})
+		target_include_directories(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PUBLIC
+			${CMAKE_CURRENT_BINARY_DIR}/include/${${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME})
+
+		install(FILES ${target_exporting_header}
+				    DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH}/${${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME}/${manage_symbols}
+		)
+	endif()
+endif()
 # registering exported flags for all kinds of libs
 init_Component_Cached_Variables_For_Export(${c_name} "${c_standard}" "${c_max_standard}" "${cxx_standard}" "${cxx_max_standard}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}" "${runtime_resources}")
 
