@@ -1214,11 +1214,9 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(EXT_SH_LINKS_OPTIONS)
 set(EXT_ST_LINKS_OPTIONS)
 rename_If_Alias(comp_name_to_use ${dep_package} TRUE ${dep_component} ${mode})
-
 #contrarily to native dependencies we do not know the nature of the component
 set(target_name ${dep_package}_${comp_name_to_use}${TARGET_SUFFIX})
 if(NOT TARGET ${target_name})#check that this target does not exist, otherwise naming conflict
-
   # 0) create an imported target for the component
   add_library(${target_name} INTERFACE IMPORTED GLOBAL)#need to use an interface library to export all other proêrties of the component
   list_Public_Includes(INCLUDES ${dep_package} ${comp_name_to_use} ${mode} FALSE)#external package does not define their own header dir, simply define a set of include dirs
