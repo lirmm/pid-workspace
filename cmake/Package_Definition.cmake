@@ -1930,7 +1930,7 @@ else()#NO keyword used to specify the kind of component => we do not know if pac
       message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} containing component ${target_component} is unknown.")
     endif()
     set(CONTAINERS_IN_FRAMEWORK)
-    find_Packages_Containing_Component(CONTAINERS ${PROJECT_NAME} FALSE ${target_component})
+    find_Packages_Containing_Component(CONTAINERS ${PROJECT_NAME} ${target_component})
     foreach(pack IN LISTS CONTAINERS)
       if(${pack}_FRAMEWORK STREQUAL "${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK}")
         list(APPEND CONTAINERS_IN_FRAMEWORK ${pack})
@@ -1951,7 +1951,7 @@ endif()
 
 #now try to resolve the package in use if not explicitly specified while a component is used
 if(NOT target_package AND target_component)
-  find_Packages_Containing_Component(CONTAINERS ${PROJECT_NAME} FALSE ${target_component})
+  find_Packages_Containing_Component(CONTAINERS ${PROJECT_NAME} ${target_component})
   list(LENGTH CONTAINERS SIZE)
   if(SIZE EQUAL 0)
     finish_Progress(${GLOBAL_PROGRESS_VAR})

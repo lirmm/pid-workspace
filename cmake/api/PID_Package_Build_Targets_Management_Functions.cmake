@@ -1171,7 +1171,7 @@ endfunction(create_External_Dependency_Target)
 function (create_Dependency_Target dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-rename_If_Alias(comp_name_to_use ${dep_package} FALSE ${dep_component} Release)
+rename_If_Alias(comp_name_to_use ${dep_package} ${dep_component})
 
 if(NOT TARGET ${dep_package}_${comp_name_to_use}${TARGET_SUFFIX})#check that this target does not exist, otherwise naming conflict
 #create the dependent target (#may produce recursion to build undirect dependencies of targets
@@ -1213,7 +1213,7 @@ function(create_External_Component_Dependency_Target dep_package dep_component m
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(EXT_SH_LINKS_OPTIONS)
 set(EXT_ST_LINKS_OPTIONS)
-rename_If_Alias(comp_name_to_use ${dep_package} TRUE ${dep_component} ${mode})
+rename_If_Alias(comp_name_to_use ${dep_package} ${dep_component})
 #contrarily to native dependencies we do not know the nature of the component
 set(target_name ${dep_package}_${comp_name_to_use}${TARGET_SUFFIX})
 if(NOT TARGET ${target_name})#check that this target does not exist, otherwise naming conflict
@@ -1633,14 +1633,14 @@ endfunction(resolve_Component_Standard_For_Dependency)
 function(bind_Target component is_external dep_package dep_component mode export comp_defs comp_exp_defs dep_defs)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-rename_If_Alias(comp_name_to_use ${PROJECT_NAME} FALSE ${component} Release)
+rename_If_Alias(comp_name_to_use ${PROJECT_NAME} ${component})
 #  the dependency may refer to an ALIAS name of dependent component
 # as it is NOT internal an ALIAS target is NOT defined so we need to resolved alias before
 if(is_external)
-  rename_If_Alias(dep_name_to_use ${dep_package} TRUE ${dep_component} ${mode})
+  rename_If_Alias(dep_name_to_use ${dep_package} ${dep_component})
   set(DEP_IS_HF FALSE)#by default we consider that external components have headers
 else()
-  rename_If_Alias(dep_name_to_use ${dep_package} FALSE ${dep_component} Release)
+  rename_If_Alias(dep_name_to_use ${dep_package} ${dep_component})
   is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_name_to_use})
 endif()
 
@@ -1717,8 +1717,8 @@ endfunction(bind_Target)
 function(bind_Internal_Target component dep_component mode export comp_defs comp_exp_defs dep_defs)
 
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-rename_If_Alias(comp_name_to_use ${PROJECT_NAME} FALSE ${component} Release)
-rename_If_Alias(dep_name_to_use ${PROJECT_NAME} FALSE ${dep_component} Release)
+rename_If_Alias(comp_name_to_use ${PROJECT_NAME} ${component})
+rename_If_Alias(dep_name_to_use ${PROJECT_NAME} ${dep_component})
 
 is_HeaderFree_Component(DEP_IS_HF ${PROJECT_NAME} ${dep_name_to_use})
 is_Built_Component(COMP_IS_BUILT ${PROJECT_NAME} ${comp_name_to_use})#by definition this is always called on real target (not alias so no need to check for alias)
@@ -1801,8 +1801,8 @@ endfunction(bind_Internal_Target)
 function(bind_Imported_External_Component_Target package component dep_package dep_component mode)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-  rename_If_Alias(comp_name_to_use ${package} TRUE ${component} ${mode})
-  rename_If_Alias(dep_name_to_use ${dep_package} TRUE ${dep_component} ${mode})
+  rename_If_Alias(comp_name_to_use ${package} ${component})
+  rename_If_Alias(dep_name_to_use ${dep_package} ${dep_component})
   #Note: original and component and dep_component are considered as alias (they can have same value as base name)
   export_External_Component_Resolving_Alias(IS_EXPORTING ${package} ${comp_name_to_use} ${component} ${dep_package} ${dep_name_to_use} ${dep_component} ${mode})
 
@@ -1849,8 +1849,8 @@ endfunction(bind_Imported_External_Component_Target)
 function(bind_Imported_Target package component dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-rename_If_Alias(dep_name_to_use ${dep_package} FALSE ${dep_component} Release)
-rename_If_Alias(comp_name_to_use ${package} FALSE ${component} Release)
+rename_If_Alias(dep_name_to_use ${dep_package} ${dep_component})
+rename_If_Alias(comp_name_to_use ${package} ${component})
 
 # Note: in this call component and dep_component can be aliases
 export_Component_Resolving_Alias(IS_EXPORTING ${package} ${comp_name_to_use} ${component} ${dep_package} ${dep_name_to_use} ${dep_component} ${mode})
@@ -1913,8 +1913,8 @@ endfunction(bind_Imported_Target)
 function(bind_Imported_External_Target package component dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-rename_If_Alias(comp_name_to_use ${package} FALSE ${component} Release)
-rename_If_Alias(dep_name_to_use ${dep_package} TRUE ${dep_component} ${mode})
+rename_If_Alias(comp_name_to_use ${package} ${component})
+rename_If_Alias(dep_name_to_use ${dep_package} ${dep_component})
 export_External_Component_Resolving_Alias(IS_EXPORTING ${package} ${comp_name_to_use} ${component} ${dep_package} ${dep_name_to_use} ${dep_component} ${mode})
 
 if(IS_EXPORTING)

@@ -2472,7 +2472,11 @@ will_be_Built(COMP_WILL_BE_BUILT ${DECLARED_COMP})
 if(NOT COMP_WILL_BE_BUILT)
 	return()
 endif()
-rename_If_Alias(dep_name_to_use ${dep_package} FALSE ${dep_component} Release)
+rename_If_Alias(dep_name_to_use ${dep_package} ${dep_component})
+list(FIND ${dep_package}_COMPONENTS ${dep_name_to_use} INDEX)
+if(INDEX EQUAL -1)
+	message (FATAL_ERROR "[PID] CRITICAL ERROR when declaring dependency to component ${dep_component} of package ${dep_package} in ${PROJECT_NAME} : this component does not exist !")
+endif()
 set(${PROJECT_NAME}_${DECLARED_COMP}_EXPORT_${dep_package}_${dep_name_to_use} FALSE CACHE INTERNAL "")#Note: alawys use teh resolved alias name in current package
 #guarding depending type of involved components
 is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${DECLARED_COMP})
@@ -2575,7 +2579,6 @@ if(NOT ${dep_package}_HAS_DESCRIPTION)# no external package description provided
 	if(NOT ${dep_package}_HAS_DESCRIPTION)
 		#description still unavailable => fatal error
 		message (FATAL_ERROR "[PID] CRITICAL ERROR after reinstalling package ${dep_package} in ${PROJECT_NAME} : the project has no description of its content !")
-		return()
 	endif()
 	message ("[PID] INFO when building ${component} in ${PROJECT_NAME} : the external package ${dep_package} now provides content description.")
 endif()
@@ -2584,7 +2587,11 @@ will_be_Installed(COMP_WILL_BE_INSTALLED ${DECLARED_COMP})
 #guarding depending on type of involved components
 is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${DECLARED_COMP})
 is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${DECLARED_COMP})
-rename_If_Alias(dep_name_to_use ${dep_package} TRUE ${dep_component} ${CMAKE_BUILD_TYPE})#resolve alias for dependency (more homogeneous solution)
+rename_If_Alias(dep_name_to_use ${dep_package} ${dep_component})#resolve alias for dependency (more homogeneous solution)
+list(FIND ${dep_package}_COMPONENTS ${dep_name_to_use} INDEX)
+if(INDEX EQUAL -1)
+	message (FATAL_ERROR "[PID] CRITICAL ERROR when declaring dependency to component ${dep_component} of package ${dep_package} in ${PROJECT_NAME} : this component does not exist !")
+endif()
 
 if (IS_HF_COMP) #a component without headers
 	# setting compile definitions for the target

@@ -3322,7 +3322,7 @@ if(is_external)
 
 		# managing dependencies
 		foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-			rename_If_Alias(dep_name_to_use ${package} TRUE ${dep_component} ${CMAKE_BUILD_TYPE})#dependent component name may be an alias
+			rename_If_Alias(dep_name_to_use ${package} ${dep_component})#dependent component name may be an alias
 			export_External_Component(IS_EXPORTING ${package} ${component} ${package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE})
 			if(IS_EXPORTING)
 				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${package}::${dep_name_to_use},INTERFACE_INCLUDE_DIRECTORIES>)\n")
@@ -3336,7 +3336,7 @@ if(is_external)
 
 		foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 			foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-				rename_If_Alias(dep_name_to_use ${dep_package} TRUE ${dep_component} ${CMAKE_BUILD_TYPE})#dependent component name may be an alias
+				rename_If_Alias(dep_name_to_use ${dep_package} ${dep_component})#dependent component name may be an alias
 				export_External_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE})
   			if(IS_EXPORTING)
   				file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_INCLUDE_DIRECTORIES>)\n")
@@ -3456,7 +3456,7 @@ else()#Note: part for native packages
 			#now dealing with dependencies
 			foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 			  foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-					rename_If_Alias(dep_name_to_use ${dep_package} TRUE ${dep_component} ${CMAKE_BUILD_TYPE})#dependent component name may be an alias
+					rename_If_Alias(dep_name_to_use ${dep_package} ${dep_component})#dependent component name may be an alias
 					export_External_Component(IS_EXPORTING ${package} ${component} ${dep_package} ${dep_name_to_use} ${CMAKE_BUILD_TYPE})
 					if(IS_EXPORTING)
 						file(APPEND ${file_name} "set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_INCLUDE_DIRECTORIES>)\n")
@@ -3471,7 +3471,7 @@ else()#Note: part for native packages
 
 			#dealing with internal dependencies
 			foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-				rename_If_Alias(dep_name_to_use ${package} FALSE ${dep_component} Release)#dependent component name may be an alias
+				rename_If_Alias(dep_name_to_use ${package} ${dep_component})#dependent component name may be an alias
 				export_Component_Resolving_Alias(IS_EXPORTING ${package} ${component} ${component} ${package} ${dep_name_to_use} ${dep_component} ${CMAKE_BUILD_TYPE})
 				is_HeaderFree_Component(DEP_IS_HF ${package} ${dep_name_to_use})
 				if(NOT DEP_IS_HF)#the required package component is a library with header it can export something
@@ -3490,7 +3490,7 @@ else()#Note: part for native packages
 			#dealing with package dependencies
 			foreach(dep_package IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
 				foreach(dep_component IN LISTS ${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-					rename_If_Alias(dep_name_to_use ${dep_package} FALSE ${dep_component} Release)#dependent component name may be an alias
+					rename_If_Alias(dep_name_to_use ${dep_package} ${dep_component})#dependent component name may be an alias
 					export_Component_Resolving_Alias(IS_EXPORTING ${package} ${component} ${component} ${dep_package} ${dep_name_to_use} ${dep_component} ${CMAKE_BUILD_TYPE})
 					is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_name_to_use})
 					if(NOT DEP_IS_HF)#the required package component is a library with header it can export something

@@ -1015,6 +1015,7 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #     :RUNTIME_RESOURCES <list of path>: list of path relative to the installed external package version root folder.
 #     :EXPORT ...: list of components that are exported by the declared component. Each element has the pattern [<package name>/]<component_name>.
 #     :DEPEND ...: list of components that the declared component depends on. Each element has the pattern [<package name>/]<component_name>.
+#     :ALIAS ...: list of alias for naming the component.
 #     :PYTHON ...: list of files and/or folder that define a python package. Used to define python bindings.
 #
 #     .. admonition:: Constraints

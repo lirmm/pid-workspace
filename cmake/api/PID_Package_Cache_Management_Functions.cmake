@@ -1152,29 +1152,21 @@ endfunction(add_Alias_To_Cache)
 #  rename_If_Alias
 #  ---------------
 #
-#   .. command:: rename_If_Alias(IS_ALIAS package external component mode)
+#   .. command:: rename_If_Alias(ALIAS_NAME package component)
 #
 #     Return the real name of the component from the given input name, this later can be the real name or an alias name.
 #
 #     :package: name of package containing the component.
-#     :external: TRUE if package is an external package.
 #     :component: the name of the component or an alias.
-#     :mode: the current build mode.
 #
 #     :ALIAS_NAME: the output variable that contains the real name of the aliased component if component is an alias, FALSE otherwise.
 #
-function(rename_If_Alias ALIAS_NAME package external component mode)
-  if(external)
-    get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-    set(use_suffix ${VAR_SUFFIX})
-  else()#variable is unique for native packages between debug and release modes
-    set(use_suffix)
-  endif()
-  list(FIND ${package}_ALIASES${use_suffix} ${component} INDEX)
+function(rename_If_Alias ALIAS_NAME package component)
+  list(FIND ${package}_ALIASES ${component} INDEX)
   if(INDEX EQUAL -1)#not found in aliases
     set(${ALIAS_NAME} ${component} PARENT_SCOPE)
   else()
-    set(${ALIAS_NAME} ${${package}_${component}_IS_ALIAS_OF${use_suffix}} PARENT_SCOPE)
+    set(${ALIAS_NAME} ${${package}_${component}_IS_ALIAS_OF} PARENT_SCOPE)
   endif()
 endfunction(rename_If_Alias)
 
@@ -2178,34 +2170,25 @@ endfunction(is_Component_Exporting_Other_Components)
 #   Find the list of packages that define a given component.
 #
 #     :package: the name of the package from where starting the search.
-#     :is_external: if package is an external package then it is TRUE, FALSE if it is native.
 #     :component: the name of the component.
 #
 #     :CONTAINER_PACKAGES: the output variable that contains the list of packages that define a component with same name.
 #
-function(find_Packages_Containing_Component CONTAINER_PACKAGES package is_external component)
+function(find_Packages_Containing_Component CONTAINER_PACKAGES package component)
 set(result)
 #searching into component of the current package
-if(is_external)#external components may have variations among their DEBUG VS RELEASE VERSION
-  list(FIND ${package}_COMPONENTS${USE_MODE_SUFFIX} ${component} INDEX)
-else()
-  list(FIND ${package}_COMPONENTS ${component} INDEX)
-endif()
+list(FIND ${package}_COMPONENTS ${component} INDEX)
 if(NOT INDEX EQUAL -1)#the same component name has been found
   list(APPEND result ${package})
 endif()
 #now find in aliases names
-if(is_external)#external components may have variations among their DEBUG VS RELEASE VERSION
-  list(FIND ${package}_ALIASES${USE_MODE_SUFFIX} ${component} INDEX)
-else()
-  list(FIND ${package}_ALIASES ${component} INDEX)
-endif()
+list(FIND ${package}_ALIASES ${component} INDEX)
 if(NOT INDEX EQUAL -1)#the same component name has been found
   list(APPEND result ${package})
 endif()
 #searching into direct external dependencies
 foreach(ext_dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
-  find_Packages_Containing_Component(CONTAINER ${ext_dep} TRUE ${component})
+  find_Packages_Containing_Component(CONTAINER ${ext_dep} ${component})
   if(CONTAINER)
     list(APPEND result ${CONTAINER})
   endif()
@@ -2214,7 +2197,7 @@ if(NOT is_external)
   #searching into direct native dependencies
   set(CONTAINER)
   foreach(nat_dep IN LISTS ${package}_DEPENDENCIES${USE_MODE_SUFFIX})
-    find_Packages_Containing_Component(CONTAINER ${nat_dep} FALSE ${component})
+    find_Packages_Containing_Component(CONTAINER ${nat_dep} ${component})
     if(CONTAINER)
       list(APPEND result ${CONTAINER})
     endif()

@@ -270,9 +270,9 @@ function(configure_Local_Target_With_PID_Components local_target target_type com
     get_Package_Type(${RES_PACK} PACK_TYPE)
     set(IS_HF)
     if(PACK_TYPE STREQUAL "EXTERNAL")
-      rename_If_Alias(comp_name_to_use ${RES_PACK} TRUE ${COMPONENT_NAME} ${mode})
+      rename_If_Alias(comp_name_to_use ${RES_PACK} ${COMPONENT_NAME})
     else()#native component target
-      rename_If_Alias(comp_name_to_use ${RES_PACK} FALSE ${COMPONENT_NAME} Release)
+      rename_If_Alias(comp_name_to_use ${RES_PACK} ${COMPONENT_NAME})
       is_HeaderFree_Component(IS_HF ${RES_PACK} ${comp_name_to_use})
     endif()
     append_Unique_In_Cache(${local_target}_PID_DEPENDENCIES "${RES_PACK}/${comp_name_to_use}")#always resolve aliases before memorizing

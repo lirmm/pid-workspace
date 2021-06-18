@@ -949,7 +949,7 @@ function(list_Component_Direct_External_Component_Dependencies DIRECT_EXT_DEPS p
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE}) #getting mode info that will be used for generating adequate name
   set(result)
   foreach(dep IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${ext_package}_COMPONENTS${VAR_SUFFIX})
-    rename_If_Alias(EXT_DEP ${ext_package} TRUE ${dep} ${CMAKE_BUILD_TYPE})#by definition a resolved component is a native one
+    rename_If_Alias(EXT_DEP ${ext_package} ${dep})#by definition a resolved component is a native one
     list(APPEND result ${EXT_DEP})
   endforeach()
   set(${DIRECT_EXT_DEPS} ${result} PARENT_SCOPE)
@@ -984,7 +984,7 @@ function(list_Component_Direct_Internal_Dependencies DIRECT_INT_DEPS package com
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE}) #getting mode info that will be used for generating adequate name
   set(result)
   foreach(dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-    rename_If_Alias(INT_DEP ${package} FALSE ${dep} ${CMAKE_BUILD_TYPE})#resokve alias if any
+    rename_If_Alias(INT_DEP ${package} ${dep})#resokve alias if any
     list(APPEND result ${INT_DEP})
   endforeach()
   set(${DIRECT_INT_DEPS} ${result} PARENT_SCOPE)
@@ -1051,7 +1051,7 @@ function(list_Component_Direct_Native_Component_Dependencies DIRECT_NAT_DEPS pac
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE}) #getting mode info that will be used for generating adequate name
   set(result)
   foreach(dep IN LISTS ${package}_${component}_DEPENDENCY_${nat_package}_COMPONENTS${VAR_SUFFIX})
-    rename_If_Alias(NAT_DEP ${nat_package} FALSE ${dep} ${CMAKE_BUILD_TYPE})#resokve alias if any
+    rename_If_Alias(NAT_DEP ${nat_package} ${dep})#resokve alias if any
     list(APPEND result ${NAT_DEP})
   endforeach()
   set(${DIRECT_NAT_DEPS} ${result} PARENT_SCOPE)
@@ -1087,25 +1087,9 @@ endfunction(list_Component_Direct_Native_Component_Dependencies)
 #        - This function must be called in AFTER_COMPS scripts.
 #
 function(is_Component_Exported EXPORTED package component dep_package dep_component)
-  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-  get_Package_Type(${package} PACK_TYPE)
-  if(PACK_TYPE STREQUAL "EXTERNAL")
-    set(pack_ext TRUE)
-  else()
-    set(pack_ext FALSE)
-  endif()
-  if(dep_package STREQUAL package)
-    set(dep_pack_ext ${pack_ext})
-  else()
-    get_Package_Type(${dep_package} DEP_PACK_TYPE)
-    if(DEP_PACK_TYPE STREQUAL "EXTERNAL")
-      set(dep_pack_ext TRUE)
-    else()
-      set(dep_pack_ext FALSE)
-    endif()
-  endif()
-  rename_If_Alias(comp_name_to_use ${package} ${pack_ext} ${component} ${CMAKE_BUILD_TYPE})
-  rename_If_Alias(dep_name_to_use ${dep_package} ${dep_pack_ext} ${dep_component} ${CMAKE_BUILD_TYPE})
+  rename_If_Alias(comp_name_to_use ${package} ${component})
+  rename_If_Alias(dep_name_to_use ${dep_package} ${dep_component})
+  get_Package_Type(${dep_package} DEP_PACK_TYPE)
   if(DEP_PACK_TYPE STREQUAL "EXTERNAL")#depending on the dependency type we call either one or the other function to test export with aliases
     export_External_Component_Resolving_Alias(IS_EXPORTING
               ${package} ${comp_name_to_use} ${component}
@@ -1315,27 +1299,21 @@ function(get_Package_Component_Dependencies_Targets RES_DEPS package component)
   set(result)
   foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
     foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-      rename_If_Alias(comp_name_to_use ${dep_package} TRUE ${dep_component} ${CMAKE_BUILD_TYPE})
+      rename_If_Alias(comp_name_to_use ${dep_package} ${dep_component})
       get_Package_Component_Target(RES_TARGET ${dep_package} ${comp_name_to_use})#getting component own target
       get_Package_Component_Dependencies_Targets(RES_EXT_DEPS ${dep_package} ${comp_name_to_use})#recursive call to get its dependencies
       list(APPEND result ${RES_TARGET} ${RES_EXT_DEPS})
     endforeach()
   endforeach()
-  get_Package_Type(${package} PACK_TYPE)
-  if(PACK_TYPE STREQUAL "EXTERNAL")
-    set(ext_pack TRUE)
-  else()
-    set(ext_pack FALSE)
-  endif()
   foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-    rename_If_Alias(comp_name_to_use ${package} ${ext_pack} ${dep_component} ${CMAKE_BUILD_TYPE})
+    rename_If_Alias(comp_name_to_use ${package} ${dep_component})
     get_Package_Component_Target(RES_TARGET ${package} ${comp_name_to_use}) #getting component own target
     get_Package_Component_Dependencies_Targets(RES_INT_DEPS ${package} ${comp_name_to_use}) #recursive call to get its dependencies
     list(APPEND result ${RES_TARGET} ${RES_INT_DEPS})
   endforeach()
   foreach(dep_package IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
     foreach(dep_component IN LISTS ${package}_${component}_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-      rename_If_Alias(comp_name_to_use ${dep_package} FALSE ${dep_component} ${CMAKE_BUILD_TYPE})
+      rename_If_Alias(comp_name_to_use ${dep_package} ${dep_component})
       get_Package_Component_Target(RES_TARGET ${dep_package} ${comp_name_to_use}) #getting component own target
       get_Package_Component_Dependencies_Targets(RES_PACK_DEPS ${dep_package} ${comp_name_to_use})#recursive call to get its dependencies
       list(APPEND result ${RES_TARGET} ${RES_PACK_DEPS})

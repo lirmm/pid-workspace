@@ -337,7 +337,7 @@ endfunction(list_Public_Options)
 #
 function(get_Binary_Location LOCATION_RES package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-rename_If_Alias(comp_name_to_use ${package} FALSE ${component} Release)
+rename_If_Alias(comp_name_to_use ${package} ${component})
 is_Executable_Component(IS_EXE ${package} ${comp_name_to_use})
 if(IS_EXE)
 	set(${LOCATION_RES} "${${package}_ROOT_DIR}/bin/${${package}_${comp_name_to_use}_BINARY_NAME${VAR_SUFFIX}}" PARENT_SCOPE)
@@ -543,7 +543,7 @@ list(APPEND result ${LOCAL_RESOURCES})
 #check for tuntime resources in external component internal dependencies
 foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
   #recursion to get runtime resources
-  rename_If_Alias(dep_comp_name ${package} TRUE ${dep_component} ${mode})
+  rename_If_Alias(dep_comp_name ${package} ${dep_component})
   get_External_Component_Runtime_Resources(DEP_RESOURCES ${package} ${dep_comp_name} ${mode} ${insystempath})
   if(DEP_RESOURCES)
     list(APPEND result ${DEP_RESOURCES})
@@ -554,7 +554,7 @@ endforeach()
 foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
     #recursion to get runtime resources
-    rename_If_Alias(dep_comp_name ${dep_package} TRUE ${dep_component} ${mode})
+    rename_If_Alias(dep_comp_name ${dep_package} ${dep_component})
     get_External_Component_Runtime_Resources(DEP_RESOURCES ${dep_package} ${dep_comp_name} ${mode} ${insystempath})
     if(DEP_RESOURCES)
       list(APPEND result ${DEP_RESOURCES})
@@ -607,7 +607,7 @@ list(APPEND result ${DIRECT_RESOURCES})
 # 2) then check for runtime resources in external component dependencies
 foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-    rename_If_Alias(dep_comp_name ${dep_package} TRUE ${dep_component} ${mode})#by definition a resolved component is a native one
+    rename_If_Alias(dep_comp_name ${dep_package} ${dep_component})#by definition a resolved component is a native one
     #recursion to get runtime resources
     get_External_Component_Runtime_Resources(DEP_RESOURCES ${dep_package} ${dep_comp_name} ${mode} ${insystempath})
     if(DEP_RESOURCES)
@@ -620,7 +620,7 @@ endforeach()
 foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
 	#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
-  rename_If_Alias(dep_comp_name ${package} FALSE ${int_dep} Release)#by definition a resolved component is a native one
+  rename_If_Alias(dep_comp_name ${package} ${int_dep})#by definition a resolved component is a native one
   get_Bin_Component_Runtime_Resources(INT_DEP_RUNTIME_RESOURCES ${package} ${dep_comp_name} ${mode} ${insystempath})
 	if(INT_DEP_RUNTIME_RESOURCES)
 		list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
@@ -645,7 +645,7 @@ foreach(dep_pack IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
 	foreach(dep_comp IN LISTS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
 		#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
 		#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
-    rename_If_Alias(dep_comp_name ${dep_pack} FALSE ${dep_comp} Release)#by definition a resolved component is a native one
+    rename_If_Alias(dep_comp_name ${dep_pack} ${dep_comp})#by definition a resolved component is a native one
     get_Bin_Component_Runtime_Resources(INT_DEP_RUNTIME_RESOURCES ${dep_pack} ${dep_comp_name} ${mode} ${insystempath}) #resolve external runtime resources
 		if(INT_DEP_RUNTIME_RESOURCES)
 			list(APPEND result ${INT_DEP_RUNTIME_RESOURCES})
@@ -708,7 +708,7 @@ list(APPEND result ${DIRECT_RESOURCES})
 foreach(dep_package IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
     #recursion to get runtime resources
-    rename_If_Alias(dep_comp_name ${dep_package} TRUE ${dep_component} ${mode})
+    rename_If_Alias(dep_comp_name ${dep_package} ${dep_component})
     get_External_Component_Runtime_Resources(DEP_RESOURCES ${dep_package} ${dep_comp_name} ${mode} FALSE)
     list(APPEND result ${DEP_RESOURCES})
   endforeach()
@@ -718,7 +718,7 @@ foreach(dep_pack IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX}
 	foreach(dep_comp IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
 		#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location)
 		#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
-    rename_If_Alias(dep_comp_name ${dep_pack} FALSE ${dep_comp} Release)#by definition a resolved component is a native one
+    rename_If_Alias(dep_comp_name ${dep_pack} ${dep_comp})#by definition a resolved component is a native one
     get_Bin_Component_Runtime_Resources(DEP_RESOURCES ${dep_pack} ${dep_comp_name} ${mode} FALSE) #resolve external runtime resources
     list(APPEND result ${DEP_RESOURCES})
 		if(${dep_pack}_${dep_comp_name}_TYPE STREQUAL "MODULE")
@@ -734,7 +734,7 @@ endforeach()
 foreach(int_dep IN LISTS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	#applications do not need to propagate their runtime resources (since everything will be resolved according to their own rpath and binary location
 	#nevertheless they can allow the access to some of their file or directory in order to let other code modify or extent their runtime behavior (for instance by modifying configuration files)
-  rename_If_Alias(dep_comp_name ${PROJECT_NAME} FALSE ${int_dep} Release)#by definition a resolved component is a native one
+  rename_If_Alias(dep_comp_name ${PROJECT_NAME} ${int_dep})#by definition a resolved component is a native one
   get_Source_Component_Runtime_Resources(DEP_RESOURCES ${dep_comp_name} ${mode})
   list(APPEND result ${DEP_RESOURCES})
 	if(${PROJECT_NAME}_${dep_comp_name}_TYPE STREQUAL "MODULE")
@@ -778,7 +778,7 @@ function(get_Bin_Component_Direct_Internal_Runtime_Dependencies RES_RESOURCES pa
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(RES)
 foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-  rename_If_Alias(int_name_to_use ${package} FALSE ${int_dep} Release)#resolve alias
+  rename_If_Alias(int_name_to_use ${package} ${int_dep})#resolve alias
 	is_Runtime_Component(IS_RUNTIME ${package} ${int_name_to_use})
 	if(IS_RUNTIME)
 		list(APPEND RES ${prefix_path}${int_name_to_use}${TARGET_SUFFIX}${suffix_ext})#need to use the real component name as target name, never its alias
@@ -923,7 +923,7 @@ list(APPEND using_package_result ${LOCAL_LINKS})
 #then check for shared links in external component internal dependencies
 foreach(dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
   #recursion to get runtime links
-  rename_If_Alias(dep_comp_name ${package} TRUE ${dep_component} ${mode})#by definition a resolved component is a native one
+  rename_If_Alias(dep_comp_name ${package} ${dep_component})#by definition a resolved component is a native one
   get_External_Component_Runtime_Links(LOCAL_DEP_LINKS USING_DEP_LINKS ${package} ${dep_comp_name} ${mode})
   list(APPEND local_package_result ${LOCAL_DEP_LINKS})
   list(APPEND using_package_result ${USING_DEP_LINKS})
@@ -933,7 +933,7 @@ endforeach()
 foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
     #recursion to get runtime links
-    rename_If_Alias(dep_comp_name ${dep_package} TRUE ${dep_component} ${mode})#by definition a resolved component is a native one
+    rename_If_Alias(dep_comp_name ${dep_package} ${dep_component})#by definition a resolved component is a native one
     get_External_Component_Runtime_Links(LOCAL_DEP_LINKS USING_DEP_LINKS ${dep_package} ${dep_comp_name} ${mode})
     list(APPEND local_package_result ${USING_DEP_LINKS})#as the component belongs to another package we always use its using links in local package
     list(APPEND using_package_result ${USING_DEP_LINKS})
@@ -988,7 +988,7 @@ list(APPEND local_package_result ${RES_LINKS})
 # 2) adding runtime links from external components
 foreach(dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
-    rename_If_Alias(dep_comp_name ${dep_package} TRUE ${dep_component} ${mode})#by definition a resolved component is a native one
+    rename_If_Alias(dep_comp_name ${dep_package} ${dep_component})#by definition a resolved component is a native one
     #shared links of direct dependency will be needed if native component depends on the external dependency
     get_External_Component_Runtime_Links(DEP_LOCAL_LINKS DEP_USING_LINKS ${dep_package} ${dep_comp_name} ${mode})
     list(APPEND local_package_result ${DEP_USING_LINKS})
@@ -999,7 +999,7 @@ endforeach()
 foreach(dep_pack IN LISTS ${package}_${component}_DEPENDENCIES${VAR_SUFFIX})
 	foreach(dep_comp IN LISTS ${package}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
 
-    rename_If_Alias(dep_comp_name ${dep_pack} FALSE ${dep_comp} Release)#by definition a resolved component is a native one
+    rename_If_Alias(dep_comp_name ${dep_pack} ${dep_comp})#by definition a resolved component is a native one
     if(${dep_pack}_${dep_comp_name}_TYPE STREQUAL "HEADER"
       OR ${dep_pack}_${dep_comp_name}_TYPE STREQUAL "STATIC"
       OR ${dep_pack}_${dep_comp_name}_TYPE STREQUAL "SHARED")
@@ -1014,7 +1014,7 @@ endforeach()
 
 # 4) adding internal components dependencies
 foreach(int_dep IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-  rename_If_Alias(dep_comp_name ${package} FALSE ${int_dep} Release)#by definition a resolved component is a native one
+  rename_If_Alias(dep_comp_name ${package} ${int_dep})#by definition a resolved component is a native one
   if(${package}_${dep_comp_name}_TYPE STREQUAL "HEADER"
     OR ${package}_${dep_comp_name}_TYPE STREQUAL "STATIC"
     OR ${package}_${dep_comp_name}_TYPE STREQUAL "SHARED")
@@ -1077,7 +1077,7 @@ list(APPEND result ${RES_LINKS})
 foreach(dep_package IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   foreach(dep_component IN LISTS ${PROJECT_NAME}_${component}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${VAR_SUFFIX})
     #shared links of direct dependency will be needed if native component depends on the external dependency
-    rename_If_Alias(dep_comp_name ${dep_package} TRUE ${dep_component} ${mode})#by definition a resolved component is a native one
+    rename_If_Alias(dep_comp_name ${dep_package} ${dep_component})#by definition a resolved component is a native one
     get_External_Component_Runtime_Links(DEP_LOCAL_LINKS DEP_USING_LINKS ${dep_package} ${dep_comp_name} ${mode})
     list(APPEND result ${DEP_USING_LINKS})
   endforeach()
@@ -1086,7 +1086,7 @@ endforeach()
 # 3) adding package components dependencies
 foreach(dep_pack IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCIES${VAR_SUFFIX})
 	foreach(dep_comp IN LISTS ${PROJECT_NAME}_${component}_DEPENDENCY_${dep_pack}_COMPONENTS${VAR_SUFFIX})
-    rename_If_Alias(dep_comp_name ${dep_pack} FALSE ${dep_comp} Release)#by definition a resolved component is a native one
+    rename_If_Alias(dep_comp_name ${dep_pack} ${dep_comp})#by definition a resolved component is a native one
     if(${dep_pack}_${dep_comp_name}_TYPE STREQUAL "HEADER"
       OR ${dep_pack}_${dep_comp_name}_TYPE STREQUAL "STATIC"
       OR ${dep_pack}_${dep_comp_name}_TYPE STREQUAL "SHARED")
@@ -1101,7 +1101,7 @@ endforeach()
 
 # 4) adding internal components dependencies
 foreach(int_dep IN LISTS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
-  rename_If_Alias(dep_comp_name ${PROJECT_NAME} FALSE ${int_dep} Release)#by definition a resolved component is a native one
+  rename_If_Alias(dep_comp_name ${PROJECT_NAME} ${int_dep})#by definition a resolved component is a native one
   if(${PROJECT_NAME}_${dep_comp_name}_TYPE STREQUAL "HEADER"
     OR ${PROJECT_NAME}_${dep_comp_name}_TYPE STREQUAL "STATIC"
     OR ${PROJECT_NAME}_${dep_comp_name}_TYPE STREQUAL "SHARED")
@@ -1200,7 +1200,7 @@ endfunction(resolve_Package_Runtime_Dependencies)
 function(resolve_External_Component_Runtime_Dependencies package version component mode)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-  rename_If_Alias(real_comp_name ${package} TRUE ${component} ${mode})
+  rename_If_Alias(real_comp_name ${package} ${component})
   is_Runtime_Component(COMP_IS_RUNTIME ${package} ${real_comp_name})
   if(NOT COMP_IS_RUNTIME)#no runtime elements so nothing to resolve
   	return()
@@ -1348,7 +1348,7 @@ endfunction(configure_External_Python_Packages)
 function(resolve_Bin_Component_Runtime_Dependencies package component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-rename_If_Alias(real_comp_name ${package} FALSE ${component} Release)#resolve alias (by definition in this function always a native component)
+rename_If_Alias(real_comp_name ${package} ${component})#resolve alias (by definition in this function always a native component)
 is_Runtime_Component(COMP_IS_RUNTIME ${package} ${real_comp_name})
 if(NOT COMP_IS_RUNTIME AND NOT ${package}_${real_comp_name}_TYPE STREQUAL "PYTHON")
 	return()
@@ -1606,7 +1606,7 @@ endfunction(create_Source_Component_Symlinks)
 function(resolve_Source_Component_Runtime_Dependencies component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-rename_If_Alias(real_comp_name ${PROJECT_NAME} FALSE ${component} Release)
+rename_If_Alias(real_comp_name ${PROJECT_NAME} ${component})
 
 will_be_Built(COMP_WILL_BE_BUILT ${real_comp_name})
 if(NOT COMP_WILL_BE_BUILT)#special case for executables that need rpath link to be specified (due to system shared libraries linking system)-> the linker must resolve all target links (even shared libs) transitively
@@ -1707,7 +1707,7 @@ endfunction(create_Source_Component_Symlinks_Build_Tree)
 function(resolve_Source_Component_Runtime_Dependencies_Build_Tree component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
-rename_If_Alias(real_comp_name ${PROJECT_NAME} FALSE ${component} Release)
+rename_If_Alias(real_comp_name ${PROJECT_NAME} ${component})
 
 is_Runtime_Component(COMP_IS_RUNTIME ${PROJECT_NAME} ${real_comp_name})
 if(NOT COMP_IS_RUNTIME)
