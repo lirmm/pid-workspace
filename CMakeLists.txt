@@ -203,7 +203,7 @@ add_custom_target(man ALL
 	COMMAND ${CMAKE_COMMAND} -E echo ""
 	COMMAND ${CMAKE_COMMAND} -E echo " unregister: unregister a deployment unit from contribution space, updates the contribution space that"
 	COMMAND ${CMAKE_COMMAND} -E echo "             contains, and will no more contain  the references to the deployment unit. After this operation"
-	COMMAND ${CMAKE_COMMAND} -E echo "             the deployment unit can no more be deployed using the contribution space(s)."
+	COMMAND ${CMAKE_COMMAND} -E echo "             the deployment unit can no more be deployed using the target contribution space."
 	COMMAND ${CMAKE_COMMAND} -E echo "             --- Arguments [choose one of them] ---"
 	COMMAND ${CMAKE_COMMAND} -E echo "             - package=*name of the package*: unregister a native or external package."
 	COMMAND ${CMAKE_COMMAND} -E echo "             - framework=*name of the framework*: unregister a framework."
