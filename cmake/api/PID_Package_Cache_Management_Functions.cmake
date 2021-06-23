@@ -1299,7 +1299,7 @@ function(reset_External_Package_Dependency_Cached_Variables_From_Use package mod
   endforeach()
   set(${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX} CACHE INTERNAL "")
 
-  foreach(comp IN LISTS ${package}_COMPONENTS${VAR_SUFFIX})
+  foreach(comp IN LISTS ${package}_COMPONENTS)
     #resetting variables of the component
     set(${package}_${comp}_INC_DIRS${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_${comp}_LIB_DIRS${VAR_SUFFIX} CACHE INTERNAL "")
@@ -1321,7 +1321,7 @@ function(reset_External_Package_Dependency_Cached_Variables_From_Use package mod
     endforeach()
     set(${package}_${comp}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
   endforeach()
-  set(${package}_COMPONENTS${VAR_SUFFIX} CACHE INTERNAL "")
+  set(${package}_COMPONENTS CACHE INTERNAL "")
 
   foreach(alias IN LISTS ${package}_ALIASES${VAR_SUFFIX})
     set(${package}_${alias}_IS_ALIAS_OF${VAR_SUFFIX} CACHE INTERNAL "")

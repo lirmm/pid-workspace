@@ -3568,7 +3568,7 @@ if(NOT IS_SYSTEM_DEPENDENCY_WRAPPER)#for OS variant version of external packages
 	#management of contained runtime resources
 	if(is_external)#runtime resources of external packages are really specific
 		set(ext_res)
-		foreach(component IN LISTS ${package}_COMPONENTS${VAR_SUFFIX})
+		foreach(component IN LISTS ${package}_COMPONENTS)
 			if(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX})
 				list(APPEND ext_res ${${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}})
 			endif()
