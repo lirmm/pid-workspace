@@ -1369,7 +1369,7 @@ endfunction(need_Install_Native_Package)
 function(add_To_Install_External_Package_Specification package version version_exact os_variant)
 list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
 if(INDEX EQUAL -1)#not found => adding it to "to install" packages
-	set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}} ${package} CACHE INTERNAL "")
+	append_Unique_In_Cache(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} ${package})
 	if(version)#set the version
 		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
 		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} "${version_exact}" CACHE INTERNAL "")
@@ -1379,7 +1379,7 @@ else()#package already required as "to install"
 	if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX})#required versions are already specified
 		list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} ${version} INDEX)
 		if(INDEX EQUAL -1)#version not already required => adding it to required versions
-			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX}} "${version}" CACHE INTERNAL "")
+			append_Unique_In_Cache(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}")
 			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} "${version_exact}" CACHE INTERNAL "")
       set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_SYSTEM${USE_MODE_SUFFIX} "${os_variant}" CACHE INTERNAL "")
 		elseif(version_exact) #if this version was previously not exact it becomes exact if exact is required
