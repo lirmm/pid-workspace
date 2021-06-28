@@ -171,41 +171,42 @@ function(add_Static_Check component is_library)
   #filtering sources to keep only C/C++ sources
   filter_All_Sources(SOURCES_TO_CHECK)
   if(SOURCES_TO_CHECK)
-	# getting specific settings of the target (using generator expression to make it robust)
-	is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${component})#no need to check for alias as in current project component only base component names (by construction)
-	if(NOT IS_HF)#component has a public interface
-    append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_INCLUDE_DIRECTORIES>, -I>>")
-    append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_COMPILE_DEFINITIONS>>:-D$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_COMPILE_DEFINITIONS>, -D>>")
-	endif()
+  	# getting specific settings of the target (using generator expression to make it robust)
+  	is_HeaderFree_Component(IS_HF ${PROJECT_NAME} ${component})#no need to check for alias as in current project component only base component names (by construction)
+  	if(NOT IS_HF)#component has a public interface
+      append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_INCLUDE_DIRECTORIES>, -I>>")
+      append_Join_Generator_Expressions(CPP_CHECK_SETTING_EXPR "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_COMPILE_DEFINITIONS>>:-D$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_COMPILE_DEFINITIONS>, -D>>")
+  	endif()
 
-	set(CPPCHECK_TEMPLATE_TEST --template="{severity}: {message}")
-  set(CPPCHECK_LANGUAGE --language=c++)#always using c++ language
-  if(BUILD_AND_RUN_TESTS) #adding a test target to check only for errors
-		add_test(NAME ${component}_staticcheck
-    COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${PARALLEL_JOBS_FLAG} ${CPP_CHECK_SETTING_EXPR} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK} VERBATIM)
-		set_tests_properties(${component}_staticcheck PROPERTIES FAIL_REGULAR_EXPRESSION "error: ")
-	endif()#TODO also manage the language standard here (option -std=)!! necessary ?
+  	set(CPPCHECK_TEMPLATE_TEST --template="{severity}: {message}")
+    set(CPPCHECK_LANGUAGE --language=c++)#always using c++ language
+    set(CPPCHECK_NO_WARN --inline-suppr)#supress warnings that have been manually removed
+    if(BUILD_AND_RUN_TESTS) #adding a test target to check only for errors
+  		add_test(NAME ${component}_staticcheck
+      COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${CPPCHECK_NO_WARN} ${PARALLEL_JOBS_FLAG} ${CPP_CHECK_SETTING_EXPR} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK} VERBATIM)
+  		set_tests_properties(${component}_staticcheck PROPERTIES FAIL_REGULAR_EXPRESSION "error: ")
+  	endif()#TODO also manage the language standard here (option -std=)!! necessary ?
 
-	set(CPPCHECK_TEMPLATE_GLOBAL --template="{id} in file {file} line {line}: {severity}: {message}")
-	if(is_library) #only adding stylistic issues for library, not unused functions (because by definition libraries own source code has unused functions)
-		set(CPPCHECK_ARGS --enable=style --inconclusive)
-	else()
-		set(CPPCHECK_ARGS --enable=all --inconclusive)
-	endif()
+  	set(CPPCHECK_TEMPLATE_GLOBAL --template="{id} in file {file} line {line}: {severity}: {message}")
+  	if(is_library) #only adding stylistic issues for library, not unused functions (because by definition libraries own source code has unused functions)
+  		set(CPPCHECK_ARGS --enable=style --inconclusive)
+  	else()
+  		set(CPPCHECK_ARGS --enable=all --inconclusive)
+  	endif()
 
-	#adding a target to print all issues for the given target, this is used to generate a report
-	add_custom_command(TARGET staticchecks PRE_BUILD
-		COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
-		COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${CPP_CHECK_SETTING_EXPR} ${CPPCHECK_ARGS} --xml-version=2 ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
-		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-		COMMENT "[PID] INFO: Running cppcheck on target ${component}..."
-		VERBATIM)
+  	#adding a target to print all issues for the given target, this is used to generate a report
+  	add_custom_command(TARGET staticchecks PRE_BUILD
+  		COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
+  		COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${PARALLEL_JOBS_FLAG}  ${CPPCHECK_NO_WARN} ${CPP_CHECK_SETTING_EXPR} ${CPPCHECK_ARGS} --xml-version=2 ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
+  		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  		COMMENT "[PID] INFO: Running cppcheck on target ${component}..."
+  		VERBATIM)
   else()
-	#adding a dummy target since the component doesn't have C or C++ source files
-	add_custom_command(TARGET staticchecks PRE_BUILD
-		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-		COMMENT "[PID] INFO: Skipping cppcheck for target ${component} since it has no source files"
-		VERBATIM)
+  	#adding a dummy target since the component doesn't have C or C++ source files
+  	add_custom_command(TARGET staticchecks PRE_BUILD
+  		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  		COMMENT "[PID] INFO: Skipping cppcheck for target ${component} since it has no source files"
+  		VERBATIM)
   endif()
 endfunction(add_Static_Check)
 
