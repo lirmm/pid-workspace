@@ -5834,30 +5834,6 @@ function(get_Join_Generator_Expression EXPR_VAR join_list join_flag)
   endif()
 endfunction(get_Join_Generator_Expression)
 
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |append_Join_Generator_Expressions| replace:: ``append_Join_Generator_Expressions``
-#  .. _append_Join_Generator_Expressions:
-#
-#  append_Join_Generator_Expressions
-#  ---------------------------------
-#
-#   .. command:: append_Join_Generator_Expressions(inout_expr input_expr)
-#
-#    Create a JOIN generator expression equivalent for two generator expressions.
-#
-#     :inout_expr: the input/output variable containing the resulting generator expression, whose content is used as first element in result.
-#     :input_expr: input variable containing the second expression to join
-#
-function(append_Join_Generator_Expressions inout_expr input_expr)
-  if(${inout_expr})
-    set(${inout_expr} "$<JOIN:${${inout_expr}}, ${input_expr}>" PARENT_SCOPE)
-  else()
-    set(${inout_expr} "${input_expr}" PARENT_SCOPE)
-  endif()
-endfunction(append_Join_Generator_Expressions)
 
 #.rst:
 #
