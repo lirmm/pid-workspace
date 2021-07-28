@@ -1038,7 +1038,7 @@ endfunction(declare_Wrapped_Environment_Configuration)
 macro(declare_Current_Version_Unavailable)
 	reset_Wrapper_Version_Info(${CURRENT_MANAGED_VERSION} "" "" "" "" "")
 	remove_From_Cache(${PROJECT_NAME}_KNOWN_VERSIONS ${CURRENT_MANAGED_VERSION})
-	message(WARNING "[PID] WARNING: version ${CURRENT_MANAGED_VERSION} of ${PROJECT_NAME} cannot be generated since some of its platform or environments required contraints or required dependncies cannot be resolved (see previous outputs). This version cannot be built.")
+	message(WARNING "[PID] WARNING: version ${CURRENT_MANAGED_VERSION} of ${PROJECT_NAME} cannot be generated since some of its platform or environments required contraints or required dependencies cannot be resolved (see previous outputs). This version cannot be built.")
 	unset(CURRENT_MANAGED_VERSION)
 endmacro(declare_Current_Version_Unavailable)
 
