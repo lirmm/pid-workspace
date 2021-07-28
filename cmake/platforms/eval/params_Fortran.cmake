@@ -16,4 +16,4 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-set(LANG_Fortarn_IN_BINARY_CONSTRAINTS soname symbol)
+set(LANG_Fortran_IN_BINARY_CONSTRAINTS soname symbol)
