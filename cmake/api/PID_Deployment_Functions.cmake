@@ -2030,6 +2030,7 @@ else()
   list(APPEND output_mode_rel OUTPUT_QUIET)
   list(APPEND output_mode_deb OUTPUT_QUIET)
 endif()
+#TODO replace with file(ARCHIVE_EXTRACT when updatng cmake version (min 3.18)
 #download release archive anytime
 execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/${FILE_BINARY}
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share
@@ -3079,7 +3080,7 @@ if(NOT release_only)
   	endif()
   endif()
 endif()
-
+#TODO replace with file(ARCHIVE_EXTRACT when updating cmake version
 execute_process(
 	COMMAND ${CMAKE_COMMAND} -E tar xf ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY}
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/share/release
