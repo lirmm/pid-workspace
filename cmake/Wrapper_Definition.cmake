@@ -2348,7 +2348,16 @@ function(install_External_Project)
         if(INSTALL_EXTERNAL_PROJECT_PROJECT)
           message("[PID] INFO : Downloading ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
         endif()
-        file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE} SHOW_PROGRESS)
+        file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${archive_name} 
+             SHOW_PROGRESS
+             STATUS dl_result)
+        list(GET dl_result 0 return_val)
+        if(NOT return_val EQUAL 0)
+          list(GET dl_result 1 error_str)
+          message("[PID] ERROR : cannot download ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} from ${INSTALL_EXTERNAL_PROJECT_URL}. Reason: ${error_str}")
+          # sanity action: remove the file
+          file(REMOVE ${TARGET_BUILD_DIR}/${archive_name})
+          endif()
       endif()
     else()#the archive has to be found locally
       if(NOT EXISTS ${TARGET_SOURCE_DIR}/${INSTALL_EXTERNAL_PROJECT_ARCHIVE})

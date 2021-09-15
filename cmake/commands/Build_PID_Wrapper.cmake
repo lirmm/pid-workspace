@@ -203,7 +203,7 @@ else()#by default build the given package version using external project specifi
 	  set(ERROR_IN_SCRIPT FALSE)
 	  include(${package_version_src_dir}/${deploy_script_file} NO_POLICY_SCOPE)#execute the script
 	  if(ERROR_IN_SCRIPT)
-			finish_Progress(${GLOBAL_PROGRESS_VAR})
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
 	    message(FATAL_ERROR "[PID] CRITICAL ERROR: Cannot deploy external package ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
 	    return()
 	  endif()
