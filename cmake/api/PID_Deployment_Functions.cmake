@@ -2012,8 +2012,7 @@ else()
 endif()
 
 ######## installing the package ##########
-extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI res_instance platform_base_name ${CURRENT_PLATFORM})
-set(target_install_folder ${WORKSPACE_DIR}/install/${platform_base_name}/${package})
+set(target_install_folder ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
 # 1) creating the package root install folder
 if(NOT EXISTS ${target_install_folder})
   file(MAKE_DIRECTORY ${target_install_folder})
@@ -3058,7 +3057,7 @@ if(NOT release_only)
   endif()
 endif()
 ######## installing the external package ##########
-set(target_install_folder ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
+set(target_install_folder ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${version})
 if(ADDITIONAL_DEBUG_INFO)
   message("[PID] INFO : decompressing the external binary package ${package}, please wait ...")
 endif()
@@ -3204,8 +3203,7 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(${RESULT} FALSE PARENT_SCOPE)
 
 #using the hand written Use<package>-<version>.cmake file to get adequate version information about plaforms
-extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI res_instance platform_base_name ${platform})
-include(${WORKSPACE_DIR}/install/${platform_base_name}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
+include(${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${version}/share/Use${package}-${version}.cmake OPTIONAL RESULT_VARIABLE res)
 if(res STREQUAL NOTFOUND)#file not found
   if(external)
     # Note: a native package MUST have a use file BUT an external package may have no usefile (even if it should be rare)
@@ -3261,7 +3259,7 @@ foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #check 
 endforeach()
 
 if(external)#external packages may be provided with specific script to use when deploying binaries
-  set(TARGET_INSTALL_DIR ${WORKSPACE_DIR}/install/${platform_base_name}/${package}/${version})
+  set(TARGET_INSTALL_DIR ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${version})
   if(${package}_SCRIPT_POST_INSTALL)
     message("[PID] INFO : performing post install operations from file ${TARGET_INSTALL_DIR}/cmake_script/${${package}_SCRIPT_POST_INSTALL} ...")
     include(${TARGET_INSTALL_DIR}/cmake_script/${${package}_SCRIPT_POST_INSTALL} NO_POLICY_SCOPE)#execute the script
