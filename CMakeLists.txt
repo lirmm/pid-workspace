@@ -80,7 +80,7 @@ elseif(DIR_NAME MATCHES "build/(.+)")#subfolder of build: profile specific folde
 	read_Profiles_Description_File(FILE_EXISTS)#from here we are sure the file exists
 	include(${CMAKE_BINARY_DIR}/Workspace_Solution_File.cmake)#get the complete description
 	manage_Platforms() # define all properties of the current platform in use (based on current build environment)
-  manage_Plugins() # extract plugins in use from each environment according to the current profile in use
+  	manage_Plugins() # extract plugins in use from each environment according to the current profile in use
 	return()
 endif()
 

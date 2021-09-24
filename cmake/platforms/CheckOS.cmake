@@ -40,3 +40,7 @@ elseif(UNIX)
 		set(CURRENT_PLATFORM_OS "freebsd" CACHE INTERNAL "")
 	endif()
 endif()
+
+if(NOT CURRENT_PLATFORM_OS)
+	message("[PID] WARNING: no OS detected. Maybe targetting bare metal ?")
+endif()

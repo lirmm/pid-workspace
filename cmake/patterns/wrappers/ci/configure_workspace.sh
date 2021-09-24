@@ -8,7 +8,7 @@ echo "--------------------------------------------------------------"
 
 # 1) first time configuration
 cd binaries/pid-workspace/build
-cmake -DIN_CI_PROCESS=ON -DFORCE_CONTRIBUTION_SPACES="$PACKAGE_CONTRIBUTION_SPACES" ..
+cmake -DIN_CI_PROCESS=ON -DFORCE_CONTRIBUTION_SPACES="$PACKAGE_CONTRIBUTION_SPACES" -DPROFILE_EVALUATION_INFO=ON ..
 CONFIGURE_RES=$?
 cd ../../..
 if [ $CONFIGURE_RES != 0 ]; then

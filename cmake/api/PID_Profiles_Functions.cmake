@@ -510,7 +510,7 @@ macro(reset_Profiles)
   # reconfigure the pid workspace:
   # - preloading cache for all PID specific variables (-C option of cmake)
   # - using a toolchain file to configure build toolchain (-DCMAKE_TOOLCHAIN_FILE= option).
-  if(ADDITIONAL_DEBUG_INFO)
+  if(ADDITIONAL_DEBUG_INFO OR PROFILE_EVALUATION_INFO)
     set(subcommand_option)
   else()
     set(subcommand_option OUTPUT_QUIET ERROR_QUIET)

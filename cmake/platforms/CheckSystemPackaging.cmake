@@ -107,10 +107,20 @@ if(NOT PID_CROSSCOMPILATION) #there is a pâckaging system only if a distributio
     endif()
   endif()
 endif()
+if(CURRENT_PACKAGING_SYSTEM)
+  message("[PID] INFO: package manager detected is: ${CURRENT_PACKAGING_SYSTEM}")
+else()
+  message("[PID] WARNING: no package manager detected")
+endif()
 
-#Note: In CI update/upgrade operation is automatic
+  #Note: In CI update/upgrade operation is automatic
 if(NOT EVALUATION_RUN)#no need to reupdate the system anytime an environment is evaluated
   if(IN_CI_PROCESS)
-    execute_System_Packaging_Command()#do not provide package => update/uĝrade
+    if(CURRENT_PACKAGING_SYSTEM)
+      message("[PID] INFO: updating OS packages of the CI environment with package manager: ${CURRENT_PACKAGING_SYSTEM}")
+      execute_System_Packaging_Command()#do not provide package => update/uĝrade
+    else()
+      message("[PID] WARNING: cannot update OS packages of the CI environment because no package manager detected")
+    endif()
   endif()
 endif()

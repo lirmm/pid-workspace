@@ -103,6 +103,7 @@ elseif(CMAKE_ASM_COMPILER_ID MATCHES "icc|icl|Intel|intel")
   set(CURRENT_ASM_COMPILER "icc")
 else()
   set(CURRENT_ASM_COMPILER ${CMAKE_ASM_COMPILER_ID})
+  message("[PID] WARNING: current profile use an unsupported ASM compiler: ${CURRENT_ASM_COMPILER}.")
 endif()
 
 macro(set_Compiler_Warnings_Options compiler)
@@ -129,6 +130,7 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "icc|icl|Intel|intel")
   set_Compiler_Warnings_Options(CLANG) # doesn't seem to handle GCC warnings according to this https://rubyci.org/logs/rubyci.s3.amazonaws.com/icc-x64/ruby-trunk/log/20171028T000002Z.fail.html.gz
 else()
   set(CURRENT_CXX_COMPILER ${CMAKE_CXX_COMPILER_ID})
+  message("[PID] WARNING: current profile use an unsupported C++ compiler: ${CURRENT_CXX_COMPILER}. You should face troubles with most of packages.")
 endif()
 
 if (CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_COMPILER_IS_GNUCXX)
@@ -143,6 +145,7 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "icc|icl|Intel|intel")
   set(CURRENT_C_COMPILER "icc")
 else()
   set(CURRENT_C_COMPILER ${CMAKE_C_COMPILER_ID})
+  message("[PID] WARNING: current profile use an unsupported C compiler: ${CURRENT_C_COMPILER}. You should face troubles with most of packages.")
 endif()
 #all those languages are available by default
 set(ASM_Language_AVAILABLE TRUE CACHE INTERNAL "")
