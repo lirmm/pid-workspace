@@ -46,8 +46,12 @@ get_Package_Type(${TARGET_PACKAGE} PACK_TYPE)
 #########################################################################################
 
 if(PACK_TYPE STREQUAL "EXTERNAL")
-	message("[PID] INFO : memorizing version ${TARGET_VERSION} for external package ${TARGET_PACKAGE} ...")
-	#checking that user input is coherent
+	if(TARGET_VERSION STREQUAL "all")
+		message("[PID] INFO : memorizing all versions for external package ${TARGET_PACKAGE} ...")
+	else()
+		message("[PID] INFO : memorizing version ${TARGET_VERSION} for external package ${TARGET_PACKAGE} ...")
+	endif()
+		#checking that user input is coherent
 
 	set(package_dir ${WORKSPACE_DIR}/wrappers/${TARGET_PACKAGE})
 
@@ -59,74 +63,96 @@ if(PACK_TYPE STREQUAL "EXTERNAL")
 	include(${package_dir}/build/Build${TARGET_PACKAGE}.cmake)#load the content description
 
 	if(${TARGET_PACKAGE}_KNOWN_VERSIONS) #check that the target version exist
-	  list(FIND ${TARGET_PACKAGE}_KNOWN_VERSIONS ${TARGET_VERSION} INDEX)
-	  if(INDEX EQUAL -1)
-	    message(FATAL_ERROR "[PID] CRITICAL ERROR : ${TARGET_PACKAGE} external package version ${TARGET_VERSION} is not defined by wrapper of ${TARGET_PACKAGE}")
-	    return()
-	  endif()
+	  	if(TARGET_VERSION STREQUAL "all")
+		  set(all_versions ${${TARGET_PACKAGE}_KNOWN_VERSIONS})
+		else()
+			list(FIND ${TARGET_PACKAGE}_KNOWN_VERSIONS ${TARGET_VERSION} INDEX)
+			if(INDEX EQUAL -1)
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : ${TARGET_PACKAGE} external package version ${TARGET_VERSION} is not defined by wrapper of ${TARGET_PACKAGE}")
+				return()
+			endif()
+			set(all_versions ${TARGET_VERSION})
+		endif()
 	else()
 	  message(FATAL_ERROR "[PID] CRITICAL ERROR : wrapper of ${TARGET_PACKAGE} does not define any version (no version subfolder found in src folder of the wrapper, each name of version folder following the pattern major.minor.patch) !!! Build aborted ...")
 	  return()
 	endif()
 else()
-	message("[PID] INFO : memorizing version ${TARGET_VERSION} for external package ${TARGET_PACKAGE} ...")
-endif()
-
-#check if the version tag existed before
-set(add_tag FALSE)
-get_Repository_Version_Tags(VERSION_NUMBERS ${TARGET_PACKAGE})
-if(NOT VERSION_NUMBERS)
-  set(add_tag TRUE)
-else()
-  list(FIND VERSION_NUMBERS ${TARGET_VERSION} INDEX)
-  if(INDEX EQUAL -1)#version tag not found in existing version tags
-    set(add_tag TRUE)
-  endif()
-endif()
-
-#create local tag and push it
-if(add_tag)#simply add the tag since version was not referenced before
-	if(PACK_TYPE STREQUAL "NATIVE")
-		message(FATAL_ERROR "[PID] ERROR : cannot memorizing version ${TARGET_VERSION} for native package ${TARGET_PACKAGE} because version has never been released...")
-		return()
+	message("[PID] INFO : memorizing version ${TARGET_VERSION} for native package ${TARGET_PACKAGE} ...")
+	if(TARGET_VERSION STREQUAL "all")
+		get_Repository_Version_Tags(VERSION_NUMBERS ${TARGET_PACKAGE})
+		if(NOT VERSION_NUMBERS)
+			message("[PID] ERROR : no known version for native package ${TARGET_PACKAGE}, cannot memorize them.")
+			return()
+		endif()
+		set(all_versions ${VERSION_NUMBERS})
+	else()
+		set(all_versions ${TARGET_VERSION})
 	endif()
-	# for external packages only
-  tag_Version(${TARGET_PACKAGE} ${TARGET_VERSION} TRUE)
-  if(REMOTE_ADDR)
-    publish_Repository_Version(RESULT ${TARGET_PACKAGE} TRUE ${TARGET_VERSION} TRUE)
-  endif()
-else()#replace existing tag
-	if(PACK_TYPE STREQUAL "NATIVE")
+endif()
+
+
+
+function(memorize_version_tags version)
+	#check if the version tag existed before
+	set(add_tag FALSE)
+	get_Repository_Version_Tags(VERSION_NUMBERS ${TARGET_PACKAGE})
+	if(NOT VERSION_NUMBERS)
+		set(add_tag TRUE)
+	else()
+		list(FIND VERSION_NUMBERS ${version} INDEX)
+		if(INDEX EQUAL -1)#version tag not found in existing version tags
+			set(add_tag TRUE)
+		endif()
+	endif()
+	#create local tag and push it
+	if(add_tag)#simply add the tag since version was not referenced before
+		if(PACK_TYPE STREQUAL "NATIVE")
+			message(FATAL_ERROR "[PID] ERROR : cannot memorizing version ${version} for native package ${TARGET_PACKAGE} because version has never been released...")
+			return()
+		endif()
+		# for external packages only
+		tag_Version(${TARGET_PACKAGE} ${version} TRUE)
+		if(REMOTE_ADDR)
+			publish_Repository_Version(RESULT ${TARGET_PACKAGE} TRUE ${version} TRUE)
+		endif()
+	else()#replace existing tag
+		if(PACK_TYPE STREQUAL "NATIVE")
+			if(REMOTE_ADDR)
+				#delete remote tag
+				publish_Repository_Version(RESULT ${TARGET_PACKAGE} FALSE ${version} FALSE)
+				#if RESULT is false then this was because the tag was not existing -> nothig more to do
+				# push same tag to relaunch the CI process
+				publish_Repository_Version(RESULT ${TARGET_PACKAGE} FALSE ${version} TRUE)
+				if(NOT RESULT)
+					message(FATAL_ERROR "[PID] ERROR: cannot publish tag ${version} to official remote (${REMOTE_ADDR}) !")
+					return()
+				endif()
+			endif()
+		else()
 		if(REMOTE_ADDR)
 			#delete remote tag
-			publish_Repository_Version(RESULT ${TARGET_PACKAGE} FALSE ${TARGET_VERSION} FALSE)
+			publish_Repository_Version(RESULT ${TARGET_PACKAGE} TRUE ${version} FALSE)
 			#if RESULT is false then this was because the tag was not existing -> nothig more to do
-			# push same tag to relaunch the CI process
-			publish_Repository_Version(RESULT ${TARGET_PACKAGE} FALSE ${TARGET_VERSION} TRUE)
-			if(NOT RESULT)
-			  message(FATAL_ERROR "[PID] ERROR: cannot publish tag ${TARGET_VERSION} to official remote (${REMOTE_ADDR}) !")
-			  return()
-			endif()
 		endif()
-	else()
-	  if(REMOTE_ADDR)
-	    #delete remote tag
-	    publish_Repository_Version(RESULT ${TARGET_PACKAGE} TRUE ${TARGET_VERSION} FALSE)
-	    #if RESULT is false then this was because the tag was not existing -> nothig more to do
-	  endif()
-	  #delete local tag
-	  tag_Version(${TARGET_PACKAGE} ${TARGET_VERSION} FALSE)
+		#delete local tag
+		tag_Version(${TARGET_PACKAGE} ${version} FALSE)
 
-	  #create new local tag
-	  tag_Version(${TARGET_PACKAGE} ${TARGET_VERSION} TRUE)
-	  if(REMOTE_ADDR)
-	    #push the tag
-	    publish_Repository_Version(RESULT ${TARGET_PACKAGE} TRUE ${TARGET_VERSION} TRUE)
-	  endif()
+		#create new local tag
+		tag_Version(${TARGET_PACKAGE} ${version} TRUE)
+		if(REMOTE_ADDR)
+			#push the tag
+			publish_Repository_Version(RESULT ${TARGET_PACKAGE} TRUE ${version} TRUE)
+		endif()
+		endif()
+		if(REMOTE_ADDR AND NOT RESULT)
+			message(FATAL_ERROR "[PID] ERROR: cannot publish tag ${version} to official remote (${REMOTE_ADDR}) !")
+			return()
+		endif()
+		message("[PID] INFO : external package ${TARGET_PACKAGE} version ${version} is memorized !")
 	endif()
-	if(REMOTE_ADDR AND NOT RESULT)
-	  message(FATAL_ERROR "[PID] ERROR: cannot publish tag ${TARGET_VERSION} to official remote (${REMOTE_ADDR}) !")
-	  return()
-	endif()
-	message("[PID] INFO : external package ${TARGET_PACKAGE} version ${TARGET_VERSION} is memorized !")
-endif()
+endfunction()
+
+foreach(a_version IN LISTS all_versions)
+	memorize_version_tags(${a_version})
+endforeach()
