@@ -6,6 +6,8 @@ sanitizers=off
 examples=off
 upgrade=off
 build_type=both
+contribution_spaces=()
+contribution_spaces_prio=()
 
 print_usage() {
     echo "standalone_install.sh script options:"
@@ -16,6 +18,8 @@ print_usage() {
     echo "  -s|--sanitizers   on|off              Build the package with sanitizers enabled    (off)"
     echo "  -e|--examples     on|off              Build the package example applications       (off)"
     echo "  -b|--build-type   both|debug|release  Build the package in release, debug of both  (both)"
+    echo "  -c|--add-cs       url                 Git URL of the contribution space to add. Multiple CS can be added"
+    echo "  -cp|--cs-prio     min|max             Set the priority of the last added contribution space"
     echo "  -u|--upgrade                          Upgrade pid-workspace before build"
     echo "  -h|--help                             Print this help message"
     echo ""
@@ -80,6 +84,22 @@ do
         shift # past argument
         shift # past value
         ;;
+        -c|--add-cs)
+        contribution_spaces+=("$2")
+        contribution_spaces_prio+=("min")
+        shift # past argument
+        shift # past value
+        ;;
+        -cp|--cs-prio)
+        if [ "$2" = "min" ] || [ "$2" = "max" ]; then
+            contribution_spaces_prio[-1]=$2
+        else
+            echo "Invalid contribution space priority. Given $2, expected min or max"
+            print_usage
+        fi
+        shift # past argument
+        shift # past value
+        ;;
         -u|--upgrade)
         upgrade=on
         shift # past argument
@@ -112,6 +132,9 @@ echo "  sanitizers: $sanitizers"
 echo "  examples: $examples"
 echo "  build-type: $build_type"
 echo "  upgrade: $upgrade"
+for i in "${!contribution_spaces[@]}"; do
+    echo "  contribution space: ${contribution_spaces[$i]}, prio: ${contribution_spaces_prio[$i]}"
+done
 
 #####################################
 #  --  configure the workspace  --  #
@@ -153,6 +176,28 @@ elif [ "$pkgconfig" = "off" ]; then
 fi
 
 update_pkgconfig_state
+
+contribution_spaces_name=()
+for i in "${!contribution_spaces[@]}"; do
+    existing_cs=`ls -d $workspace_root_path/contributions/*/`
+    (cd $workspace_root_path/build && cmake --build . --target contributions -- cmd=add update="${contribution_spaces[$i]}")
+    new_cs=`ls -d $workspace_root_path/contributions/*/`
+    for cs in ${new_cs[@]}; do
+        for prev_cs in ${existing_cs[@]}; do
+            if [ ! "$cs" = "$prev_cs" ]; then
+                added_cs=$cs
+                break
+            fi
+            if [ "$added_cs" ]; then
+                break
+            fi
+        done
+    done
+    if [ "$added_cs" ]; then
+        cs_name=`basename $added_cs`
+        (cd $workspace_root_path/build && cmake --build . --target contributions -- cmd="prio_${contribution_spaces_prio[$i]}" space="${cs_name}")
+    fi
+done
 
 ##################################
 #  --  building the project  --  #
