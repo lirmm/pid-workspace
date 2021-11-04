@@ -50,9 +50,11 @@ macro(declare_Native_Global_Cache_Options)
 # base options
 option(BUILD_EXAMPLES "Package builds examples" OFF)
 option(BUILD_API_DOC "Package generates the HTML API documentation" OFF)
+set(INTERNAL_OR_DEPENDENT_OPTIONS)
 option(BUILD_AND_RUN_TESTS "Package uses tests" OFF)
-if(FORCE_DUAL_MODE)#if dual mode forced
+if(FORCE_DUAL_MODE)
   set(BUILD_RELEASE_ONLY OFF CACHE INTERNAL "" FORCE)
+  list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS BUILD_RELEASE_ONLY)
 else()
   option(BUILD_RELEASE_ONLY "Package only build release version" ON)
 endif()
@@ -68,15 +70,31 @@ option(WARNINGS_AS_ERRORS "Generating errors when warnings are notified" OFF)
 # dependent options
 include(CMakeDependentOption)
 CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api documentation" OFF "BUILD_API_DOC" OFF)
+list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS BUILD_LATEX_API_DOC)
+
 CMAKE_DEPENDENT_OPTION(RUN_TESTS_IN_DEBUG "Package build and run test in debug mode also" OFF "BUILD_AND_RUN_TESTS" OFF)
+list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS RUN_TESTS_IN_DEBUG)
+
 CMAKE_DEPENDENT_OPTION(BUILD_COVERAGE_REPORT "Package build a coverage report in debug mode" ON "BUILD_AND_RUN_TESTS;RUN_TESTS_IN_DEBUG" OFF)
+list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS BUILD_COVERAGE_REPORT)
+
 CMAKE_DEPENDENT_OPTION(REQUIRED_PACKAGES_AUTOMATIC_UPDATE "Package will try to install new version when configuring" OFF "REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD" OFF)
+list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS REQUIRED_PACKAGES_AUTOMATIC_UPDATE)
+
 CMAKE_DEPENDENT_OPTION(SANITIZE_ADDRESS "Enable the address sanitizer" ON "ENABLE_SANITIZERS" OFF)
 CMAKE_DEPENDENT_OPTION(SANITIZE_LEAK "Enable the memory leak sanitizer" ON "ENABLE_SANITIZERS" OFF)
 CMAKE_DEPENDENT_OPTION(SANITIZE_UNDEFINED "Enable the undefined behavior sanitizer" ON "ENABLE_SANITIZERS" OFF)
+list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS SANITIZE_ADDRESS)
+list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS SANITIZE_LEAK)
+list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS SANITIZE_UNDEFINED)
+
 if(ENABLE_SANITIZERS AND NOT SANITIZE_ADDRESS AND NOT SANITIZE_LEAK AND NOT SANITIZE_UNDEFINED)
   message("[PID] WARNING : ENABLE_SANITIZERS is ON but all sanitizers are OFF")
 endif()
+
+list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS TARGET_CONTRIBUTION_SPACE)
+
+set(INTERNAL_OR_DEPENDENT_OPTIONS ${INTERNAL_OR_DEPENDENT_OPTIONS} CACHE INTERNAL "" FORCE)
 endmacro(declare_Native_Global_Cache_Options)
 
 #.rst:
@@ -135,9 +153,15 @@ function(write_Cache_Option_Line_If_Not_Managed file entry type managed_entries)
       return()
     endif()
   endif()
+  if(INTERNAL_OR_DEPENDENT_OPTIONS)
+    list(FIND INTERNAL_OR_DEPENDENT_OPTIONS ${entry} INDEX)
+    if(NOT INDEX EQUAL -1)
+      set(type INTERNAL)
+    endif()
+  endif()
   #in other situations simply add the entry to the cache
   file(APPEND ${file} "set(${entry} ${${entry}} CACHE ${type} \"\" FORCE)\n")
-  set(${managed_entries} ${managed_entries} ${entry} PARENT_SCOPE)
+  set(${managed_entries} ${${managed_entries}} ${entry} PARENT_SCOPE)
 endfunction(write_Cache_Option_Line_If_Not_Managed)
 
 #.rst:
@@ -205,6 +229,11 @@ function(set_Mode_Specific_Options_From_Global)
   write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} ENABLE_PARALLEL_BUILD BOOL managed_options)
   write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} BUILD_DEPENDENT_PACKAGES BOOL managed_options)
   write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} TARGET_CONTRIBUTION_SPACE STRING managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} ENABLE_SANITIZERS BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} SANITIZE_ADDRESS BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} SANITIZE_LEAK BOOL managed_options)
+  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} SANITIZE_UNDEFINED BOOL managed_options)
+  unset(INTERNAL_OR_DEPENDENT_OPTIONS CACHE)
 endfunction(set_Mode_Specific_Options_From_Global)
 
 #.rst:
@@ -421,30 +450,7 @@ endfunction(set_Global_Options_From_Mode_Specific)
 #
 function(reset_Mode_Cache_Options CACHE_POPULATED)
 
-#unset all global options
-set(WORKSPACE_DIR "" CACHE PATH "" FORCE)
-set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(BUILD_API_DOC OFF CACHE BOOL "" FORCE)
-set(BUILD_COVERAGE_REPORT OFF CACHE BOOL "" FORCE)
-set(BUILD_STATIC_CODE_CHECKING_REPORT OFF CACHE BOOL "" FORCE)
-set(BUILD_LATEX_API_DOC OFF CACHE BOOL "" FORCE)
-set(BUILD_AND_RUN_TESTS OFF CACHE BOOL "" FORCE)
-set(RUN_TESTS_IN_DEBUG OFF CACHE BOOL "" FORCE)
-set(GENERATE_INSTALLER OFF CACHE BOOL "" FORCE)
-set(ADDITIONAL_DEBUG_INFO OFF CACHE BOOL "" FORCE)
-set(REQUIRED_PACKAGES_AUTOMATIC_UPDATE OFF CACHE BOOL "" FORCE)
-#default ON options
-set(BUILD_RELEASE_ONLY ON CACHE BOOL "" FORCE)
-set(ENABLE_PARALLEL_BUILD ON CACHE BOOL "" FORCE)
-set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE BOOL "" FORCE)
-set(BUILD_DEPENDENT_PACKAGES ON CACHE BOOL "" FORCE)
-#include the cmake script that sets the options coming from the global build configuration
-if(EXISTS ${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake)
-	include(${CMAKE_BINARY_DIR}/../share/cacheConfig.cmake NO_POLICY_SCOPE)
-	set(${CACHE_POPULATED} TRUE PARENT_SCOPE)
-else()
-	set(${CACHE_POPULATED} FALSE PARENT_SCOPE)
-endif()
+set(${CACHE_POPULATED} TRUE PARENT_SCOPE)
 
 #some purely internal variable that are global for the project
 set(PROJECT_RUN_TESTS FALSE CACHE INTERNAL "")

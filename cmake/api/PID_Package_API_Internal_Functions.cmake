@@ -111,8 +111,8 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build/release$")
 	reset_Mode_Cache_Options(CACHE_POPULATED)
 	#setting the variables related to the current build mode
 	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "the type of build is dependent from build location" FORCE)
-	set (INSTALL_NAME_SUFFIX "" CACHE INTERNAL "")
-	set (USE_MODE_SUFFIX "" CACHE INTERNAL "")
+	set (INSTALL_NAME_SUFFIX "" CACHE INTERNAL "" FORCE)
+	set (USE_MODE_SUFFIX "" CACHE INTERNAL "" FORCE)
 	if(NOT CACHE_POPULATED)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must configure the package from the build folder at first time.")
@@ -122,8 +122,8 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build/debug$")
 	reset_Mode_Cache_Options(CACHE_POPULATED)
 	#setting the variables related to the current build mode
 	set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "the type of build is dependent from build location" FORCE)
-	set(INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "")
-	set(USE_MODE_SUFFIX "_DEBUG" CACHE INTERNAL "")
+	set(INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "" FORCE)
+	set(USE_MODE_SUFFIX "_DEBUG" CACHE INTERNAL "" FORCE)
 	if(NOT CACHE_POPULATED)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : you must configure the package from the build folder at first time.")
@@ -569,11 +569,19 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 
 	#calling cmake for each build mode (continue package configuration for Release and Debug Modes
 	if(NOT BUILD_RELEASE_ONLY)
-		execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DWORKSPACE_DIR=${WORKSPACE_DIR} ${CMAKE_SOURCE_DIR}
-										WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
+		execute_process(
+			COMMAND ${CMAKE_COMMAND}
+				-G "${CMAKE_GENERATOR}"
+				-C ${CMAKE_BINARY_DIR}/share/cacheConfig.cmake
+				-DWORKSPACE_DIR=${WORKSPACE_DIR} ${CMAKE_SOURCE_DIR}
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/debug)
 	endif()
-	execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DWORKSPACE_DIR=${WORKSPACE_DIR} ${CMAKE_SOURCE_DIR}
-									WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release)
+	execute_process(
+		COMMAND ${CMAKE_COMMAND}
+			-G "${CMAKE_GENERATOR}"
+			-C ${CMAKE_BINARY_DIR}/share/cacheConfig.cmake
+			-DWORKSPACE_DIR=${WORKSPACE_DIR} ${CMAKE_SOURCE_DIR}
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release)
 
 	#now getting options specific to debug and release modes
 	set_Global_Options_From_Mode_Specific()
