@@ -203,6 +203,17 @@ done
 #  --  building the project  --  #
 ##################################
 
+if [ "$build_type" = "debug" ]; then
+    build_target=build_debug
+    release_only="OFF"
+elif [ "$build_type" = "release" ]; then
+    build_target=build_release
+    release_only="ON"
+else
+    build_target=build
+    release_only="OFF"
+fi
+
 echo "Configuring $package_name ..."
 cmake_options="-DREQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=ON"
 cmake_options="$cmake_options -DADDITIONAL_DEBUG_INFO=OFF"
@@ -214,17 +225,11 @@ cmake_options="$cmake_options -DWORKSPACE_DIR=$workspace_root_path"
 cmake_options="$cmake_options -DBUILD_AND_RUN_TESTS=${tests^^}"
 cmake_options="$cmake_options -DENABLE_SANITIZERS=${sanitizers^^}"
 cmake_options="$cmake_options -DBUILD_EXAMPLES=${examples^^}"
+cmake_options="$cmake_options -DBUILD_RELEASE_ONLY=${release_only}"
 
 (cd $package_root_path/build && cmake $cmake_options ..)
 
 echo "Building $package_name ..."
-if [ "$build_type" = "debug" ]; then
-    build_target=build_debug
-elif [ "$build_type" = "release" ]; then
-    build_target=build_release
-else
-    build_target=build
-fi
 (cd $package_root_path/build && cmake --build . --target $build_target -- force=true)
 
 if [ "$?" = 0 ]; then
@@ -237,8 +242,9 @@ if [ "$?" = 0 ]; then
         echo "  i.e export PKG_CONFIG_PATH=\$PKG_CONFIG_PATH:$pkgconfig_path"
     fi
     if [ "$install" ]; then
+        version=`(cd $package_root_path/build && cmake --build . --target version 2> /dev/null)|head -n1 -`
         echo ""
-        echo "Installing $package_name inside $install"
+        echo "Installing $package_name with version $version inside $install"
         touch $install/pid_test_write_access 2> /dev/null
         if [ "$?" = 0 ]; then
             # user has write access to install dir
