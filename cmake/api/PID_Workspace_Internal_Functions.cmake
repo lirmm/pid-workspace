@@ -4005,16 +4005,8 @@ endfunction(write_Workspace_Global_Info_File)
 #      :file: the path to the file to write in.
 #
 function(write_CMake_Info file)
-	#managing CI
-	file(WRITE ${file} "set(IN_CI_PROCESS ${IN_CI_PROCESS} CACHE INTERNAL \"\" FORCE)\n")
-	#managing user specific constraints
-	separate_arguments(LIMITED_JOBS_PACKAGES)
-	file(APPEND ${file} "set(LIMITED_JOBS_PACKAGES ${LIMITED_JOBS_PACKAGES} CACHE INTERNAL \"\" FORCE)\n")
-	#managing crosscompilation
-	file(APPEND ${file} "set(PID_CROSSCOMPILATION ${PID_CROSSCOMPILATION} CACHE INTERNAL \"\" FORCE)\n")
-
 	#store the PID module path
-	file(APPEND ${file} "set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\" CACHE INTERNAL \"\" FORCE)\n")
+	file(WRITE ${file} "set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\" CACHE INTERNAL \"\" FORCE)\n")
 	# store the CMake generator
 	file(APPEND ${file} "set(CMAKE_MAKE_PROGRAM \"${CMAKE_MAKE_PROGRAM}\" CACHE INTERNAL \"\" FORCE)\n")
 	file(APPEND ${file} "set(CMAKE_GENERATOR \"${CMAKE_GENERATOR}\" CACHE INTERNAL \"\" FORCE)\n")
@@ -4077,6 +4069,7 @@ file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake NO_P
 # defining all build configuration variables related to the current platform
 file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_Solution_File.cmake NO_POLICY_SCOPE)\n")
 write_CMake_Info(${CMAKE_BINARY_DIR}/Workspace_CMake_Info.cmake)
+file(APPEND ${file} "include(${WORKSPACE_DIR}/build/Workspace_Global_Info.cmake NO_POLICY_SCOPE)\n")
 file(APPEND ${file} "include(${CMAKE_BINARY_DIR}/Workspace_CMake_Info.cmake NO_POLICY_SCOPE)\n")
 endfunction(write_Current_Configuration)
 
