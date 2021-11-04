@@ -393,7 +393,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 
 	if(BUILD_AND_RUN_TESTS AND NOT PID_CROSSCOMPILATION)
 		# test target (launch test units, redefinition of tests)
-		if(BUILD_TESTS_IN_DEBUG)
+		if(RUN_TESTS_IN_DEBUG)
 			if(BUILD_COVERAGE_REPORT)#coverage requires tests to be run in debug mode
 				add_custom_target(coverage
 					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${SUDOER_PRIVILEGES}${CMAKE_MAKE_PROGRAM} coverage
@@ -1213,7 +1213,7 @@ add_subdirectory(apps)
 
 if(BUILD_AND_RUN_TESTS)
  	if(	CMAKE_BUILD_TYPE MATCHES Release
-		OR (CMAKE_BUILD_TYPE MATCHES Debug AND BUILD_TESTS_IN_DEBUG))
+		OR (CMAKE_BUILD_TYPE MATCHES Debug AND RUN_TESTS_IN_DEBUG))
 		enable_testing()
 	endif()
 endif()
@@ -1452,7 +1452,7 @@ else()
 			create_Global_Build_Command("${SUDOER_PRIVILEGES}" TRUE ${BUILD_CODE} "${GENERATE_INSTALLER}" "${BUILD_API_DOC}" "")
 		endif()
 	else()#debug => never build api doc in debug mode
-		if(BUILD_AND_RUN_TESTS AND BUILD_TESTS_IN_DEBUG AND PROJECT_RUN_TESTS)  #if tests are not run then remove the coverage or test target
+		if(BUILD_AND_RUN_TESTS AND RUN_TESTS_IN_DEBUG AND PROJECT_RUN_TESTS)  #if tests are not run then remove the coverage or test target
 			if(BUILD_COVERAGE_REPORT) #covergae report must be generated with debug symbols activated
 				create_Global_Build_Command("${SUDOER_PRIVILEGES}" TRUE ${BUILD_CODE} "${GENERATE_INSTALLER}" FALSE "coverage")
 			else() #simple tests
