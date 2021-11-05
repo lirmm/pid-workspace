@@ -109,6 +109,7 @@ manage_Parrallel_Build_Option()
 #################################################
 if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build/release$")
 	reset_Mode_Cache_Options(CACHE_POPULATED)
+	init_Standard_Path_Cache_Variables()
 	#setting the variables related to the current build mode
 	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "the type of build is dependent from build location" FORCE)
 	set (INSTALL_NAME_SUFFIX "" CACHE INTERNAL "" FORCE)
@@ -120,6 +121,7 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build/release$")
 	endif()
 elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build/debug$")
 	reset_Mode_Cache_Options(CACHE_POPULATED)
+	init_Standard_Path_Cache_Variables()
 	#setting the variables related to the current build mode
 	set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "the type of build is dependent from build location" FORCE)
 	set(INSTALL_NAME_SUFFIX -dbg CACHE INTERNAL "" FORCE)
@@ -132,6 +134,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build/debug$")
 elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	declare_Native_Global_Cache_Options() #first of all declaring global options so that the package is preconfigured with default options values and adequate comments for each variable
 	set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
+	init_Standard_Path_Cache_Variables()
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/checksources "")
 	file(WRITE ${WORKSPACE_DIR}/packages/${PROJECT_NAME}/build/share/rebuilt "")
 
@@ -609,7 +612,6 @@ if(FIRST_CONFIG)#adjust or alert if there is a potential problem in repositories
 	check_For_Branches("${ADDITIONAL_DEBUG_INFO}")
 endif()
 unset(FIRST_CONFIG)
-init_Standard_Path_Cache_Variables()
 begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
 endmacro(declare_Package)
 
