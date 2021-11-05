@@ -183,7 +183,7 @@ function(add_Static_Check component is_library)
     if(BUILD_AND_RUN_TESTS) #adding a test target to check only for errors
   		add_test(NAME ${component}_staticcheck
       COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${CPPCHECK_NO_WARN} ${PARALLEL_JOBS_FLAG} ${CPP_CHECK_DEPENDENCIES_TARGETS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK} VERBATIM)
-  		set_tests_properties(${component}_staticcheck PROPERTIES FAIL_REGULAR_EXPRESSION "error: ")
+  		set_tests_properties(${component}_staticcheck PROPERTIES FAIL_REGULAR_EXPRESSION "error: [^Ss][^y][^n][^t][^a][^x].*")
   	endif()#TODO also manage the language standard here (option -std=)!! necessary ?
 
   	set(CPPCHECK_TEMPLATE_GLOBAL --template="{id} in file {file} line {line}: {severity}: {message}")
