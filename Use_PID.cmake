@@ -124,9 +124,11 @@ macro(import_PID_Workspace)
 	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}
 							WORKING_DIRECTORY ${WORKSPACE_DIR}/build)#force reconfiguration (in case workspace was deployed as a submodule and never configured)
 
+
 	load_Platform_Info()
 	#need to reset the variables used to describe dependencies
 	reset_Local_Components_Info(${WORKSPACE_DIR} ${mode})
+	set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE INTERNAL "")
 	#enforce constraints before finding packages
 	begin_Progress(workspace GLOBAL_PROGRESS_VAR)
 	if(IMPORT_PID_WORKSPACE_SYSTEM_DEPENDENCIES)
@@ -292,25 +294,25 @@ function(import_PID_Package)
 		set(package_type ${PACK_TYPE})
 	endif()
 	if(IMPORT_PID_PACKAGE_UNPARSED_ARGUMENTS)
-	parse_Package_Dependency_All_Version_Arguments(${package_name} IMPORT_PID_PACKAGE_UNPARSED_ARGUMENTS list_of_versions exact_versions REMAINING_TO_PARSE PARSE_RESULT)
-	if(NOT PARSE_RESULT)#error during parsing process
-		finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} bad arguments when calling import_PID_Package, declared dependency to package ${package_name}, see previous messages.")
-	endif()
+		parse_Package_Dependency_All_Version_Arguments(${package_name} IMPORT_PID_PACKAGE_UNPARSED_ARGUMENTS list_of_versions exact_versions REMAINING_TO_PARSE PARSE_RESULT)
+		if(NOT PARSE_RESULT)#error during parsing process
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
+			message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} bad arguments when calling import_PID_Package, declared dependency to package ${package_name}, see previous messages.")
+		endif()
 	endif()
 
 	if(package_type STREQUAL "EXTERNAL")#it is an external package
-	manage_Dependent_PID_External_Package(DEPLOYED ${package_name} "${list_of_versions}" "${exact_versions}")
+		manage_Dependent_PID_External_Package(DEPLOYED ${package_name} "${list_of_versions}" "${exact_versions}")
 	else()#otherwise a native package
 		manage_Dependent_PID_Native_Package(DEPLOYED ${package_name} "${list_of_versions}" "${exact_versions}")
 	endif()
 
+	restore_Original_Modules_Path()
 	if(NOT DEPLOYED)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : in ${PROJECT_NAME} when calling import_PID_Package, the package ${package_name} cannot be found and deployed.")
 		return()
 	endif()
-	restore_Original_Modules_Path()
 endfunction(import_PID_Package)
 
 #.rst:
