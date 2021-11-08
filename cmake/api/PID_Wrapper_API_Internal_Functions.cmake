@@ -58,8 +58,10 @@ include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 #      :deploy_file_name: the path to the deployment script used to build/install the given version, relative to this version folder.
 #      :post_install_script: the path to the post install script that must be executed anytime the given version is deployed, relative to this version folder in source tree.
 #      :pre_use_script: the path to the pre use script that is executed anytime the given version is used by another package to perform additional configuration, relative to this version folder in source tree.
+#      :cmake folder: the path to the installed cmake module scripts.
+#      :pkgconfig_folder: the path to the installed pkg-config scripts.
 #
-function(reset_Wrapper_Version_Info version soname compatibility deploy_file_name post_install_script pre_use_script)
+function(reset_Wrapper_Version_Info version soname compatibility deploy_file_name post_install_script pre_use_script cmake_folder pkgconfig_folder)
 	foreach(lang IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS)
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS CACHE INTERNAL "")
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_OPTIONAL CACHE INTERNAL "")
@@ -150,6 +152,8 @@ function(reset_Wrapper_Version_Info version soname compatibility deploy_file_nam
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT ${deploy_file_name} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT ${post_install_script} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT ${pre_use_script} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CMAKE_FOLDER ${cmake_folder} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_PKGCONFIG_FOLDER ${pkgconfig_folder} CACHE INTERNAL "")
 endfunction(reset_Wrapper_Version_Info)
 
 #.rst:
@@ -170,7 +174,7 @@ function(reset_Wrapper_Description_Cached_Variables)
 #reset versions description
 foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 	#reset language configurations
-	reset_Wrapper_Version_Info(${version} "" "" "" "" "")
+	reset_Wrapper_Version_Info(${version} "" "" "" "" "" "" "")
 endforeach()
 set(${PROJECT_NAME}_KNOWN_VERSIONS CACHE INTERNAL "")
 
@@ -590,6 +594,8 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT ${${PROJECT_NAME}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPATIBLE_WITH} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME \"${${PROJECT_NAME}_KNOWN_VERSION_${version}_SONAME}\" CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CMAKE_FOLDER ${${PROJECT_NAME}_KNOWN_VERSION_${version}_CMAKE_FOLDER} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_PKGCONFIG_FOLDER \"${${PROJECT_NAME}_KNOWN_VERSION_${version}_PKGCONFIG_FOLDER}\" CACHE INTERNAL \"\")\n")
 
 	#manage build environment configuration description
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS} CACHE INTERNAL \"\")\n")
@@ -912,8 +918,10 @@ endfunction(belongs_To_Known_Versions)
 #      :so_name: the soname to use by default for all shared libraries of the version (may be empty of no soname used).
 #      :post_install_script: the path to the post install script that must be executed anytime the given version is deployed, relative to this version folder in source tree.
 #      :pre_use_script: the path to the pre use script that is executed anytime the given version is used by another package to perform additional configuration, relative to this version folder in source tree.
+#      :cmake folder: the path to the installed cmake module scripts.
+#      :pkgconfig_folder: the path to the installed pkg-config scripts.
 #
-function(add_Known_Version version deploy_file_name compatible_with_version so_name post_install_script pre_use_script)
+function(add_Known_Version version deploy_file_name compatible_with_version so_name post_install_script pre_use_script cmake_folder pkgconfig_folder)
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${version} OR NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/${version})
 	finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad version argument when calling add_PID_Wrapper_Known_Version, no folder \"${version}\" can be found in src folder !")
@@ -926,7 +934,7 @@ if(NOT INDEX EQUAL -1)
 	return()
 endif()
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSIONS ${version})
-reset_Wrapper_Version_Info(${version} "${so_name}" "${compatible_with_version}" "${deploy_file_name}" "${post_install_script}" "${pre_use_script}")
+reset_Wrapper_Version_Info(${version} "${so_name}" "${compatible_with_version}" "${deploy_file_name}" "${post_install_script}" "${pre_use_script}" "${cmake_folder}" "${pkgconfig_folder}")
 set(CURRENT_MANAGED_VERSION ${version} CACHE INTERNAL "")
 endfunction(add_Known_Version)
 
@@ -1036,7 +1044,7 @@ endfunction(declare_Wrapped_Environment_Configuration)
 #    Declare the current version as unavailable, so use will not be able to build it.
 #
 macro(declare_Current_Version_Unavailable)
-	reset_Wrapper_Version_Info(${CURRENT_MANAGED_VERSION} "" "" "" "" "")
+	reset_Wrapper_Version_Info(${CURRENT_MANAGED_VERSION} "" "" "" "" "" "" "")
 	remove_From_Cache(${PROJECT_NAME}_KNOWN_VERSIONS ${CURRENT_MANAGED_VERSION})
 	message(WARNING "[PID] WARNING: version ${CURRENT_MANAGED_VERSION} of ${PROJECT_NAME} cannot be generated since some of its platform or environments required contraints or required dependencies cannot be resolved (see previous outputs). This version cannot be built.")
 	unset(CURRENT_MANAGED_VERSION)
@@ -1835,7 +1843,7 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 
 	# writing info about what may be useful to check for binary compatibility
 	file(APPEND ${file_for_version} "set(${package}_BUILT_FOR_DISTRIBUTION ${CURRENT_DISTRIBUTION} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file_for_version} "set(${package}_BUILT_FOR_DISTRIBUTION_VERSION ${CURRENT_DISTRIBUTION_VERSION} CACHE INTERNAL \"\")\n")
+  	file(APPEND ${file_for_version} "set(${package}_BUILT_FOR_DISTRIBUTION_VERSION ${CURRENT_DISTRIBUTION_VERSION} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file_for_version} "set(${package}_BUILT_OS_VARIANT ${os_variant} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file_for_version} "set(${package}_BUILT_FOR_INSTANCE ${CURRENT_PLATFORM_INSTANCE} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file_for_version} "set(${package}_BUILT_RELEASE_ONLY ${BUILD_RELEASE_ONLY} CACHE INTERNAL \"\")\n")
@@ -1850,6 +1858,9 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 	if(${package}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT)
 		get_filename_component(pre_use_file_name ${WORKSPACE_DIR}/wrappers/${package}/src/${version}/${${package}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT} NAME)
 	endif()
+
+	file(APPEND ${file_for_version} "set(${package}_CMAKE_FOLDER {${package}_KNOWN_VERSION_${version}_CMAKE_FOLDER} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file_for_version} "set(${package}_PKGCONFIG_FOLDER {${package}_KNOWN_VERSION_${version}_PKGCONFIG_FOLDER} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file_for_version} "set(${package}_SCRIPT_PRE_USE ${pre_use_file_name} CACHE INTERNAL \"\")\n")#name of script, relative to cmake_script in install tree
 
 	file(APPEND ${file_for_version} "############# description of ${package} content (version ${version}) #############\n")
@@ -2425,7 +2436,6 @@ function(generate_OS_Variant_Symlinks package platform version install_dir)
 	if(all_includes)#do something only if there are includes specified in external package description
 		list(REMOVE_DUPLICATES all_includes)
 		list(LENGTH all_includes NB_INCLUDES_DESCRIPTION)
-
 		if(${package}_INCLUDE_DIRS)
 			foreach(inc IN LISTS ${package}_INCLUDE_DIRS)
 				list(FIND CMAKE_SYSTEM_INCLUDE_PATH ${inc} INDEX)
@@ -2477,6 +2487,23 @@ function(generate_OS_Variant_Symlinks package platform version install_dir)
 			return()
 		endif()
 	endif()
+	if(${package}_KNOWN_VERSION_${version}_CMAKE_FOLDER)
+		if(${package}_CMAKE_FOLDER)#cmake folder detected by the wrapper
+			get_filename_component(CMAKE_FOLDER ${${package}_KNOWN_VERSION_${version}_CMAKE_FOLDER} NAME)
+			get_filename_component(PATH_TO_CMAKE ${${package}_KNOWN_VERSION_${version}_CMAKE_FOLDER} DIRECTORY)
+			file(MAKE_DIRECTORY ${install_dir}/${PATH_TO_CMAKE})
+			generate_OS_Variant_Symlink_For_Path(${install_dir}/${PATH_TO_CMAKE} ${CMAKE_FOLDER} "${${package}_CMAKE_FOLDER}")
+		endif()
+	endif()
+	if(${package}_KNOWN_VERSION_${version}_PKGCONFIG_FOLDER)
+		if(${package}_PKGCONFIG_FOLDER)#cmake folder detected by the wrapper
+			get_filename_component(PKG_FOLDER ${${package}_KNOWN_VERSION_${version}_PKGCONFIG_FOLDER} NAME)
+			get_filename_component(PATH_TO_PKG ${${package}_KNOWN_VERSION_${version}_PKGCONFIG_FOLDER} DIRECTORY)
+			file(MAKE_DIRECTORY ${install_dir}/${PATH_TO_PKG})
+			generate_OS_Variant_Symlink_For_Path(${install_dir}/${PATH_TO_PKG} ${PKG_FOLDER} "${${package}_PKGCONFIG_FOLDER}")
+		endif()
+	endif()
+	
 endfunction(generate_OS_Variant_Symlinks)
 
 

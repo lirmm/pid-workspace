@@ -600,6 +600,8 @@ endmacro(build_PID_Wrapper)
 #     :POSTINSTALL <path to install script>: This is the path, relative to the current folder, to the install script that will be run after external package version has been installed into the workspace, to perform additionnal configuration steps. Script is a cmake module file.
 #     :COMPATIBILITY <version number>: define which previous version is compatible with this current version, if any. Compatible simply means that this current version can be used instead of the previous one without any restriction.
 #     :SONAME <version number>: (useful on UNIX only) Specify which soname will be given by default to all shared libraries defined by the wrapper.
+#     :CMAKE_FOLDER <path to folder>: (useful on CMake projects only) Specify the path, relative to the package install root, where to fond CMake configuration files.
+#     :PKGCONFIG_FOLDER <path to folder>: (useful for projects supporting pkg-config only) Specify the path, relative to the package install root, where to find pkg-config configuration files.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -626,7 +628,7 @@ endmacro(PID_Wrapper_Version)
 
 macro(add_PID_Wrapper_Known_Version)
 set(optionArgs)
-set(oneValueArgs VERSION DEPLOY COMPATIBILITY SONAME POSTINSTALL PREUSE)
+set(oneValueArgs VERSION DEPLOY COMPATIBILITY SONAME POSTINSTALL PREUSE CMAKE_FOLDER PKGCONFIG_FOLDER)
 set(multiValueArgs)
 cmake_parse_arguments(ADD_PID_WRAPPER_KNOWN_VERSION "${optionArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT ADD_PID_WRAPPER_KNOWN_VERSION_VERSION)
@@ -710,7 +712,8 @@ if(ADD_PID_WRAPPER_KNOWN_VERSION_COMPATIBILITY)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : when defining ${PROJECT_NAME} version ${version}, invalid compatible version ${compatible_with_version} (must be < ${version}).")
   endif()
 endif()
-add_Known_Version("${version}" "${script_file}" "${compatible_with_version}" "${ADD_PID_WRAPPER_KNOWN_VERSION_SONAME}" "${post_install_script}" "${pre_use_script}")
+
+add_Known_Version("${version}" "${script_file}" "${compatible_with_version}" "${ADD_PID_WRAPPER_KNOWN_VERSION_SONAME}" "${post_install_script}" "${pre_use_script}" "${ADD_PID_WRAPPER_KNOWN_VERSION_CMAKE_FOLDER}" "${ADD_PID_WRAPPER_KNOWN_VERSION_PKGCONFIG_FOLDER}")
 endmacro(add_PID_Wrapper_Known_Version)
 
 #.rst:
