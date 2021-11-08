@@ -584,6 +584,10 @@ function(manage_Dependent_PID_Native_Package DEPLOYED package possible_versions 
     #else no constraint on version
     endif()
 	endif()
+  set(release_only TRUE)
+  if(CMAKE_BUILD_TYPE MATCHES Debug)
+    set(release_only FALSE)
+  endif()
   if(NOT ${package}_FOUND${VAR_SUFFIX})
     set(${package}_FIND_VERSION_SYSTEM FALSE)
     #find first time !!
@@ -591,15 +595,11 @@ function(manage_Dependent_PID_Native_Package DEPLOYED package possible_versions 
     if(NOT ${package}_FOUND${VAR_SUFFIX})
       #NOTE: need to deploy the paclkage into workspace
       set(ENV{manage_progress} FALSE)#NOTE using specific argument to avoid deleting the curently used global progress file
-      set(release_only TRUE)
-      if(CMAKE_BUILD_TYPE MATCHES Debug)
-        set(release_only FALSE)
-      endif()
       if(used_version)
-        execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=${used_version} release_only=${release_only}
+        execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=${used_version} release_only=${release_only} force=true
                         WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
       else()
-        execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} release_only=${release_only}
+        execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} release_only=${release_only} force=true
                         WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
       endif()
       unset(ENV{manage_progress})
@@ -714,15 +714,16 @@ function(manage_Dependent_PID_External_Package DEPLOYED package possible_version
     endif()
   endif()
 
+  set(release_only TRUE)
+  if(CMAKE_BUILD_TYPE MATCHES Debug)
+    set(release_only FALSE)
+  endif()
+
   if(NOT ${package}_FOUND${VAR_SUFFIX})
     find_package_resolved(${package} ${used_version} ${used_exact})
     if(NOT ${package}_FOUND${VAR_SUFFIX})
       #NOTE: need to deploy the paclkage into workspace
       set(ENV{manage_progress} FALSE)#NOTE using specific argument to avoid deleting the curently used global progress file
-      set(release_only TRUE)
-      if(CMAKE_BUILD_TYPE MATCHES Debug)
-        set(release_only FALSE)
-      endif()
       if(used_system)#deploying external dependency as os variant
         execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} deploy package=${package} version=system release_only=${release_only}
                         WORKING_DIRECTORY ${WORKSPACE_DIR}/build)
