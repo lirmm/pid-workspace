@@ -566,7 +566,7 @@ endfunction(find_Library_In_Implicit_System_Dir)
 #    Get link info of a library that is supposed to be located in implicit system folders.
 #
 #     :library_name: the name of the library (without any prefix or suffix specific to system).
-#     :full_path: the full path to the library file (may be a real soobject or link or a linker script).
+#     :full_path: the full path to the library file (may be a real sobject or link or a linker script).
 #
 #     :LIBRARY_PATH: the output variable that contains the full path to library, empty if no path found.
 #     :LIB_SONAME: the output variable that contains only the name of the library if path has been found, empty otherwise.
