@@ -2431,11 +2431,13 @@ function(generate_OS_Variant_Symlinks package platform version install_dir)
 				elseif(FULL_EXT MATCHES "^((\\.[0-9]+)+)${RES_EXT}$")
 					set(USED_EXT ${CMAKE_MATCH_1})
 				endif()
-				string(SUBSTRING "${USED_EXT}" 1 -1 USED_EXT)
-				if(NOT USED_EXT STREQUAL USE_SONAME)
-					create_Shared_Lib_Path(RESULT_LIB_PATH ${sha_link} ${platform} "${USED_EXT}")
-					if(NOT RESULT_LIB_PATH MATCHES "^-l.*$")#only generate symlinks for non OS libraries
-						generate_OS_Variant_Symlink_For_Path(${install_dir} ${RESULT_LIB_PATH} "${${package}_RPATH}")
+				if(USED_EXT) # empty if the lib filename doesn't have a version included in it
+					string(SUBSTRING "${USED_EXT}" 1 -1 USED_EXT)
+					if(NOT USED_EXT STREQUAL USE_SONAME)
+						create_Shared_Lib_Path(RESULT_LIB_PATH ${sha_link} ${platform} "${USED_EXT}")
+						if(NOT RESULT_LIB_PATH MATCHES "^-l.*$")#only generate symlinks for non OS libraries
+							generate_OS_Variant_Symlink_For_Path(${install_dir} ${RESULT_LIB_PATH} "${${package}_RPATH}")
+						endif()
 					endif()
 				endif()
 			endforeach()
@@ -2520,7 +2522,7 @@ function(generate_OS_Variant_Symlinks package platform version install_dir)
 			generate_OS_Variant_Symlink_For_Path(${install_dir}/${PATH_TO_PKG} ${PKG_FOLDER} "${${package}_PKGCONFIG_FOLDER}")
 		endif()
 	endif()
-	
+
 endfunction(generate_OS_Variant_Symlinks)
 
 
