@@ -737,10 +737,12 @@ foreach(int_dep IN LISTS ${PROJECT_NAME}_${component}_INTERNAL_DEPENDENCIES${VAR
   rename_If_Alias(dep_comp_name ${PROJECT_NAME} ${int_dep})#by definition a resolved component is a native one
   get_Source_Component_Runtime_Resources(DEP_RESOURCES ${dep_comp_name} ${mode})
   list(APPEND result ${DEP_RESOURCES})
+  #NOTE: we must use the local binary name because at configuration time the generator expression in ${PROJECT_NAME}_${comp}_BINARY_NAME are not evaluated
+  # So it will create a mess during symlink generation
 	if(${PROJECT_NAME}_${dep_comp_name}_TYPE STREQUAL "MODULE")
-		list(APPEND result ${CMAKE_BINARY_DIR}/src/${${PROJECT_NAME}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
+		list(APPEND result ${CMAKE_BINARY_DIR}/src/${${PROJECT_NAME}_${dep_comp_name}_LOCAL_BINARY_NAME${VAR_SUFFIX}})#the module library is a direct runtime dependency of the component
 	elseif(${PROJECT_NAME}_${dep_comp_name}_TYPE STREQUAL "APP" OR ${PROJECT_NAME}_${dep_comp_name}_TYPE STREQUAL "EXAMPLE")
-		list(APPEND result ${CMAKE_BINARY_DIR}/apps/${${PROJECT_NAME}_${dep_comp_name}_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
+		list(APPEND result ${CMAKE_BINARY_DIR}/apps/${${PROJECT_NAME}_${dep_comp_name}_LOCAL_BINARY_NAME${VAR_SUFFIX}})#the application is a direct runtime dependency of the component
 	endif()
 endforeach()
 
@@ -1699,7 +1701,8 @@ endfunction(create_Source_Component_Symlinks_Build_Tree)
 #
 #   .. command:: resolve_Source_Component_Runtime_Dependencies_Build_Tree(component mode)
 #
-#   Resolve runtime dependencies of a component in the currenlty defined package. Finally create symlinks to these runtime resources in the build tree. This differentiation is mandatory to get runtime resource mechanism working in build tree (required for runninf test units using runtime resources for instance).
+#   Resolve runtime dependencies of a component in the currenlty defined package. Finally create symlinks to these runtime resources in the build tree. 
+#   This differentiation is mandatory to get runtime resource mechanism working in build tree (required for running test units using runtime resources for instance).
 #
 #     :component: the name of the component.
 #     :mode: the build mode (Release or Debug) for the component.

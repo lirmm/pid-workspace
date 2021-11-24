@@ -2106,6 +2106,30 @@ endfunction(register_Component_Binary)
 #
 # .. ifmode:: internal
 #
+#  .. |register_Runtime_Component_Binary| replace:: ``register_Runtime_Component_Binary``
+#  .. _register_Runtime_Component_Binary:
+#
+#  register_Runtime_Component_Binary
+#  ---------------------------------
+#
+#   .. command:: register_Runtime_Component_Binary(component type)
+#
+#   Memorize in cache the generated binary name of a component. Warining: the binary name uses Cmake generator expressions.
+#
+#     :component: the name of the component.
+#     :type: the type of the component.
+#
+function(register_Runtime_Component_Binary component type)
+  get_Platform_Related_Binary_Prefix_Suffix(PREFIX SUFFIX ${type})
+  set(${PROJECT_NAME}_${component}_LOCAL_BINARY_NAME${USE_MODE_SUFFIX} "${PREFIX}${PROJECT_NAME}_${component}${INSTALL_NAME_SUFFIX}${SUFFIX}" CACHE INTERNAL "")
+endfunction(register_Runtime_Component_Binary)
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |is_Component_Exporting_Other_Components| replace:: ``is_Component_Exporting_Other_Components``
 #  .. _is_Bin_Component_Exporting_Other_Components:
 #
