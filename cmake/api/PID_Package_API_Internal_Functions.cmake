@@ -1511,11 +1511,11 @@ clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if
 #########################################################################################################################
 ######### writing the global reference file for the package with all global info contained in the CMakeFile.txt #########
 #########################################################################################################################
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	if(${PROJECT_NAME}_ADDRESS)
-		generate_Package_Reference_File(${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake)
-	endif()
+if(${PROJECT_NAME}_ADDRESS)
+	generate_Package_Reference_File(${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake)
+endif()
 
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD AND GLOBAL_PROGRESS_VAR)
 		some_Packages_Managed_Last_Time(DEPLOYED)
 		if(DEPLOYED)
