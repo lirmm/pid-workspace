@@ -2225,7 +2225,7 @@ if(REQUIRED_VERSION) #the package is already used as a dependency in the current
 					message(FATAL_ERROR "[PID] INFO : In ${PROJECT_NAME}, dependency ${dep_package} is used with possible versions: ${available_versions}, but OS version ${REQUIRED_VERSION} has been previously set and this version is not defined in ${dep_package}. Ask developpers of ${dep_package} wrapper to provide a receipe for this version or ask them to update the contribution space where ${dep_package} is referenced.")
 				else()
 					message(FATAL_ERROR "[PID] INFO : In ${PROJECT_NAME}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
-				endif()()
+				endif()
 				return()
 			endif()
 		else()#a version is forced
