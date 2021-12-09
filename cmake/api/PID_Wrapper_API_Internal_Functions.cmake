@@ -1279,7 +1279,12 @@ if(REQUIRED_VERSION) #the package is already used as a dependency in the current
 				message("[PID] INFO :  In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is optional and has been automatically deactivated as its version (${force_version}) is not compatible with version ${REQUIRED_VERSION} previously required by other packages.")
 			else()#this is to ensure that on a dependent build an adequate version has been chosen from the list of possible versions
 				fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
-				message("[PID] INFO : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
+				if(RES_REQ STREQUAL PROJECT_NAME)
+					#specific case : the dependncy has been previously requested (directly or undirectly) as an OS dependency
+					message("[PID] INFO : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is used with possible versions: ${available_versions}, but OS version ${REQUIRED_VERSION} has been previously set and this version is not defined in ${dep_package}. Ask developpers of ${dep_package} wrapper to provide a receipe for this version or ask them to update the contribution space where ${dep_package} is referenced.")
+				else()
+					message("[PID] INFO : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
+				endif()
 				set(${NEED_EXIT} TRUE PARENT_SCOPE)
 				return()
 			endif()
