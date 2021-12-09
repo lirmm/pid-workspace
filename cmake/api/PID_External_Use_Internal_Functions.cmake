@@ -275,6 +275,16 @@ function(configure_Local_Target_With_PID_Components local_target target_type com
       rename_If_Alias(comp_name_to_use ${RES_PACK} ${COMPONENT_NAME})
       is_HeaderFree_Component(IS_HF ${RES_PACK} ${comp_name_to_use})
     endif()
+
+    # check if the requested component is declared by the package
+    list(FIND ${RES_PACK}_COMPONENTS ${comp_name_to_use} INDEX)
+    if(INDEX EQUAL -1)
+      if(${RES_PACK}_ALIASES)
+        set(ALIASES_MSG " Possible aliases are: ${${RES_PACK}_ALIASES}")
+      endif()
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : the component ${COMPONENT_NAME} is not part of the ${RES_PACK} package. Existing components are: ${${RES_PACK}_COMPONENTS}.${ALIASES_MSG}")
+    endif()
+
     append_Unique_In_Cache(${local_target}_PID_DEPENDENCIES "${RES_PACK}/${comp_name_to_use}")#always resolve aliases before memorizing
 
     if(PACK_TYPE STREQUAL "EXTERNAL" OR NOT IS_HF)#if not header free the component can be linked
