@@ -3755,6 +3755,7 @@ function(resolve_Wrapper_Dependencies package version os_variant)
 		else()#no need to be installed -> already found
 			resolve_Package_Dependencies(${dep_pack} Release TRUE "${BUILD_RELEASE_ONLY}")
 		endif()
+		resolve_preuse(${package} ${dep_pack} Release FALSE)
 	endforeach()
 endfunction(resolve_Wrapper_Dependencies)
 

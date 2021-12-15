@@ -1157,6 +1157,7 @@ set(${package}_DURING_PREPARE_RUNTIME${VAR_SUFFIX} TRUE)
 # 1) resolving runtime dependencies by recursion (resolving dependancy packages' components first)
 foreach(dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   resolve_Package_Runtime_Dependencies(${dep} ${mode})
+  resolve_preuse(${package} ${dep} ${mode} FALSE)
 endforeach()
 foreach(dep IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
   resolve_Package_Runtime_Dependencies(${dep} ${mode})
@@ -1178,6 +1179,44 @@ endif()
 set(${package}_DURING_PREPARE_RUNTIME${VAR_SUFFIX} FALSE)
 set(${package}_PREPARE_RUNTIME${VAR_SUFFIX} TRUE)
 endfunction(resolve_Package_Runtime_Dependencies)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |resolve_preuse| replace:: ``resolve_preuse``
+#  .. _resolve_preuse:
+#
+#  resolve_preuse
+#  --------------
+#
+#   .. command:: resolve_preuse(package mode)
+#
+#   Resolve preuse script of the package if any defined
+#
+#     :package: the name of the package in which to execute the preuse script.
+#     :dep_package: the name of the package that defines the preuse script.
+#     :mode: the build mode (Release or Debug) for the package.
+#     :from_project: TRUE if package is executed from a project context, FALSE if executed from a sript (wrapper, binary deploy).
+#
+function(resolve_preuse package dep_package mode from_project)
+  if(${dep_package}_SCRIPT_PRE_USE)
+    set(FROM_PROJECT ${from_project})
+    set(USER_MODE ${mode})
+    set(LOCAL_INSTALL_DIR ${${dep_package}_ROOT_DIR})
+    set(USER_INSTALL_DIR ${${package}_ROOT_DIR})
+    if(from_project)
+      set(USER_BUILD_DIR ${CMAKE_BINARY_DIR})
+      set(USER_SOURCE_DIR ${CMAKE_SOURCE_DIR})
+    else()
+      set(USER_BUILD_DIR)
+      set(USER_SOURCE_DIR)
+    endif()
+      include(${LOCAL_INSTALL_DIR}/cmake_script/${${dep_package}_SCRIPT_PRE_USE})
+  endif()
+endfunction(resolve_preuse)
+
 
 #.rst:
 #
