@@ -56,3 +56,4 @@ cmake_policy(SET CMP0054 NEW) #only KEYWORDS (without "") are considered as KEYW
 cmake_policy(SET CMP0057 NEW) #allow for if(... IN_LIST ...)  commands
 cmake_policy(SET CMP0058 NEW) #avoid ninja to warn about Policy CMP0058 if not set
 cmake_policy(SET CMP0064 NEW) #interpret TEST keyword in a if() command
+cmake_policy(SET CMP0091 NEW) #allow usage CMAKE_MSVC_RUNTIME_LIBRARY

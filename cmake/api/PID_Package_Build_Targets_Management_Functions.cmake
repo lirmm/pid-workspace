@@ -775,6 +775,10 @@ if(cxx_standard)
   		CXX_EXTENSIONS NO
   )#setting the standard in use locally
 endif()
+
+# With MSVC, force to use the default runtime library (release, MT, dynamic), even in debug, to be compatible with wrappers (built in a single mode)
+set_target_properties(${PROJECT_NAME}_${component}${mode_suffix} PROPERTIES MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
+
 endfunction(manage_Additional_Component_Internal_Flags)
 
 #.rst:
