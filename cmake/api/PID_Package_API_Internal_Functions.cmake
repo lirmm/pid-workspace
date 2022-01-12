@@ -1231,6 +1231,11 @@ endif()
 add_subdirectory(share)
 add_subdirectory(test)
 
+list(LENGTH ${PROJECT_NAME}_PREDECLARED_COMPS NUM_PREDECLARED_COMPS)
+if(NUM_PREDECLARED_COMPS GREATER 0)
+	message(FATAL_ERROR "[PID] CRITICAL ERROR : These predeclared components have not been declared in the package: ${${PROJECT_NAME}_PREDECLARED_COMPS}")
+endif()
+
 # specific case : resolve which compile option to use to enable the adequate language standard
 resolve_Build_Options_For_Targets()
 
@@ -2403,8 +2408,12 @@ endif()
 set(DECLARED_DEP)
 is_Declared(${dep_component} DECLARED_DEP)
 if(NOT DECLARED_DEP)
-	finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR when when defining dependency for ${component} in ${PROJECT_NAME} : dependency ${dep_component} is not defined in current package ${PROJECT_NAME}.")
+	is_Predeclared(${dep_component} PREDECLARED_DEP)
+	set(DECLARED_DEP ${PREDECLARED_DEP})
+	if(NOT PREDECLARED_DEP)
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR when when defining dependency for ${component} in ${PROJECT_NAME} : dependency ${dep_component} is not defined in current package ${PROJECT_NAME}.")
+	endif()
 endif()
 #guarding depending type of involved components
 is_HeaderFree_Component(IS_HF_COMP ${PROJECT_NAME} ${DECLARED_COMP})

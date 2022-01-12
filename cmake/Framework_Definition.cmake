@@ -26,7 +26,7 @@ endif()
 set(FRAMEWORK_DEFINITION_INCLUDED TRUE)
 ##########################################################################################
 
-cmake_minimum_required(VERSION 3.8.2)
+cmake_minimum_required(VERSION 3.15.7)
 
 get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
 set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)

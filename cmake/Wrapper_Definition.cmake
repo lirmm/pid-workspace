@@ -27,7 +27,7 @@ endif()
 set(WRAPPER_DEFINITION_INCLUDED TRUE)
 ##########################################################################################
 
-cmake_minimum_required(VERSION 3.8.2)
+cmake_minimum_required(VERSION 3.15.7)
 
 get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
 set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)
@@ -2351,7 +2351,7 @@ function(install_External_Project)
         if(INSTALL_EXTERNAL_PROJECT_PROJECT)
           message("[PID] INFO : Downloading ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
         endif()
-        file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${archive_name} 
+        file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${archive_name}
              SHOW_PROGRESS
              STATUS dl_result)
         list(GET dl_result 0 return_val)
@@ -2361,7 +2361,7 @@ function(install_External_Project)
           # sanity action: remove the file
           file(REMOVE ${TARGET_BUILD_DIR}/${archive_name})
           execute_process(COMMAND ${CMAKE_COMMAND} -E sleep 10  OUTPUT_QUIET ERROR_QUIET)
-          file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${archive_name} 
+          file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${archive_name}
                 SHOW_PROGRESS
                 STATUS dl_result)
           list(GET dl_result 0 return_val)
@@ -2391,7 +2391,7 @@ function(install_External_Project)
       if(INSTALL_EXTERNAL_PROJECT_PROJECT)
         message("[PID] ERROR : During deployment of ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str}, cannot download the archive.")
       endif()
-      if(INSTALL_EXTERNAL_PROJECT_PATH) 
+      if(INSTALL_EXTERNAL_PROJECT_PATH)
         set(${INSTALL_EXTERNAL_PROJECT_PATH} PARENT_SCOPE)
       endif()
       set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)

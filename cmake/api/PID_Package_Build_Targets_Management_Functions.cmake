@@ -611,7 +611,13 @@ endfunction(create_Alias_Exe_Target)
 #     :internal_links: list of private links to use when building the executable.
 #
 function(create_Executable_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links)
-	add_executable(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} ${sources})
+	# If the executable hasn't been predeclared create a target first
+	if(NOT TARGET ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX})
+		add_executable(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX})
+	endif()
+
+	target_sources(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PRIVATE ${sources})
+
 	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 	# adding the application to the list of installed components when make install is called (not for test applications)
 	install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX}

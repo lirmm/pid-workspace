@@ -1440,6 +1440,7 @@ function(reset_Package_Description_Cached_Variables)
     set(${PROJECT_NAME}_${alias}_IS_ALIAS_OF CACHE INTERNAL "")
   endforeach()
 	reset_Declared()
+  reset_Predeclared()
 	set(${PROJECT_NAME}_COMPONENTS CACHE INTERNAL "")
 	set(${PROJECT_NAME}_COMPONENTS_LIBS CACHE INTERNAL "")
 	set(${PROJECT_NAME}_COMPONENTS_APPS CACHE INTERNAL "")
@@ -1526,7 +1527,29 @@ endfunction(init_Component_Description)
 #
 function(mark_As_Declared component)
 set(${PROJECT_NAME}_DECLARED_COMPS ${${PROJECT_NAME}_DECLARED_COMPS} ${component} CACHE INTERNAL "")
+list(REMOVE_ITEM ${PROJECT_NAME}_PREDECLARED_COMPS ${component})
+set(${PROJECT_NAME}_PREDECLARED_COMPS ${${PROJECT_NAME}_PREDECLARED_COMPS} CACHE INTERNAL "")
 endfunction(mark_As_Declared)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |mark_As_Predeclared| replace:: ``mark_As_Predeclared``
+#  .. _mark_As_Predeclared:
+#
+#  mark_As_Predeclared
+#  ----------------
+#
+#   .. command:: mark_As_Predeclared(component)
+#
+#   Memorize that the component has been predeclared in current configuration process.
+#
+#     :component: the name of the target component.
+#
+function(mark_As_Predeclared component)
+set(${PROJECT_NAME}_PREDECLARED_COMPS ${${PROJECT_NAME}_PREDECLARED_COMPS} ${component} CACHE INTERNAL "")
+endfunction(mark_As_Predeclared)
 
 #.rst:
 #
@@ -1564,6 +1587,33 @@ endfunction(is_Declared)
 #
 # .. ifmode:: internal
 #
+#  .. |is_Predeclared| replace:: ``is_Predeclared``
+#  .. _is_Predeclared:
+#
+#  is_Predeclared
+#  -----------
+#
+#   .. command:: is_Predeclared(component RESULT)
+#
+#   Check whether a component has been predeclared in current configuration process, or not.
+#
+#     :component: the name of the component or one of its aliases to check.
+#
+#     :RESULT: the output variable that contains the name of the component if component has been predeclared, FALSE otherwise.
+#
+function(is_Predeclared component RESULT)
+list(FIND ${PROJECT_NAME}_PREDECLARED_COMPS ${component} INDEX)
+if(INDEX EQUAL -1)
+  set(${RESULT} FALSE PARENT_SCOPE)
+else()
+	set(${RESULT} ${component} PARENT_SCOPE)
+endif()
+endfunction(is_Predeclared)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |reset_Declared| replace:: ``reset_Declared``
 #  .. _reset_Declared:
 #
@@ -1577,6 +1627,24 @@ endfunction(is_Declared)
 function(reset_Declared)
 set(${PROJECT_NAME}_DECLARED_COMPS CACHE INTERNAL "")
 endfunction(reset_Declared)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Predeclared| replace:: ``reset_Predeclared``
+#  .. _reset_Predeclared:
+#
+#  reset_Predeclared
+#  --------------
+#
+#   .. command:: reset_Predeclared()
+#
+#   Reset all declared component in currenlty defined package.
+#
+function(reset_Predeclared)
+set(${PROJECT_NAME}_PREDECLARED_COMPS CACHE INTERNAL "")
+endfunction(reset_Predeclared)
 
 #.rst:
 #
