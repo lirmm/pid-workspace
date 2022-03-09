@@ -26,7 +26,7 @@ endif()
 set(PACKAGE_DEFINITION_INCLUDED TRUE)
 ##########################################################################################
 
-cmake_minimum_required(VERSION 3.8.2)
+cmake_minimum_required(VERSION 3.15.7)
 
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
 get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
@@ -1438,6 +1438,16 @@ if(DECLARE_PID_COMPONENT_DOCUMENTATION)
   declare_PID_Component_Documentation(COMPONENT ${comp_name} FILE ${DECLARE_PID_COMPONENT_DOCUMENTATION})
 endif()
 endmacro(declare_PID_Component)
+
+macro(PID_Predeclare_Application name)
+  add_executable(${PROJECT_NAME}_${name}${INSTALL_NAME_SUFFIX})
+  set_target_properties(
+    ${PROJECT_NAME}_${name}${INSTALL_NAME_SUFFIX}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/apps
+  )
+  set(${PROJECT_NAME}_${name}_TYPE APP CACHE INTERNAL "")
+  mark_As_Predeclared(${name})
+endmacro(PID_Predeclare_Application)
 
 #.rst:
 # .. ifmode:: user

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8.2)
+cmake_minimum_required(VERSION 3.15.7)
 set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR}/../../.. CACHE PATH "root of the PID workspace directory")
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake) # using generic scripts/modules of the workspace
 include(Framework_Definition NO_POLICY_SCOPE)
@@ -10,7 +10,7 @@ PID_Framework(
     YEAR               @FRAMEWORK_YEARS@
     LICENSE            @FRAMEWORK_CONTENT_META@
     DESCRIPTION        @FRAMEWORK_DESCRIPTION@
-#   You should list the categories defined by the framework to allow the resulting static  
+#   You should list the categories defined by the framework to allow the resulting static
 #   site to classify packages and wrappers belonging to this framework
 #   CATEGORIES         category
 #                      category/subcategory
