@@ -5783,13 +5783,17 @@ endfunction(remove_Duplicates_From_List)
 #     :PARALLEL_JOBS_FLAG: the output variable containing the native build system flag.
 #
 function(define_Parallel_Jobs_Flag PARALLEL_JOBS_FLAG)
-  include(ProcessorCount)
-  ProcessorCount(NUMBER_OF_JOBS)
-  math(EXPR NUMBER_OF_JOBS "${NUMBER_OF_JOBS}+1")#according to
-  if(NUMBER_OF_JOBS GREATER 1)#TODO manage variants between generators
-  	set(${PARALLEL_JOBS_FLAG} "-j${NUMBER_OF_JOBS}" PARENT_SCOPE)
+  if(DEFINED ENV{PID_MAX_JOBS_NUMBER})
+    set(PARALLEL_JOBS_FLAG "-j$ENV{PID_MAX_JOBS_NUMBER}" PARENT_SCOPE)
   else()
-  	set(${PARALLEL_JOBS_FLAG} PARENT_SCOPE)
+    include(ProcessorCount)
+    ProcessorCount(NUMBER_OF_JOBS)
+    math(EXPR NUMBER_OF_JOBS "${NUMBER_OF_JOBS}+1")#according to
+    if(NUMBER_OF_JOBS GREATER 1)#TODO manage variants between generators
+      set(${PARALLEL_JOBS_FLAG} "-j${NUMBER_OF_JOBS}" PARENT_SCOPE)
+    else()
+      set(${PARALLEL_JOBS_FLAG} PARENT_SCOPE)
+    endif()
   endif()
 endfunction(define_Parallel_Jobs_Flag)
 

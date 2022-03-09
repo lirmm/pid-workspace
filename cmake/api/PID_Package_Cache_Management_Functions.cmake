@@ -117,12 +117,16 @@ set(PARALLEL_JOBS_FLAG CACHE INTERNAL "")
 if(ENABLE_PARALLEL_BUILD)
   list(FIND LIMITED_JOBS_PACKAGES ${PROJECT_NAME} INDEX)
   if(INDEX EQUAL -1)#project not in the list of packages to restrict to one build job
-  	include(ProcessorCount)
-  	ProcessorCount(NUMBER_OF_JOBS)
-  	math(EXPR NUMBER_OF_JOBS "${NUMBER_OF_JOBS}+1")
-  	if(${NUMBER_OF_JOBS} GREATER 1)
-  		set(PARALLEL_JOBS_FLAG "-j${NUMBER_OF_JOBS}" CACHE INTERNAL "")
-  	endif()
+    if(DEFINED ENV{PID_MAX_JOBS_NUMBER})
+      set(PARALLEL_JOBS_FLAG "-j$ENV{PID_MAX_JOBS_NUMBER}")
+    else()
+      include(ProcessorCount)
+      ProcessorCount(NUMBER_OF_JOBS)
+      math(EXPR NUMBER_OF_JOBS "${NUMBER_OF_JOBS}+1")
+      if(${NUMBER_OF_JOBS} GREATER 1)
+        set(PARALLEL_JOBS_FLAG "-j${NUMBER_OF_JOBS}" CACHE INTERNAL "")
+      endif()
+    endif()
   endif()
 endif()
 endmacro(manage_Parrallel_Build_Option)
@@ -2094,7 +2098,7 @@ endfunction(reset_Removed_Examples_Build_Option)
 #
 #   .. command:: register_Component_Binary(component)
 #
-#   Memorize in cache the generated binary name of a component. Warining: the binary name uses Cmake generator expressions.
+#   Memorize in cache the generated binary name of a component. Warning: the binary name uses Cmake generator expressions.
 #
 #     :component: the name of the component.
 #
@@ -2114,7 +2118,7 @@ endfunction(register_Component_Binary)
 #
 #   .. command:: register_Runtime_Component_Binary(component type)
 #
-#   Memorize in cache the generated binary name of a component. Warining: the binary name uses Cmake generator expressions.
+#   Memorize in cache the generated binary name of a component. 
 #
 #     :component: the name of the component.
 #     :type: the type of the component.
