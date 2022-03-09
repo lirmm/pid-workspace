@@ -118,10 +118,6 @@ if(NOT EVALUATION_RUN)#no need to reupdate the system anytime an environment is 
   if(IN_CI_PROCESS)
     if(CURRENT_PACKAGING_SYSTEM)
       message("[PID] INFO: updating OS packages of the CI environment with package manager: ${CURRENT_PACKAGING_SYSTEM}")
-      if(CURRENT_PACKAGING_SYSTEM STREQUAL PACMAN)
-        # force updating the signing keys first to avoid potential install/upgrade issues
-        execute_process(COMMAND pacman-key --refresh-keys)
-      endif()
       execute_System_Packaging_Command()#do not provide package => update/uĝrade
     else()
       message("[PID] WARNING: cannot update OS packages of the CI environment because no package manager detected")
