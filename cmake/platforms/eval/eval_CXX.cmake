@@ -78,7 +78,9 @@ function(check_Standards_Supported_By_Compiler_And_StdLib LIST_OF_STDS)
     if(CXX_STD_LIBRARY_VERSION VERSION_GREATER_EQUAL 3.8)#before version 3.8 of c++ the c++ 11 standard is not fully supported
       list(APPEND stdlib_support_up_to 11 14)
     endif()
-    #no full support of c++17 right now
+    if(CXX_STD_LIBRARY_VERSION VERSION_GREATER_EQUAL 10)#There are still a few missing C++17 features but if we want to build some C++17 code in CI with macOS Catalina we don't have a choice
+      list(APPEND stdlib_support_up_to 17)
+    endif()
   endif()
   #now
   set(support_up_to)
