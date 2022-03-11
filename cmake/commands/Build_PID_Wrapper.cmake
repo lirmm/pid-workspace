@@ -247,12 +247,8 @@ if(NOT use_os_variant)# perform specific operations at the end of the install pr
 	    file(REMOVE_RECURSE ${path_to_installer_content})
 	  endif()
 
-	  if(TARGET_BUILD_MODE STREQUAL "Debug")
-	    set(installer_archive_name ${TARGET_EXTERNAL_PACKAGE}-${version}-dbg-${CURRENT_PLATFORM}.tar.gz)
-	  else()
-			set(installer_archive_name ${TARGET_EXTERNAL_PACKAGE}-${version}-${CURRENT_PLATFORM}.tar.gz)
-	  endif()
-		set(path_to_installer_archive ${TARGET_BUILD_DIR}/installer/${installer_archive_name})
+	  generate_Binary_Package_Name(${TARGET_EXTERNAL_PACKAGE} ${version} ${CMAKE_BUILD_TYPE} installer_archive_name installer_folder_unused)
+	  set(path_to_installer_archive ${TARGET_BUILD_DIR}/installer/${installer_archive_name})
 	  file(REMOVE ${path_to_installer_archive})
 
 	  #need to create an archive from relocatable binary created in install tree (use the / at the end of the copied path to target content of the folder and not folder itself)
