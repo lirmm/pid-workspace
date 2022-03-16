@@ -1543,7 +1543,7 @@ endfunction(mark_As_Declared)
 #  .. _mark_As_Predeclared:
 #
 #  mark_As_Predeclared
-#  ----------------
+#  -------------------
 #
 #   .. command:: mark_As_Predeclared(component)
 #
@@ -1595,7 +1595,7 @@ endfunction(is_Declared)
 #  .. _is_Predeclared:
 #
 #  is_Predeclared
-#  -----------
+#  --------------
 #
 #   .. command:: is_Predeclared(component RESULT)
 #
@@ -1640,7 +1640,7 @@ endfunction(reset_Declared)
 #  .. _reset_Predeclared:
 #
 #  reset_Predeclared
-#  --------------
+#  -----------------
 #
 #   .. command:: reset_Predeclared()
 #
