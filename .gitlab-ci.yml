@@ -90,7 +90,7 @@ stages:
 .selection_fedora_: &selection_fedora
    tags:
         - pid
-        - x86_64_linux_stdc++11__fedo32_gcc10__
+        - x86_64_linux_stdc++11__fedo36_gcc12__
 
 
 .selection_freebsd_: &selection_freebsd
