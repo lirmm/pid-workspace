@@ -22,21 +22,43 @@ fi
 
 #getting the current platform and instance (if any) of the current runner
 platform=$1
+
 # 1 extract target platform information from runner tags
-platform=${platform/pid/""}
-platform=${platform/","/""}
-platform=${platform/" "/""}
-platform=${platform/site/""}
-platform=${platform/","/""}
-platform=${platform/" "/""}
+platform=${platform/pid/" "}
+platform=${platform/","/" "}
+platform=${platform/site/" "}
+platform=${platform/","/" "}
+
 
 # 2 separate platform and environment names
 instance=""
 reg_expr="^(.+)__(.+)__$"
 
-if [[ $platform =~ $reg_expr ]]; then
-    instance=${BASH_REMATCH[2]}
-    platform=${BASH_REMATCH[1]}
+reg_expr_job="^build_wrapper_(.+)__(.+)__$"
+
+if [[ $CI_JOB_NAME =~ $reg_expr_job ]]; then
+    instance_job=${BASH_REMATCH[2]}
+    platform_job=${BASH_REMATCH[1]}
+    platform_job=${platform_job/plus/"+"}
+    platform_job=${platform_job/plus/"+"}
+
+    IFS=' ' read -ra my_array <<< "$platform"
+
+    #among all tags of the runner
+    for i in "${my_array[@]}"
+    do
+      if [[ $i =~ $reg_expr ]]; then
+
+        tmp_instance=${BASH_REMATCH[2]}
+        tmp_platform=${BASH_REMATCH[1]}
+
+        if [ $platform_job = $tmp_platform ] && [ $instance_job = $tmp_instance ]; then
+          instance=$tmp_instance
+          platform=$tmp_platform
+          break
+        fi
+      fi
+    done
 fi
 
 if [  "$instance" != "" ]; then

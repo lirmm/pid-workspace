@@ -7,16 +7,24 @@ echo "--------------------------------------------------------------"
 if [ "$PACKAGE_HAS_SITE" = true ] ; then
 
   #getting the current platform and instance (if any) of the current runner
-  platform=$1
+  reg_expr_job="^build_release_(.+)__(.+)__$"
+  platform=""
 
-  # 1 extract target platform information from runner tags
-  platform=${platform/pid/""}
-  platform=${platform/","/""}
-  platform=${platform/" "/""}
-  platform=${platform/site/""}
-  platform=${platform/","/""}
-  platform=${platform/" "/""}
+  if [[ $CI_JOB_NAME =~ $reg_expr_job ]]; then
+      instance_job=${BASH_REMATCH[2]}
+      platform_job=${BASH_REMATCH[1]}
+      platform_job=${platform_job/plus/"+"}
+      platform_job=${platform_job/plus/"+"}
+      platform=$platform_job"__"$instance_job"__"
+  else
 
+      reg_expr_job="^build_release_(.+)$"
+      if [[ $CI_JOB_NAME =~ $reg_expr_job ]]; then
+          platform=${BASH_REMATCH[1]}
+          platform=${platform/plus/"+"}
+          platform=${platform/plus/"+"}
+      fi
+  fi
 
   site_publish_coverage=OFF
   site_publish_static_checks=OFF

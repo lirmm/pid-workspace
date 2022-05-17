@@ -20,7 +20,7 @@ stages:
    script:
      - chmod 700 ./share/ci/prepare_package_ci.sh
      - ./share/ci/prepare_package_ci.sh
-     - ./configure_workspace.sh "$CI_RUNNER_TAGS"
+     - ./configure_workspace.sh "$CI_RUNNER_TAGS" $CI_JOB_NAME
      - ./build_package_integration.sh
      - ./publish_package_integration.sh
    except:
@@ -37,9 +37,9 @@ stages:
    script:
      - chmod 700 ./share/ci/prepare_package_ci.sh
      - ./share/ci/prepare_package_ci.sh
-     - ./configure_workspace.sh "$CI_RUNNER_TAGS"
+     - ./configure_workspace.sh "$CI_RUNNER_TAGS" $CI_JOB_NAME
      - ./build_package_release.sh
-     - ./publish_package_release.sh "$CI_RUNNER_TAGS"
+     - ./publish_package_release.sh $CI_JOB_NAME
    only:
         - /^v.*$/
    artifacts:

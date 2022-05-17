@@ -4,14 +4,25 @@ echo "--------------------------------------------------------------"
 echo "----[PID] CI : publishing wrapper ----------------------------"
 echo "--------------------------------------------------------------"
 
-#getting the current platform of the current runner
-platform=$2
-platform=${platform/pid/""}
-platform=${platform/","/""}
-platform=${platform/" "/""}
-platform=${platform/site/""}
-platform=${platform/","/""}
-platform=${platform/" "/""}
+#getting the current platform and instance (if any) of the current runner
+reg_expr_job="^build_wrapper_(.+)__(.+)__$"
+platform=""
+
+if [[ $CI_JOB_NAME =~ $reg_expr_job ]]; then
+    instance_job=${BASH_REMATCH[2]}
+    platform_job=${BASH_REMATCH[1]}
+    platform_job=${platform_job/plus/"+"}
+    platform_job=${platform_job/plus/"+"}
+    platform=$platform_job"__"$instance_job"__"
+else
+
+    reg_expr_job="^build_wrapper_(.+)$"
+    if [[ $CI_JOB_NAME =~ $reg_expr_job ]]; then
+        platform=${BASH_REMATCH[1]}
+        platform=${platform/plus/"+"}
+        platform=${platform/plus/"+"}
+    fi
+fi
 
 runner_only_binaries="true"
 if [ "$platform" = "$PACKAGE_MAIN_PLATFORM" ]; then

@@ -14,9 +14,9 @@ stages:
   script:
    - chmod 700 ./share/ci/prepare_wrapper_ci.sh
    - ./share/ci/prepare_wrapper_ci.sh
-   - ./configure_workspace.sh "$CI_RUNNER_TAGS"
+   - ./configure_workspace.sh "$CI_RUNNER_TAGS" $CI_JOB_NAME
    - ./build_wrapper.sh $CI_COMMIT_TAG
-   - ./publish_wrapper.sh $CI_COMMIT_TAG "$CI_RUNNER_TAGS"
+   - ./publish_wrapper.sh $CI_COMMIT_TAG $CI_JOB_NAME
   only:
    - /^v.*$/
 
