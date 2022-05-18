@@ -3127,42 +3127,46 @@ function(publish_Framework_Repository PUBLISHED framework trials)
   #otherwise there is something to commit OR we are on next trials
   execute_process(COMMAND git pull --ff-only origin master
                   WORKING_DIRECTORY ${framework_path}
-                  OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+                  ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull
+                  RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
   if(PULL_RESULT EQUAL 0)#no conflict to manage
     execute_process(COMMAND git lfs pull origin master
                     WORKING_DIRECTORY ${framework_path}
                     OUTPUT_QUIET ERROR_QUIET) #fetching LFS content, if any new in the mean time
     execute_process(COMMAND git push origin master
                     WORKING_DIRECTORY ${framework_path}
-                    OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
+                    RESULT_VARIABLE PUSH_RESULT 
+                    ERROR_VARIABLE out OUTPUT_VARIABLE out)
     if(PUSH_RESULT EQUAL 0)
       set(${PUBLISHED} TRUE PARENT_SCOPE)
       return()
     else()
-      message("[PID] WARNING: cannot push to ${framework} repository ... maybe due to access rights or network problems")
+      message("[PID] WARNING: cannot push to ${framework} repository ... Reason: pull problem=${out_pull} \n push_problem=${out}")
     endif()
   else()#pull problem, due to divergence between remote and local branches, rather trying to rebase
+      message("[PID] WARNING: cannot push to ${framework} repository because there are conflicts to manage. Reason: ${out_pull} !")
+
       execute_process(COMMAND git pull --rebase origin master #try rebasing 
                   WORKING_DIRECTORY ${framework_path}
-                  OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+                  ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull 
+                  RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
       if(PULL_RESULT EQUAL 0)#no conflict to manage
         execute_process(COMMAND git lfs pull origin master
               WORKING_DIRECTORY ${framework_path}
               OUTPUT_QUIET ERROR_QUIET) #fetching LFS content, if any new in the mean time
         execute_process(COMMAND git push origin master
               WORKING_DIRECTORY ${framework_path}
-              OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
+              RESULT_VARIABLE PUSH_RESULT
+              ERROR_VARIABLE out OUTPUT_VARIABLE out)
         if(PUSH_RESULT EQUAL 0)
           set(${PUBLISHED} TRUE PARENT_SCOPE)
           return()
         else()
-          message("[PID] WARNING: cannot push to ${framework} repository ... maybe due to access rights or network problems")
+          message("[PID] WARNING: cannot push to ${framework} repository ... Reason: pull problem=${out_pull} \n push_problem=${out}")
         endif()
       else()
-        message("[PID] WARNING: cannot push to ${framework} repository because there are conflicts to manage !")
+        message("[PID] WARNING: cannot push to ${framework} repository because there are conflicts to manage. Reason: ${out_pull} !")
       endif()
-    
-    message("[PID] WARNING: cannot push to ${framework} repository because there are conflicts to manage !")
   endif()
   set(${PUBLISHED} FALSE PARENT_SCOPE)
 endfunction(publish_Framework_Repository)
