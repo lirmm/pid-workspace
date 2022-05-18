@@ -54,17 +54,24 @@ endfunction(reset_CI_Variables)
 #  allow_CI_For_Platform
 #  ---------------------
 #
-#   .. command:: allow_CI_For_Platform()
+#   .. command:: allow_CI_For_Platform(ALLOWED platform)
 #
 #    Add a platform for which the CI will take place.
 #
+#      :ALLOWED: the output variable that is TRUE if platform has been registered in allowed CI platforms, FALSE otherwise
 #      :platform: The target platform.
 #
-function(allow_CI_For_Platform platform)
-  list(FIND ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS ${platform} INDEX)
-  if(INDEX EQUAL -1)##append the patform only if not already defined
-	   set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS} ${platform} CACHE INTERNAL "")
-  endif()
+function(allow_CI_For_Platform ALLOWED platform)
+	set(${ALLOWED} FALSE PARENT_SCOPE)
+	extract_Info_From_Platform(RES_TYPE RES_ARCH RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${platform})
+	if(NOT RES_PLATFORM_BASE)
+		return()
+	endif()
+	list(FIND ${PROJECT_NAME}_ALLOWED_CI_PLATFORMS ${platform} INDEX)
+	if(INDEX EQUAL -1)##append the patform only if not already defined
+		set(${PROJECT_NAME}_ALLOWED_CI_PLATFORMS ${${PROJECT_NAME}_ALLOWED_CI_PLATFORMS} ${platform} CACHE INTERNAL "")
+		set(${ALLOWED} TRUE PARENT_SCOPE)
+	endif()
 endfunction(allow_CI_For_Platform)
 
 #########################################################################################

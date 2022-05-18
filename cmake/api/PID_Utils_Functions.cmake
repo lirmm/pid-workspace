@@ -681,6 +681,7 @@ function(extract_Info_From_Platform RES_TYPE RES_ARCH RES_OS RES_ABI RES_INSTANC
     	set(${RES_ABI} PARENT_SCOPE)
     	set(${RES_INSTANCE} PARENT_SCOPE)
     	set(${RES_PLATFORM_BASE} PARENT_SCOPE)
+      return()
     else()
       list(GET list_of_properties 2 abi)
     endif()

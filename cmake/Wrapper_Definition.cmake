@@ -462,7 +462,11 @@ cmake_parse_arguments(DECLARE_PID_WRAPPER_PUBLISHING "${optionArgs}" "${oneValue
 	#manage configuration of CI
 if(DECLARE_PID_WRAPPER_PUBLISHING_ALLOWED_PLATFORMS)
 	foreach(platform IN LISTS DECLARE_PID_WRAPPER_PUBLISHING_ALLOWED_PLATFORMS)
-		allow_CI_For_Platform(${platform})
+    allow_CI_For_Platform(RES_ALLOWED ${platform})
+    if(NOT RES_ALLOWED)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: in package ${PROJECT_NAME} when calling PID_Publishing, platform name ${platform} is not well formed")
+      return()
+    endif()
 	endforeach()
 	set(DO_CI TRUE)
 else()

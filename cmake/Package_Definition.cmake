@@ -479,7 +479,7 @@ endmacro(declare_PID_Documentation)
 #    			ADVANCED specific_usage.md
 #    			LOGO	img/rouage_PID.jpg
 #    			PUBLISH_BINARIES
-#         ALLOWED_PLATFORMS x86_64_linux_stdc++11)
+#         ALLOWED_PLATFORMS x86_64_linux_stdc++11__ub20_gcc9__)
 #
 #   Declaring the publication of the ``pid-rpath`` package into the ``pid`` framework:
 #
@@ -491,7 +491,7 @@ endmacro(declare_PID_Documentation)
 #       DESCRIPTION pid-rpath is a package providing a little API to ease the management of runtime resources within a PID workspace. Runtime resources may be either configuration files, executables or module libraries. Its usage is completely bound to the use of PID system.
 #       ADVANCED specific_usage.md
 #       PUBLISH_BINARIES
-#       ALLOWED_PLATFORMS x86_64_linux_stdc++11)
+#       ALLOWED_PLATFORMS x86_64_linux_stdc++11__ub20_gcc9__)
 #
 macro(PID_Publishing)
   declare_PID_Publishing(${ARGN})
@@ -506,7 +506,11 @@ cmake_parse_arguments(DECLARE_PID_PUBLISHING "${optionArgs}" "${oneValueArgs}" "
 	#manage configuration of CI
 if(DECLARE_PID_PUBLISHING_ALLOWED_PLATFORMS)
 	foreach(platform IN LISTS DECLARE_PID_PUBLISHING_ALLOWED_PLATFORMS)
-		allow_CI_For_Platform(${platform})
+		allow_CI_For_Platform(RES_ALLOWED ${platform})
+    if(NOT RES_ALLOWED)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: in package ${PROJECT_NAME} when calling PID_Publishing, platform name ${platform} is not well formed")
+      return()
+    endif()
 	endforeach()
 	set(DO_CI TRUE)
 else()
