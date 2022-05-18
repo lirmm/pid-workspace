@@ -524,6 +524,13 @@ macro(reset_Profiles)
                   WORKING_DIRECTORY ${dir}
                   ${subcommand_option}
   )
+  # NOTE: toolchain file should now exit in profile specific folder
+  if(EXISTS ${dir}/PID_Toolchain.cmake)
+    file(COPY ${dir}/PID_Toolchain.cmake DESTINATION ${CMAKE_BINARY_DIR})
+  else()#in case the profile does not generate a toolchain file
+    file(COPY ${dir}/Workspace_Build_Info.cmake DESTINATION ${CMAKE_BINARY_DIR})
+    file(RENAME ${CMAKE_BINARY_DIR}/Workspace_Build_Info.cmake ${CMAKE_BINARY_DIR}/PID_Toolchain.cmake)
+  endif()
 
   # get platform description from profile specific configuration
   if(EXISTS ${dir}/Platform_Description.txt)

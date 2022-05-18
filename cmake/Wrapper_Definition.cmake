@@ -31,6 +31,7 @@ cmake_minimum_required(VERSION 3.15.7)
 
 get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
 set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)
+set(CMAKE_TOOLCHAIN_FILE ${WORKSPACE_DIR}/build/PID_Toolchain.cmake CACHE INTERNAL "" FORCE)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Wrapper_API_Internal_Functions NO_POLICY_SCOPE)
 include(External_Definition NO_POLICY_SCOPE) #to be able to interpret content of external package description files
