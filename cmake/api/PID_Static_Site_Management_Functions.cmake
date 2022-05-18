@@ -144,32 +144,36 @@ endfunction(static_Site_Project_Exists)
 #
 # .. ifmode:: internal
 #
-#  .. |build_Package_Static_Site| replace:: ``build_Package_Static_Site``
-#  .. _build_Package_Static_Site:
+#  .. |gen_Package_Static_Site| replace:: ``gen_Package_Static_Site``
+#  .. _gen_Package_Static_Site:
 #
-#  build_Package_Static_Site
+#  gen_Package_Static_Site
 #  -------------------------
 #
-#   .. command:: build_Package_Static_Site(package framework)
+#   .. command:: gen_Package_Static_Site(package framework)
 #
 #     Build the lone static site of a package being it a lone static site or part of a framework.
 #
 #      :package: the name of target package.
 #      :framework: the name of the framework package belongs to, or empty string for a lone static site.
 #
-function (build_Package_Static_Site package framework)
+function (gen_Package_Static_Site package framework)
 if(framework)
 	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/frameworks/${framework}
                   WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
-	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
+	if(NOT IN_CI_PROCESS)
+		execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build
+					WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
+	endif()
 else()
 	execute_process(COMMAND ${CMAKE_COMMAND} ${WORKSPACE_DIR}/sites/packages/${package}
                   WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
-	execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
+	if(NOT IN_CI_PROCESS)
+		execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build
+					WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}/build)
+	endif()
 endif()
-endfunction(build_Package_Static_Site)
+endfunction(gen_Package_Static_Site)
 
 ################################################################################
 #################Management of frameworks life cycle ###########################

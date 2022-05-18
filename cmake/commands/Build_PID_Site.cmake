@@ -142,33 +142,51 @@ else()
 	produce_Wrapper_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${KNOWN_VERSIONS}" ${include_installer} ${forced_update}) # copy everything needed
 endif()
 
-#3) build static site
-build_Package_Static_Site(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}")
 
-#4) if required push to static site official repository
+	
+
+# if required push to static site official repository
 if(push_site)
+	if(TARGET_FRAMEWORK)
+		set(the_path ${WORKSPACE_DIR}/sites/frameworks/${TARGET_FRAMEWORK})	
+	else()
+		set(the_path ${WORKSPACE_DIR}/sites/packages/${TARGET_PACKAGE})
+	endif()
+	check_Something_To_Commit(NEED_PUSH ${the_path})
+
+	if(NOT NEED_PUSH)
+		message("[PID] INFO : nothing to publish")
+		return()
+	endif()
+
+	execute_process(COMMAND git add -A
+				WORKING_DIRECTORY ${the_path} OUTPUT_QUIET ERROR_QUIET)
+	execute_process(COMMAND git commit -m "updated content from package ${TARGET_PACKAGE}"
+				WORKING_DIRECTORY ${the_path} OUTPUT_QUIET ERROR_QUIET)
+
+	#3) build static site
+	gen_Package_Static_Site(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}")
+
 	set(COUNTER 1)
 	while(TRUE)
 		if(TARGET_FRAMEWORK)
-			publish_Framework_Repository(PUBLISHED ${TARGET_FRAMEWORK} ${COUNTER})
+			publish_Framework_Repository(PUBLISHED ${TARGET_FRAMEWORK})
 			if(PUBLISHED)
 				message("[PID] INFO : framework ${TARGET_FRAMEWORK} repository has been updated on server with new content from package ${TARGET_PACKAGE}.")
 				break()
 			elseif(IN_CI_PROCESS)#in CI process the publication may be concurrent so need to manage that
-				merge_Framework_Repository(${TARGET_FRAMEWORK})#force the merge
-				build_Package_Static_Site(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}")
+				gen_Package_Static_Site(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}")
 			else()
 				message("[PID] WARNING : framework ${TARGET_FRAMEWORK} repository has NOT been updated on server with content from package ${TARGET_PACKAGE}.")
 				break()
 			endif()
 		else()
-			publish_Static_Site_Repository(PUBLISHED ${TARGET_PACKAGE} ${COUNTER})
+			publish_Static_Site_Repository(PUBLISHED ${TARGET_PACKAGE})
 			if(PUBLISHED)
 				message("[PID] INFO : static site repository of ${TARGET_PACKAGE} has been updated on server.")
 				break()
 			elseif(IN_CI_PROCESS)#in CI process the publication may be concurrent so need to manage that
-				merge_Static_Site_Repository(${TARGET_PACKAGE})#force the merge
-				build_Package_Static_Site(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}")
+				gen_Package_Static_Site(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}")
 			else()
 				message("[PID] WARNING : static site repository of ${TARGET_PACKAGE} has NOT been updated on server.")
 				break()
@@ -183,6 +201,9 @@ if(push_site)
 		math(EXPR COUNTER "${COUNTER}+1")
 	endwhile()
 else()
+
+	#3) build static site
+	gen_Package_Static_Site(${TARGET_PACKAGE} "${TARGET_FRAMEWORK}")
 	#debug code
 	if(TARGET_FRAMEWORK)
 		message("[PID] INFO : framework ${TARGET_FRAMEWORK} has been updated locally with info from ${TARGET_PACKAGE}.")

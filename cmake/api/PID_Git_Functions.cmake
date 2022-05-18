@@ -3092,6 +3092,20 @@ function(update_Framework_Repository framework)
                   WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)#fetching master branch to get most up to date archives
 endfunction(update_Framework_Repository)
 
+
+
+
+function(check_Something_To_Commit TO_COMMIT path)
+execute_process(COMMAND git status --porcelain
+                WORKING_DIRECTORY ${path} OUTPUT_VARIABLE local_modifs)
+if(local_modifs)
+  set(${TO_COMMIT} TRUE PARENT_SCOPE)
+else()
+  set(${TO_COMMIT} FALSE PARENT_SCOPE)
+endif()
+endfunction(check_Something_To_Commit )
+
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -3102,7 +3116,7 @@ endfunction(update_Framework_Repository)
 #  publish_Framework_Repository
 #  ----------------------------
 #
-#   .. command:: publish_Framework_Repository(PUBLISHED framework trials)
+#   .. command:: publish_Framework_Repository(PUBLISHED framework)
 #
 #     Commit and push unpublished content of local framework's repository.
 #
@@ -3110,29 +3124,20 @@ endfunction(update_Framework_Repository)
 #
 #     :PUBLISHED: the output variable that is TRUE if framework published, FALSE otherwise
 #
-function(publish_Framework_Repository PUBLISHED framework trials)
+function(publish_Framework_Repository PUBLISHED framework)
   set(framework_path ${WORKSPACE_DIR}/sites/frameworks/${framework})
-  execute_process(COMMAND git status --porcelain
-                  WORKING_DIRECTORY ${framework_path} OUTPUT_VARIABLE res)
-  if(res)#there is something to commit !
-  	execute_process(COMMAND git add -A
-                    WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
-  	execute_process(COMMAND git commit -m "publishing new version of framework"
-                    WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
-  elseif(trials EQUAL 1)#on first trial if nothing to commit, then nothing to do
-    message("[PID] INFO: nothing new to publish in ${framework}")
-    set(${PUBLISHED} TRUE PARENT_SCOPE)
-    return()
-  endif()
-  #otherwise there is something to commit OR we are on next trials
-  execute_process(COMMAND git pull --ff-only origin master
+  execute_process(COMMAND git pull -ff origin master
                   WORKING_DIRECTORY ${framework_path}
                   ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull
                   RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
   if(PULL_RESULT EQUAL 0)#no conflict to manage
-    execute_process(COMMAND git lfs pull origin master
-                    WORKING_DIRECTORY ${framework_path}
-                    OUTPUT_QUIET ERROR_QUIET) #fetching LFS content, if any new in the mean time
+    check_Something_To_Commit(NEED_COM ${framework_path})
+    if(NEED_COM)
+      execute_process(COMMAND git add -A
+                      WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
+      execute_process(COMMAND git commit -m "updating references"
+                      WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
+    endif()
     execute_process(COMMAND git push origin master
                     WORKING_DIRECTORY ${framework_path}
                     RESULT_VARIABLE PUSH_RESULT 
@@ -3140,59 +3145,37 @@ function(publish_Framework_Repository PUBLISHED framework trials)
     if(PUSH_RESULT EQUAL 0)
       set(${PUBLISHED} TRUE PARENT_SCOPE)
       return()
-    else()
-      message("[PID] WARNING: cannot push to ${framework} repository ... Reason: pull problem=${out_pull} \n push_problem=${out}")
-    endif()
-  else()#pull problem, due to divergence between remote and local branches, rather trying to rebase
-      message("[PID] WARNING: cannot push to ${framework} repository because there are conflicts to manage. Reason: ${out_pull} !")
-
-      execute_process(COMMAND git pull --rebase origin master #try rebasing 
-                  WORKING_DIRECTORY ${framework_path}
-                  ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull 
-                  RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
-      if(PULL_RESULT EQUAL 0)#no conflict to manage
-        execute_process(COMMAND git lfs pull origin master
-              WORKING_DIRECTORY ${framework_path}
-              OUTPUT_QUIET ERROR_QUIET) #fetching LFS content, if any new in the mean time
-        execute_process(COMMAND git push origin master
-              WORKING_DIRECTORY ${framework_path}
-              RESULT_VARIABLE PUSH_RESULT
-              ERROR_VARIABLE out OUTPUT_VARIABLE out)
-        if(PUSH_RESULT EQUAL 0)
-          set(${PUBLISHED} TRUE PARENT_SCOPE)
-          return()
-        else()
-          message("[PID] WARNING: cannot push to ${framework} repository ... Reason: pull problem=${out_pull} \n push_problem=${out}")
-        endif()
-      else()
-        message("[PID] WARNING: cannot push to ${framework} repository because there are conflicts to manage. Reason: ${out_pull} !")
+    else()#in case push has failed => need to pull before update
+      if(NEED_COM)
+        execute_process(COMMAND git reset --hard HEAD~1 WORKING_DIRECTORY ${framework_path})#reset previous commit (will redo another one)
       endif()
+      message("[PID] WARNING: cannot push to ${framework} repository ... Reason: pull problem=${out_pull} \n push_problem=${out}")
+      execute_process(COMMAND git pull -ff origin master
+          WORKING_DIRECTORY ${framework_path}
+          ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull
+          RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+      if(PULL_RESULT EQUAL 0)#no conflict to manage
+        set(${PUBLISHED} FALSE PARENT_SCOPE)
+        return()
+      else()
+        message(FATAL_ERROR "[PID] CRITICAL ERROR: no solution to pull ${framework} repository. Reason: ${out_pull} !")
+      endif()
+    endif()
+  else()
+    message("[PID] ERROR: cannot pull ${framework} repository because there are conflicts to manage. Reason: ${out_pull} !")
+    execute_process(COMMAND git reset --hard WORKING_DIRECTORY ${framework_path})#reset previous commit (will redo another one)
+    execute_process(COMMAND git pull -ff origin master
+                    WORKING_DIRECTORY ${framework_path}
+                    ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull
+                    RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+    if(NOT PULL_RESULT EQUAL 0)#no conflict to manage
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: no solution to pull ${framework} repository. Reason: ${out_pull} !")
+    endif()
   endif()
+
   set(${PUBLISHED} FALSE PARENT_SCOPE)
 endfunction(publish_Framework_Repository)
 
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |merge_Framework_Repository| replace:: ``merge_Framework_Repository``
-#  .. _merge_Framework_Repository:
-#
-#  merge_Framework_Repository
-#  ---------------------------
-#
-#   .. command:: merge_Framework_Repository(framework)
-#
-#     Force the merge of master branch of origin into local framework's repository.
-#
-#     :framework: the name of target framework
-#
-function(merge_Framework_Repository framework)
-  set(framework_path ${WORKSPACE_DIR}/sites/frameworks/${framework})
-  #pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
-  execute_process(COMMAND git pull -f origin master
-                  WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
-endfunction(merge_Framework_Repository)
 
 #.rst:
 #
@@ -3710,7 +3693,7 @@ endfunction(update_Static_Site_Repository)
 #  publish_Static_Site_Repository
 #  ------------------------------
 #
-#   .. command:: publish_Static_Site_Repository(PUBLISHED package trials)
+#   .. command:: publish_Static_Site_Repository(PUBLISHED package)
 #
 #     Commit and push unpublished content of local package's static site repository.
 #
@@ -3718,67 +3701,63 @@ endfunction(update_Static_Site_Repository)
 #
 #     :PUBLISHED: the output variable that is TRUE if package static site has been pushed to a remote repository
 #
-function(publish_Static_Site_Repository PUBLISHED package trials)
+function(publish_Static_Site_Repository PUBLISHED package)
   set(site_path ${WORKSPACE_DIR}/sites/packages/${package})
-  execute_process(COMMAND git status --porcelain
-                  WORKING_DIRECTORY ${site_path} OUTPUT_VARIABLE res)
-  if(res)#there is something to commit
-  	execute_process(COMMAND git add -A
-                    WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET)
-  	execute_process(COMMAND git commit -m "publising ${package} static site"
-                    WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET)
-  elseif(trials EQUAL 1)#on first trial if nothing to commit then nothing to do
-    message("[PID] INFO: nothing new to publish in ${package} static site")
-    set(${PUBLISHED} TRUE PARENT_SCOPE)
-    return()
-  endif()
-
   # detect if empty repo
   execute_process(COMMAND git ls-remote -q
                   WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET
                   RESULT_VARIABLE LS_REMOTE_RESULT)#output is empty if repo is empty
-
   if(NOT LS_REMOTE_RESULT STREQUAL "")
-    execute_process(COMMAND git pull --ff-only  origin master
-                    WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET
-                    RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+    execute_process(COMMAND git pull -ff origin master
+                    WORKING_DIRECTORY ${site_path}
+                    ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull
+                    RESULT_VARIABLE PULL_RESULT)
+    #pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
   endif()
-  if(PULL_RESULT EQUAL 0 OR LS_REMOTE_RESULT STREQUAL "")# pull is OK or empty repo
-    execute_process(COMMAND git lfs pull origin master
-                    WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
+
+  if(LS_REMOTE_RESULT STREQUAL "" OR PULL_RESULT EQUAL 0)#no conflict to manage or empty repo
+    check_Something_To_Commit(NEED_COM ${site_path})
+    if(NEED_COM)
+      execute_process(COMMAND git add -A
+                      WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET)
+      execute_process(COMMAND git commit -m "updating references"
+                      WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET)
+    endif()
     execute_process(COMMAND git push origin master
-                    WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET
-                    RESULT_VARIABLE PUSH_RESULT)#pushing to master branch of origin
+                    WORKING_DIRECTORY ${site_path}
+                    RESULT_VARIABLE PUSH_RESULT 
+                    ERROR_VARIABLE out OUTPUT_VARIABLE out)
     if(PUSH_RESULT EQUAL 0)
       set(${PUBLISHED} TRUE PARENT_SCOPE)
       return()
+    else()#in case push has failed => need to pull before update
+      if(NEED_COM)
+        execute_process(COMMAND git reset --hard HEAD~1 WORKING_DIRECTORY ${site_path})#reset previous commit (will redo another one)
+      endif()
+      message("[PID] WARNING: cannot push to ${package} static site repository ... Reason: pull problem=${out_pull} \n push_problem=${out}")
+      execute_process(COMMAND git pull -ff origin master
+          WORKING_DIRECTORY ${site_path}
+          ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull
+          RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+      if(PULL_RESULT EQUAL 0)#no conflict to manage
+        set(${PUBLISHED} FALSE PARENT_SCOPE)
+        return()
     else()
-      message("[PID] WARNING: cannot push to ${package} static site repository ... maybe due to access rights or network problems")
+        message(FATAL_ERROR "[PID] CRITICAL ERROR: no solution to pull ${package} static site repository. Reason: ${out_pull} !")
+      endif()
     endif()
   else()
-    message("[PID] WARNING: cannot push to ${package} static site repository because there are conflicts to manage !")
+    message("[PID] ERROR: cannot pull ${package} static site repository because there are conflicts to manage. Reason: ${out_pull} !")
+    execute_process(COMMAND git reset --hard WORKING_DIRECTORY ${site_path})#reset previous commit (will redo another one)
+    execute_process(COMMAND git pull -ff origin master
+                    WORKING_DIRECTORY ${site_path}
+                    ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull
+                    RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+    if(NOT PULL_RESULT EQUAL 0)#no conflict to manage
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: no solution to pull ${package} static siterepository. Reason: ${out_pull} !")
   endif()
+  endif()
+
   set(${PUBLISHED} FALSE PARENT_SCOPE)
 endfunction(publish_Static_Site_Repository)
 
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |merge_Static_Site_Repository| replace:: ``merge_Static_Site_Repository``
-#  .. _merge_Static_Site_Repository:
-#
-#  merge_Static_Site_Repository
-#  ----------------------------
-#
-#   .. command:: merge_Static_Site_Repository(package)
-#
-#     Force the merge of master branch of origin into local package's static site repository.
-#
-#     :package: the name of target package
-#
-function(merge_Static_Site_Repository package)
-  execute_process(COMMAND git pull -f origin master
-                  WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/packages/${package}
-                  OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
-endfunction(merge_Static_Site_Repository)
