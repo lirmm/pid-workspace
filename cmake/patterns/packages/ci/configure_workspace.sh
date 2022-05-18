@@ -22,9 +22,8 @@ platform=$1
 
 # 1 extract target platform information from runner tags
 platform=${platform/pid/" "}
-platform=${platform/","/" "}
 platform=${platform/site/" "}
-platform=${platform/","/" "}
+platform=${platform//","/" "}
 
 # 2 separate platform and environment names
 instance=""
@@ -35,8 +34,7 @@ reg_expr_job="^build_(release|integration)_(.+)__(.+)__$"
 if [[ $CI_JOB_NAME =~ $reg_expr_job ]]; then
     instance_job=${BASH_REMATCH[3]}
     platform_job=${BASH_REMATCH[2]}
-    platform_job=${platform_job/plus/"+"}
-    platform_job=${platform_job/plus/"+"}
+    platform_job=${platform_job//plusplus/"++"}
 
     IFS=' ' read -ra my_array <<< "$platform"
 
