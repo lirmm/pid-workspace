@@ -1346,7 +1346,7 @@ endfunction(get_Contribution_Space_Repository_Status)
 #
 function(update_Workspace_Repository remote)
 go_To_Workspace_Master()
-execute_Silent_Process(GIT_OUT GIT_RES ${WORKSPACE_DIR} git pull ${remote} master)
+execute_Silent_Process(GIT_OUT GIT_RES ${WORKSPACE_DIR} git pull -ff ${remote} master)
 if(res)
   message("[PID] WARNING: Cannot update workspace from its ${remote} remote. Reason: ${GIT_OUT}")
 else()
@@ -2373,7 +2373,7 @@ function(reconnect_Repository package url)
   set(package_path ${WORKSPACE_DIR}/packages/${package})
   reconnect_Repository_Remote(${package_path} ${url} ${url} official)
   go_To_Master(${package} FALSE)
-  execute_process(COMMAND git pull official master
+  execute_process(COMMAND git pull -ff official master
                   WORKING_DIRECTORY ${package_path}
                   OUTPUT_QUIET ERROR_QUIET)#updating master
   execute_process(COMMAND git fetch official --tags
@@ -2500,7 +2500,7 @@ function(change_Origin_Repository package url)
   execute_process(COMMAND git remote set-url origin ${url}
                   WORKING_DIRECTORY ${package_path} OUTPUT_QUIET ERROR_QUIET)
   go_To_Integration(${package})
-  execute_process(COMMAND git pull origin integration
+  execute_process(COMMAND git pull -ff origin integration
                   WORKING_DIRECTORY ${package_path} OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git push origin integration
                   WORKING_DIRECTORY ${package_path} OUTPUT_QUIET ERROR_QUIET)
@@ -2917,7 +2917,7 @@ function(reconnect_Wrapper_Repository wrapper url)
   execute_process(COMMAND git remote set-url origin ${url}
                   WORKING_DIRECTORY ${wrapper_path}
                   OUTPUT_QUIET ERROR_QUIET)
-  execute_process(COMMAND git pull origin master
+  execute_process(COMMAND git pull -ff origin master
                   WORKING_DIRECTORY ${wrapper_path}
                   OUTPUT_QUIET ERROR_QUIET)#updating master
 endfunction(reconnect_Wrapper_Repository)
@@ -3086,7 +3086,7 @@ endfunction(init_Framework_Repository)
 #
 function(update_Framework_Repository framework)
   set(framework_path ${WORKSPACE_DIR}/sites/frameworks/${framework})
-  execute_process(COMMAND git pull origin master
+  execute_process(COMMAND git pull -ff origin master
                   WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
   execute_process(COMMAND git lfs pull origin master
                   WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)#fetching master branch to get most up to date archives
@@ -3095,6 +3095,24 @@ endfunction(update_Framework_Repository)
 
 
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Something_To_Commit| replace:: ``check_Something_To_Commit``
+#  .. _check_Something_To_Commit:
+#
+#  check_Something_To_Commit
+#  ----------------------------
+#
+#   .. command:: check_Something_To_Commit(TO_COMMIT path)
+#
+#     Check if there is something to commit inside a repository.
+#
+#     :path: path to the resitory to check
+#
+#     :TO_COMMIT: output variable that is TRUE if the repository contains content to commit, FALSE otherwise
+#
 function(check_Something_To_Commit TO_COMMIT path)
 execute_process(COMMAND git status --porcelain
                 WORKING_DIRECTORY ${path} OUTPUT_VARIABLE local_modifs)
@@ -3253,7 +3271,7 @@ function(reconnect_Framework_Repository framework url)
   execute_process(COMMAND git remote set-url origin ${url}
                   WORKING_DIRECTORY ${framework_path}
                   OUTPUT_QUIET ERROR_QUIET)
-  execute_process(COMMAND git pull origin master
+  execute_process(COMMAND git pull -ff origin master
                   WORKING_DIRECTORY ${framework_path}
                   OUTPUT_QUIET ERROR_QUIET)#updating master
 endfunction(reconnect_Framework_Repository)
@@ -3280,7 +3298,7 @@ function(change_Origin_Framework_Repository framework url)
   execute_process(COMMAND git remote set-url origin ${url}
                   WORKING_DIRECTORY ${framework_path}
                   OUTPUT_QUIET ERROR_QUIET)
-  execute_process(COMMAND git pull origin master
+  execute_process(COMMAND git pull -ff origin master
                   WORKING_DIRECTORY ${framework_path}
                   OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git push origin master
@@ -3389,7 +3407,7 @@ endfunction(init_Environment_Repository)
 #
 function(update_Environment_Repository environment)
   set(env_path ${WORKSPACE_DIR}/environments/${environment})
-  execute_process(COMMAND git pull origin master
+  execute_process(COMMAND git pull -ff origin master
                   WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin (in case of) => merge can take place
   execute_process(COMMAND git lfs pull origin master
                   WORKING_DIRECTORY ${env_path} )#fetching master branch to get most up to date archives
@@ -3420,7 +3438,7 @@ if(res)#there is something to commit !
                   WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)
 	execute_process(COMMAND git commit -m "publishing new version of framework"
                   WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)
-  execute_process(COMMAND git pull origin master
+  execute_process(COMMAND git pull -ff origin master
                   WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
   execute_process(COMMAND git lfs pull origin master
                   WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET) #fetching LFS content
@@ -3510,7 +3528,7 @@ function(reconnect_Environment_Repository environment url)
   execute_process(COMMAND git remote set-url origin ${url}
                   WORKING_DIRECTORY ${env_path}
                   OUTPUT_QUIET ERROR_QUIET)
-  execute_process(COMMAND git pull origin master
+  execute_process(COMMAND git pull -ff origin master
                   WORKING_DIRECTORY ${env_path}
                   OUTPUT_QUIET ERROR_QUIET)#updating master
 endfunction(reconnect_Environment_Repository)
@@ -3536,7 +3554,7 @@ function(change_Origin_Environment_Repository environment url)
   set(env_path ${WORKSPACE_DIR}/environments/${environment})
   execute_process(COMMAND git remote set-url origin ${url}
                   WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)
-  execute_process(COMMAND git pull origin master
+  execute_process(COMMAND git pull -ff origin master
                   WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)
   execute_process(COMMAND git push origin master
                   WORKING_DIRECTORY ${env_path} OUTPUT_QUIET ERROR_QUIET)
@@ -3677,7 +3695,7 @@ endfunction(init_Static_Site_Repository)
 #
 function(update_Static_Site_Repository package)
   set(site_path ${WORKSPACE_DIR}/sites/packages/${package})
-  execute_process(COMMAND git pull origin master
+  execute_process(COMMAND git pull -ff origin master
                   WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET)# pulling master branch of origin (in case of) => merge can take place
   execute_process(COMMAND git lfs pull origin master
                   WORKING_DIRECTORY ${site_path})# pulling master branch of origin (in case of) => merge can take place
@@ -3742,7 +3760,7 @@ function(publish_Static_Site_Repository PUBLISHED package)
       if(PULL_RESULT EQUAL 0)#no conflict to manage
         set(${PUBLISHED} FALSE PARENT_SCOPE)
         return()
-    else()
+      else()
         message(FATAL_ERROR "[PID] CRITICAL ERROR: no solution to pull ${package} static site repository. Reason: ${out_pull} !")
       endif()
     endif()
@@ -3755,7 +3773,7 @@ function(publish_Static_Site_Repository PUBLISHED package)
                     RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
     if(NOT PULL_RESULT EQUAL 0)#no conflict to manage
       message(FATAL_ERROR "[PID] CRITICAL ERROR: no solution to pull ${package} static siterepository. Reason: ${out_pull} !")
-  endif()
+    endif()
   endif()
 
   set(${PUBLISHED} FALSE PARENT_SCOPE)
