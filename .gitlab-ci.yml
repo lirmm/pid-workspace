@@ -20,6 +20,7 @@ stages:
         - pid rebuild package=foobar
         - pid info package=foobar
         - sh -c "! ./pid info package=foobar2" # assert failure
+   interruptible: true
 
 
 .deploy_: &deploy
@@ -28,6 +29,7 @@ stages:
         - pid deploy package=mytestpackage
         - pid deploy package=open-phri version=1.0.1
         - pid deploy package=opencv version=4.0.1
+   interruptible: true
 
 .external_use_: &external_use
    stage: external_use
@@ -45,6 +47,7 @@ stages:
         - export PATH=`pwd`/tmp/test_system_install/install/bin:$PATH
         - export RUNTIME_RESOURCE_PATH=`pwd`/tmp/test_system_install/install/share/runtime_resources
         - cd tmp/test_system_install/build && cmake .. && make
+   interruptible: true
 
 .external_use_ros: &external_use_ros
    stage: external_use
@@ -52,6 +55,7 @@ stages:
         - source /opt/ros/melodic/setup.bash
         - mkdir tmp && cd tmp && git clone git@gite.lirmm.fr:pid/tests/test_external_use_deploy.git
         - cd test_external_use_deploy/build && cmake -DPATH_TO_PID_WS="../../.." -DTEST_DIRECT_SYSTEM_DEPLOYMENT=ON .. && make
+   interruptible: true
 
 ############ patterns for platforms selection #############
 # here the project generates patterns for runner selection according for all platforms defined in the workspace
