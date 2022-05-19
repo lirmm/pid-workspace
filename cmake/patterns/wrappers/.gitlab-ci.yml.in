@@ -19,6 +19,7 @@ stages:
    - ./publish_wrapper.sh $CI_COMMIT_TAG $CI_JOB_NAME
   only:
    - /^v.*$/
+  interruptible: true
 
  ############ patterns for platforms selection #############
  # here the project generates patterns for runner selection according to platforms defined in CI for the wrapper

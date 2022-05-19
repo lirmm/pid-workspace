@@ -17,6 +17,7 @@ build_site:
     - public
   only:
     - master
+  interruptible: true
   tags:
     - pid
     - site
@@ -32,6 +33,7 @@ pages:
     - public
   only:
     - master
+  interruptible: true
   tags:
     - pid
     - site
