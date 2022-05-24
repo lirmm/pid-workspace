@@ -1727,22 +1727,21 @@ else()#simply creating a "fake" target for header only library
 	create_Header_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
 endif()
 
-if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE")
-	#NOTE: a module does not define an interface, just implement an existing one so no need to generate
-	if(manage_symbols)
-		#NOTE: if symbols are managed then we need to generate the header defining macros used for exporting symbols
-		include(GenerateExportHeader)#using CMake dedicated module
-		GENERATE_EXPORT_HEADER(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX}
-													 BASE_NAME ${PROJECT_NAME}_${c_name})
-		set(target_exporting_header ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_${c_name}_export.h)
-		set(exporting_header_path_in_build_tree ${CMAKE_CURRENT_BINARY_DIR}/include/${${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME}/${manage_symbols})
-		file(COPY ${target_exporting_header}
-		     DESTINATION ${exporting_header_path_in_build_tree})
-		target_include_directories(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PUBLIC
-			${CMAKE_CURRENT_BINARY_DIR}/include/${${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME})
-
+if(manage_symbols)
+	include(GenerateExportHeader)#using CMake dedicated module
+	#NOTE: if symbols are managed then we need to generate the header defining macros used for exporting symbols
+	GENERATE_EXPORT_HEADER(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} BASE_NAME ${PROJECT_NAME}_${c_name})
+	set(target_exporting_header ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_${c_name}_export.h)
+	set(exporting_header_path_in_build_tree ${CMAKE_CURRENT_BINARY_DIR}/include/${${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME}/${manage_symbols})
+	file(COPY ${target_exporting_header}
+		DESTINATION ${exporting_header_path_in_build_tree})
+	target_include_directories(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PUBLIC
+		${CMAKE_CURRENT_BINARY_DIR}/include/${${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME})
+	
+	if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE")
+		#NOTE: a module does not define an interface, just implement an existing one so no need to install
 		install(FILES ${target_exporting_header}
-				    DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH}/${${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME}/${manage_symbols}
+				DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH}/${${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME}/${manage_symbols}
 		)
 	endif()
 endif()
