@@ -561,9 +561,9 @@ foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE
 	endif()
 endforeach()
 set(USE_VERSION_CONSTRAINT "${MAJOR_RESOLVED}.${CUR_MINOR_RESOLVED}.${CUR_PATCH_RESOLVED}")
-if(NOT ${package}_VERSION_STRING)#no version already used because package not already found (probably due to a previously managed dependency)
+if(NOT ${package}_VERSION_STRING)#no version already used because package not already found
   set(${MINIMUM_VERSION} ${USE_VERSION_CONSTRAINT} PARENT_SCOPE)#use the minimum version specified
-else()# a version of the package is already used == package already found
+else()# a version of the package is already used == package already found, probably due to a previously managed dependency)
   get_Version_String_Numbers("${${package}_VERSION_STRING}" curr_major curr_minor curr_patch)
   if(NOT MAJOR_RESOLVED EQUAL curr_major)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -693,10 +693,10 @@ function(install_Native_Package INSTALL_OK package reinstall release_only)
 set(PATH_TO_SOURCE "")
 package_Source_Exists_In_Workspace(IS_EXISTING PATH_TO_SOURCE ${package})
 if(IS_EXISTING)
-set(USE_SOURCES TRUE)
-set(REPOSITORY_EXISTS TRUE)
+  set(USE_SOURCES TRUE)
+  set(REPOSITORY_EXISTS TRUE)
 elseif(NOT reinstall)#no need to check for binaries, if reinstall is required then we will build from sources
-set(REPOSITORY_EXISTS FALSE)
+  set(REPOSITORY_EXISTS FALSE)
 	package_Reference_Exists_In_Workspace(IS_EXISTING ${package})
 	if(IS_EXISTING)
 		set(USE_SOURCES FALSE)#by default do not use sources if repository does not lie in workspace
@@ -737,7 +737,7 @@ elseif(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
       # no need to do much more no VERSION_mIN simply means there is no requirement because the version is already installed
       set(${INSTALL_OK} TRUE PARENT_SCOPE)
       return() 
-    endif() 
+    endif()
     if(IS_EXACT)
       message("[PID] INFO : deploying package ${package} with version compatible with exact ${VERSION_MIN}...")
     else()
@@ -819,7 +819,7 @@ endfunction(install_Native_Package)
 #
 #   .. command:: unload_Binary_Package_Install_Manifest(package version platform)
 #
-#    Unload info coming from aninstall manifest (use file) provided by a binary package.
+#    Unload info coming from an install manifest (use file) provided by a binary package.
 #
 #      :package: The name of the package.
 #      :version: The version of the package.

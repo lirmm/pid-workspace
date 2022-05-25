@@ -91,6 +91,30 @@ endfunction(set_Version_Strings)
 #
 # .. ifmode:: internal
 #
+#  .. |reset_Version_Strings| replace:: ``reset_Version_Strings``
+#  .. _reset_Version_Strings:
+#
+#  reset_Version_Strings
+#  ---------------------
+#
+#   .. command:: reset_Version_Strings(package)
+#
+#    Reset cache variables used to manage the version of a package
+#
+#
+#     :package: the name of the package.
+function (reset_Version_Strings package)
+	set(${package}_VERSION_MAJOR CACHE INTERNAL "")
+	set(${package}_VERSION_MINOR CACHE INTERNAL "")
+	set(${package}_VERSION_PATCH CACHE INTERNAL "")
+	set(${package}_VERSION_STRING CACHE INTERNAL "")
+	set(${package}_VERSION_RELATIVE_PATH CACHE INTERNAL "")
+endfunction(reset_Version_Strings)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |set_External_Version_Strings| replace:: ``set_External_Version_Strings``
 #  .. _set_External_Version_Strings:
 #
@@ -1927,6 +1951,8 @@ if(EXIST)
           #Note: this is to ensure that the rebuild of dependency is done on adequate patch version even if this version is not released yet
           set(${package}_FIND_VERSION_PATCH ${${package}_VERSION_PATCH})
         endif()
+		unload_Binary_Package_Install_Manifest(${package}) #clean the cache with info coming from use file
+		reset_Version_Strings(${package})#clean the cache with info coming from dependency version resolution
         exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the package ${package} with version ${${package}_FIND_VERSION} has been found but does not provide debug artifacts as required. Considered as not found.")
       endif()
     endif()
@@ -2061,7 +2087,9 @@ if(EXIST)
     else()# when not a system install the package may be built in release only mode
       if(CMAKE_BUILD_TYPE MATCHES Debug)
         if(${package}_BUILT_RELEASE_ONLY)#debug binaries are not available, so package is not found
-          exit_And_Manage_Install_Requirement_For_External(${package} "[PID] ERROR : the package ${package} with version ${${package}_FIND_VERSION} has been found but does not provide debug artifacts as required. Considered as not found." ${is_exact} ${is_system})
+			unload_Binary_Package_Install_Manifest(${package}) #clean the cache with info coming from use file
+			reset_Version_Strings(${package})#clean the cache with info coming from dependency version resolution
+          	exit_And_Manage_Install_Requirement_For_External(${package} "[PID] ERROR : the package ${package} with version ${${package}_FIND_VERSION} has been found but does not provide debug artifacts as required. Considered as not found." ${is_exact} ${is_system})
         endif()
       endif()
     # else even if an OS variant is not required, an OS variant can be used
