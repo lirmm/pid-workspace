@@ -1850,10 +1850,12 @@ if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE")
 	add_Example_To_Doc(${c_name}) #examples are added to the doc to be referenced
 	if(NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${c_name}) #examples are not built so no need to continue
 		mark_As_Declared(${c_name})
+		set(${PROJECT_NAME}_${c_name}_FOR_DOC_ONLY TRUE PARENT_SCOPE)
 		return()
 	endif()
 elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "TEST")
 	if(NOT BUILD_AND_RUN_TESTS) #tests are not built so no need to continue
+		set(${PROJECT_NAME}_${c_name}_FOR_DOC_ONLY TRUE PARENT_SCOPE)
 		mark_As_Declared(${c_name})
 		return()
 	endif()

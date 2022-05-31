@@ -1444,6 +1444,25 @@ if(DECLARE_PID_COMPONENT_DOCUMENTATION)
 endif()
 endmacro(declare_PID_Component)
 
+
+
+#.rst:
+# .. ifmode:: user
+#
+#  .. |PID_Predeclare_Application| replace:: ``PID_Predeclare_Application``
+#  .. _PID_Predeclare_Application:
+#
+#  PID_Predeclare_Application
+#  --------------------------
+#
+#  .. command:: PID_Predeclare_Application(name)
+#
+#   Predeclare an application. To be used in CMakeLists.txt of src folder to allow a library to depend on an internal application (that will be defined later)
+#
+#   .. rubric:: Required parameters
+#
+#   :<name>: Name of the application. This later must be defined in the CMakeLists.txt of the app folder.
+#
 macro(PID_Predeclare_Application name)
   add_executable(${PROJECT_NAME}_${name}${INSTALL_NAME_SUFFIX})
   set_target_properties(
@@ -1826,6 +1845,10 @@ if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT)
 else()
   set(component_name ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT})
 endif()
+if(${PROJECT_NAME}_${component_name}_FOR_DOC_ONLY)
+  return()
+endif()
+
 set(comp_defs "")
 if(DECLARE_PID_COMPONENT_DEPENDENCY_INTERNAL_DEFINITIONS)
 	set(comp_defs ${DECLARE_PID_COMPONENT_DEPENDENCY_INTERNAL_DEFINITIONS})
