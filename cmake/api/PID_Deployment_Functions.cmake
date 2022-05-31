@@ -3119,7 +3119,6 @@ set(error_res "")
 set(error_res_debug "")
 
 set(error_output)
-
 if(NOT release_only)
   if(EXISTS download_url_dbg)
     copy_Package_Install_Folder(error_res_debug ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${target_install_folder} ${CMAKE_BINARY_DIR})
