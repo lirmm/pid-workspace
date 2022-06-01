@@ -1198,7 +1198,6 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
     #WARNING Note: use same arguments as binary !!
     check_Platform_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${package} ${config} PACKAGE_SPECS ${mode})
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS PLATFORM_SPECS)
-
     #get SONAME and SYMBOLS coming from package configuration
     get_Soname_Symbols_Values(PACKAGE_SONAME PACKAGE_SYMBOLS PACKAGE_SPECS)
 
@@ -1896,7 +1895,7 @@ macro(evaluate_Platform_Configuration config path_to_config force_reeval)
   endforeach()
   # optimization check to avoid CMake regeneration of system check when not necessary
   # NOTE: main problem is related to reevaluation due to debug+release builds :
-  # each build mode write the included file (same for both) which leads to a complete reevaluation of the
+  # each build mode write the included file (same for both) which leads to a complete reevaluation
   set(need_reevaluate TRUE)
   set(need_regen FALSE)
   set(result_index 0)

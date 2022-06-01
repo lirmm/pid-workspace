@@ -879,8 +879,10 @@ if(${package}_FRAMEWORK) #references are deployed in a framework
   set(manifest_address)
   if(PACK_TYPE STREQUAL "NATIVE")
     set(manifest_address ${FRAMEWORK_ADDRESS}/packages/${package}/binaries/${version}/${platform}/${manifest_name})
+    set(line_pattern  "^(#.+|set\(.+\))")
   elseif(PACK_TYPE STREQUAL "EXTERNAL")
     set(manifest_address ${FRAMEWORK_ADDRESS}/external/${package}/binaries/${version}/${platform}/${manifest_name})
+    set(line_pattern  "^(#.+|set\(.+\)|.+_PID_External_.+)")
   endif()
   if(manifest_address)
     file(DOWNLOAD ${manifest_address} ${ws_download_folder}/${manifest_name} STATUS res TLS_VERIFY OFF)
@@ -912,18 +914,28 @@ elseif(${package}_SITE_GIT_ADDRESS)  #references are deployed in a lone static s
     endif()
 	endif()
 endif()
-
 if(to_include)#there is a file to include but if static site is private it may have returned an invalid file (HTML connection ERROR response)
   file(STRINGS ${to_include} LINES)
   set(erroneous_file FALSE)
   foreach(line IN LISTS LINES)
-    if(NOT line MATCHES "^(#.+|set\(.+\))")
+    if(NOT line MATCHES "${line_pattern}")
       set(erroneous_file TRUE)
       break()
     endif()
   endforeach()
   if(NOT erroneous_file)
-    include(${to_include})
+    if(PACK_TYPE STREQUAL "EXTERNAL")
+      #need to set the the build type if not executed in the context of a package or wrapper
+      if(NOT CMAKE_BUILD_TYPE)
+        set(CMAKE_BUILD_TYPE Release)
+        include(${to_include})
+        set(CMAKE_BUILD_TYPE)#then reset
+      else()
+        include(${to_include})
+      endif()
+    else()
+      include(${to_include})
+    endif()
     set(${MANIFEST_FOUND} TRUE PARENT_SCOPE)
   endif()
 endif()
@@ -1608,13 +1620,13 @@ function(check_Package_Platform_Against_Current CHECK_OK package platform versio
   # the platform may have an instance name so we need first to get the base name of the platform
   extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${platform})
 
-  get_Platform_Variables(BASENAME platfom_str INSTANCE instance_str)
-  if(instance_str)#the current platform is an instance (specific target platform)
+  get_Platform_Variables(BASENAME platfom_str INSTANCE instance_str DISTRIBUTION distrib_str DIST_VERSION distrib_ver_str)
+  if(instance_str)#the current platform is an instance (specific target platform) => only binaries produced for this instance are eligible
     #searching for such specific instance in available binaries
     if(platform STREQUAL CURRENT_PLATFORM)# OK this binary version is theorically eligible with instance constraint
       set(checking_config TRUE)
     endif()
-  else()#current platform is a generic platform => all binaries are theretically eligible as soon as they respect base platform constraints
+  else()#current platform is a generic platform => all binaries are theoretically eligible as soon as they respect base platform constraints
     if(RES_PLATFORM_BASE STREQUAL platfom_str)# OK this binary version is theorically eligible with base platform constraint
       set(checking_config TRUE)
     endif()
@@ -1626,10 +1638,18 @@ function(check_Package_Platform_Against_Current CHECK_OK package platform versio
   load_Binary_Package_Install_Manifest(MANIFEST_LOADED ${package} ${version} ${platform})
   #load the install manifest to get info about the binary
   if(NOT MANIFEST_LOADED)
-    #cannot say much more so let's say it is OK, further checks will operate on Use file provided by the binary package
+    #cannot say much more so let's say it is NOT OK
+    set(${CHECK_OK} FALSE PARENT_SCOPE)
     return()
   endif()
 
+  if(NOT distrib_str STREQUAL ${package}_BUILT_FOR_DISTRIBUTION
+     OR NOT distrib_ver_str STREQUAL ${package}_BUILT_FOR_DISTRIBUTION_VERSION)
+     #if not build for the same distribution the risk of incompatible binaries is too high
+     unload_Binary_Package_Install_Manifest(${package})
+     set(${CHECK_OK} FALSE PARENT_SCOPE)
+     return()
+  endif()
   # need to check for its platform configuration to be sure it can be used locally
   set(LANGS_TO_CHECK)
   if(${package}_LANGUAGE_CONFIGURATIONS)
@@ -1641,6 +1661,7 @@ function(check_Package_Platform_Against_Current CHECK_OK package platform versio
     is_Allowed_Language_Configuration(ALLOWED ${lang} args_as_list)
     if(NOT ALLOWED)
       set(${CHECK_OK} FALSE PARENT_SCOPE)
+      unload_Binary_Package_Install_Manifest(${package})
       return()
     endif()
   endforeach()
@@ -1655,6 +1676,7 @@ function(check_Package_Platform_Against_Current CHECK_OK package platform versio
     is_Allowed_Platform_Configuration(ALLOWED ${config} args_as_list)
     if(NOT ALLOWED)
       set(${CHECK_OK} FALSE PARENT_SCOPE)
+      unload_Binary_Package_Install_Manifest(${package})
       return()
     endif()
   endforeach()
@@ -1662,6 +1684,7 @@ function(check_Package_Platform_Against_Current CHECK_OK package platform versio
   is_Compatible_With_Current_ABI(COMPATIBLE ${package} Release)
   if(NOT COMPATIBLE)
     set(${CHECK_OK} FALSE PARENT_SCOPE)
+    unload_Binary_Package_Install_Manifest(${package})
     return()
   endif()
 
