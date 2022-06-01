@@ -3134,28 +3134,26 @@ endfunction(check_Something_To_Commit )
 #  publish_Framework_Repository
 #  ----------------------------
 #
-#   .. command:: publish_Framework_Repository(PUBLISHED framework)
+#   .. command:: publish_Framework_Repository(PUBLISHED framework package)
 #
 #     Commit and push unpublished content of local framework's repository.
 #
 #     :framework: the name of target framework
 #
+#     :package: the name of updated package
+#
 #     :PUBLISHED: the output variable that is TRUE if framework published, FALSE otherwise
 #
-function(publish_Framework_Repository PUBLISHED framework)
+function(publish_Framework_Repository PUBLISHED framework package)
   set(framework_path ${WORKSPACE_DIR}/sites/frameworks/${framework})
-  execute_process(COMMAND git pull --no-rebase --no-edit -ff origin master
+
+	execute_process(COMMAND git pull --no-rebase --no-edit -ff -s recursive -X theirs -X no-renames origin master
                   WORKING_DIRECTORY ${framework_path}
                   ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull
-                  RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+                  RESULT_VARIABLE PULL_RESULT)#pulling master branch from official to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
   if(PULL_RESULT EQUAL 0)#no conflict to manage
-    check_Something_To_Commit(NEED_COM ${framework_path})
-    if(NEED_COM)
-      execute_process(COMMAND git add -A
-                      WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
-      execute_process(COMMAND git commit -m "updating references"
-                      WORKING_DIRECTORY ${framework_path} OUTPUT_QUIET ERROR_QUIET)
-    endif()
+  	#build static site -> may remove some elements (previous patch versions)
+    commit_New_Static_Site_Content(COMMITED ${package} ${framework})
     execute_process(COMMAND git push origin master
                     WORKING_DIRECTORY ${framework_path}
                     RESULT_VARIABLE PUSH_RESULT 
@@ -3164,33 +3162,14 @@ function(publish_Framework_Repository PUBLISHED framework)
       set(${PUBLISHED} TRUE PARENT_SCOPE)
       return()
     else()#in case push has failed => need to pull before update
-      if(NEED_COM)
+      if(COMMITED)
         execute_process(COMMAND git reset --hard HEAD~1 WORKING_DIRECTORY ${framework_path})#reset previous commit (will redo another one)
       endif()
-      message("[PID] WARNING: cannot push to ${framework} repository ... Reason: pull problem=${out_pull} \n push_problem=${out}")
-      execute_process(COMMAND git pull --no-rebase --no-edit -ff origin master
-          WORKING_DIRECTORY ${framework_path}
-          ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull
-          RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
-      if(PULL_RESULT EQUAL 0)#no conflict to manage
-        set(${PUBLISHED} FALSE PARENT_SCOPE)
-        return()
-      else()
-        message(FATAL_ERROR "[PID] CRITICAL ERROR: no solution to pull ${framework} repository. Reason: ${out_pull} !")
-      endif()
+      message("[PID] WARNING: cannot push to ${framework} repository ... Reason: ${out}")
     endif()
   else()
-    message("[PID] ERROR: cannot pull ${framework} repository because there are conflicts to manage. Reason: ${out_pull} !")
-    execute_process(COMMAND git reset --hard WORKING_DIRECTORY ${framework_path})#reset previous commit (will redo another one)
-    execute_process(COMMAND git pull --no-rebase --no-edit -ff origin master
-                    WORKING_DIRECTORY ${framework_path}
-                    ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull
-                    RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
-    if(NOT PULL_RESULT EQUAL 0)#no conflict to manage
-      message(FATAL_ERROR "[PID] CRITICAL ERROR: no solution to pull ${framework} repository. Reason: ${out_pull} !")
-    endif()
+    message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot pull ${framework} repository because there are conflicts to manage. Reason: ${out_pull} !")
   endif()
-
   set(${PUBLISHED} FALSE PARENT_SCOPE)
 endfunction(publish_Framework_Repository)
 
@@ -3726,7 +3705,7 @@ function(publish_Static_Site_Repository PUBLISHED package)
                   WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET
                   RESULT_VARIABLE LS_REMOTE_RESULT)#output is empty if repo is empty
   if(NOT LS_REMOTE_RESULT STREQUAL "")
-    execute_process(COMMAND git pull --no-rebase --no-edit -ff origin master
+    execute_process(COMMAND git pull --no-rebase --no-edit -ff -s recursive -X theirs -X no-renames origin master
                     WORKING_DIRECTORY ${site_path}
                     ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull
                     RESULT_VARIABLE PULL_RESULT)
@@ -3734,13 +3713,7 @@ function(publish_Static_Site_Repository PUBLISHED package)
   endif()
 
   if(LS_REMOTE_RESULT STREQUAL "" OR PULL_RESULT EQUAL 0)#no conflict to manage or empty repo
-    check_Something_To_Commit(NEED_COM ${site_path})
-    if(NEED_COM)
-      execute_process(COMMAND git add -A
-                      WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET)
-      execute_process(COMMAND git commit -m "updating references"
-                      WORKING_DIRECTORY ${site_path} OUTPUT_QUIET ERROR_QUIET)
-    endif()
+    commit_New_Static_Site_Content(COMMITED ${package} "")
     execute_process(COMMAND git push origin master
                     WORKING_DIRECTORY ${site_path}
                     RESULT_VARIABLE PUSH_RESULT 
@@ -3749,33 +3722,14 @@ function(publish_Static_Site_Repository PUBLISHED package)
       set(${PUBLISHED} TRUE PARENT_SCOPE)
       return()
     else()#in case push has failed => need to pull before update
-      if(NEED_COM)
+      if(COMMITED)
         execute_process(COMMAND git reset --hard HEAD~1 WORKING_DIRECTORY ${site_path})#reset previous commit (will redo another one)
       endif()
-      message("[PID] WARNING: cannot push to ${package} static site repository ... Reason: pull problem=${out_pull} \n push_problem=${out}")
-      execute_process(COMMAND git pull --no-rebase --no-edit -ff origin master
-          WORKING_DIRECTORY ${site_path}
-          ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull
-          RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
-      if(PULL_RESULT EQUAL 0)#no conflict to manage
-        set(${PUBLISHED} FALSE PARENT_SCOPE)
-        return()
-      else()
-        message(FATAL_ERROR "[PID] CRITICAL ERROR: no solution to pull ${package} static site repository. Reason: ${out_pull} !")
-      endif()
+      message("[PID] WARNING: cannot push to ${package} static site repository ... Reason: ${out}")
     endif()
   else()
-    message("[PID] ERROR: cannot pull ${package} static site repository because there are conflicts to manage. Reason: ${out_pull} !")
-    execute_process(COMMAND git reset --hard WORKING_DIRECTORY ${site_path})#reset previous commit (will redo another one)
-    execute_process(COMMAND git pull --no-rebase --no-edit -ff origin master
-                    WORKING_DIRECTORY ${site_path}
-                    ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull
-                    RESULT_VARIABLE PULL_RESULT)#pulling master branch of origin to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
-    if(NOT PULL_RESULT EQUAL 0)#no conflict to manage
-      message(FATAL_ERROR "[PID] CRITICAL ERROR: no solution to pull ${package} static siterepository. Reason: ${out_pull} !")
-    endif()
+    message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot pull ${package} static site repository because there are conflicts to manage. Reason: ${out_pull} !")
   endif()
-
   set(${PUBLISHED} FALSE PARENT_SCOPE)
 endfunction(publish_Static_Site_Repository)
 
