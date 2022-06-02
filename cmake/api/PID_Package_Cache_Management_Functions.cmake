@@ -1654,6 +1654,38 @@ endfunction(reset_Predeclared)
 #
 # .. ifmode:: internal
 #
+#  .. |set_Internal_Only| replace:: ``set_Internal_Only``
+#  .. _set_Internal_Only:
+#
+#  set_Internal_Only
+#  -----------------
+#
+#   .. command:: set_Internal_Only()
+#
+#   Set properties of library related to its internal use.
+#
+#     :component: the name of the library.
+#     :is_internal: TRUE if library is for internal use only, FALSE otherwise.
+#     :for_examples: TRUE if library is for code example purpose, FALSE otherwise.
+#     :for_tests: TRUE if library is for test purpose, FALSE otherwise.
+#
+function(set_Internal_Only component is_internal for_examples for_tests)
+  set(${PROJECT_NAME}_${component}_INTERNAL_ONLY ${is_internal} CACHE INTERNAL "")
+  if(is_internal)
+    set(${PROJECT_NAME}_${component}_FOR_EXAMPLES ${for_examples} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_${component}_FOR_TESTS ${for_tests} CACHE INTERNAL "")
+  else()
+    set(${PROJECT_NAME}_${component}_FOR_EXAMPLES FALSE CACHE INTERNAL "")
+    set(${PROJECT_NAME}_${component}_FOR_TESTS FALSE CACHE INTERNAL "")
+  endif()
+endfunction(set_Internal_Only)
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |export_External_Component| replace:: ``export_External_Component``
 #  .. _export_External_Component:
 #

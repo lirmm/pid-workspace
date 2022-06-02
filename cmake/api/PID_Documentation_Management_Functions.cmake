@@ -77,7 +77,12 @@ endfunction(generate_Static_Site_Jekyll_Data_File)
 #
 function(add_Example_To_Doc c_name)
 	file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/share/doc/examples/)
-	file(COPY ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR} DESTINATION ${PROJECT_BINARY_DIR}/share/doc/examples/)
+	if(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "EXAMPLE")
+		file(COPY ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR} DESTINATION ${PROJECT_BINARY_DIR}/share/doc/examples/)
+	else()#it is a library
+		file(COPY ${${PROJECT_NAME}_${c_name}_TEMP_SOURCE_DIR} ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} 
+			 DESTINATION ${PROJECT_BINARY_DIR}/share/doc/examples/)
+	endif()
 endfunction(add_Example_To_Doc c_name)
 
 #.rst:
@@ -134,7 +139,17 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
   unset(DOXYFILE_IN CACHE)
   if(DOXYFILE_PATH) #we are able to generate the doc
   	# general variables
-  	set(DOXYFILE_SOURCE_DIRS "${CMAKE_SOURCE_DIR}/include/")
+	set(headers_list)
+	foreach(comp IN LISTS ${PROJECT_NAME}_DECLARED_COMPS)
+		if(NOT ${PROJECT_NAME}_${comp}_FOR_DOC_ONLY)
+			if(${PROJECT_NAME}_${comp}_HEADER_DIR_NAME)#if the component defines public headers
+				list(APPEND headers_list "${CMAKE_SOURCE_DIR}/include/${${PROJECT_NAME}_${comp}_HEADER_DIR_NAME}")
+			endif()
+		endif()
+	endforeach()
+	if(headers_list)
+		string(REPLACE ";" " " DOXYFILE_SOURCE_DIRS "${headers_list}")
+	endif()
   	set(DOXYFILE_MAIN_PAGE "${CMAKE_BINARY_DIR}/share/APIDOC_welcome.md")
   	set(DOXYFILE_PROJECT_NAME ${PROJECT_NAME})
   	set(DOXYFILE_PROJECT_VERSION ${${PROJECT_NAME}_VERSION})
@@ -539,7 +554,11 @@ function(generate_Package_Content_Documentation RETURNED_CONTENT_DOC package)
     set(DOC_STR "${DOC_STR}\n * Libraries:\n")
     foreach(lib IN LISTS ${package}_COMPONENTS_LIBS)
       string(TOLOWER ${${package}_${lib}_TYPE} lib_type)
-      set(DOC_STR "${DOC_STR}\n   * ${lib} (${lib_type})${${package}_${lib}_DESCRIPTION_STR}\n")
+	  if(${package}_${lib}_INTERNAL_ONLY)
+	  	set(DOC_STR "${DOC_STR}\n   * ${lib} (${lib_type} internal)${${package}_${lib}_DESCRIPTION_STR}\n")
+	  else()  
+	  	set(DOC_STR "${DOC_STR}\n   * ${lib} (${lib_type})${${package}_${lib}_DESCRIPTION_STR}\n")
+	  endif()
     endforeach()
   endif()
   if(NB_APPS GREATER 0)

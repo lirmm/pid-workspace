@@ -1015,6 +1015,9 @@ endmacro(build_PID_Package)
 #   :LOGGABLE: specifies that the component generate logs using the pid-log system.
 #   :ALIAS ...: specifies the alias names of the component.
 #   :MANAGE_SYMBOLS: Tell the system that the code will manage symbol export by specifying the path (relative to DIRECTORY) where the generated header defining macro for exporting symbols will be put. All symbols of the library will be hidden instead of default behavior where all symbols are exported.
+#   :INTERNAL_ONLY: specifies that the library is defined for internal use only, will not be installed by the package.
+#   :FOR_EXAMPLES: specifies that library must be internal only and is used for example purpose
+#   :LOGGABLE: specifies that library must be internal only and is used for example purpose
 #
 #   The following options are supported by the ``INTERNAL`` and ``EXPORTED`` commands:
 #
@@ -1050,7 +1053,11 @@ macro(PID_Component)
 endmacro(PID_Component)
 
 macro(declare_PID_Component)
-set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER APPLICATION APP EXAMPLE_APPLICATION EXAMPLE TEST_APPLICATION TEST PYTHON_PACK PYTHON LOGGABLE)
+set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER 
+            APPLICATION APP EXAMPLE_APPLICATION EXAMPLE TEST_APPLICATION TEST 
+            PYTHON_PACK PYTHON 
+            LOGGABLE
+            INTERNAL_ONLY FOR_EXAMPLES FOR_TESTS)
 set(oneValueArgs MANAGE_SYMBOLS NAME DIRECTORY C_STANDARD C_MAX_STANDARD CXX_STANDARD CXX_MAX_STANDARD DOCUMENTATION WARNING_LEVEL)
 set(multiValueArgs INTERNAL EXPORTED RUNTIME_RESOURCES DESCRIPTION USAGE SPECIAL_HEADERS AUXILIARY_SOURCES DEPEND EXPORT ALIAS)
 cmake_parse_arguments(DECLARE_PID_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -1235,10 +1242,10 @@ set(exported_compiler_options)
 if(DECLARE_PID_COMPONENT_EXPORTED)
 	if(type MATCHES APP OR type MATCHES EXAMPLE OR type MATCHES TEST)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Component, applications cannot export anything (invalid use of the EXPORT keyword).")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Component, applications cannot export anything (invalid use of the EXPORTED keyword).")
 	elseif(type MATCHES MODULE)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Component, module librairies cannot export anything (invalid use of the EXPORT keyword).")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Component, module librairies cannot export anything (invalid use of the EXPORTED keyword).")
 	endif()
 	if(DECLARE_PID_COMPONENT_EXPORTED STREQUAL "")
     finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -1352,6 +1359,11 @@ else() #it is a library
     endif()
   endif()
 
+  if(DECLARE_PID_COMPONENT_FOR_EXAMPLES OR DECLARE_PID_COMPONENT_FOR_TESTS)
+    if(NOT DECLARE_PID_COMPONENT_INTERNAL_ONLY)
+      message(FATAL_ERROR "[PID] CRITICAL ERROR: in package ${PROJECT_NAME} when calling PID_Component to declare library ${comp_name}, declared as FOR_TESTS or FOR_EXAMPLES but not INTERNAL_ONLY")
+    endif()
+  endif()
 	declare_Library_Component(${comp_name}
 					"${dir_name}"
 					${type}
@@ -1371,7 +1383,11 @@ else() #it is a library
           "${DECLARE_PID_COMPONENT_AUXILIARY_SOURCES}"
           "${DECLARE_PID_COMPONENT_LOGGABLE}"
           "${DECLARE_PID_COMPONENT_ALIAS}"
-          "${DECLARE_PID_COMPONENT_MANAGE_SYMBOLS}")
+          "${DECLARE_PID_COMPONENT_MANAGE_SYMBOLS}"
+          "${DECLARE_PID_COMPONENT_INTERNAL_ONLY}"
+          "${DECLARE_PID_COMPONENT_FOR_EXAMPLES}"
+          "${DECLARE_PID_COMPONENT_FOR_TESTS}"
+  )
 endif()
 if(DECLARE_PID_COMPONENT_DESCRIPTION)
 	init_Component_Description(${comp_name} "${DECLARE_PID_COMPONENT_DESCRIPTION}" "${DECLARE_PID_COMPONENT_USAGE}")
@@ -1845,174 +1861,127 @@ if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT)
 else()
   set(component_name ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPONENT})
 endif()
-if(${PROJECT_NAME}_${component_name}_FOR_DOC_ONLY)
-  return()
-endif()
+if(NOT ${PROJECT_NAME}_${component_name}_FOR_DOC_ONLY)
+  set(comp_defs "")
+  if(DECLARE_PID_COMPONENT_DEPENDENCY_INTERNAL_DEFINITIONS)
+    set(comp_defs ${DECLARE_PID_COMPONENT_DEPENDENCY_INTERNAL_DEFINITIONS})
+  endif()
 
-set(comp_defs "")
-if(DECLARE_PID_COMPONENT_DEPENDENCY_INTERNAL_DEFINITIONS)
-	set(comp_defs ${DECLARE_PID_COMPONENT_DEPENDENCY_INTERNAL_DEFINITIONS})
-endif()
+  set(dep_defs "")
+  if(DECLARE_PID_COMPONENT_DEPENDENCY_IMPORTED_DEFINITIONS)
+    set(dep_defs ${DECLARE_PID_COMPONENT_DEPENDENCY_IMPORTED_DEFINITIONS})
+  endif()
 
-set(dep_defs "")
-if(DECLARE_PID_COMPONENT_DEPENDENCY_IMPORTED_DEFINITIONS)
-	set(dep_defs ${DECLARE_PID_COMPONENT_DEPENDENCY_IMPORTED_DEFINITIONS})
-endif()
+  set(comp_exp_defs "")
+  if(DECLARE_PID_COMPONENT_DEPENDENCY_EXPORTED_DEFINITIONS)
+    set(comp_exp_defs ${DECLARE_PID_COMPONENT_DEPENDENCY_EXPORTED_DEFINITIONS})
+  endif()
 
-set(comp_exp_defs "")
-if(DECLARE_PID_COMPONENT_DEPENDENCY_EXPORTED_DEFINITIONS)
-	set(comp_exp_defs ${DECLARE_PID_COMPONENT_DEPENDENCY_EXPORTED_DEFINITIONS})
-endif()
+  set(static_links "")
+  set(shared_links "")
+  if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS)
+    set(multiValueArgs STATIC SHARED)
+    cmake_parse_arguments(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS "" "" "${multiValueArgs}" ${DECLARE_PID_COMPONENT_DEPENDENCY_LINKS} )
+    if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS_UNPARSED_ARGUMENTS)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Component_Dependency, the LINKS option argument must be followed only by static and/or shared links for component ${component_name}.")
+    endif()
 
-set(static_links "")
-set(shared_links "")
-if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS)
-	set(multiValueArgs STATIC SHARED)
-	cmake_parse_arguments(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS "" "" "${multiValueArgs}" ${DECLARE_PID_COMPONENT_DEPENDENCY_LINKS} )
-	if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS_UNPARSED_ARGUMENTS)
+    if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS_STATIC)
+      set(static_links ${DECLARE_PID_COMPONENT_DEPENDENCY_LINKS_STATIC})
+    endif()
+
+    if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS_SHARED)
+      set(shared_links ${DECLARE_PID_COMPONENT_DEPENDENCY_LINKS_SHARED})
+    endif()
+  endif()
+
+  if(DECLARE_PID_COMPONENT_DEPENDENCY_COMPILER_OPTIONS)
+    set(compiler_options ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPILER_OPTIONS})
+  endif()
+
+  #check that the signature follows one of the allowed signatures and memorize corresponding attributes
+
+  #the dependency is exported
+  if(DECLARE_PID_COMPONENT_DEPENDENCY_EXPORT) #EXPORT keyword has priority over DEPEND one, so if both are used the dependency is exported.
+    set(export TRUE)
+  else()
+    set(export FALSE)
+  endif()
+
+  set(package_type)
+  set(target_component)
+  set(target_package)
+
+  if(DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE AND DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Component_Dependency, the LINKS option argument must be followed only by static and/or shared links for component ${component_name}.")
-	endif()
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when declaring dependency for component ${component_name}, keywords EXTERNAL (requiring an external package) and NATIVE (requiring a native component) cannot be used simultaneously.")
+  elseif(DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE)
 
-	if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS_STATIC)
-		set(static_links ${DECLARE_PID_COMPONENT_DEPENDENCY_LINKS_STATIC})
-	endif()
-
-	if(DECLARE_PID_COMPONENT_DEPENDENCY_LINKS_SHARED)
-		set(shared_links ${DECLARE_PID_COMPONENT_DEPENDENCY_LINKS_SHARED})
-	endif()
-endif()
-
-if(DECLARE_PID_COMPONENT_DEPENDENCY_COMPILER_OPTIONS)
-	set(compiler_options ${DECLARE_PID_COMPONENT_DEPENDENCY_COMPILER_OPTIONS})
-endif()
-
-#check that the signature follows one of the allowed signatures and memorize corresponding attributes
-
-#the dependency is exported
-if(DECLARE_PID_COMPONENT_DEPENDENCY_EXPORT) #EXPORT keyword has priority over DEPEND one, so if both are used the dependency is exported.
-	set(export TRUE)
-else()
-  set(export FALSE)
-endif()
-
-set(package_type)
-set(target_component)
-set(target_package)
-
-if(DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE AND DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
-  finish_Progress(${GLOBAL_PROGRESS_VAR})
-  message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when declaring dependency for component ${component_name}, keywords EXTERNAL (requiring an external package) and NATIVE (requiring a native component) cannot be used simultaneously.")
-elseif(DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE)
-
-  #when the explicit NATIVE signature is used there should be no unparsed argument
-  if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-  	message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when declaring dependency for component ${component_name}, unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}.")
-  endif()
-
-  set(package_type "NATIVE")#component defined in a native package
-  set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE})
-  if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE) #another package is formally defined
-    set(target_package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE})
-  endif()
-elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
-
-  #when the explicit EXTERNAL signature is used there should be no unparsed argument
-  if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-  	message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when declaring dependency for component ${component_name}, unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}.")
-  endif()
-
-  set(package_type "EXTERNAL")#component formally defined in an external package
-
-  if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE) #an external package name is given => external package is supposed to be provided with a description file
-    if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL PROJECT_NAME)
+    #when the explicit NATIVE signature is used there should be no unparsed argument
+    if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when declaring dependency for component ${component_name}, the external package cannot be current project !")
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when declaring dependency for component ${component_name}, unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}.")
     endif()
 
-    set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL})#in this situation the name of the component is given by the external keyword
-    set(target_package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE})
-  else()#no package explicitely specified => 2 cases : either a direct dependency to an external package content OR an external component is specified with implicit external package
-    # check if the name target by EXTERNAL matches an external package name
-    get_Package_Type(${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL} PACK_TYPE)
-    if(NOT PACK_TYPE STREQUAL "EXTERNAL")#the name does not refer to an external package => it should be an external component
-      set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL})#EXTERNAL keyword is used to target a component
-    else()#the name used is the name of an EXTERNAL package
-      set(target_component)#in this situation the name of the component is empty since no component is explicitly targetted
-      set(target_package ${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL})#the EXTERNAL keyword refers to an exetrnal package
+    set(package_type "NATIVE")#component defined in a native package
+    set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_NATIVE})
+    if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE) #another package is formally defined
+      set(target_package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE})
     endif()
-  endif()
-else()#NO keyword used to specify the kind of component => we do not know if package is native or external
-  #either EXPORT or DEPEND must be used to specify if the dependency is exported or not
-  if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_EXPORT AND NOT DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND)
-    #no component specified
-    if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS) #there is a target component specified => ERROR
-      finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, you must use either EXPORT or DEPEND keyword to define the dependency if you do not use either NATIVE or EXTERNAL explicit declarations.")
-    endif()
-  endif()
+  elseif(DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL)
 
-  if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
-    #unparsed arguments contains the name of the dependency
-    list(GET DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS 0 first_one)
-    set(target_component ${first_one})
-  endif()
-  if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE) #a package name is explicitly given
-    set(target_package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE})
-  elseif(DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK)
-    check_Framework_Exists(CHECK_OK ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK})
-    if(NOT CHECK_OK)#specified framework does not exists
+    #when the explicit EXTERNAL signature is used there should be no unparsed argument
+    if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} containing component ${target_component} is unknown.")
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when declaring dependency for component ${component_name}, unknown arguments ${DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS}.")
     endif()
-    set(CONTAINERS_IN_FRAMEWORK)
-    find_Packages_Containing_Component(CONTAINERS ${PROJECT_NAME} ${target_component})
-    foreach(pack IN LISTS CONTAINERS)
-      if(${pack}_FRAMEWORK STREQUAL "${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK}")
-        list(APPEND CONTAINERS_IN_FRAMEWORK ${pack})
-      endif()
-    endforeach()
-    list(LENGTH CONTAINERS_IN_FRAMEWORK SIZE)
-    if(SIZE EQUAL 0)
-      finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, no package defining component ${target_component} belongs to framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK}.")
-    elseif(SIZE GREATER 1)
-      finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, many packages (${CONTAINERS_IN_FRAMEWORK}) of the framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} define a component named ${target_component}. This denotes a bad design of framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} because this later should ensure component names unicity.")
-    else()
-      set(target_package ${CONTAINERS_IN_FRAMEWORK})
-    endif()
-  endif()
-endif()
 
-#now try to resolve the package in use if not explicitly specified while a component is used
-if(NOT target_package AND target_component)
-  find_Packages_Containing_Component(CONTAINERS ${PROJECT_NAME} ${target_component})
-  list(LENGTH CONTAINERS SIZE)
-  if(SIZE EQUAL 0)
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, component ${target_component} cannot be found in ${PROJECT_NAME} or its dependencies.")
-  elseif(SIZE GREATER 1)#more than one component has target name and no package specified
-    if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK)
-      #no framework name specified so it is really a lone component name
-      list(FIND CONTAINERS ${PROJECT_NAME} INDEX)
-      if(INDEX EQUAL -1) #if component does not belong to current project
+    set(package_type "EXTERNAL")#component formally defined in an external package
+
+    if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE) #an external package name is given => external package is supposed to be provided with a description file
+      if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE STREQUAL PROJECT_NAME)
         finish_Progress(${GLOBAL_PROGRESS_VAR})
-        message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, cannot deduce the package containing component ${target_component} because many packages contain a component with same name: ${CONTAINERS}.")
-      else()#OK by definition internal dependencies have always priority in this situation
-        set(target_package ${PROJECT_NAME})
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when declaring dependency for component ${component_name}, the external package cannot be current project !")
       endif()
-    else()
-      #in case there is more than one package defining same component name, if a framework is defined
-      # we can find if there is only one package of the list belonging to that framework
+
+      set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL})#in this situation the name of the component is given by the external keyword
+      set(target_package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE})
+    else()#no package explicitely specified => 2 cases : either a direct dependency to an external package content OR an external component is specified with implicit external package
+      # check if the name target by EXTERNAL matches an external package name
+      get_Package_Type(${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL} PACK_TYPE)
+      if(NOT PACK_TYPE STREQUAL "EXTERNAL")#the name does not refer to an external package => it should be an external component
+        set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL})#EXTERNAL keyword is used to target a component
+      else()#the name used is the name of an EXTERNAL package
+        set(target_component)#in this situation the name of the component is empty since no component is explicitly targetted
+        set(target_package ${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL})#the EXTERNAL keyword refers to an exetrnal package
+      endif()
+    endif()
+  else()#NO keyword used to specify the kind of component => we do not know if package is native or external
+    #either EXPORT or DEPEND must be used to specify if the dependency is exported or not
+    if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_EXPORT AND NOT DECLARE_PID_COMPONENT_DEPENDENCY_DEPEND)
+      #no component specified
+      if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS) #there is a target component specified => ERROR
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, you must use either EXPORT or DEPEND keyword to define the dependency if you do not use either NATIVE or EXTERNAL explicit declarations.")
+      endif()
+    endif()
+
+    if(DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS)
+      #unparsed arguments contains the name of the dependency
+      list(GET DECLARE_PID_COMPONENT_DEPENDENCY_UNPARSED_ARGUMENTS 0 first_one)
+      set(target_component ${first_one})
+    endif()
+    if(DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE) #a package name is explicitly given
+      set(target_package ${DECLARE_PID_COMPONENT_DEPENDENCY_PACKAGE})
+    elseif(DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK)
       check_Framework_Exists(CHECK_OK ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK})
       if(NOT CHECK_OK)#specified framework does not exists
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} containing component ${target_component} is unknown.")
       endif()
       set(CONTAINERS_IN_FRAMEWORK)
+      find_Packages_Containing_Component(CONTAINERS ${PROJECT_NAME} ${target_component})
       foreach(pack IN LISTS CONTAINERS)
         if(${pack}_FRAMEWORK STREQUAL "${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK}")
           list(APPEND CONTAINERS_IN_FRAMEWORK ${pack})
@@ -2029,166 +1998,212 @@ if(NOT target_package AND target_component)
         set(target_package ${CONTAINERS_IN_FRAMEWORK})
       endif()
     endif()
-  else()#there is exactly one container
-    if(DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK)#we need to check that the package really belongs to the framework
-      check_Framework_Exists(CHECK_OK ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK})
-      if(NOT CHECK_OK)#specified framework does not exists
-        finish_Progress(${GLOBAL_PROGRESS_VAR})
-        message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} containing component ${target_component} is unknown.")
-      endif()
-      if(${CONTAINERS}_FRAMEWORK STREQUAL "${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK}")#OK adequate framework specified
-        set(target_package ${CONTAINERS})
-      else()
-        finish_Progress(${GLOBAL_PROGRESS_VAR})
-        message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, only package that belongs to framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} is ${CONTAINERS} but this later does not contain component ${target_component}.")
-      endif()
-    else()
-    set(target_package ${CONTAINERS})#Note: CONTAINERS is the current project if found nowhere else
-    endif()
   endif()
-endif()
 
-#check for package dependency (native or external)
-if(target_package)
-  if(NOT target_package STREQUAL PROJECT_NAME)# do not check for dependency for an internal component
-    #check that package type has been resolved
-    if(NOT package_type)
-      get_Package_Type(${target_package} THETYPE)
-      set(package_type ${THETYPE})
-    endif()
-    #produce a warning of the package is not a direct dependency of the current project
-    is_Package_Dependency(IS_DEPENDENCY "${target_package}")
-    if(NOT IS_DEPENDENCY)
-      set(IS_CONFIGURED TRUE)
-      if(${PROJECT_NAME}_${component_name}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
-        set(IS_CONFIGURED FALSE)
-      elseif(${PROJECT_NAME}_${component_name}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component_name}))
-        set(IS_CONFIGURED FALSE)
-      endif()
-      if(IS_CONFIGURED) #only notify the error if the package DOES configure the component
-        message(WARNING "[PID] WARNING : in package ${PROJECT_NAME} bad arguments when declaring dependency for component ${component_name}, the component depends on an unknown external package ${target_package} !")
-      endif()
-    endif()
-  endif()
-endif()
-
-#AFTER CHECKS: now do the declaration for real according to the signatire of the call
-if(target_package)#a package name where to find the component is known
-  if(target_package STREQUAL PROJECT_NAME)#internal dependency, by definition
-    if(target_component STREQUAL component_name)
+  #now try to resolve the package in use if not explicitly specified while a component is used
+  if(NOT target_package AND target_component)
+    find_Packages_Containing_Component(CONTAINERS ${PROJECT_NAME} ${target_component})
+    list(LENGTH CONTAINERS SIZE)
+    if(SIZE EQUAL 0)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when declaring dependency for component ${component_name}, the component cannot depend on itself !")
-		endif()
-		declare_Internal_Component_Dependency(
-					${component_name}
-					${target_component}
-					${export}
-					"${comp_defs}"
-					"${comp_exp_defs}"
-					"${dep_defs}"
-					)
-  elseif(package_type STREQUAL "NATIVE")
-    declare_Package_Component_Dependency(
-					${component_name}
-					${target_package}
-					${target_component}
-					${export}
-					"${comp_defs}"
-					"${comp_exp_defs}"
-					"${dep_defs}"
-					)
-  elseif(target_component)#package_type is "EXTERNAL" AND a component is specified
-    declare_External_Component_Dependency(
-					${component_name}
-					${target_package}
-					${target_component}
-					${export}
-					"${comp_defs}"
-					"${comp_exp_defs}"
-					"${dep_defs}")
-  else()#package_type is "EXTERNAL" AND a NO component is specified (direct references to external package content)
-    set(fake_intern)
-    adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
-                                          fake_intern compiler_options
-                                          "${DECLARE_PID_COMPONENT_DEPENDENCY_C_STANDARD}"
-                                          "${DECLARE_PID_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
-                                          "${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_STANDARD}"
-                                          "${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
-    if(ERR)
-      if(ERR STREQUAL "CRITICAL")
-        finish_Progress(${GLOBAL_PROGRESS_VAR})
-        message(FATAL_ERROR "[PID] CRITICAL ERROR: in package ${PROJECT_NAME} when declaring direct dependency to package ${target_package} for component ${component_name} in package ${PROJECT_NAME}, ${MESS}")
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, component ${target_component} cannot be found in ${PROJECT_NAME} or its dependencies.")
+    elseif(SIZE GREATER 1)#more than one component has target name and no package specified
+      if(NOT DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK)
+        #no framework name specified so it is really a lone component name
+        list(FIND CONTAINERS ${PROJECT_NAME} INDEX)
+        if(INDEX EQUAL -1) #if component does not belong to current project
+          finish_Progress(${GLOBAL_PROGRESS_VAR})
+          message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, cannot deduce the package containing component ${target_component} because many packages contain a component with same name: ${CONTAINERS}.")
+        else()#OK by definition internal dependencies have always priority in this situation
+          set(target_package ${PROJECT_NAME})
+        endif()
       else()
-        message("[PID] WARNING: in package ${PROJECT_NAME} when declaring direct dependency to package ${target_package} for component ${component_name} in package ${PROJECT_NAME}, ${MESS}")
+        #in case there is more than one package defining same component name, if a framework is defined
+        # we can find if there is only one package of the list belonging to that framework
+        check_Framework_Exists(CHECK_OK ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK})
+        if(NOT CHECK_OK)#specified framework does not exists
+          finish_Progress(${GLOBAL_PROGRESS_VAR})
+          message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} containing component ${target_component} is unknown.")
+        endif()
+        set(CONTAINERS_IN_FRAMEWORK)
+        foreach(pack IN LISTS CONTAINERS)
+          if(${pack}_FRAMEWORK STREQUAL "${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK}")
+            list(APPEND CONTAINERS_IN_FRAMEWORK ${pack})
+          endif()
+        endforeach()
+        list(LENGTH CONTAINERS_IN_FRAMEWORK SIZE)
+        if(SIZE EQUAL 0)
+          finish_Progress(${GLOBAL_PROGRESS_VAR})
+          message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, no package defining component ${target_component} belongs to framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK}.")
+        elseif(SIZE GREATER 1)
+          finish_Progress(${GLOBAL_PROGRESS_VAR})
+          message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, many packages (${CONTAINERS_IN_FRAMEWORK}) of the framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} define a component named ${target_component}. This denotes a bad design of framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} because this later should ensure component names unicity.")
+        else()
+          set(target_package ${CONTAINERS_IN_FRAMEWORK})
+        endif()
+      endif()
+    else()#there is exactly one container
+      if(DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK)#we need to check that the package really belongs to the framework
+        check_Framework_Exists(CHECK_OK ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK})
+        if(NOT CHECK_OK)#specified framework does not exists
+          finish_Progress(${GLOBAL_PROGRESS_VAR})
+          message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} containing component ${target_component} is unknown.")
+        endif()
+        if(${CONTAINERS}_FRAMEWORK STREQUAL "${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK}")#OK adequate framework specified
+          set(target_package ${CONTAINERS})
+        else()
+          finish_Progress(${GLOBAL_PROGRESS_VAR})
+          message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, only package that belongs to framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} is ${CONTAINERS} but this later does not contain component ${target_component}.")
+        endif()
+      else()
+      set(target_package ${CONTAINERS})#Note: CONTAINERS is the current project if found nowhere else
       endif()
     endif()
-
-    declare_External_Package_Component_Dependency(
-					${component_name}
-					${target_package}
-					${export}
-					"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
-					"${comp_defs}"
-					"${comp_exp_defs}"
-					"${dep_defs}"
-					"${INTERN_OPTS}"
-					"${static_links}"
-					"${shared_links}"
-					"${C_STD_USED}"
-					"${DECLARE_PID_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
-					"${CXX_STD_USED}"
-					"${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}"
-					"${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
   endif()
-else()#no target package => 2 cases OS dependency OR ERROR
-  if(target_component) #a PID component is given so it cannot be a system dependency
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, the package containing component ${target_component} cannot be deduced !")
-  else()#this is a system dependency
-    if(DECLARE_PID_COMPONENT_DEPENDENCY_CONFIGURATION)#system dependency described with a direct configuration
-      declare_System_Component_Dependency_Using_Configuration(
-        ${component_name}
-        ${export}
-        ${DECLARE_PID_COMPONENT_DEPENDENCY_CONFIGURATION}
-        "${comp_defs}"
-        "${comp_exp_defs}"
-        "${dep_defs}"
-      )
-    else()
+
+  #check for package dependency (native or external)
+  if(target_package)
+    if(NOT target_package STREQUAL PROJECT_NAME)# do not check for dependency for an internal component
+      #check that package type has been resolved
+      if(NOT package_type)
+        get_Package_Type(${target_package} THETYPE)
+        set(package_type ${THETYPE})
+      endif()
+      #produce a warning of the package is not a direct dependency of the current project
+      is_Package_Dependency(IS_DEPENDENCY "${target_package}")
+      if(NOT IS_DEPENDENCY)
+        set(IS_CONFIGURED TRUE)
+        if(${PROJECT_NAME}_${component_name}_TYPE STREQUAL "TEST" AND NOT BUILD_AND_RUN_TESTS)
+          set(IS_CONFIGURED FALSE)
+        elseif(${PROJECT_NAME}_${component_name}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component_name}))
+          set(IS_CONFIGURED FALSE)
+        endif()
+        if(IS_CONFIGURED) #only notify the error if the package DOES configure the component
+          message(WARNING "[PID] WARNING : in package ${PROJECT_NAME} bad arguments when declaring dependency for component ${component_name}, the component depends on an unknown external package ${target_package} !")
+        endif()
+      endif()
+    endif()
+  endif()
+
+  #AFTER CHECKS: now do the declaration for real according to the signatire of the call
+  if(target_package)#a package name where to find the component is known
+    if(target_package STREQUAL PROJECT_NAME)#internal dependency, by definition
+      if(target_component STREQUAL component_name)
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when declaring dependency for component ${component_name}, the component cannot depend on itself !")
+      endif()
+      declare_Internal_Component_Dependency(
+            ${component_name}
+            ${target_component}
+            ${export}
+            "${comp_defs}"
+            "${comp_exp_defs}"
+            "${dep_defs}"
+            )
+    elseif(package_type STREQUAL "NATIVE")
+      declare_Package_Component_Dependency(
+            ${component_name}
+            ${target_package}
+            ${target_component}
+            ${export}
+            "${comp_defs}"
+            "${comp_exp_defs}"
+            "${dep_defs}"
+            )
+    elseif(target_component)#package_type is "EXTERNAL" AND a component is specified
+      declare_External_Component_Dependency(
+            ${component_name}
+            ${target_package}
+            ${target_component}
+            ${export}
+            "${comp_defs}"
+            "${comp_exp_defs}"
+            "${dep_defs}")
+    else()#package_type is "EXTERNAL" AND a NO component is specified (direct references to external package content)
       set(fake_intern)
       adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
                                             fake_intern compiler_options
-                                      			"${DECLARE_PID_COMPONENT_DEPENDENCY_C_STANDARD}"
-                                      			"${DECLARE_PID_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
-                                      			"${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_STANDARD}"
-                                      			"${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
+                                            "${DECLARE_PID_COMPONENT_DEPENDENCY_C_STANDARD}"
+                                            "${DECLARE_PID_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+                                            "${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+                                            "${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
       if(ERR)
         if(ERR STREQUAL "CRITICAL")
           finish_Progress(${GLOBAL_PROGRESS_VAR})
-          message(FATAL_ERROR "[PID] CRITICAL ERROR: in package ${PROJECT_NAME} when declaring direct system dependency for component ${component_name} in package ${PROJECT_NAME}, ${MESS}")
+          message(FATAL_ERROR "[PID] CRITICAL ERROR: in package ${PROJECT_NAME} when declaring direct dependency to package ${target_package} for component ${component_name} in package ${PROJECT_NAME}, ${MESS}")
         else()
-          message("[PID] WARNING: when declaring direct system dependency for component ${component_name} in package ${PROJECT_NAME}, ${MESS}")
+          message("[PID] WARNING: in package ${PROJECT_NAME} when declaring direct dependency to package ${target_package} for component ${component_name} in package ${PROJECT_NAME}, ${MESS}")
         endif()
       endif()
-      declare_System_Component_Dependency(
-    			${component_name}
-    			${export}
-    			"${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
-    			"${DECLARE_PID_COMPONENT_DEPENDENCY_LIBRARY_DIRS}"
-    			"${comp_defs}"
-    			"${comp_exp_defs}"
-    			"${dep_defs}"
-    			"${INTERN_OPTS}"
-    			"${static_links}"
-    			"${shared_links}"
-    			"${C_STD_USED}"
-    			"${DECLARE_PID_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
-    			"${CXX_STD_USED}"
-    			"${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}"
-    			"${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
+
+      declare_External_Package_Component_Dependency(
+            ${component_name}
+            ${target_package}
+            ${export}
+            "${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
+            "${comp_defs}"
+            "${comp_exp_defs}"
+            "${dep_defs}"
+            "${INTERN_OPTS}"
+            "${static_links}"
+            "${shared_links}"
+            "${C_STD_USED}"
+            "${DECLARE_PID_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+            "${CXX_STD_USED}"
+            "${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}"
+            "${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
+    endif()
+  else()#no target package => 2 cases OS dependency OR ERROR
+    if(target_component) #a PID component is given so it cannot be a system dependency
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, the package containing component ${target_component} cannot be deduced !")
+    else()#this is a system dependency
+      if(DECLARE_PID_COMPONENT_DEPENDENCY_CONFIGURATION)#system dependency described with a direct configuration
+        declare_System_Component_Dependency_Using_Configuration(
+          ${component_name}
+          ${export}
+          ${DECLARE_PID_COMPONENT_DEPENDENCY_CONFIGURATION}
+          "${comp_defs}"
+          "${comp_exp_defs}"
+          "${dep_defs}"
+        )
+      else()
+        set(fake_intern)
+        adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
+                                              fake_intern compiler_options
+                                              "${DECLARE_PID_COMPONENT_DEPENDENCY_C_STANDARD}"
+                                              "${DECLARE_PID_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+                                              "${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+                                              "${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
+        if(ERR)
+          if(ERR STREQUAL "CRITICAL")
+            finish_Progress(${GLOBAL_PROGRESS_VAR})
+            message(FATAL_ERROR "[PID] CRITICAL ERROR: in package ${PROJECT_NAME} when declaring direct system dependency for component ${component_name} in package ${PROJECT_NAME}, ${MESS}")
+          else()
+            message("[PID] WARNING: when declaring direct system dependency for component ${component_name} in package ${PROJECT_NAME}, ${MESS}")
+          endif()
+        endif()
+        declare_System_Component_Dependency(
+            ${component_name}
+            ${export}
+            "${DECLARE_PID_COMPONENT_DEPENDENCY_INCLUDE_DIRS}"
+            "${DECLARE_PID_COMPONENT_DEPENDENCY_LIBRARY_DIRS}"
+            "${comp_defs}"
+            "${comp_exp_defs}"
+            "${dep_defs}"
+            "${INTERN_OPTS}"
+            "${static_links}"
+            "${shared_links}"
+            "${C_STD_USED}"
+            "${DECLARE_PID_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+            "${CXX_STD_USED}"
+            "${DECLARE_PID_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}"
+            "${DECLARE_PID_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
+      endif()
     endif()
   endif()
 endif()
+
 endmacro(declare_PID_Component_Dependency)
 
 

@@ -1537,7 +1537,7 @@ endif()
 # dealing with plugins at the end of the configuration process
 manage_Plugins_In_Package_After_Components_Description()
 reset_Removed_Examples_Build_Option()
-finish_Progress(${GLOBAL_PROGRESS_VAR}) #managing the build from a global point of view
+finish_Progress(${GLOBAL_PROGRESS_VAR})
 endmacro(build_Package)
 
 #.rst:
@@ -1550,13 +1550,14 @@ endmacro(build_Package)
 #  declare_Library_Component
 #  -------------------------
 #
-#   .. command:: declare_Library_Component(c_name dirname type
-#                                          c_standard c_max_standard cxx_standard cxx_max_standard
-#																				   internal_inc_dirs internal_defs internal_compiler_options
-#																				   exported_defs exported_compiler_options
-#																				   internal_links exported_links
-#																				   runtime_resources more_headers more_sources
-#                                          is_loggable aliases manage_symbols)
+#   .. command:: declare_Library_Component(	c_name dirname type
+#                                          	c_standard c_max_standard cxx_standard cxx_max_standard
+#											internal_inc_dirs internal_defs internal_compiler_options
+#											exported_defs exported_compiler_options
+#											internal_links exported_links
+#											runtime_resources more_headers more_sources
+#                                          	is_loggable aliases manage_symbols
+#											internal_only for_examples for_tests)
 #
 #     Declare a library in the currently defined package.
 #
@@ -1580,16 +1581,19 @@ endmacro(build_Package)
 #     :is_loggable: if TRUE the componnet can be uniquely identified by the logging system.
 #     :aliases: the list of alias for the component.
 #     :manage_symbols: if not empty export of symbols of the library will be managed by hand and are all hidden by default, the path given will contain the generated header defining macro for exporting symbols. Otherwise if empty all symbols are exported.
+#     :internal_only: if TRUE means the library is not provided by the package but is used for internal purpose only. 
+#     :for_examples: if TRUE means the library must be internal_only and is used for example purpose. 
+#     :for_tests: if TRUE means the librarymust be internal_only and is used for test purpose. 
 #
-function(declare_Library_Component c_name dirname type
-																	 c_standard c_max_standard cxx_standard cxx_max_standard
-																	 internal_inc_dirs internal_defs internal_compiler_options
-																	 exported_defs exported_compiler_options
-																   internal_links exported_links
-																	 runtime_resources more_headers more_sources
-																 	 is_loggable aliases
-																   manage_symbols)
-
+function(declare_Library_Component 	c_name dirname type
+									c_standard c_max_standard cxx_standard cxx_max_standard
+									internal_inc_dirs internal_defs internal_compiler_options
+									exported_defs exported_compiler_options
+									internal_links exported_links
+									runtime_resources more_headers more_sources
+									is_loggable aliases
+									manage_symbols
+									internal_only for_examples for_tests)
 #indicating that the component has been declared and need to be completed
 is_Library_Type(RES "${type}")
 if(RES)
@@ -1599,7 +1603,7 @@ else()
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : you must specify a type (HEADER, STATIC, SHARED or MODULE) for library ${c_name}")
 	return()
 endif()
-
+set_Internal_Only(${c_name} ${internal_only} ${for_examples} ${for_tests})
 #prepare general info
 if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE")
 	if(dirname)
@@ -1631,6 +1635,26 @@ if(is_loggable)
 	else()
 		generate_Loggable_File(PATH_TO_FILE NAME_FOR_PREPROC ${c_name} ${CMAKE_SOURCE_DIR}/src/${dirname} FALSE)
 		list(APPEND internal_defs ${NAME_FOR_PREPROC})
+	endif()
+endif()
+
+# specifically managing examples
+if(${PROJECT_NAME}_${c_name}_FOR_EXAMPLES OR ${PROJECT_NAME}_${c_name}_FOR_TESTS)
+	if(${PROJECT_NAME}_${c_name}_FOR_EXAMPLES)
+		add_Example_To_Doc(${c_name}) #examples are added to the doc to be referenced
+	endif()
+	set(needed_for_test TRUE)
+	set(needed_for_ex TRUE)
+	if(${PROJECT_NAME}_${c_name}_FOR_EXAMPLES AND NOT BUILD_EXAMPLES)
+		set(needed_for_ex FALSE)
+	endif()
+	if(${PROJECT_NAME}_${c_name}_FOR_TESTS AND NOT BUILD_AND_RUN_TESTS)
+		set(needed_for_test FALSE)
+	endif()
+	if(NOT needed_for_ex AND NOT needed_for_test)
+		set(${PROJECT_NAME}_${c_name}_FOR_DOC_ONLY TRUE PARENT_SCOPE)
+		mark_As_Declared(${c_name})
+		return()
 	endif()
 endif()
 
