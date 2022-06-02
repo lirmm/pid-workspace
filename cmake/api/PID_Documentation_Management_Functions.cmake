@@ -85,6 +85,87 @@ function(add_Example_To_Doc c_name)
 	endif()
 endfunction(add_Example_To_Doc c_name)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |apply_Doxygen_Title| replace:: ``apply_Doxygen_Title``
+#  .. _apply_Doxygen_Title:
+#
+#  apply_Doxygen_Title
+#  -------------------
+#
+#   .. command:: apply_Doxygen_Title(title markdown_file label)
+#
+#     Modify the markdown file of a component so that it can be referenced into Doxygen
+#
+#      :title: title of the doxygen page.
+#      :markdown_file: path to the markdown documentation file to modify.
+#      :label: label used to reference the page in Doyxygen.
+#
+function(apply_Doxygen_Title title markdown_file label)
+	file(READ ${markdown_file} FILE_CONTENT)
+	set(FILE_CONTENT "## ${title}   {#${label}}\n\n${FILE_CONTENT}")
+	file(WRITE ${markdown_file} "${FILE_CONTENT}")
+endfunction(apply_Doxygen_Title)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |transform_Jekyll_To_Markdown| replace:: ``transform_Jekyll_To_Markdown``
+#  .. _transform_Jekyll_To_Markdown:
+#
+#  transform_Jekyll_To_Markdown
+#  ----------------------------
+#
+#   .. command:: transform_Jekyll_To_Markdown(component input_file output_markdown)
+#
+#     From a markdown file documenting a component create a new file with any reference to jekyll code removed 
+#
+#      :component: name of the library.
+#      :input_file: path to the markdown documentation file which may contain jekyll code.
+#      :output_markdown: path to the generated markdown file
+#
+function(transform_Jekyll_To_Markdown component input_file output_markdown)
+	file(READ ${input_file} FILE_CONTENT)
+	message("^---\nlayout: package\npackage: ${PROJECT_NAME}\ntitle: ${component}.*\n---\n(.+)$")
+	string(REGEX REPLACE 	"^---\nlayout: package\npackage: ${PROJECT_NAME}\ntitle: .*\n---\n(.+)$"
+							"\\1" 
+						 	FILE_CONTENT "${FILE_CONTENT}" )
+	file(WRITE ${output_markdown} "${FILE_CONTENT}")
+endfunction(transform_Jekyll_To_Markdown)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Component_Page_For_Doxygen| replace:: ``generate_Component_Page_For_Doxygen``
+#  .. _generate_Component_Page_For_Doxygen:
+#
+#  generate_Component_Page_For_Doxygen
+#  -----------------------------------
+#
+#   .. command:: generate_Component_Page_For_Doxygen(output_file component input_markdown output_folder)
+#
+#     Generate a doxygen markdown page for a library based on the documentation made for static site
+#
+#      :component: name of the library.
+#      :input_markdown: path to the input markdown documentation file.
+#      :output_folder: path to the folder where the file will be generated.
+#      :output_file: output variable containing the path to the file generated.
+#
+function(generate_Component_Page_For_Doxygen output_file component input_markdown output_folder)
+	get_filename_component(OUTPUT_FILE_NAME ${input_markdown} NAME_WE)
+	set(target_file ${output_folder}/${OUTPUT_FILE_NAME}.md)
+	transform_Jekyll_To_Markdown(${component} ${input_markdown} ${target_file})
+	apply_Doxygen_Title("The ${component} library" ${target_file} ${OUTPUT_FILE_NAME})
+	set(${output_file} ${target_file} PARENT_SCOPE)
+endfunction(generate_Component_Page_For_Doxygen)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -140,16 +221,26 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
   if(DOXYFILE_PATH) #we are able to generate the doc
   	# general variables
 	set(headers_list)
+	set(documentations_list)
 	foreach(comp IN LISTS ${PROJECT_NAME}_DECLARED_COMPS)
 		if(NOT ${PROJECT_NAME}_${comp}_FOR_DOC_ONLY)
 			if(${PROJECT_NAME}_${comp}_HEADER_DIR_NAME)#if the component defines public headers
 				list(APPEND headers_list "${CMAKE_SOURCE_DIR}/include/${${PROJECT_NAME}_${comp}_HEADER_DIR_NAME}")
+			endif()
+			if(${PROJECT_NAME}_${comp}_SITE_CONTENT_FILE)#if the component defines a documentation
+				generate_Component_Page_For_Doxygen(OUTPUT_FILE_PATH ${comp} ${CMAKE_SOURCE_DIR}/share/site/${${PROJECT_NAME}_${comp}_SITE_CONTENT_FILE} ${CMAKE_BINARY_DIR}/share/doc/examples)
+				list(APPEND documentations_list ${OUTPUT_FILE_PATH})
 			endif()
 		endif()
 	endforeach()
 	if(headers_list)
 		string(REPLACE ";" " " DOXYFILE_SOURCE_DIRS "${headers_list}")
 	endif()
+	if(documentations_list)
+		string(REPLACE ";" " " DOXYFILE_COMPONENTS_DOC "${documentations_list}")
+		set(DOXYFILE_MORE_IMAGES ${CMAKE_SOURCE_DIR}/share/site/img)
+	endif()
+
   	set(DOXYFILE_MAIN_PAGE "${CMAKE_BINARY_DIR}/share/APIDOC_welcome.md")
   	set(DOXYFILE_PROJECT_NAME ${PROJECT_NAME})
   	set(DOXYFILE_PROJECT_VERSION ${${PROJECT_NAME}_VERSION})
