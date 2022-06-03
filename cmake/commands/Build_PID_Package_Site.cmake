@@ -27,7 +27,6 @@ set(PATH_TO_SITE_JEKYLL ${PATH_TO_SITE}/build/to_generate)
 set(PATH_TO_SITE_RESULT ${PATH_TO_SITE}/build/generated)
 file(REMOVE ${PATH_TO_SITE_RESULT})
 
-message("checking ${PATH_TO_SITE_SRC}/pages")
 set(list_of_folders_to_copy)
 if(EXISTS ${PATH_TO_SITE_SRC}/api_doc)
   list(APPEND list_of_folders_to_copy ${PATH_TO_SITE_SRC}/api_doc)
@@ -53,7 +52,13 @@ endif()
 if(list_of_folders_to_copy)
   file(COPY ${list_of_folders_to_copy} DESTINATION ${PATH_TO_SITE_JEKYLL})
   #2) build site with jekyll
-  execute_process(COMMAND ${JEKYLL_EXECUTABLE} build -d ${PATH_TO_SITE_RESULT} WORKING_DIRECTORY ${PATH_TO_SITE_JEKYLL})
+  message("PLOP")
+  execute_process(COMMAND ${JEKYLL_EXECUTABLE} build -d ${PATH_TO_SITE_RESULT} 
+                  OUTPUT_VARIABLE out ERROR_VARIABLE out RESULT_VARIABLE res
+                  WORKING_DIRECTORY ${PATH_TO_SITE_JEKYLL})
+  if(NOT res EQUAL 0)
+      message("[PID] ERROR: Problem during jekyll execution: ${out}")
+  endif()
 else()
   message("[PID] WARNING: nothing to publish in static site of package ${TARGET_PACKAGE}")
 endif()

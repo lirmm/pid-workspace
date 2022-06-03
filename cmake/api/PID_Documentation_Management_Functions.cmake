@@ -131,12 +131,114 @@ endfunction(apply_Doxygen_Title)
 #
 function(transform_Jekyll_To_Markdown component input_file output_markdown)
 	file(READ ${input_file} FILE_CONTENT)
-	message("^---\nlayout: package\npackage: ${PROJECT_NAME}\ntitle: ${component}.*\n---\n(.+)$")
 	string(REGEX REPLACE 	"^---\nlayout: package\npackage: ${PROJECT_NAME}\ntitle: .*\n---\n(.+)$"
 							"\\1" 
 						 	FILE_CONTENT "${FILE_CONTENT}" )
+	#replacing Liquid tags for highlighting
+	string(REGEX REPLACE    "{%[ \t]+highlight[ \t]+([^ \t]+)[ \t]+%}"
+							"```\\2"
+							FILE_CONTENT "${FILE_CONTENT}" )
+	string(REGEX REPLACE    "{%[ \t]+endhighlight[ \t]+%}"
+							"```"
+							FILE_CONTENT "${FILE_CONTENT}" )
 	file(WRITE ${output_markdown} "${FILE_CONTENT}")
 endfunction(transform_Jekyll_To_Markdown)
+
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |transform_Markdown_To_Jekyll| replace:: ``transform_Markdown_To_Jekyll``
+#  .. _transform_Markdown_To_Jekyll:
+#
+#  transform_Markdown_To_Jekyll
+#  ----------------------------
+#
+#   .. command:: transform_Markdown_To_Jekyll(component input_file output_jekyll)
+#
+#     From a markdown file documenting a component create a new file that can be parsed by Jekyll static stite generator 
+#
+#      :label: Jekyll label for the page (either tutorial, advanced, a component name or custom)
+#      :input_file: path to the markdown documentation file which may contain jekyll code.
+#      :output_jekyll: path to the generated jekyll file
+#
+function(transform_Markdown_To_Jekyll label input_file output_jekyll)
+	file(READ ${input_file} FILE_CONTENT)
+	set(insert_header TRUE)
+	if(FILE_CONTENT MATCHES "^---\nlayout: package\npackage: ${PROJECT_NAME}\ntitle: (.*)\n---\n(.+)$")
+		set(insert_header FALSE)
+	endif()
+	#replacing Liquid tags for highlighting
+	string(REGEX REPLACE    "```([^ \t\n]+)"
+							"{% highlight \\1 %}"
+							FILE_CONTENT "${FILE_CONTENT}" )
+	string(REGEX REPLACE    "```([ \t]*)"
+							"{% endhighlight %}"
+							FILE_CONTENT "${FILE_CONTENT}" )
+	set(header "")
+	if(insert_header)
+		if(label STREQUAL "introduction" OR label STREQUAL "tutorial")
+			set(header "---\nlayout: package\npackage: ${PROJECT_NAME}\ntitle: ${label}\n---\n\n")
+		else()
+			is_Declared(${label} DECLARED)
+			if(DECLARED)#it is a component
+				if(${PROJECT_NAME}_${DECLARED}_TYPE MATCHES "APP")
+					set(page_name "The ${DECLARED} application")
+				elseif(${PROJECT_NAME}_${DECLARED}_TYPE MATCHES "MODULE|SHARED|STATIC|HEADER")
+					set(page_name "The ${DECLARED} library")
+				elseif(${PROJECT_NAME}_${DECLARED}_TYPE MATCHES "PYTHON")
+					set(page_name "The ${DECLARED} python package")
+				else()
+					set(page_name "${label}") 
+				endif()
+				set(header "---\nlayout: package\npackage: ${PROJECT_NAME}\ntitle: ${page_name}\n---\n\n")
+			endif()
+		endif()
+	endif()
+	file(WRITE ${output_jekyll} "${header}${FILE_CONTENT}")
+endfunction(transform_Markdown_To_Jekyll)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |transform_Into_Jekyll_Compatible_Pages| replace:: ``transform_Into_Jekyll_Compatible_Pages``
+#  .. _transform_Into_Jekyll_Compatible_Pages:
+#
+#  transform_Into_Jekyll_Compatible_Pages
+#  --------------------------------------
+#
+#   .. command:: transform_Into_Jekyll_Compatible_Pages(markdown_pages_folder)
+#
+#    Transform markdown pages to be interpretable by PID jekyll templates
+#
+#      :markdown_pages_folder: Folder containing the markdown pages to transform
+#
+function(transform_Into_Jekyll_Compatible_Pages markdown_pages_folder)
+	file(GLOB_RECURSE all_markdown_files "${markdown_pages_folder}/*.markdown")
+	file(GLOB_RECURSE all_md_files "${markdown_pages_folder}/*.md")
+	set(all_markdown_files ${all_markdown_files} ${all_md_files})
+	foreach(a_file IN LISTS all_markdown_files)
+		get_filename_component(MD_NAME ${a_file} NAME)
+		if(${PROJECT_NAME}_advanced_SITE_CONTENT_FILE STREQUAL MD_NAME)
+			transform_Markdown_To_Jekyll("advanced" ${a_file} ${a_file})
+		elseif(${PROJECT_NAME}_tutorial_SITE_CONTENT_FILE STREQUAL MD_NAME)
+			transform_Markdown_To_Jekyll("tutorial" ${a_file} ${a_file})
+		else()
+			foreach(comp IN LISTS ${PROJECT_NAME}_COMPONENTS)
+				if(${PROJECT_NAME}_${comp}_SITE_CONTENT_FILE STREQUAL MD_NAME)
+					transform_Markdown_To_Jekyll("${comp}" ${a_file} ${a_file})
+					break()
+				endif()
+			endforeach()
+			#otherwise do nothing, keep the file "as is"
+		endif()
+	# 	
+	endforeach()
+endfunction(transform_Into_Jekyll_Compatible_Pages)
 
 
 #.rst:
@@ -456,7 +558,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	endif()
 
 	set(API_DOCUMENTATION_IN_README "${API_DOCUMENTATION_IN_README}With [Doxygen](https://www.doxygen.nl) installed, the API documentation can be built locally by turning the `BUILD_API_DOC` CMake option `ON` and running the `doc` target, e.g\n")
-	set(API_DOCUMENTATION_IN_README "${API_DOCUMENTATION_IN_README}```\npid cd ${PROJECT_NAME}\npid -DBUILD_API_DOC=ON doc\n```\n")
+	set(API_DOCUMENTATION_IN_README "${API_DOCUMENTATION_IN_README}```bash\npid cd ${PROJECT_NAME}\npid -DBUILD_API_DOC=ON doc\n```\n")
 	set(API_DOCUMENTATION_IN_README "${API_DOCUMENTATION_IN_README}The resulting documentation can be accessed by opening `<path to ${PROJECT_NAME}>/build/release/share/doc/html/index.html` in a web browser.")
 
     generate_Package_Content_Documentation(README_PACKAGE_CONTENT ${PROJECT_NAME})
@@ -478,8 +580,16 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	set(README_USER_CONTENT "")
 	if(${PROJECT_NAME}_USER_README_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE})
 		file(READ ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE} CONTENT_OF_README)
-		string(REPLACE @README_TABLE_OF_CONTENTS@ ${TABLE_OF_CONTENTS} CONTENT_OF_README "${CONTENT_OF_README}")
+		set(CONTENT_OF_DOXY_WELCOME "${CONTENT_OF_README}")
+		# generation of Readme
+		string(REPLACE @BEGIN_TABLE_OF_CONTENTS@ "" CONTENT_OF_README "${CONTENT_OF_README}")#removed begin marker
+		string(REPLACE @END_TABLE_OF_CONTENTS@ ${TABLE_OF_CONTENTS} CONTENT_OF_README "${CONTENT_OF_README}")#end marker replaced by TOC
 		set(README_USER_CONTENT "${CONTENT_OF_README}")
+		#generation of doxygen welcome page
+		string(REGEX REPLACE "^(.*)@BEGIN_TABLE_OF_CONTENTS@.*@END_TABLE_OF_CONTENTS@(.*)"
+							 "\\1\n\\2"
+							 CONTENT_OF_DOXY_WELCOME
+							 "${CONTENT_OF_DOXY_WELCOME}") 
 	else()
 		set(README_TABLE_OF_CONTENTS "# Table of Contents\n${TABLE_OF_CONTENTS}")
 	endif()
@@ -522,12 +632,12 @@ if(${package}_PUBLIC_ADDRESS OR ${package}_ADDRESS)
   set(DOC_STR "## Using an existing PID workspace\n")
   set(DOC_STR "${DOC_STR}\nThis method is for developers who want to install and access **${package}** from their PID workspace.\n")
   set(DOC_STR "${DOC_STR}\nYou can use the `deploy` command to manually install **${package}** in the workspace:\n")
-  set(DOC_STR "${DOC_STR}```\ncd <path to pid workspace>\npid deploy package=${package} # latest version\n")
+  set(DOC_STR "${DOC_STR}```bash\ncd <path to pid workspace>\npid deploy package=${package} # latest version\n")
   set(DOC_STR "${DOC_STR}# OR\n")
   set(DOC_STR "${DOC_STR}pid deploy package=${package} version=x.y.z # specific version\n```\n")
   if(NB_LIBS GREATER 0)
     set(DOC_STR "${DOC_STR}Alternatively you can simply declare a dependency to **${package}** in your package's `CMakeLists.txt` and let PID handle everything:\n")
-    set(DOC_STR "${DOC_STR}```\nPID_Dependency(${package}) # any version\n")
+    set(DOC_STR "${DOC_STR}```cmake\nPID_Dependency(${package}) # any version\n")
     set(DOC_STR "${DOC_STR}# OR\n")
     set(DOC_STR "${DOC_STR}PID_Dependency(${package} VERSION x.y.z) # any version compatible with x.y.z\n```\n")
 	set(DOC_STR "${DOC_STR}\nIf you need more control over your dependency declaration, please look at [PID_Dependency](https://pid.lirmm.net/pid-framework/assets/apidoc/html/pages/Package_API.html#pid-dependency) documentation.\n")
@@ -546,9 +656,9 @@ if(${package}_PUBLIC_ADDRESS OR ${package}_ADDRESS)
   set(DOC_STR "${DOC_STR}\nThis method allows to build the package without having to create a PID workspace manually. This method is UNIX only.\n")
   set(DOC_STR "${DOC_STR}\nAll you need to do is to first clone the package locally and then run the installation script:\n")
   if(${package}_PUBLIC_ADDRESS)
-    set(DOC_STR "${DOC_STR} ```\ngit clone ${${package}_PUBLIC_ADDRESS}\ncd ${package}\n")
+    set(DOC_STR "${DOC_STR} ```bash\ngit clone ${${package}_PUBLIC_ADDRESS}\ncd ${package}\n")
   elseif(${package}_ADDRESS)
-    set(DOC_STR "${DOC_STR} ```\ngit clone ${${package}_ADDRESS}\ncd ${package}\n")
+    set(DOC_STR "${DOC_STR} ```bash\ngit clone ${${package}_ADDRESS}\ncd ${package}\n")
   endif()
   set(DOC_STR "${DOC_STR}./share/install/standalone_install.sh\n```\n")
   set(DOC_STR "${DOC_STR}The package as well as its dependencies will be deployed under `binaries/pid-workspace`.\n\n")
@@ -569,17 +679,17 @@ if(${package}_PUBLIC_ADDRESS OR ${package}_ADDRESS)
 
     if(NB_LIBS EQUAL 1)
       list(GET ${package}_COMPONENTS_LIBS 0 COMP_NAME)
-      set(DOC_STR "${DOC_STR}\n```\npkg-config --static --cflags ${package}_${COMP_NAME}\n```\n")
-      set(DOC_STR "${DOC_STR}\n```\npkg-config --variable=c_standard ${package}_${COMP_NAME}\n```\n")
-      set(DOC_STR "${DOC_STR}\n```\npkg-config --variable=cxx_standard ${package}_${COMP_NAME}\n```\n")
+      set(DOC_STR "${DOC_STR}\n```bash\npkg-config --static --cflags ${package}_${COMP_NAME}\n```\n")
+      set(DOC_STR "${DOC_STR}\n```bash\npkg-config --variable=c_standard ${package}_${COMP_NAME}\n```\n")
+      set(DOC_STR "${DOC_STR}\n```bash\npkg-config --variable=cxx_standard ${package}_${COMP_NAME}\n```\n")
       set(DOC_STR "${DOC_STR}\nTo get linker flags run:\n")
-      set(DOC_STR "${DOC_STR}\n```\npkg-config --static --libs ${package}_${COMP_NAME}\n```\n")
+      set(DOC_STR "${DOC_STR}\n```bash\npkg-config --static --libs ${package}_${COMP_NAME}\n```\n")
     else()
-      set(DOC_STR "${DOC_STR}\n```\npkg-config --static --cflags ${package}_<component>\n```\n")
-      set(DOC_STR "${DOC_STR}\n```\npkg-config --variable=c_standard ${package}_<component>\n```\n")
-      set(DOC_STR "${DOC_STR}\n```\npkg-config --variable=cxx_standard ${package}_<component>\n```\n")
+      set(DOC_STR "${DOC_STR}\n```bash\npkg-config --static --cflags ${package}_<component>\n```\n")
+      set(DOC_STR "${DOC_STR}\n```bash\npkg-config --variable=c_standard ${package}_<component>\n```\n")
+      set(DOC_STR "${DOC_STR}\n```bash\npkg-config --variable=cxx_standard ${package}_<component>\n```\n")
       set(DOC_STR "${DOC_STR}\nTo get the linker flags run:\n")
-      set(DOC_STR "${DOC_STR}\n```\npkg-config --static --libs ${package}_<component>\n```\n")
+      set(DOC_STR "${DOC_STR}\n```bash\npkg-config --static --libs ${package}_<component>\n```\n")
       set(DOC_STR "${DOC_STR}\nWhere `<component>` is one of:\n")
       foreach(comp IN LISTS ${package}_COMPONENTS_LIBS)
         set(DOC_STR "${DOC_STR} * `${comp}`\n")
@@ -589,7 +699,7 @@ if(${package}_PUBLIC_ADDRESS OR ${package}_ADDRESS)
 
   set(INST_STR "Once the package and its dependencies are installed, you can consume it in different ways.\n")
   set(INST_STR "${INST_STR}## From another PID package\n")
-  set(INST_STR "${INST_STR}\nSimply add `PID_Dependency(${package})` or `PID_Dependency(PACKAGE VERSION x.y.z)` in your root *CMakeLists.txt* and then declare one of **${package}**'s components as a dependency in your `PID_Component` calls\n")
+  set(INST_STR "${INST_STR}\nSimply add `PID_Dependency(${package})` or `PID_Dependency(${package} VERSION x.y.z)` in your root *CMakeLists.txt* and then declare one of **${package}**'s components as a dependency in your `PID_Component` calls\n")
 endif()
 set(${RETURNED_INSTALL_DOC} ${DOC_STR} PARENT_SCOPE)
 endfunction(generate_Install_Procedure_Documentation)
@@ -765,9 +875,10 @@ if("${PACKAGE_DEPENDENCIES_DESCRIPTION}" STREQUAL "") #means that the package ha
 	endforeach()
 
 	foreach(dep_package IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES)# we take nly dependencies of the release version
-		generate_External_Dependency_Site(RES_CONTENT_EXTERNAL ${dep_package}
-      ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS
-      ${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS)
+		generate_External_Dependency_Site(	RES_CONTENT_EXTERNAL 
+											${dep_package}
+											${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS
+											${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS)
 		set(EXTERNAL_SITE_SECTION "${EXTERNAL_SITE_SECTION}\n${RES_CONTENT_EXTERNAL}")
 	endforeach()
 
@@ -959,6 +1070,14 @@ endfunction(define_Documentation_Content)
 #      :generated_site_folder: path to the folder that contains generated site pages for target package.
 #
 function(generate_Package_Static_Site_Pages generated_pages_folder)
+	 # 1) copy content from source into the binary dir
+	 if(EXISTS ${CMAKE_SOURCE_DIR}/share/site AND IS_DIRECTORY ${CMAKE_SOURCE_DIR}/share/site)			
+		#copy the content of the site source share folder of the package (user defined pages, documents and images) to the package final site in build tree
+		execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/share/site ${generated_pages_folder}
+						WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+		transform_Into_Jekyll_Compatible_Pages(${generated_pages_folder})
+	endif()
+
 	generate_Package_Static_Site_Page_Introduction(${generated_pages_folder}) # create introduction page
 	generate_Package_Static_Site_Page_Install(${generated_pages_folder})# create install page
 	generate_Package_Static_Site_Page_Use(${generated_pages_folder})# create use page
@@ -1339,6 +1458,10 @@ endif()
 
 if(${PROJECT_NAME}_USER_README_FILE AND EXISTS ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE})
 	file(READ ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_USER_README_FILE} CONTENT_OF_README)
+	string(REGEX REPLACE "^(.*)@BEGIN_TABLE_OF_CONTENTS@.*@END_TABLE_OF_CONTENTS@(.*)"
+							 "\\1\n\\2"
+							 CONTENT_OF_README
+							 "${CONTENT_OF_README}")
 	set(PACKAGE_README "<div markdown=\"1\">\n${CONTENT_OF_README}\n</div>")
 endif()
 
@@ -1931,17 +2054,10 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
   if(NOT only_bin)#no need to generate anything related to documentation if only binaries are generated
 
     ######### copy the documentation content ##############
-    # 1) copy content from source into the binary dir
-    if(EXISTS ${WORKSPACE_DIR}/packages/${package}/share/site AND IS_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/share/site)
-    	#copy the content of the site source share folder of the package (user defined pages, documents and images) to the package final site in build tree
-    	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/packages/${package}/share/site ${PATH_TO_PACKAGE_BUILD}/release/site/pages
-       WORKING_DIRECTORY ${PATH_TO_PACKAGE_BUILD})
-    endif()
-
-    # 2) if content is new (either generated or user defined) then clean the site and copy the content to the site repository
+    # if content is new (either generated or user defined) then clean the site and copy the content to the site repository
     set(ARE_SAME FALSE)
     if(NOT force)#only do this heavy check if the generation is not forced
-    	test_Same_Directory_Content(${PATH_TO_PACKAGE_BUILD}/release/site/pages ${TARGET_PAGES_PATH} ARE_SAME)
+    	test_Same_Directory_Content(${PATH_TO_PACKAGE_BUILD}/release/site ${TARGET_PAGES_PATH} ARE_SAME)
     endif()
 
     if(NOT ARE_SAME)

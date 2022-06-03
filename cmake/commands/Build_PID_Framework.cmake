@@ -41,7 +41,12 @@ if(DEFINED ENV{incremental})
 endif()
 
 #2) build site with jekyll
-execute_process(COMMAND ${JEKYLL_EXECUTABLE} build ${INCREMENTAL_BUILD_OPTION} -d ${PATH_TO_FRAMEWORK_RESULT} WORKING_DIRECTORY ${PATH_TO_FRAMEWORK_JEKYLL})
+execute_process(COMMAND ${JEKYLL_EXECUTABLE} build ${INCREMENTAL_BUILD_OPTION} -d ${PATH_TO_FRAMEWORK_RESULT} 
+                OUTPUT_VARIABLE out ERROR_VARIABLE out RESULT_VARIABLE res
+                WORKING_DIRECTORY ${PATH_TO_FRAMEWORK_JEKYLL})
+if(NOT res EQUAL 0)
+    message("[PID] ERROR: Problem during jekyll execution: ${out}")
+endif()
 
 #3) finally copy assets "as is" from "to_generate" folder to "generated" folder (to ensure that no jekyll processing removed some files)
 file(COPY ${PATH_TO_FRAMEWORK_JEKYLL}/assets DESTINATION ${PATH_TO_FRAMEWORK_RESULT} NO_SOURCE_PERMISSIONS)
