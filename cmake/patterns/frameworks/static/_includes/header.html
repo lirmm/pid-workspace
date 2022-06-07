@@ -31,7 +31,10 @@
             </li>
           </ul>
         </li>
-	<li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.baseurl }}/pages/activity.html" class="menu-item">Activity</a></li>
+  {% if site.data.framework.framework_apidoc != "" %}
+  <li class="{% if page.nav-hl == 'apidoc' %}active{% endif %}"><a href="{{ site.baseurl }}/assets/api_doc/html/index.html" class="menu-item">API Doc</a></li>
+  {% endif %}
+  <li class="{% if page.nav-hl == 'activity' %}active{% endif %}"><a href="{{ site.baseurl }}/pages/activity.html" class="menu-item">Activity</a></li>
 	<li class="dropdown {% if page.nav-hl == 'about' %}active{% endif %}">
           <a class="dropdown-toggle menu-item" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">About<i class="fa fa-caret-down"></i></a>
           <ul class="dropdown-menu animated slideInDown">

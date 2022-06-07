@@ -298,8 +298,9 @@ endmacro(declare_Site)
 #      :description: description of the framework.
 #      :welcome: path relative to src/pages folder, that targets a welcome page in markdown or html format.
 #      :contrib_space: name of the default contribution space for the package.
+#      :api_doc: path to the api_doc welcome page relative to share folder.
 #
-macro(declare_Framework author institution mail year site license git_address public_address repo_site description welcome contrib_space)
+macro(declare_Framework author institution mail year site license git_address public_address repo_site description welcome contrib_space api_doc)
 manage_Current_Platform("${CMAKE_BINARY_DIR}" "FRAMEWORK") #loading the current platform configuration and perform adequate actions if any changes
 
 configure_Git()
@@ -314,7 +315,7 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}(-framework|-site)?/build$")
 	set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake ${CMAKE_MODULE_PATH}) # adding the cmake scripts files from the framework
 
 	init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}) # getting the workspace version used to generate the code
-	init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${git_address}" "${public_address}" "" "${site}" "${repo_site}" "${welcome}")
+	init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${git_address}" "${public_address}" "" "${site}" "${repo_site}" "${welcome}" "${api_doc}")
 	set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
 	declare_Framework_Global_Cache_Options()
 	check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")#configuring git remotes
@@ -613,6 +614,13 @@ if(${PROJECT_NAME}_WELCOME)
 else()
 	set(FRAMEWORK_WELCOME)
 endif()
+set(API_DOC_PATH ${CMAKE_SOURCE_DIR}/src/api_doc)
+if(EXISTS ${API_DOC_PATH})
+	set(FRAMEWORK_APIDOC TRUE)
+else()
+	set(FRAMEWORK_APIDOC)
+endif()
+
 configure_file(${WORKSPACE_DIR}/cmake/patterns/frameworks/framework.yml.in ${CMAKE_BINARY_DIR}/to_generate/_data/framework.yml @ONLY)
 
 # 3) generate the data file defining categories managed by the framework (generated from scratch)
@@ -645,6 +653,140 @@ endforeach()
 # 4) generate the configuration file for jekyll generation
 configure_file(${WORKSPACE_DIR}/cmake/patterns/frameworks/_config.yml.in ${CMAKE_BINARY_DIR}/to_generate/_config.yml @ONLY)
 endfunction(generate_Framework_Data)
+
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |generate_Framework_Api_Doc| replace:: ``generate_Framework_Api_Doc``
+#  .. _generate_Framework_Api_Doc:
+#
+#  generate_Framework_Api_Doc
+#  --------------------------
+#
+#   .. command:: generate_Framework_Api_Doc()
+#
+#   Generate configuration file and target for launching doxygen api doc genration process
+#
+function(generate_Framework_Api_Doc)
+	set(API_DOC_PATH ${CMAKE_SOURCE_DIR}/src/api_doc)
+	if(EXISTS ${API_DOC_PATH})
+		 #finding doxygen tool and doxygen configuration file
+		 if(NOT DOXYGEN_EXECUTABLE)
+			message("[PID] WARNING : Doxygen not found please install it to generate the API documentation")
+			return()
+		endif()
+		find_file(GENERIC_DOXYFILE_IN   "Doxyfile.in"
+				PATHS "${WORKSPACE_DIR}/cmake/patterns/frameworks"
+				NO_DEFAULT_PATH
+		)
+		if(GENERIC_DOXYFILE_IN MATCHES GENERIC_DOXYFILE_IN-NOTFOUND)
+			message("[PID] WARNING : no doxygen template file found ... skipping documentation generation !!")
+			return()
+		else()
+			set(DOXYFILE_PATH ${GENERIC_DOXYFILE_IN})
+		endif()
+		set(DOXYFILE_MAIN_PAGE "")
+		if(${PROJECT_NAME}_API_DOC)
+			set(APIDOC_MAIN ${CMAKE_SOURCE_DIR}/share/${${PROJECT_NAME}_API_DOC})
+			if(NOT EXISTS ${APIDOC_MAIN})
+				message("[PID] CRITICAL ERROR: main page for API doc (${${PROJECT_NAME}_API_DOC}) does not exist in ${PROJECT_NAME} share folder")
+			endif()
+		endif()
+		set(APIDOC_MAIN_INPUT ${CMAKE_BINARY_DIR}/share/main_api_doc.md)
+		set(APIDOC_MAIN_CONFIG_FILE ${WORKSPACE_DIR}/cmake/patterns/frameworks/APIDOC_welcome.md.in)
+		if(APIDOC_MAIN)
+			file(READ ${APIDOC_MAIN} CONTENT_OF_DOXY_WELCOME)
+		else()
+			set(CONTENT_OF_DOXY_WELCOME "${${PROJECT_NAME}_DESCRIPTION}")
+		endif()
+		file(GLOB NATIVE_PACKAGES RELATIVE ${CMAKE_SOURCE_DIR}/src/_packages ${CMAKE_SOURCE_DIR}/src/_packages/*)
+		set(DOXY_LIST_OF_PACKAGES "")
+		foreach(pack IN LISTS NATIVE_PACKAGES)
+			if(IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/_packages/${pack})
+				if(EXISTS ${CMAKE_SOURCE_DIR}/src/_packages/${pack}/api_doc AND IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/_packages/${pack}/api_doc)#ensure an API is provided
+					if(EXISTS ${CMAKE_SOURCE_DIR}/src/api_doc/${pack}_api.cmake)
+						include(${CMAKE_SOURCE_DIR}/src/api_doc/${pack}_api.cmake)
+						set(groups_list)
+						set(first_grp TRUE)
+						foreach(grp IN LISTS ${pack}_LIBRARIES)
+							if(first_grp)
+								set(groups_list "  + @ref ${grp}")
+								set(first_grp FALSE)
+							else()
+								set(groups_list "${groups_list}\n  + @ref ${grp}")
+							endif()
+						endforeach()
+						set(DOXY_LIST_OF_PACKAGES "${DOXY_LIST_OF_PACKAGES}\n+ **${pack}**, with provided libraries:\n${groups_list}")
+					endif()
+				endif()
+			endif()
+		endforeach()
+		configure_file(${APIDOC_MAIN_CONFIG_FILE} ${APIDOC_MAIN_INPUT} @ONLY)
+
+		set(DOXYFILE_MAIN_PAGE "${APIDOC_MAIN_INPUT}")
+		set(DOXYFILE_PROJECT_NAME ${PROJECT_NAME})
+		set(DOXYFILE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/share/api_doc)
+		set(DOXYFILE_HTML_DIR html)
+		set(DOXYFILE_SOURCE_DIRS ${API_DOC_PATH}/include)
+		
+		if(EXISTS ${API_DOC_PATH}/examples)
+			file(GLOB markdown_files_to_add ${API_DOC_PATH}/examples/*.md ${API_DOC_PATH}/examples/*.markdown)
+			string(REPLACE ";" " " markdown_files_to_add "${markdown_files_to_add}")
+			set(DOXYFILE_COMPONENTS_DOC "${markdown_files_to_add}")
+			set(DOXYFILE_EXAMPLES_PATH ${API_DOC_PATH}/examples)
+		endif()
+		if(EXISTS ${API_DOC_PATH}/img)
+			set(DOXYFILE_IMAGES_PATH ${API_DOC_PATH}/img)
+		endif()
+
+		### new targets ###
+		# creating the specific target to run doxygen
+	  	add_custom_target(doxygen-pid
+			${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/share/Doxyfile
+			DEPENDS ${CMAKE_BINARY_DIR}/share/Doxyfile
+			WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+			COMMENT "Generating API documentation with Doxygen" VERBATIM
+		)
+  
+		# target to clean installed doc
+		set_property(DIRECTORY
+			APPEND PROPERTY
+			ADDITIONAL_MAKE_CLEAN_FILES
+			"${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_HTML_DIR}")
+  
+		# creating the doc target
+		if(NOT TARGET doc)
+			add_custom_target(doc)
+		endif()
+  
+		add_dependencies(doc doxygen-pid)
+  
+		### doxyfile configuration ###
+  
+		# configuring doxyfile for html generation
+		set(DOXYFILE_GENERATE_HTML "YES")
+  
+		# configuring doxyfile to use dot executable if available
+		set(DOXYFILE_DOT "NO")
+	  	set(DOXYGEN_DOT_PATH)
+		if(DOXYGEN_DOT_EXECUTABLE)
+			set(DOXYFILE_DOT "YES")
+		set(DOXYGEN_DOT_PATH ${DOXYGEN_DOT_EXECUTABLE})
+		endif()
+  
+		# configuring doxyfile for latex generation
+		set(DOXYFILE_PDFLATEX "NO")
+
+		#configuring the Doxyfile.in file to generate a doxygen configuration file
+		configure_file(${DOXYFILE_PATH} ${CMAKE_BINARY_DIR}/share/Doxyfile @ONLY)
+		### end doxyfile configuration ###
+	endif()
+endfunction(generate_Framework_Api_Doc)
+
 
 #.rst:
 #
@@ -1010,6 +1152,7 @@ macro(build_Framework)
 generate_Framework_Readme_File() # generating and putting into source directory the readme file used by gitlab
 generate_Framework_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Framework_Data() # generating the data files for jekyll (result in the build tree)
+generate_Framework_Api_Doc() # generating the build rules used to generate the global api doc of the framework
 generate_Framework_Binary_References() # generating in the project the cmake script files that allow to find references on packages of the framework
 update_Framework_CI_Config_File() #update CI file with version coming from framework
 

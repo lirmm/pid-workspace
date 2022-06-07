@@ -163,7 +163,7 @@ endfunction(reset_References_Info)
 #      :public_address: public https git address (use to clone project without restriction)
 #      :readme_file: the user defined readme file for the current project.
 #
-function(init_Meta_Info_Cache_Variables author institution mail description year license address public_address readme_file framework_site framework_repo_site framework_welcome_page)
+function(init_Meta_Info_Cache_Variables author institution mail description year license address public_address readme_file framework_site framework_repo_site framework_welcome_page framework_api_doc_page)
 set(res_string_auth "")
 foreach(string_el IN LISTS author)
 	set(res_string_auth "${res_string_auth}_${string_el}")
@@ -208,10 +208,11 @@ set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
 set(${PROJECT_NAME}_PUBLIC_ADDRESS ${public_address} CACHE INTERNAL "")
 set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")#categories are reset
 
-if(framework_site OR framework_repo_site OR framework_welcome_page)
+if(framework_site OR framework_repo_site OR framework_welcome_page OR framework_api_doc_page)
 	set(${PROJECT_NAME}_SITE ${framework_site} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_PROJECT_PAGE ${framework_repo_site} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_WELCOME ${framework_welcome_page} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_API_DOC ${framework_api_doc_page} CACHE INTERNAL "")
 else()#native packages and external packages wrappers
   set(${PROJECT_NAME}_USER_README_FILE ${readme_file} CACHE INTERNAL "")
 endif()

@@ -40,13 +40,24 @@ if(DEFINED ENV{incremental})
 	unset(ENV{incremental})
 endif()
 
+if(EXISTS ${PATH_TO_FRAMEWORK_SRC}/api_doc/include)#an api_doc has been generated
+    message("[PID] INFO: Building global API doc...")
+    execute_process(COMMAND ${CMAKE_COMMAND} --build . --target doc 
+                    WORKING_DIRECTORY ${PATH_TO_FRAMEWORK}/build)
+    file(COPY ${PATH_TO_FRAMEWORK}/build/share/api_doc/html DESTINATION ${PATH_TO_FRAMEWORK_JEKYLL}/assets/api_doc)
+endif()
+
 #2) build site with jekyll
+message("[PID] INFO: Building static site...")
 execute_process(COMMAND ${JEKYLL_EXECUTABLE} build ${INCREMENTAL_BUILD_OPTION} -d ${PATH_TO_FRAMEWORK_RESULT} 
                 OUTPUT_VARIABLE out ERROR_VARIABLE out RESULT_VARIABLE res
                 WORKING_DIRECTORY ${PATH_TO_FRAMEWORK_JEKYLL})
 if(NOT res EQUAL 0)
     message("[PID] ERROR: Problem during jekyll execution: ${out}")
+    return()
 endif()
 
 #3) finally copy assets "as is" from "to_generate" folder to "generated" folder (to ensure that no jekyll processing removed some files)
-file(COPY ${PATH_TO_FRAMEWORK_JEKYLL}/assets DESTINATION ${PATH_TO_FRAMEWORK_RESULT} NO_SOURCE_PERMISSIONS)
+if(EXISTS ${PATH_TO_FRAMEWORK_JEKYLL}/assets)
+    file(COPY ${PATH_TO_FRAMEWORK_JEKYLL}/assets DESTINATION ${PATH_TO_FRAMEWORK_RESULT} NO_SOURCE_PERMISSIONS)
+endif()

@@ -6,3 +6,4 @@ Makefile
 CMakeCache.txt
 /pid
 /pid.bat
+!pid/

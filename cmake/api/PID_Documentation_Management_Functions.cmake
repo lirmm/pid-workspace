@@ -136,7 +136,7 @@ function(transform_Jekyll_To_Markdown component input_file output_markdown)
 						 	FILE_CONTENT "${FILE_CONTENT}" )
 	#replacing Liquid tags for highlighting
 	string(REGEX REPLACE    "{%[ \t]+highlight[ \t]+([^ \t]+)[ \t]+%}"
-							"```\\2"
+							"```\\1"
 							FILE_CONTENT "${FILE_CONTENT}" )
 	string(REGEX REPLACE    "{%[ \t]+endhighlight[ \t]+%}"
 							"```"
@@ -324,10 +324,18 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
   	# general variables
 	set(headers_list)
 	set(documentations_list)
+	set(comp_list)
 	foreach(comp IN LISTS ${PROJECT_NAME}_DECLARED_COMPS)
-		if(NOT ${PROJECT_NAME}_${comp}_FOR_DOC_ONLY)
+		if(NOT ${PROJECT_NAME}_${comp}_FOR_EXAMPLES AND NOT ${PROJECT_NAME}_${comp}_FOR_TESTS)
 			if(${PROJECT_NAME}_${comp}_HEADER_DIR_NAME)#if the component defines public headers
 				list(APPEND headers_list "${CMAKE_SOURCE_DIR}/include/${${PROJECT_NAME}_${comp}_HEADER_DIR_NAME}")
+				list(APPEND comp_list ${comp})
+				# copy the relevant headers to be able to provide them to the framework
+				file(COPY ${CMAKE_SOURCE_DIR}/include/${${PROJECT_NAME}_${comp}_HEADER_DIR_NAME} DESTINATION ${CMAKE_BINARY_DIR}/share/doc/include)
+				if(EXISTS ${CMAKE_BINARY_DIR}/src/include/${${PROJECT_NAME}_${comp}_HEADER_DIR_NAME})#if some headers have been generated for this component (e.g. pid-log, pid-export)
+					file(COPY ${CMAKE_BINARY_DIR}/src/include/${${PROJECT_NAME}_${comp}_HEADER_DIR_NAME} DESTINATION ${CMAKE_BINARY_DIR}/share/doc/include)
+					list(APPEND headers_list "${CMAKE_BINARY_DIR}/src/include/${${PROJECT_NAME}_${comp}_HEADER_DIR_NAME}")
+				endif()
 			endif()
 			if(${PROJECT_NAME}_${comp}_SITE_CONTENT_FILE)#if the component defines a documentation
 				generate_Component_Page_For_Doxygen(OUTPUT_FILE_PATH ${comp} ${CMAKE_SOURCE_DIR}/share/site/${${PROJECT_NAME}_${comp}_SITE_CONTENT_FILE} ${CMAKE_BINARY_DIR}/share/doc/examples)
@@ -335,6 +343,10 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
 			endif()
 		endif()
 	endforeach()
+
+	if(comp_list)
+		file(WRITE ${CMAKE_BINARY_DIR}/share/doc/${PROJECT_NAME}_api.cmake "set(${PROJECT_NAME}_LIBRARIES ${comp_list})")
+	endif()
 	if(headers_list)
 		string(REPLACE ";" " " DOXYFILE_SOURCE_DIRS "${headers_list}")
 	endif()
@@ -1914,7 +1926,9 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
 
   #### preparing the copy depending on the target: lone static site or framework ####
   if(framework)
-  	set(TARGET_PACKAGE_PATH ${WORKSPACE_DIR}/sites/frameworks/${framework}/src/_packages/${package})
+  	set(TARGET_FRAMEWORK_SOURCES ${WORKSPACE_DIR}/sites/frameworks/${framework}/src)
+  	set(TARGET_FRAMEWORK_API_DOC ${TARGET_FRAMEWORK_SOURCES}/api_doc)
+  	set(TARGET_PACKAGE_PATH ${TARGET_FRAMEWORK_SOURCES}/_packages/${package})
   	set(TARGET_APIDOC_PATH ${TARGET_PACKAGE_PATH}/api_doc)
   	set(TARGET_COVERAGE_PATH ${TARGET_PACKAGE_PATH}/coverage)
   	set(TARGET_STATICCHECKS_PATH ${TARGET_PACKAGE_PATH}/static_checks)
@@ -2068,6 +2082,31 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
         				WORKING_DIRECTORY ${PATH_TO_PACKAGE_BUILD})# copy content from binary dir to site repository source dir
     	set(NEW_POST_CONTENT_PAGES TRUE)
     endif()
+
+	if(framework)#contribute to the whole api_doc of the framework
+		set(PATH_TO_DOC ${PATH_TO_PACKAGE_BUILD}/release/share/doc)
+		if(EXISTS ${PATH_TO_DOC})
+			file(GLOB ALL_PACK_INCLUDES ${PATH_TO_DOC}/include/*)
+			foreach(inc IN LISTS ALL_PACK_INCLUDES)
+				if(NOT inc STREQUAL ".gitignore")
+					file(GLOB COMP_PUBLIC_HEADER ${inc}/*)
+					foreach(head IN LISTS COMP_PUBLIC_HEADER)
+						file(COPY ${head} DESTINATION ${TARGET_FRAMEWORK_API_DOC}/include)
+					endforeach()
+				endif()
+			endforeach()
+			if(EXISTS ${PATH_TO_DOC}/examples)
+				file(COPY ${PATH_TO_DOC}/examples DESTINATION ${TARGET_FRAMEWORK_API_DOC})
+			endif()
+			if(EXISTS ${PATH_TO_DOC}/img)
+				file(COPY ${PATH_TO_DOC}/img DESTINATION ${TARGET_FRAMEWORK_API_DOC})
+			endif()
+
+			if(EXISTS ${PATH_TO_DOC}/${package}_api.cmake)
+				file(COPY ${PATH_TO_DOC}/${package}_api.cmake DESTINATION ${TARGET_FRAMEWORK_API_DOC})
+			endif()
+		endif()
+	endif()
   endif()
 
   ######### configure the post used to describe the update ##############

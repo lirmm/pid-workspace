@@ -603,7 +603,7 @@ reset_CI_Variables()
 reset_Package_Platforms_Variables()
 reset_Packages_Finding_Variables()
 init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
-init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "")
+init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "" "")
 reset_Version_Cache_Variables()
 reset_Temporary_Optimization_Variables(${CMAKE_BUILD_TYPE}) #resetting temporary variables used in optimization of configruation process
 is_First_Package_Configuration(FIRST_CONFIG)

@@ -1,0 +1,10 @@
+
+Overview of @PROJECT_NAME@  {#mainpage}
+==========================
+
+@CONTENT_OF_DOXY_WELCOME@
+
+
+The framework provides the following set of packages that contribute to its global API:
+
+@DOXY_LIST_OF_PACKAGES@

@@ -69,6 +69,7 @@ include(CMakeParseArguments)
 #     :LOGO <path to image file>: The path to the image used as logo for the framework. This path is relative to framework src/assets folder.
 #     :BANNER <path to image file>: The path to the image used as a banner for the framework index page. This path is relative to framework src/assets folder.
 #     :WELCOME <path to markdown file>: The path to the mardown use for the welcome. This path is relative to framework src/pages folder.
+#     :API_DOC <path to markdown file>: The path to the mardown use for documenting the main page of API_DOC. This path is relative to framework share folder.
 #     :CONTRIBUTION_SPACE <name>: the name of the default contribution space used by the framework to publish its references.
 #
 #     .. admonition:: Constraints
@@ -87,18 +88,19 @@ include(CMakeParseArguments)
 #     .. code-block:: cmake
 #
 #        PID_Framework(
-#           AUTHOR       Robin Passama
-#       		MAIL         passama@lirmm.fr
-#       		INSTITUTION  LIRMM
-#       		ADDRESS      git@gite.lirmm.fr:pid/pid-framework.git
-#           PUBLIC_ADDRESS https://gite.lirmm.fr/pid/pid-framework.git
-#       	 	YEAR         2016
-#       		LICENSE      CeCILL-C
-#       		DESCRIPTION  "PID is a global development methodology supported by many tools inclusing a CMake API and dedicated C++ projects."
-#       		SITE         https://pid.lirmm.net/pid-framework
-#       		PROJECT      https://gite.lirmm.fr/pid/pid-framework
-#       		LOGO         img/pid_logo.jpg
-#       		BANNER       img/cooperationmechanisms.jpg
+#           	AUTHOR       	Robin Passama
+#       		EMAIL         	passama@lirmm.fr
+#       		INSTITUTION  	CNRS/LIRMM
+#       		ADDRESS      	git@gite.lirmm.fr:pid/pid-framework.git
+#           	PUBLIC_ADDRESS 	https://gite.lirmm.fr/pid/pid-framework.git
+#       	 	YEAR         	2016
+#       		LICENSE      	CeCILL-C
+#       		DESCRIPTION  	"PID is a global development methodology supported by many tools inclusing a CMake API and dedicated C++ projects."
+#       		SITE         	https://pid.lirmm.net/pid-framework
+#       		PROJECT      	https://gite.lirmm.fr/pid/pid-framework
+#       		LOGO         	img/pid_logo.jpg
+#       		BANNER       	img/cooperationmechanisms.jpg
+#               API_DOC         pid_main_api.md
 #       	)
 #
 macro(PID_Framework)
@@ -106,7 +108,7 @@ macro(PID_Framework)
 endmacro(PID_Framework)
 
 macro(declare_PID_Framework)
-set(oneValueArgs GIT_ADDRESS ADDRESS PUBLIC_ADDRESS MAIL EMAIL SITE PROJECT LICENSE LOGO BANNER WELCOME CONTRIBUTION_SPACE)
+set(oneValueArgs GIT_ADDRESS ADDRESS PUBLIC_ADDRESS MAIL EMAIL SITE PROJECT LICENSE LOGO BANNER WELCOME CONTRIBUTION_SPACE API_DOC)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION CATEGORIES)
 cmake_parse_arguments(DECLARE_PID_FRAMEWORK "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_FRAMEWORK_AUTHOR)
@@ -145,7 +147,7 @@ endif()
 declare_Framework(	"${DECLARE_PID_FRAMEWORK_AUTHOR}" "${DECLARE_PID_FRAMEWORK_INSTITUTION}" "${email}"
 			"${DECLARE_PID_FRAMEWORK_YEAR}" "${DECLARE_PID_FRAMEWORK_SITE}" "${DECLARE_PID_FRAMEWORK_LICENSE}"
 			"${address}" "${DECLARE_PID_FRAMEWORK_PUBLIC_ADDRESS}" "${DECLARE_PID_FRAMEWORK_PROJECT}" "${DECLARE_PID_FRAMEWORK_DESCRIPTION}"
-    "${DECLARE_PID_FRAMEWORK_WELCOME}" "${DECLARE_PID_FRAMEWORK_CONTRIBUTION_SPACE}")
+    "${DECLARE_PID_FRAMEWORK_WELCOME}" "${DECLARE_PID_FRAMEWORK_CONTRIBUTION_SPACE}" "${DECLARE_PID_FRAMEWORK_API_DOC}")
 unset(email)
 if(DECLARE_PID_FRAMEWORK_LOGO)
 	declare_Framework_Image(${DECLARE_PID_FRAMEWORK_LOGO} FALSE)
