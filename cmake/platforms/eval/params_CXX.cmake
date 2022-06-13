@@ -16,5 +16,5 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-set(LANG_CXX_OPTIONAL_CONSTRAINTS optimization)#optimization used only to configrue CXX flags
+set(LANG_CXX_OPTIONAL_CONSTRAINTS optimization compiler_min stdlib_min)#optimization used only to configrue CXX flags
 set(LANG_CXX_IN_BINARY_CONSTRAINTS soname symbol proc_optimization std)#proc_optimization is just used to check binary compatibility

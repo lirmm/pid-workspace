@@ -1017,7 +1017,8 @@ endmacro(build_PID_Package)
 #   :MANAGE_SYMBOLS: Tell the system that the code will manage symbol export by specifying the path (relative to DIRECTORY) where the generated header defining macro for exporting symbols will be put. All symbols of the library will be hidden instead of default behavior where all symbols are exported.
 #   :INTERNAL_ONLY: specifies that the library is defined for internal use only, will not be installed by the package.
 #   :FOR_EXAMPLES: specifies that library must be internal only and is used for example purpose
-#   :LOGGABLE: specifies that library must be internal only and is used for example purpose
+#   :FOR_TESTS: specifies that library must be internal only and is used for testing purpose
+#   :LOGGABLE: specifies generate logs that can be discriminated from other component logs (using pid-log system)
 #
 #   The following options are supported by the ``INTERNAL`` and ``EXPORTED`` commands:
 #
