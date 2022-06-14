@@ -1018,6 +1018,7 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #     :DEFINITIONS <defs>: preprocessor definitions used in the component’s interface.
 #     :INCLUDES <folders>: include folders to pass to any component using the current component. Path are interpreted relative to the installed external package version root folder.
 #     :SHARED_LINKS <links>: shared link flags. Path are interpreted relative to the installed external package version root folder.
+#     :FORCED_SHARED_LINKS <links>: shared links whose binary is forced to be linked into dependent dinaries (see -Wl,no-as-needed) 
 #     :STATIC_LINKS <links>: static link flags. Path are interpreted relative to the installed external package version root folder.
 #     :OPTIONS <compile options>: compiler options to be used whenever a third party code use this component. This should be used only for options bound to compiler usage, not definitions or include directories.
 #     :RUNTIME_RESOURCES <list of path>: list of path relative to the installed external package version root folder.
@@ -1048,7 +1049,7 @@ endmacro(PID_Wrapper_Component)
 
 macro(declare_PID_Wrapper_Component)
 set(oneValueArgs COMPONENT C_STANDARD C_MAX_STANDARD CXX_STANDARD CXX_MAX_STANDARD STANDARD SONAME)
-set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES EXPORT DEPEND ALIAS PYTHON) #known versions of the external package that can be used to build/run it
+set(multiValueArgs INCLUDES SHARED_LINKS STATIC_LINKS FORCED_SHARED_LINKS DEFINITIONS OPTIONS RUNTIME_RESOURCES EXPORT DEPEND ALIAS PYTHON) #known versions of the external package that can be used to build/run it
 cmake_parse_arguments(DECLARE_PID_WRAPPER_COMPONENT "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_WRAPPER_COMPONENT_COMPONENT)
   if("${ARGV0}" STREQUAL "" OR "${ARGV0}" MATCHES "^CXX_STANDARD|CXX_MAX_STANDARD|C_STANDARD|C_MAX_STANDARD|SONAME|INCLUDES|SHARED_LINKS|STATIC_LINKS|DEFINITIONS|OPTIONS|RUNTIME_RESOURCES$")
@@ -1075,8 +1076,8 @@ if(ERR)
     message("[PID] WARNING: when declaring component ${component_name} in wrapper ${PROJECT_NAME}, ${MESS}")
   endif()
 endif()
-
 declare_Wrapped_Component(${component_name}
+  "${DECLARE_PID_WRAPPER_COMPONENT_FORCED_SHARED_LINKS}"
   "${DECLARE_PID_WRAPPER_COMPONENT_SHARED_LINKS}"
   "${DECLARE_PID_WRAPPER_COMPONENT_SONAME}"
 	"${DECLARE_PID_WRAPPER_COMPONENT_STATIC_LINKS}"

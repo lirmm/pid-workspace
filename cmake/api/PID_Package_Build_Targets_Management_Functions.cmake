@@ -1231,8 +1231,8 @@ if(NOT TARGET ${target_name})#check that this target does not exist, otherwise n
   add_library(${target_name} INTERFACE IMPORTED GLOBAL)#need to use an interface library to export all other proêrties of the component
   list_Public_Includes(INCLUDES ${dep_package} ${comp_name_to_use} ${mode} FALSE)#external package does not define their own header dir, simply define a set of include dirs
   list_Public_Lib_Dirs(LIBDIRS ${dep_package} ${comp_name_to_use} ${mode})
-	list_Public_Definitions(DEFS ${dep_package} ${comp_name_to_use} ${mode})
-	list_External_Links(SHARED_LNKS STATIC_LNKS ${dep_package} ${comp_name_to_use} ${mode})
+  list_Public_Definitions(DEFS ${dep_package} ${comp_name_to_use} ${mode})
+  list_External_Links(SHARED_LNKS STATIC_LNKS ${dep_package} ${comp_name_to_use} ${mode})
   # 1) create dependent targets for each binary (also allow same global management of links as for legacy package dependencies)
   #shared first
   foreach(link IN LISTS SHARED_LNKS)

@@ -116,6 +116,7 @@ macro(declare_PID_External_Package)
 			set(${package}_${comp}_DEFS${VAR_SUFFIX} CACHE INTERNAL "")
 			set(${package}_${comp}_STATIC_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
 			set(${package}_${comp}_SHARED_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
+			set(${package}_${comp}_FORCED_SHARED_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
 			set(${package}_${comp}_C_STANDARD${VAR_SUFFIX} CACHE INTERNAL "")
 			set(${package}_${comp}_C_MAX_STANDARD${VAR_SUFFIX} CACHE INTERNAL "")
 			set(${package}_${comp}_CXX_STANDARD${VAR_SUFFIX} CACHE INTERNAL "")
@@ -415,8 +416,8 @@ endmacro(declare_PID_External_Package_Dependency)
 macro(declare_PID_External_Component)
 	set(options)
 	set(oneValueArgs PACKAGE COMPONENT C_STANDARD C_MAX_STANDARD CXX_STANDARD CXX_MAX_STANDARD)
-	set(multiValueArgs INCLUDES STATIC_LINKS SHARED_LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS ALIAS PYTHON)
-  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+	set(multiValueArgs INCLUDES STATIC_LINKS SHARED_LINKS FORCED_SHARED_LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS ALIAS PYTHON)
+  	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 
 	cmake_parse_arguments(DECLARE_PID_EXTERNAL_COMPONENT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 	if(NOT DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE OR NOT DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT)
@@ -429,18 +430,18 @@ macro(declare_PID_External_Component)
 	endif()
 	set(curr_ext_package ${DECLARE_PID_EXTERNAL_COMPONENT_PACKAGE})
 	set(curr_ext_comp ${DECLARE_PID_EXTERNAL_COMPONENT_COMPONENT})
-  append_Unique_In_Cache(${curr_ext_package}_COMPONENTS ${curr_ext_comp})
-  if(DECLARE_PID_EXTERNAL_COMPONENT_ALIAS)#an alias is defined for the component
-    append_Unique_In_Cache(${curr_ext_package}_ALIASES "${DECLARE_PID_EXTERNAL_COMPONENT_ALIAS}")
-    foreach(alias IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_ALIAS)
-      set(${curr_ext_package}_${alias}_IS_ALIAS_OF ${curr_ext_comp} CACHE INTERNAL "")
-    endforeach()
-  endif()
+	append_Unique_In_Cache(${curr_ext_package}_COMPONENTS ${curr_ext_comp})
+	if(DECLARE_PID_EXTERNAL_COMPONENT_ALIAS)#an alias is defined for the component
+		append_Unique_In_Cache(${curr_ext_package}_ALIASES "${DECLARE_PID_EXTERNAL_COMPONENT_ALIAS}")
+		foreach(alias IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_ALIAS)
+		set(${curr_ext_package}_${alias}_IS_ALIAS_OF ${curr_ext_comp} CACHE INTERNAL "")
+		endforeach()
+	endif()
 	#manage include folders
 	set(incs)
 	foreach(an_include IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_INCLUDES)
-    transform_External_Include_Into_Absolute_Path_Expression(RES_INC ${curr_ext_package} ${an_include})
-    list(APPEND incs ${RES_INC})
+		transform_External_Include_Into_Absolute_Path_Expression(RES_INC ${curr_ext_package} ${an_include})
+		list(APPEND incs ${RES_INC})
 	endforeach()
 	if(incs)
 		list(REMOVE_DUPLICATES incs)
@@ -449,44 +450,44 @@ macro(declare_PID_External_Component)
 	#manage definitions
 	set(${curr_ext_package}_${curr_ext_comp}_DEFS${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_COMPONENT_DEFINITIONS} CACHE INTERNAL "")
 
-	#manage standards in USE and compiler options
-  set(fake_intern_opts)
-  adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
-                                        fake_intern_opts DECLARE_PID_EXTERNAL_COMPONENT_COMPILER_OPTIONS
-                                        "${DECLARE_PID_EXTERNAL_COMPONENT_C_STANDARD}"
-                                        "${DECLARE_PID_EXTERNAL_COMPONENT_C_MAX_STANDARD}"
-                                        "${DECLARE_PID_EXTERNAL_COMPONENT_CXX_STANDARD}"
-                                        "${DECLARE_PID_EXTERNAL_COMPONENT_CXX_MAX_STANDARD}")
-  if(ERR)
-    if(ERR STREQUAL "CRITICAL")
-      finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR: for component ${curr_ext_comp} from external package ${curr_ext_package} in ${PROJECT_NAME} context, ${MESS}")
-    else()
-      message("[PID] WARNING: for component ${curr_ext_comp} from external package ${curr_ext_package} in ${PROJECT_NAME} context, ${MESS}")
-    endif()
-  endif()
+		#manage standards in USE and compiler options
+	set(fake_intern_opts)
+	adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
+											fake_intern_opts DECLARE_PID_EXTERNAL_COMPONENT_COMPILER_OPTIONS
+											"${DECLARE_PID_EXTERNAL_COMPONENT_C_STANDARD}"
+											"${DECLARE_PID_EXTERNAL_COMPONENT_C_MAX_STANDARD}"
+											"${DECLARE_PID_EXTERNAL_COMPONENT_CXX_STANDARD}"
+											"${DECLARE_PID_EXTERNAL_COMPONENT_CXX_MAX_STANDARD}")
+	if(ERR)
+		if(ERR STREQUAL "CRITICAL")
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR: for component ${curr_ext_comp} from external package ${curr_ext_package} in ${PROJECT_NAME} context, ${MESS}")
+		else()
+		message("[PID] WARNING: for component ${curr_ext_comp} from external package ${curr_ext_package} in ${PROJECT_NAME} context, ${MESS}")
+		endif()
+	endif()
 
-  if(C_STD_USED)
-    set(${curr_ext_package}_${curr_ext_comp}_C_STANDARD${VAR_SUFFIX} ${C_STD_USED} CACHE INTERNAL "")
-  else()
-    set(${curr_ext_package}_${curr_ext_comp}_C_STANDARD${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_COMPONENT_C_STANDARD} CACHE INTERNAL "")
-  endif()
-  if(CXX_STD_USED)
-    set(${curr_ext_package}_${curr_ext_comp}_CXX_STANDARD${VAR_SUFFIX} ${CXX_STD_USED} CACHE INTERNAL "")
-  else()
-    set(${curr_ext_package}_${curr_ext_comp}_CXX_STANDARD${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_COMPONENT_CXX_STANDARD} CACHE INTERNAL "")
-  endif()
-  set(${curr_ext_package}_${curr_ext_comp}_C_MAX_STANDARD${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_COMPONENT_C_MAX_STANDARD} CACHE INTERNAL "")
-  set(${curr_ext_package}_${curr_ext_comp}_CXX_MAX_STANDARD${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_COMPONENT_CXX_MAX_STANDARD} CACHE INTERNAL "")
+	if(C_STD_USED)
+		set(${curr_ext_package}_${curr_ext_comp}_C_STANDARD${VAR_SUFFIX} ${C_STD_USED} CACHE INTERNAL "")
+	else()
+		set(${curr_ext_package}_${curr_ext_comp}_C_STANDARD${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_COMPONENT_C_STANDARD} CACHE INTERNAL "")
+	endif()
+	if(CXX_STD_USED)
+		set(${curr_ext_package}_${curr_ext_comp}_CXX_STANDARD${VAR_SUFFIX} ${CXX_STD_USED} CACHE INTERNAL "")
+	else()
+		set(${curr_ext_package}_${curr_ext_comp}_CXX_STANDARD${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_COMPONENT_CXX_STANDARD} CACHE INTERNAL "")
+	endif()
+	set(${curr_ext_package}_${curr_ext_comp}_C_MAX_STANDARD${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_COMPONENT_C_MAX_STANDARD} CACHE INTERNAL "")
+	set(${curr_ext_package}_${curr_ext_comp}_CXX_MAX_STANDARD${VAR_SUFFIX} ${DECLARE_PID_EXTERNAL_COMPONENT_CXX_MAX_STANDARD} CACHE INTERNAL "")
 
-  # set corresponding internal variables
+	# set corresponding internal variables
 	set(${curr_ext_package}_${curr_ext_comp}_OPTS${VAR_SUFFIX} ${EXPORT_OPTS} CACHE INTERNAL "")
 
 	#manage links
 	set(links)
 	foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_STATIC_LINKS)
-    transform_External_Link_Into_Absolute_Path_Expression(RES_LINK ${curr_ext_package} ${a_link})
-    list(APPEND links ${RES_LINK})
+		transform_External_Link_Into_Absolute_Path_Expression(RES_LINK ${curr_ext_package} ${a_link})
+		list(APPEND links ${RES_LINK})
 	endforeach()
 	if(links)
 		list(REMOVE_DUPLICATES links)
@@ -496,12 +497,23 @@ macro(declare_PID_External_Component)
 	#manage shared links
 	set(links)
 	foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_SHARED_LINKS)
-    transform_External_Link_Into_Absolute_Path_Expression(RES_LINK ${curr_ext_package} ${a_link})
-    list(APPEND links ${RES_LINK})
+		transform_External_Link_Into_Absolute_Path_Expression(RES_LINK ${curr_ext_package} ${a_link})
+		list(APPEND links ${RES_LINK})
 	endforeach()
 	if(links)
 		list(REMOVE_DUPLICATES links)
 		set(${curr_ext_package}_${curr_ext_comp}_SHARED_LINKS${VAR_SUFFIX} ${links} CACHE INTERNAL "")
+	endif()
+
+	#manage forced shared links
+	set(links)
+	foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_FORCED_SHARED_LINKS)
+		transform_External_Link_Into_Absolute_Path_Expression(RES_LINK ${curr_ext_package} ${a_link})
+		list(APPEND links ${RES_LINK})
+	endforeach()
+	if(links)
+		list(REMOVE_DUPLICATES links)
+		set(${curr_ext_package}_${curr_ext_comp}_FORCED_SHARED_LINKS${VAR_SUFFIX} ${links} CACHE INTERNAL "")
 	endif()
 
 	#manage runtime resources
@@ -583,9 +595,9 @@ endmacro(declare_PID_External_Component)
 macro(declare_PID_External_Component_Dependency)
 	set(options)
 	set(oneValueArgs PACKAGE COMPONENT EXTERNAL EXPORT USE C_STANDARD C_MAX_STANDARD CXX_STANDARD CXX_MAX_STANDARD)
-	set(multiValueArgs INCLUDES LIBRARY_DIRS STATIC_LINKS SHARED_LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS)
+	set(multiValueArgs INCLUDES LIBRARY_DIRS STATIC_LINKS SHARED_LINKS FORCED_SHARED_LINKS DEFINITIONS RUNTIME_RESOURCES COMPILER_OPTIONS)
 	cmake_parse_arguments(DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
+    get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 	if(NOT DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE OR NOT DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT)
 		message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: you must define the PACKAGE (value: ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE}) and the name of the component using COMPONENT keyword (value: ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT}).")
 		return()
@@ -595,7 +607,7 @@ macro(declare_PID_External_Component_Dependency)
 		return() #return will exit from current Use file included (because we are in a macro)
 	endif()
 	set(LOCAL_PACKAGE ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_PACKAGE})
-  rename_If_Alias(LOCAL_COMPONENT ${LOCAL_PACKAGE} ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT})
+    rename_If_Alias(LOCAL_COMPONENT ${LOCAL_PACKAGE} ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPONENT})
 
 	set(TARGET_COMPONENT)
 	set(EXPORT_TARGET FALSE)
@@ -636,206 +648,219 @@ macro(declare_PID_External_Component_Dependency)
 	# more checks
 	if(TARGET_COMPONENT)
 		if(NOT TARGET_PACKAGE)#this MUST BE a link to a component locally defined
-      list(FIND ${LOCAL_PACKAGE}_COMPONENTS ${TARGET_COMPONENT} INDEX)
-      if(INDEX EQUAL -1)
-        message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${LOCAL_PACKAGE} does not define component ${TARGET_COMPONENT} used as a dependency for ${LOCAL_COMPONENT}.")
-        return()
-      endif()
-      rename_If_Alias(TARGET_COMPONENT ${LOCAL_PACKAGE} ${TARGET_COMPONENT})#resolve alias if needed
+            list(FIND ${LOCAL_PACKAGE}_COMPONENTS ${TARGET_COMPONENT} INDEX)
+			if(INDEX EQUAL -1)
+				message("[PID] WARNING: Bad usage of function declare_PID_External_Component_Dependency: external package ${LOCAL_PACKAGE} does not define component ${TARGET_COMPONENT} used as a dependency for ${LOCAL_COMPONENT}.")
+				return()
+			endif()
+			rename_If_Alias(TARGET_COMPONENT ${LOCAL_PACKAGE} ${TARGET_COMPONENT})#resolve alias if needed
 
-      append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INTERNAL_DEPENDENCIES${VAR_SUFFIX} ${TARGET_COMPONENT})
+      		append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INTERNAL_DEPENDENCIES${VAR_SUFFIX} ${TARGET_COMPONENT})
 			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INTERNAL_EXPORT_${TARGET_COMPONENT}${VAR_SUFFIX} ${EXPORT_TARGET} CACHE INTERNAL "")
 		else()
-      rename_If_Alias(TARGET_COMPONENT ${TARGET_PACKAGE} ${TARGET_COMPONENT})#resolve alias if needed
-      append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${TARGET_PACKAGE})
-      append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCY_${TARGET_PACKAGE}_COMPONENTS${VAR_SUFFIX} ${TARGET_COMPONENT})
+			rename_If_Alias(TARGET_COMPONENT ${TARGET_PACKAGE} ${TARGET_COMPONENT})#resolve alias if needed
+			append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${TARGET_PACKAGE})
+			append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCY_${TARGET_PACKAGE}_COMPONENTS${VAR_SUFFIX} ${TARGET_COMPONENT})
 			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_EXPORT_${TARGET_PACKAGE}_${TARGET_COMPONENT}${VAR_SUFFIX} ${EXPORT_TARGET} CACHE INTERNAL "")
 		endif()
 	else() #otherwise this is a direct reference to external package content
-    if(TARGET_PACKAGE) #check that we really target an external package
-      append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${TARGET_PACKAGE})
-		   #this previous line is used to tell the system that path inside this component's variables have to be resolved against that external package
+		if(TARGET_PACKAGE) #check that we really target an external package
+			append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${TARGET_PACKAGE})
+			#this previous line is used to tell the system that path inside this component's variables have to be resolved against that external package
 		endif()
 	endif()
 
-if(TARGET_PACKAGE AND NOT TARGET_COMPONENT) #if a target package is specified but not a component, this is an external dependency to implicit components
-	set(incs)
-	foreach(an_include IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_INCLUDES)
-		if( an_include MATCHES "^(<${TARGET_PACKAGE}>/|/).*$" #either an absolute path or an already well defined relative path.
-        OR DEFINED ${an_include}) #or it is a variable
-			list(APPEND incs ${an_include})
-		else()#otherwise it is considered as a relative path
-			list(APPEND incs "<${TARGET_PACKAGE}>/${an_include}")# prepend the external package name
-		endif()
-	endforeach()
-	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS${VAR_SUFFIX} "${incs}")
+	if(TARGET_PACKAGE AND NOT TARGET_COMPONENT) #if a target package is specified but not a component, this is an external dependency to implicit components
+		set(incs)
+		foreach(an_include IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_INCLUDES)
+			if( an_include MATCHES "^(<${TARGET_PACKAGE}>/|/).*$" #either an absolute path or an already well defined relative path.
+			OR DEFINED ${an_include}) #or it is a variable
+				list(APPEND incs ${an_include})
+			else()#otherwise it is considered as a relative path
+				list(APPEND incs "<${TARGET_PACKAGE}>/${an_include}")# prepend the external package name
+			endif()
+		endforeach()
+		append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS${VAR_SUFFIX} "${incs}")
 
-  set(lib_dirs)
-  foreach(a_dir IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_LIBRARY_DIRS)
-    if( a_dir MATCHES "^(<${TARGET_PACKAGE}>/|/).*$" #either an absolute path or an already well defined relative path.
-        OR DEFINED ${a_dir}) #or it is a variable
-      list(APPEND lib_dirs ${a_dir})
-    else()#otherwise it is considered as a relative path
-      list(APPEND lib_dirs "<${TARGET_PACKAGE}>/${a_dir}")# prepend the external package name
-    endif()
-  endforeach()
-  append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_LIB_DIRS${VAR_SUFFIX} "${lib_dirs}")
-	#manage definitions
+		set(lib_dirs)
+		foreach(a_dir IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_LIBRARY_DIRS)
+			if( a_dir MATCHES "^(<${TARGET_PACKAGE}>/|/).*$" #either an absolute path or an already well defined relative path.
+				OR DEFINED ${a_dir}) #or it is a variable
+			list(APPEND lib_dirs ${a_dir})
+			else()#otherwise it is considered as a relative path
+			list(APPEND lib_dirs "<${TARGET_PACKAGE}>/${a_dir}")# prepend the external package name
+			endif()
+		endforeach()
+		append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_LIB_DIRS${VAR_SUFFIX} "${lib_dirs}")
+		#manage definitions
+		append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_DEFS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_DEFINITIONS}")
+
+		#manage standards in USE when using the component
+		set(fake_intern_opts)
+		adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
+												fake_intern_opts DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPILER_OPTIONS
+												"${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_STANDARD}"
+												"${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+												"${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+												"${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
+		if(ERR)
+			if(ERR STREQUAL "CRITICAL")
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
+			message(FATAL_ERROR "[PID] CRITICAL ERROR: for direct dependency to package ${TARGET_PACKAGE} of component ${LOCAL_COMPONENT} from external package ${LOCAL_PACKAGE} in ${PROJECT_NAME} context, ${MESS}")
+			else()
+			message("[PID] WARNING: for direct dependency to package ${TARGET_PACKAGE} of component ${LOCAL_COMPONENT} from external package ${LOCAL_PACKAGE} in ${PROJECT_NAME} context, ${MESS}")
+			endif()
+		endif()
+
+		#manage compile options
+		append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_OPTS${VAR_SUFFIX} "${EXPORT_OPTS}")#immediately update the compiler options
+
+		#WARNING now need to check that standard imposed by external/system dependency is consistent with standards already defined,
+		# need to manage standard adaptation and max standard checking
+		if(NOT C_STD_USED)#options have not modified the c standard
+			set(C_STD_USED ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_STANDARD})
+		endif()
+		if(NOT CXX_STD_USED)#options have not modified the c++ standard
+			set(CXX_STD_USED ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_STANDARD} CACHE INTERNAL "")
+		endif()
+		resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
+							"${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_STANDARD${VAR_SUFFIX}}" "${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_MAX_STANDARD${VAR_SUFFIX}}"
+							"${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_STANDARD${VAR_SUFFIX}}" "${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_MAX_STANDARD${VAR_SUFFIX}}"
+							"${C_STD_USED}" "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+							"${CXX_STD_USED}" "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
+
+
+		if(ERR)
+			if(ERR STREQUAL "CRITICAL")
+			finish_Progress(${GLOBAL_PROGRESS_VAR})
+			message(FATAL_ERROR "[PID] CRITICAL ERROR: when configuring component ${LOCAL_COMPONENT} from package ${LOCAL_PACKAGE} with external dependency to ${TARGET_PACKAGE}: ${MESS}")
+			else()#warning
+			message("[PID] WARNING: when configuring component ${LOCAL_COMPONENT} from package ${LOCAL_PACKAGE} with external dependency to ${TARGET_PACKAGE}: ${MESS}")
+			endif()
+		endif()
+
+		if(NEW_C_STD)
+			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_STANDARD${VAR_SUFFIX} ${NEW_C_STD} CACHE INTERNAL "")
+		endif()
+		if(NEW_C_MAX_STD)
+			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_MAX_STANDARD${VAR_SUFFIX} ${NEW_C_MAX_STD} CACHE INTERNAL "")
+		endif()
+		if(NEW_CXX_STD)
+			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_STANDARD${VAR_SUFFIX} ${NEW_CXX_STD} CACHE INTERNAL "")
+		endif()
+		if(NEW_CXX_MAX_STD)
+			set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_MAX_STANDARD${VAR_SUFFIX} ${NEW_CXX_MAX_STD} CACHE INTERNAL "")
+		endif()
+
+		#manage links
+		set(links)
+		foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_STATIC_LINKS)
+			if( a_link MATCHES  "^(<${TARGET_PACKAGE}>|/|/|-).*$" #a link option OR an absolute path or a well defined relative path
+			OR DEFINED ${a_link})#OR a variable
+				list(APPEND links ${a_link})
+			else()#otherwise need to generate adequate relative path
+				list(APPEND links "<${TARGET_PACKAGE}>/${a_link}")# prepend the external package name
+			endif()
+		endforeach()
+		append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_STATIC_LINKS${VAR_SUFFIX} "${links}")
+
+		#manage shared links
+		set(links)
+		foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_SHARED_LINKS)
+			if( a_link MATCHES  "^(<${TARGET_PACKAGE}>|/|-|/).*$"#a link option OR an absolute path or a well defined relative path
+			OR DEFINED ${a_link})#OR a variable
+				list(APPEND links ${a_link})
+			else()#otherwise need to generate adequate relative path
+				list(APPEND links "<${TARGET_PACKAGE}>/${a_link}")# prepend the external package name
+			endif()
+		endforeach()
+		append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_SHARED_LINKS${VAR_SUFFIX} "${links}")
+
+		#manage forced shared links
+		set(links)
+		foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_FORCED_SHARED_LINKS)
+			if( a_link MATCHES  "^(<${TARGET_PACKAGE}>|/|-|/).*$"#a link option OR an absolute path or a well defined relative path
+			OR DEFINED ${a_link})#OR a variable
+				list(APPEND links ${a_link})
+			else()#otherwise need to generate adequate relative path
+				list(APPEND links "<${TARGET_PACKAGE}>/${a_link}")# prepend the external package name
+			endif()
+		endforeach()
+		append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_FORCED_SHARED_LINKS${VAR_SUFFIX} "${links}")
+
+		#manage runtime resources
+		set(resources)
+		foreach(a_resource IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES)
+			if( a_resource MATCHES "^(<${TARGET_PACKAGE}>/|/).*$"#an absolute or well formed relative path
+			OR DEFINED ${a_resource})#OR a variable
+				list(APPEND resources ${a_resource})
+			else()#otherwise need to generate adequate relative path
+				list(APPEND resources "<${TARGET_PACKAGE}>/${a_resource}")# prepend the external package name
+			endif()
+		endforeach()
+		append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_RUNTIME_RESOURCES${VAR_SUFFIX} "${resources}")
+
+	elseif(NOT TARGET_PACKAGE AND NOT TARGET_COMPONENT)#this is a system dependency -> there is no relative path inside so no need to manage path specifically
+	#need to check and manage language standards
+	set(fake_intern_opts)
+	adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
+											fake_intern_opts DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPILER_OPTIONS
+											"${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_STANDARD}"
+											"${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+											"${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_STANDARD}"
+											"${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
+	if(ERR)
+		if(ERR STREQUAL "CRITICAL")
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR: for system dependency of component ${LOCAL_COMPONENT} from external package ${LOCAL_PACKAGE} in ${PROJECT_NAME} context, ${MESS}")
+		else()
+		message("[PID] WARNING: for system dependency of component ${LOCAL_COMPONENT} from external package ${LOCAL_PACKAGE} in ${PROJECT_NAME} context, ${MESS}")
+		endif()
+	endif()
+
+	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_OPTS${VAR_SUFFIX} "${EXPORT_OPTS}")
+
+	#WARNING now need to check that standard imposed by external/system dependency is consistent with standards already defined,
+	# need to manage standard adaptation and max standard checking
+	if(NOT C_STD_USED)#options have not modified the c standard
+		set(C_STD_USED ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_STANDARD})
+	endif()
+	if(NOT CXX_STD_USED)#options have not modified the c++ standard
+		set(CXX_STD_USED ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_STANDARD} CACHE INTERNAL "")
+	endif()
+	resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
+						"${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_STANDARD${VAR_SUFFIX}}" "${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_MAX_STANDARD${VAR_SUFFIX}}"
+						"${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_STANDARD${VAR_SUFFIX}}" "${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_MAX_STANDARD${VAR_SUFFIX}}"
+						"${C_STD_USED}" "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
+						"${CXX_STD_USED}" "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
+
+	if(ERR)
+	if(ERR STREQUAL "CRITICAL")
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR: when configuring component ${LOCAL_COMPONENT} from package ${LOCAL_PACKAGE} with system dependency: ${MESS}")
+	else()#warning
+		message("[PID] WARNING: when configuring component ${LOCAL_COMPONENT} from package ${LOCAL_PACKAGE} with system dependency: ${MESS}")
+	endif()
+	endif()
+	if(NEW_C_STD)
+		set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_STANDARD${VAR_SUFFIX} ${NEW_C_STD} CACHE INTERNAL "")
+	endif()
+	if(NEW_C_MAX_STD)
+		set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_MAX_STANDARD${VAR_SUFFIX} ${NEW_C_MAX_STD} CACHE INTERNAL "")
+	endif()
+	if(NEW_CXX_STD)
+		set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_STANDARD${VAR_SUFFIX} ${NEW_CXX_STD} CACHE INTERNAL "")
+	endif()
+	if(NEW_CXX_MAX_STD)
+		set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_MAX_STANDARD${VAR_SUFFIX} ${NEW_CXX_MAX_STD} CACHE INTERNAL "")
+	endif()
+
+	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_INCLUDES}")
 	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_DEFS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_DEFINITIONS}")
-
-  #manage standards in USE when using the component
-  set(fake_intern_opts)
-  adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
-                                        fake_intern_opts DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPILER_OPTIONS
-                                        "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_STANDARD}"
-                                        "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
-                                        "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_STANDARD}"
-                                        "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
-  if(ERR)
-    if(ERR STREQUAL "CRITICAL")
-      finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR: for direct dependency to package ${TARGET_PACKAGE} of component ${LOCAL_COMPONENT} from external package ${LOCAL_PACKAGE} in ${PROJECT_NAME} context, ${MESS}")
-    else()
-      message("[PID] WARNING: for direct dependency to package ${TARGET_PACKAGE} of component ${LOCAL_COMPONENT} from external package ${LOCAL_PACKAGE} in ${PROJECT_NAME} context, ${MESS}")
-    endif()
-  endif()
-
-  #manage compile options
-  append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_OPTS${VAR_SUFFIX} "${EXPORT_OPTS}")#immediately update the compiler options
-
-  #WARNING now need to check that standard imposed by external/system dependency is consistent with standards already defined,
-  # need to manage standard adaptation and max standard checking
-  if(NOT C_STD_USED)#options have not modified the c standard
-    set(C_STD_USED ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_STANDARD})
-  endif()
-  if(NOT CXX_STD_USED)#options have not modified the c++ standard
-    set(CXX_STD_USED ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_STANDARD} CACHE INTERNAL "")
-  endif()
-  resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
-                     "${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_STANDARD${VAR_SUFFIX}}" "${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_MAX_STANDARD${VAR_SUFFIX}}"
-                     "${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_STANDARD${VAR_SUFFIX}}" "${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_MAX_STANDARD${VAR_SUFFIX}}"
-                     "${C_STD_USED}" "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
-                     "${CXX_STD_USED}" "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
-
-
-  if(ERR)
-    if(ERR STREQUAL "CRITICAL")
-      finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR: when configuring component ${LOCAL_COMPONENT} from package ${LOCAL_PACKAGE} with external dependency to ${TARGET_PACKAGE}: ${MESS}")
-    else()#warning
-      message("[PID] WARNING: when configuring component ${LOCAL_COMPONENT} from package ${LOCAL_PACKAGE} with external dependency to ${TARGET_PACKAGE}: ${MESS}")
-    endif()
-  endif()
-
-  if(NEW_C_STD)
-    set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_STANDARD${VAR_SUFFIX} ${NEW_C_STD} CACHE INTERNAL "")
-  endif()
-  if(NEW_C_MAX_STD)
-    set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_MAX_STANDARD${VAR_SUFFIX} ${NEW_C_MAX_STD} CACHE INTERNAL "")
-  endif()
-  if(NEW_CXX_STD)
-    set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_STANDARD${VAR_SUFFIX} ${NEW_CXX_STD} CACHE INTERNAL "")
-  endif()
-  if(NEW_CXX_MAX_STD)
-    set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_MAX_STANDARD${VAR_SUFFIX} ${NEW_CXX_MAX_STD} CACHE INTERNAL "")
-  endif()
-
-  #manage links
-	set(links)
-	foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_STATIC_LINKS)
-		if( a_link MATCHES  "^(<${TARGET_PACKAGE}>|/|/|-).*$" #a link option OR an absolute path or a well defined relative path
-        OR DEFINED ${a_link})#OR a variable
-			list(APPEND links ${a_link})
-		else()#otherwise need to generate adequate relative path
-			list(APPEND links "<${TARGET_PACKAGE}>/${a_link}")# prepend the external package name
-		endif()
-	endforeach()
-	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_STATIC_LINKS${VAR_SUFFIX} "${links}")
-
-	#manage shared links
-	set(links)
-	foreach(a_link IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_SHARED_LINKS)
-		if( a_link MATCHES  "^(<${TARGET_PACKAGE}>|/|-|/).*$"#a link option OR an absolute path or a well defined relative path
-        OR DEFINED ${a_link})#OR a variable
-			list(APPEND links ${a_link})
-		else()#otherwise need to generate adequate relative path
-			list(APPEND links "<${TARGET_PACKAGE}>/${a_link}")# prepend the external package name
-		endif()
-	endforeach()
-	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_SHARED_LINKS${VAR_SUFFIX} "${links}")
-
-	#manage runtime resources
-	set(resources)
-	foreach(a_resource IN LISTS DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES)
-		if( a_resource MATCHES "^(<${TARGET_PACKAGE}>/|/).*$"#an absolute or well formed relative path
-        OR DEFINED ${a_resource})#OR a variable
-			list(APPEND resources ${a_resource})
-		else()#otherwise need to generate adequate relative path
-			list(APPEND resources "<${TARGET_PACKAGE}>/${a_resource}")# prepend the external package name
-		endif()
-	endforeach()
-	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_RUNTIME_RESOURCES${VAR_SUFFIX} "${resources}")
-
-elseif(NOT TARGET_PACKAGE AND NOT TARGET_COMPONENT)#this is a system dependency -> there is no relative path inside so no need to manage path specifically
-  #need to check and manage language standards
-  set(fake_intern_opts)
-  adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
-                                        fake_intern_opts DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_COMPILER_OPTIONS
-                                        "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_STANDARD}"
-                                        "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
-                                        "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_STANDARD}"
-                                        "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
-  if(ERR)
-    if(ERR STREQUAL "CRITICAL")
-      finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR: for system dependency of component ${LOCAL_COMPONENT} from external package ${LOCAL_PACKAGE} in ${PROJECT_NAME} context, ${MESS}")
-    else()
-      message("[PID] WARNING: for system dependency of component ${LOCAL_COMPONENT} from external package ${LOCAL_PACKAGE} in ${PROJECT_NAME} context, ${MESS}")
-    endif()
-  endif()
-
-  append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_OPTS${VAR_SUFFIX} "${EXPORT_OPTS}")
-
-  #WARNING now need to check that standard imposed by external/system dependency is consistent with standards already defined,
-  # need to manage standard adaptation and max standard checking
-  if(NOT C_STD_USED)#options have not modified the c standard
-    set(C_STD_USED ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_STANDARD})
-  endif()
-  if(NOT CXX_STD_USED)#options have not modified the c++ standard
-    set(CXX_STD_USED ${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_STANDARD} CACHE INTERNAL "")
-  endif()
-  resolve_Imported_Standards(ERR MESS NEW_C_STD NEW_C_MAX_STD NEW_CXX_STD NEW_CXX_MAX_STD
-                     "${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_STANDARD${VAR_SUFFIX}}" "${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_MAX_STANDARD${VAR_SUFFIX}}"
-                     "${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_STANDARD${VAR_SUFFIX}}" "${${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_MAX_STANDARD${VAR_SUFFIX}}"
-                     "${C_STD_USED}" "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_C_MAX_STANDARD}"
-                     "${CXX_STD_USED}" "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_CXX_MAX_STANDARD}")
-
-  if(ERR)
-   if(ERR STREQUAL "CRITICAL")
-     finish_Progress(${GLOBAL_PROGRESS_VAR})
-     message(FATAL_ERROR "[PID] CRITICAL ERROR: when configuring component ${LOCAL_COMPONENT} from package ${LOCAL_PACKAGE} with system dependency: ${MESS}")
-   else()#warning
-     message("[PID] WARNING: when configuring component ${LOCAL_COMPONENT} from package ${LOCAL_PACKAGE} with system dependency: ${MESS}")
-   endif()
-  endif()
-  if(NEW_C_STD)
-    set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_STANDARD${VAR_SUFFIX} ${NEW_C_STD} CACHE INTERNAL "")
-  endif()
-  if(NEW_C_MAX_STD)
-    set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_C_MAX_STANDARD${VAR_SUFFIX} ${NEW_C_MAX_STD} CACHE INTERNAL "")
-  endif()
-  if(NEW_CXX_STD)
-    set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_STANDARD${VAR_SUFFIX} ${NEW_CXX_STD} CACHE INTERNAL "")
-  endif()
-  if(NEW_CXX_MAX_STD)
-    set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_MAX_STANDARD${VAR_SUFFIX} ${NEW_CXX_MAX_STD} CACHE INTERNAL "")
-  endif()
-
-  append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_INCLUDES}")
-	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_DEFS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_DEFINITIONS}")
-  append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_STATIC_LINKS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_STATIC_LINKS}")
-  append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_SHARED_LINKS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_SHARED_LINKS}")
-  append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_LIB_DIRS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_LIBRARY_DIRS}")
-  append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_RUNTIME_RESOURCES${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
-endif()
+	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_STATIC_LINKS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_STATIC_LINKS}")
+	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_SHARED_LINKS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_SHARED_LINKS}")
+	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_FORCED_SHARED_LINKS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_FORCED_SHARED_LINKS}")
+	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_LIB_DIRS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_LIBRARY_DIRS}")
+	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_RUNTIME_RESOURCES${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_RUNTIME_RESOURCES}")
+	endif()
 endmacro(declare_PID_External_Component_Dependency)

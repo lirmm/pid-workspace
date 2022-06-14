@@ -145,6 +145,20 @@ function(get_Package_Component_Links PACKAGE_LIB_FOLDER_IN_INSTALL RELATIVE_LINK
         endif()
       endforeach()
     endif()
+    if(${package}_${component}_FORCED_SHARED_LINKS${VAR_SUFFIX})
+      resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${${package}_${component}_FORCED_SHARED_LINKS${VAR_SUFFIX}}" ${CMAKE_BUILD_TYPE})
+      foreach(link IN LISTS COMPLETE_LINKS_PATH)#links are absolute or already defined "the OS way"
+        if(IS_ABSOLUTE ${link}) #this is an absolute path
+          if(link MATCHES "^${matchable_path_to_install}/lib/(.+)$")#relative relation found between the file and the workspace
+            list(APPEND all_relative_links ${CMAKE_MATCH_1})
+          else()
+            list(APPEND all_public_links ${link})
+          endif()
+        else()#this is already an option so let it "as is"
+          list(APPEND all_public_links ${link})
+        endif()
+      endforeach()
+    endif()
   endif()
 
   #finding other links (private and public)

@@ -3332,6 +3332,40 @@ endforeach()
 set(${COMPLETE_LINKS_PATH} ${res_links} PARENT_SCOPE)
 endfunction(resolve_External_Libs_Path)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |convert_To_Forced_Shared_Linker_Option| replace:: ``convert_To_Forced_Shared_Linker_Option``
+#  .. _convert_To_Forced_Shared_Linker_Option:
+#
+#  convert_To_Forced_Shared_Linker_Option
+#  --------------------------------------
+#
+#   .. command:: convert_To_Forced_Shared_Linker_Option(RES_OPTIONS list_of_links)
+#
+#    Convert the links passed onto a linker option that enforces the 
+#
+#     :list_of_links: the list of shared libraries links to force linking with
+#
+#     :RES_OPTIONS: the output variable containing the equivalent list of enforced shared links
+#
+function(convert_To_Forced_Shared_Linker_Option RES_OPTIONS list_of_links)
+if(CURRENT_PLATFORM_OS STREQUAL "linux")
+  set(result)
+  foreach(link IN LISTS list_of_links)
+    list(APPEND result "-Wl,--no-as-needed,\"${link}\"")
+  endforeach()
+  set(${RES_OPTIONS} ${result} PARENT_SCOPE)
+else()#on other system than linux option is not supported
+  #on freeBSD and MACOS default shared libs linking is equivalent to this option for all shared libs
+  #on windows don't know....
+  set(${RES_OPTIONS} ${list_of_links} PARENT_SCOPE)
+endif()
+endfunction(convert_To_Forced_Shared_Linker_Option)
+
+
 #.rst:
 #
 # .. ifmode:: internal

@@ -3274,7 +3274,7 @@ if(is_external)
 
 		list_Public_Definitions(DEFS ${package} ${component} ${CMAKE_BUILD_TYPE})
 		list_Public_Options(OPTS ${package} ${component} ${CMAKE_BUILD_TYPE})
-	  list_External_Links(SHARED_LNKS STATIC_LNKS ${package} ${component} ${CMAKE_BUILD_TYPE})
+	  	list_External_Links(SHARED_LNKS STATIC_LNKS ${package} ${component} ${CMAKE_BUILD_TYPE})
 
 		#no need to manage library dirs as all libraries in a system install are supposed to be in folders that the loader/linker can find
 		foreach(def IN LISTS DEFS)

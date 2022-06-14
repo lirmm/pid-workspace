@@ -1317,6 +1317,7 @@ function(reset_External_Package_Dependency_Cached_Variables_From_Use package mod
     set(${package}_${comp}_OPTS${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_${comp}_DEFS${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_${comp}_STATIC_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${package}_${comp}_FORCED_SHARED_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_${comp}_SHARED_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_${comp}_C_STANDARD${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_${comp}_CXX_STANDARD${VAR_SUFFIX} CACHE INTERNAL "")
@@ -1961,6 +1962,7 @@ function(is_Runtime_Component RESULT package component)
   get_Package_Type(${package} PACK_TYPE)
   if(PACK_TYPE STREQUAL "EXTERNAL")
     if( ${package}_${component}_SHARED_LINKS${VAR_SUFFIX}
+        OR ${package}_${component}_FORCED_SHARED_LINKS${VAR_SUFFIX}
         OR ${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX}
         OR ${package}_${component}_PYTHON_PACKAGES${VAR_SUFFIX})
         set(${RESULT} TRUE PARENT_SCOPE)

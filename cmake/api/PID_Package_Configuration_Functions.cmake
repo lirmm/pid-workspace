@@ -192,11 +192,22 @@ if(${package}_${component}_STATIC_LINKS${VAR_SUFFIX})
 	resolve_External_Libs_Path(RES_ST_LINKS "${EVAL_ST_LINKS}" ${mode})
   set(${STATIC_LINKS} ${RES_ST_LINKS} PARENT_SCOPE)
 endif()
+set(RET_SHARED)
 if(${package}_${component}_SHARED_LINKS${VAR_SUFFIX})
   evaluate_Variables_In_List(EVAL_SH_LINKS ${package}_${component}_SHARED_LINKS${VAR_SUFFIX}) #first evaluate element of the list => if they are variables they are evaluated
 	resolve_External_Libs_Path(RES_SH_LINKS "${EVAL_SH_LINKS}" ${mode})
-  set(${SHARED_LINKS} ${RES_SH_LINKS} PARENT_SCOPE)
+  list(APPEND RET_SHARED ${RES_SH_LINKS})
 endif()
+set(RES_SH_LINKS)
+if(${package}_${component}_FORCED_SHARED_LINKS${VAR_SUFFIX})
+  message("${package}_${component}_FORCED_SHARED_LINKS${VAR_SUFFIX}=${${package}_${component}_FORCED_SHARED_LINKS${VAR_SUFFIX}}")
+  evaluate_Variables_In_List(EVAL_SH_LINKS ${package}_${component}_FORCED_SHARED_LINKS${VAR_SUFFIX}) #first evaluate element of the list => if they are variables they are evaluated
+	resolve_External_Libs_Path(RES_SH_LINKS "${EVAL_SH_LINKS}" ${mode})
+  convert_To_Forced_Shared_Linker_Option(FORCED_LINKS "${RES_SH_LINKS}")
+  message("FORCED_LINKS=${FORCED_LINKS}")
+  list(APPEND RET_SHARED ${FORCED_LINKS})
+endif()
+set(${SHARED_LINKS} ${RET_SHARED} PARENT_SCOPE)
 endfunction(list_External_Links)
 
 #.rst:
@@ -822,6 +833,15 @@ function(get_External_Component_Direct_Runtime_Links RES_LINKS package component
   #directly adding shared links owned by the component
   if(${package}_${component}_SHARED_LINKS${VAR_SUFFIX})#if the component defines public shared links
     resolve_External_Libs_Path(RES_SHARED "${${package}_${component}_SHARED_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
+    foreach(lib IN LISTS RES_SHARED)
+      is_Shared_Lib_With_Path(IS_SHARED ${lib})
+      if(IS_SHARED)#only shared libs with absolute path need to be configured (the others are supposed to be retrieved automatically by the OS)
+        list(APPEND result ${lib})
+      endif()
+    endforeach()
+  endif()
+  if(${package}_${component}_FORCED_SHARED_LINKS${VAR_SUFFIX})#if the component defines public shared links
+    resolve_External_Libs_Path(RES_SHARED "${${package}_${component}_FORCED_SHARED_LINKS${VAR_SUFFIX}}" ${mode})#resolving libraries path against external packages path
     foreach(lib IN LISTS RES_SHARED)
       is_Shared_Lib_With_Path(IS_SHARED ${lib})
       if(IS_SHARED)#only shared libs with absolute path need to be configured (the others are supposed to be retrieved automatically by the OS)
