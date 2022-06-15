@@ -1724,6 +1724,8 @@ endfunction(translate_Into_Options)
 #     :COMPONENT: Filter to get only information relative to a component. Mustbe used together with PACKAGE to get only info relative to a component dependency.
 #     :LOCAL: Filter to get only local information. Must be used together with PACKAGE and optionally with COMPONENT.
 #     :ROOT <variable>: The variable passed as argument will be filled with the path to the dependency external package version. Must be used together with PACKAGE.
+#     :CMAKE <variable>: The variable passed as argument will be filled with the path to the folder containing CMake config files. Only usable with PACKAGE.
+#     :PKGCONFIG <variable>: The variable passed as argument will be filled with the path to the folder containing pkgconfig config files. Only usable with PACKAGE.
 #     :OPTIONS <variable>: The variable passed as argument will be filled with compiler options for the external package version being built.
 #     :INCLUDES <variable>: The variable passed as argument will be filled with include folders for the external package version being built.
 #     :DEFINITIONS <variable>: The variable passed as argument will be filled with all definitions for the external package version being built.
@@ -1755,7 +1757,7 @@ endfunction(translate_Into_Options)
 #
 function(get_External_Dependencies_Info)
 set(options FLAGS LOCAL)
-set(oneValueArgs PACKAGE COMPONENT ROOT C_STANDARD CXX_STANDARD OPTIONS INCLUDES DEFINITIONS LINKS LIBRARY_DIRS RESOURCES)
+set(oneValueArgs PACKAGE COMPONENT ROOT C_STANDARD CXX_STANDARD OPTIONS INCLUDES DEFINITIONS LINKS LIBRARY_DIRS RESOURCES CMAKE PKGCONFIG)
 set(multiValueArgs)
 cmake_parse_arguments(GET_EXTERNAL_DEPENDENCY_INFO "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -1799,6 +1801,35 @@ if(GET_EXTERNAL_DEPENDENCY_INFO_ROOT)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling get_External_Dependency_Info, when using ROOT keyword you also need to define the external package by using the keyword PACKAGE.")
 	endif()
 	set(${GET_EXTERNAL_DEPENDENCY_INFO_ROOT} ${ext_package_root} PARENT_SCOPE)
+endif()
+
+
+
+if(GET_EXTERNAL_DEPENDENCY_INFO_CMAKE)
+	if(NOT package_info)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling get_External_Dependency_Info, when using CMAKE keyword you also need to define the external package by using the keyword PACKAGE.")
+	endif()
+  if(${package_info}_CMAKE_FOLDER)
+	  set(${GET_EXTERNAL_DEPENDENCY_INFO_CMAKE} ${ext_package_root}/${${package_info}_CMAKE_FOLDER} PARENT_SCOPE)
+  else()
+    message(WARNING "[PID] WARNING : when calling get_External_Dependency_Info, using CMAKE keyword with dependency ${package_info} nbut this package does not provide CMake configuration information.")
+    set(${GET_EXTERNAL_DEPENDENCY_INFO_CMAKE} PARENT_SCOPE)
+  endif()
+endif()
+
+
+if(GET_EXTERNAL_DEPENDENCY_INFO_PKGCONFIG)
+	if(NOT package_info)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling get_External_Dependency_Info, when using PKGCONFIG keyword you also need to define the external package by using the keyword PACKAGE.")
+	endif()
+  if(${package_info}_PKGCONFIG_FOLDER)
+	  set(${GET_EXTERNAL_DEPENDENCY_INFO_PKGCONFIG} ${ext_package_root}/${${package_info}_PKGCONFIG_FOLDER} PARENT_SCOPE)
+  else()
+    message(WARNING "[PID] WARNING : when calling get_External_Dependency_Info, using PKGCONFIG keyword with dependency ${package_info} nbut this package does not provide CMake configuration information.")
+    set(${GET_EXTERNAL_DEPENDENCY_INFO_PKGCONFIG} PARENT_SCOPE)
+  endif()
 endif()
 
 # WARNING: IMPORTANT NOTE !!

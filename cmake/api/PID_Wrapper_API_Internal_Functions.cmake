@@ -1867,8 +1867,8 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 		get_filename_component(pre_use_file_name ${WORKSPACE_DIR}/wrappers/${package}/src/${version}/${${package}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT} NAME)
 	endif()
 
-	file(APPEND ${file_for_version} "set(${package}_CMAKE_FOLDER {${package}_KNOWN_VERSION_${version}_CMAKE_FOLDER} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file_for_version} "set(${package}_PKGCONFIG_FOLDER {${package}_KNOWN_VERSION_${version}_PKGCONFIG_FOLDER} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file_for_version} "set(${package}_CMAKE_FOLDER ${${package}_KNOWN_VERSION_${version}_CMAKE_FOLDER} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file_for_version} "set(${package}_PKGCONFIG_FOLDER ${${package}_KNOWN_VERSION_${version}_PKGCONFIG_FOLDER} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file_for_version} "set(${package}_SCRIPT_PRE_USE ${pre_use_file_name} CACHE INTERNAL \"\")\n")#name of script, relative to cmake_script in install tree
 
 	file(APPEND ${file_for_version} "############# description of ${package} content (version ${version}) #############\n")
