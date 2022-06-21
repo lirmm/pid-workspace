@@ -909,6 +909,13 @@ function(evaluate_Environment_From_Environment EVAL_OK environment list_of_args)
 # 1) clean and configure the environment project with definitions coming from target (even inherited)
 # those definitions are : "user variables" (e.g. version) and current platform description (that will impose constraints)
 
+set(toplevel_env_build_folder ${WORKSPACE_DIR}/environments/${PROJECT_NAME}/build)
+if(EXISTS ${toplevel_env_build_folder}/PID_Toolchain.cmake)
+  set(current_toplevel_toolchain -DCMAKE_TOOLCHAIN_FILE=${toplevel_env_build_folder}/PID_Toolchain.cmake)
+else()
+  set(current_toplevel_toolchain)
+endif()
+
 set(env_build_folder ${WORKSPACE_DIR}/environments/${environment}/build)
 #clean the build folder cache
 file(REMOVE ${env_build_folder}/CMakeCache.txt ${env_build_folder}/PID_Toolchain.cmake ${env_build_folder}/PID_Environment_Solution_Info.cmake)
@@ -923,6 +930,7 @@ get_Platform_Constraints_Definitions(PLATFORM_DEFS ${environment}
 
 execute_process(COMMAND ${CMAKE_COMMAND}
                         -DEVALUATION_RUN=TRUE
+                        ${current_toplevel_toolchain}
                         ${LIST_OF_DEFS_ARGS}
                         ${PLATFORM_DEFS} ..
                 WORKING_DIRECTORY ${env_build_folder})#configure, then build
@@ -1500,6 +1508,8 @@ function(evaluate_Environment_Dependencies EVAL_RESULT)
       message("[PID] WARNING: environment ${dep} used as a dependency of ${PROJECT_NAME} cannot find a valid solution.")
       return()
     endif()
+    # Regenerate the toolchain after each evaluated dependency so that we can pass it to the next one
+    generate_Environment_Toolchain_File()#from global solution generate the toolchain file
   endforeach()
   set(${EVAL_RESULT} TRUE PARENT_SCOPE)
 endfunction(evaluate_Environment_Dependencies)
