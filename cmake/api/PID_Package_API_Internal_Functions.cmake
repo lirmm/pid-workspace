@@ -1490,8 +1490,10 @@ if(	BUILD_DEPENDENT_PACKAGES
 	if(RESULT_PACKAGES)
 		foreach(dep_pack IN LISTS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 			list(FIND RESULT_PACKAGES ${dep_pack} id)
-			if(NOT id LESS "0")#the package is a dependent source package
-				list(APPEND DEPENDENT_SOURCE_PACKAGES ${dep_pack} ${${dep_pack}_VERSION_STRING})
+			if(id GREATER_EQUAL 0)#the package is a dependent source package
+				if(${dep_pack}_VERSION_STRING)#Safety check: verify that the package has been installed => there is a version
+					list(APPEND DEPENDENT_SOURCE_PACKAGES ${dep_pack} ${${dep_pack}_VERSION_STRING})
+				endif()
 			endif()
 		endforeach()
 	endif()
