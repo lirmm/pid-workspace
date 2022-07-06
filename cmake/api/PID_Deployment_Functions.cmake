@@ -736,7 +736,7 @@ elseif(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
     if(NOT VERSION_MIN)
       # no need to do much more no VERSION_mIN simply means there is no requirement because the version is already installed
       set(${INSTALL_OK} TRUE PARENT_SCOPE)
-      return() 
+      return()
     endif()
     if(IS_EXACT)
       message("[PID] INFO : deploying package ${package} with version compatible with exact ${VERSION_MIN}...")
@@ -749,7 +749,7 @@ else()
   #no version constraints BUT need to check if package already available, so simply use the given version
   if(${package}_VERSION_STRING)
     set(${INSTALL_OK} TRUE PARENT_SCOPE)
-    return() 
+    return()
   endif()
 	set(NO_VERSION TRUE)
 endif()
@@ -1648,8 +1648,8 @@ function(check_Package_Platform_Against_Current CHECK_OK package platform versio
     return()
   endif()
 
-  if(NOT distrib_str STREQUAL ${package}_BUILT_FOR_DISTRIBUTION
-     OR NOT distrib_ver_str STREQUAL ${package}_BUILT_FOR_DISTRIBUTION_VERSION)
+  if(NOT "${distrib_str}" STREQUAL "${${package}_BUILT_FOR_DISTRIBUTION}"
+     OR NOT "${distrib_ver_str}" STREQUAL "${${package}_BUILT_FOR_DISTRIBUTION_VERSION}")
      #if not build for the same distribution the risk of incompatible binaries is too high
      unload_Binary_Package_Install_Manifest(${package})
      set(${CHECK_OK} FALSE PARENT_SCOPE)
