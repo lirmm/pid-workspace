@@ -746,6 +746,11 @@ elseif(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	endif()
 	set(NO_VERSION FALSE)
 else()
+  #no version constraints BUT need to check if package already available, so simply use the given version
+  if(${package}_VERSION_STRING)
+    set(${INSTALL_OK} TRUE PARENT_SCOPE)
+    return() 
+  endif()
 	set(NO_VERSION TRUE)
 endif()
 
