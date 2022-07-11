@@ -68,7 +68,7 @@ if(DIR_NAME STREQUAL "build")
 
 	### management of PID version ###
 	# set the current PID version to memorize when updating the workspace.
-	set(PID_SYSTEM_VERSION 4 CACHE INTERNAL "")
+	set(PID_SYSTEM_VERSION 5 CACHE INTERNAL "")
 	configure_file(${CMAKE_SOURCE_DIR}/cmake/patterns/PID_version.cmake.in ${CMAKE_BINARY_DIR}/PID_version.cmake @ONLY) #put it into a file to allow packages to easily retrieve PID version information
 
 	### management of workspace configuration ###

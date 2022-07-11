@@ -3560,7 +3560,7 @@ function(resolve_Wrapper_Language_Configuration CONFIGURED package version)
 			set(${lang}_Language_AVAILABLE TRUE CACHE INTERNAL "")
 			set(${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS ${LANG_SPECS} CACHE INTERNAL "")#reset argument to keep only those required in binary
 			if(${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_TOOLSET)
-				check_Language_Toolset(RESULT_OK ${lang} "${${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_TOOLSET}" Release)
+				check_Language_Toolset(RESULT_OK TS_NAME TS_ARGS "${lang}" "${${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_TOOLSET}" Release)
 				if(NOT RESULT_OK)
 					if(NOT ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_OPTIONAL)
 						set(IS_CONFIGURED FALSE)
@@ -3575,7 +3575,7 @@ function(resolve_Wrapper_Language_Configuration CONFIGURED package version)
 	if(SIZE GREATER_EQUAL 5)#ok there is some modified content
 		include(${PACKAGE_SPECIFIC_BUILD_INFO_FILE})#will overwrite some build related variables
 	endif()
-	#do not check, simply add C and C++ languages if not already explicitly required by usern as they are default
+	#do not check, simply add C and C++ languages if not already explicitly required by user as they are default
 	list(FIND ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS C INDEX)
 	if(INDEX EQUAL -1)
 		append_Unique_In_Cache(${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS C)

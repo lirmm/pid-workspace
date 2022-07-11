@@ -272,20 +272,21 @@ endmacro(manage_Plugins_In_Package_Before_Dependencies_Description)
 #
 #    Find the prefix to use to get description of configuration for an additional tool for a given profile
 #
-#     :environment: name of teh environment defining tool.
+#     :environment: name of the environment defining tool.
 #
 #     :RES_PREFIX: the prefix for variable holding the value for the given environment
 #
 #
 function(find_Environment_Tool_For_Current_Profile RES_PREFIX environment)
   set(${RES_PREFIX} PARENT_SCOPE)
-  set(current_profile_env ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
-  find_Environment_Tool(RES_DEF ${current_profile_env} ${environment})
+  hashcode_From_Expression(def_name def_hash ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
+  find_Environment_Tool(RES_DEF ${def_name}_${def_hash} ${environment})
   if(RES_DEF)
     set(${RES_PREFIX} ${RES_DEF} PARENT_SCOPE)
   else()
     foreach(env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
-      find_Environment_Tool(RES_ADD ${env} ${environment})
+      hashcode_From_Expression(name hash ${env})
+      find_Environment_Tool(RES_ADD ${name}_${hash} ${environment})
       if(RES_ADD)
         set(${RES_PREFIX} ${RES_ADD} PARENT_SCOPE)
         return()
@@ -308,7 +309,7 @@ endfunction(find_Environment_Tool_For_Current_Profile)
 #
 #    Find the prefix to use to get description of configuration for an additional tool
 #
-#     :env_prefix: prefix for CMke variable holding info about environment.
+#     :env_prefix: prefix for CMake variable holding info about environment.
 #     :environment: name of the environment defining tool.
 #
 #     :RES_PREFIX: the prefix for variable holding the value for the given environment

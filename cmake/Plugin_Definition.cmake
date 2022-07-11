@@ -1408,14 +1408,7 @@ endfunction(get_Component_Language_Standard)
 function(get_Package_Component_Language_Standard MANAGED_AS_STANDARD RES_C_STD RES_CXX_STD RES_C_OPT RES_CXX_OPT package component)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
   set(ALREADY_IN_COMPILE_OPTIONS FALSE)#to know if the language is already translated into a compilation option
-  get_Required_CMake_Version_For_Standard(RES_MIN_CMAKE_VERSION "${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}}")
-
-  if(CMAKE_VERSION VERSION_LESS RES_MIN_CMAKE_VERSION)#CMake version does not support this standard natively
-    set(${MANAGED_AS_STANDARD} FALSE PARENT_SCOPE)
-  else()#not already in compile options for a greater version of cmake
-    set(${MANAGED_AS_STANDARD} TRUE PARENT_SCOPE)
-    # do not used information from target in that specific case as it has already been translated
-  endif()
+  set(${MANAGED_AS_STANDARD} TRUE PARENT_SCOPE)
   translate_Standard_Into_Option(C_LANGUAGE_OPT CXX_LANGUAGE_OPT
                                 "${${package}_${component}_C_STANDARD${VAR_SUFFIX}}"
                                 "${${package}_${component}_CXX_STANDARD${VAR_SUFFIX}}")

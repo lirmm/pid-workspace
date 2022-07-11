@@ -365,7 +365,12 @@ function(set_Global_Options_From_Mode_Specific)
   endif()
   execute_process(COMMAND ${CMAKE_COMMAND} -LH -N ../..
                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/release OUTPUT_FILE ${CMAKE_BINARY_DIR}/optionsRELEASE.txt)
-	file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES_GLOBAL)
+  if(EXISTS ${CMAKE_BINARY_DIR}/options.txt)
+    file(STRINGS ${CMAKE_BINARY_DIR}/options.txt LINES_GLOBAL)
+  else()
+    set(LINES_GLOBAL)
+  endif()
+	
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsRELEASE.txt LINES_RELEASE)
   # searching new cache entries in release mode cache
 	foreach(line IN LISTS LINES_RELEASE)

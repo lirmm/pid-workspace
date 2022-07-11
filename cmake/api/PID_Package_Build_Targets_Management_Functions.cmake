@@ -250,58 +250,6 @@ else()
 endif()
 endfunction(create_Global_Build_Command)
 
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |resolve_Component_Language_Support| replace:: ``resolve_Component_Language_Support``
-#  .. _resolve_Component_Language_Support:
-#
-#  resolve_Component_Language_Support
-#  ----------------------------------
-#
-#   .. command:: resolve_Component_Language_Support(component_target)
-#
-#     Set adequate language standard properties or compilation flags for a component, depending on CMake version.
-#
-#     :component: name of the component.
-#
-function(resolve_Component_Language_Support component)
-  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
-
-  get_target_property(STD_CXX ${PROJECT_NAME}_${component}${TARGET_SUFFIX} CXX_STANDARD) #get component target
-  get_Required_CMake_Version_For_Standard(RES_MIN_CMAKE_VERSION ${STD_CXX})
-
-  if(CMAKE_VERSION VERSION_LESS RES_MIN_CMAKE_VERSION)#if cmake version is less than the version required to managed the standard in use
-    target_compile_options(${PROJECT_NAME}_${component}${TARGET_SUFFIX} PUBLIC "-std=c++${STD_CXX}")
-    return()
-  endif()
-
-endfunction(resolve_Component_Language_Support)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |resolve_Build_Options_For_Targets| replace:: ``resolve_Build_Options_For_Targets``
-#  .. _resolve_Build_Options_For_Targets:
-#
-#  resolve_Build_Options_For_Targets
-#  ---------------------------------
-#
-#   .. command:: resolve_Build_Options_For_Targets()
-#
-#     Set compile option for all components that are build given some info not directly managed by CMake.
-#
-function(resolve_Build_Options_For_Targets)
-  foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
-  	is_Built_Component(IS_BUILT_COMP ${PROJECT_NAME} ${component})#no need to resolve alias since list of components contains only base name in current package
-  	if(IS_BUILT_COMP)
-  		resolve_Component_Language_Support(${component} ${CMAKE_BUILD_TYPE})
-  	endif()
-  endforeach()
-endfunction(resolve_Build_Options_For_Targets)
-
 ############################################################################
 ############### API functions for internal targets management ##############
 ############################################################################
@@ -773,7 +721,6 @@ if(c_standard)#the std C is let optional as using a standard may cause error wit
   			C_EXTENSIONS NO
   	)#setting the standard in use locally
 endif()
-
 if(cxx_standard)
   set_target_properties(${PROJECT_NAME}_${component}${mode_suffix} PROPERTIES
   		CXX_STANDARD ${cxx_standard}
@@ -1605,7 +1552,7 @@ function(resolve_Component_Standard_For_Dependency package component dep_package
 
   if(NEW_CXX_STD)#need to modify component due to its dependency
     set(${package}_${component}_CXX_STANDARD${VAR_SUFFIX} ${NEW_CXX_STD} CACHE INTERNAL "")
-  	if(configure_build)# the build property is set for a target that is built locally (otherwise would produce errors)
+	if(configure_build)# the build property is set for a target that is built locally (otherwise would produce errors)
   		set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES CXX_STANDARD ${NEW_CXX_STD}) #the minimal value in use file is set adequately
   	endif()
   endif()

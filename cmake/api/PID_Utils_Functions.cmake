@@ -263,6 +263,38 @@ endforeach()
 set(${RESULT_VARIABLE} ${result} PARENT_SCOPE)
 endfunction(parse_Configuration_Expression_Arguments)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |hashcode_From_Expression| replace:: ``hashcode_From_Expression``
+#  .. _hashcode_From_Expression:
+#
+#  hashcode_From_Expression
+#  -------------------------
+#
+#   .. command:: hashcode_From_Expression(HASHCODE expr)
+#
+#     Get hascode for a configuration param list expression.
+#
+#     :expr: the expression
+#
+#     :NAME: the output variable containing the hascode for expression
+#     :HASHCODE: the output variable containing the hascode for expression
+#
+function(hashcode_From_Expression NAME HASHCODE expr)
+  string(REPLACE " " "" expr ${expr})
+  string(REPLACE "\t" "" expr ${expr})
+  if(expr MATCHES "^([^[]+)\\[([^]]+)\\]$")#it matches !! => there are arguments in the check expression
+    set(pars "${CMAKE_MATCH_2}")
+    set(${NAME} "${CMAKE_MATCH_1}" PARENT_SCOPE)
+   else()
+    set(pars "")
+    set(${NAME} "${expr}" PARENT_SCOPE)
+  endif()
+  string(SHA1 thehash "${pars}")
+  set(${HASHCODE} ${thehash} PARENT_SCOPE)
+endfunction(hashcode_From_Expression)
 
 #.rst:
 #
@@ -5381,32 +5413,6 @@ function(adjust_Languages_Standards_Description ERROR MESSAGE
   set(${MESSAGE} ${ret_message} PARENT_SCOPE)
   set(${ERROR} ${ret_error} PARENT_SCOPE)
 endfunction(adjust_Languages_Standards_Description)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |get_Required_CMake_Version_For_Standard| replace:: ``get_Required_CMake_Version_For_Standard``
-#  .. _get_Required_CMake_Version_For_Standard:
-#
-#  get_Required_CMake_Version_For_Standard
-#  ---------------------------------------
-#
-#   .. command:: get_Required_CMake_Version_For_Standard(RES_MIN_CMAKE_VERSION cxx_std)
-#
-#     Returns the minimum required CMake version when using given C++ standard
-#
-#     :cxx_std: the target C++ language standard.
-#
-#     :RES_MIN_CMAKE_VERSION: the output variable containing the minimum required version of CMake.
-#
-function(get_Required_CMake_Version_For_Standard RES_MIN_CMAKE_VERSION cxx_std)
-  set(min_cmake_version_for_std_property 3.8.2)
-  if(cxx_std EQUAL 20)
-    set(min_cmake_version_for_std_property 3.11.4)
-  endif()
-  set(${RES_MIN_CMAKE_VERSION} ${min_cmake_version_for_std_property} PARENT_SCOPE)#CXX standard property
-endfunction(get_Required_CMake_Version_For_Standard)
 
 #.rst:
 #

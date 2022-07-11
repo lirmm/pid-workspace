@@ -48,7 +48,8 @@ if(PID_CROSSCOMPILATION)
 	return()#cannot set the name
 else()
 	if(CURRENT_PLATFORM_OS STREQUAL "windows")
-		#probably need to do some specific things in windows
+		set(${NAME} "msvc" PARENT_SCOPE)
+		set(${VERSION} ${CMAKE_CXX_COMPILER_VERSION} PARENT_SCOPE)#note version of the standard lib is the version of the compiler for msvc
 		return ()
 	else()#other systems
 		#from here we will look into the symbols
@@ -132,18 +133,18 @@ function(get_CXX_Standard_Library_Symbols_Version RES_NAME RES_VERSION RES_SYMBO
 		#NOW check the C++ compiler ABI used to build the c++ standard library
 		set(USE_ABI)
 		if( PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT
-				AND NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
-				#we are not in the context of evaluating an environment on current host
-				#So MAYBE there is no need to detect the ABI since specified using corresponding compiler flags provided by environment
-				string(REGEX MATCH "-D_GLIBCXX_USE_CXX11_ABI=0" IS_LEGACY "${CMAKE_CXX_FLAGS}")
-				if(IS_LEGACY)
-					set(USE_ABI "OLD")
-				else()
-						string(REGEX MATCH "-D_GLIBCXX_USE_CXX11_ABI=1" IS_NEW "${CMAKE_CXX_FLAGS}")
-						if(IS_NEW)
-							set(USE_ABI "NEW")
-						endif()
-				endif()
+			AND NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
+			#we are not in the context of evaluating an environment on current host
+			#So MAYBE there is no need to detect the ABI since specified using corresponding compiler flags provided by environment
+			string(REGEX MATCH "-D_GLIBCXX_USE_CXX11_ABI=0" IS_LEGACY "${CMAKE_CXX_FLAGS}")
+			if(IS_LEGACY)
+				set(USE_ABI "OLD")
+			else()
+					string(REGEX MATCH "-D_GLIBCXX_USE_CXX11_ABI=1" IS_NEW "${CMAKE_CXX_FLAGS}")
+					if(IS_NEW)
+						set(USE_ABI "NEW")
+					endif()
+			endif()
 		endif()
 		reset_CXX_ABI_Flags()
 		if(NOT USE_ABI)

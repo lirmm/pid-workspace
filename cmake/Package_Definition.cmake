@@ -31,7 +31,14 @@ cmake_minimum_required(VERSION 3.15.7)
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
 get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
 set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)
-set(CMAKE_TOOLCHAIN_FILE ${WORKSPACE_DIR}/build/PID_Toolchain.cmake CACHE INTERNAL "" FORCE)
+
+get_filename_component(the_project ${CMAKE_SOURCE_DIR} NAME)
+if(EXISTS ${WORKSPACE_DIR}/build/${the_project}_PID_Toolchain.cmake)#use a project specific toolchain if it exists
+  set(CMAKE_TOOLCHAIN_FILE ${WORKSPACE_DIR}/build/${the_project}_PID_Toolchain.cmake CACHE INTERNAL "" FORCE)
+else()
+  set(CMAKE_TOOLCHAIN_FILE ${WORKSPACE_DIR}/build/PID_Toolchain.cmake CACHE INTERNAL "" FORCE)
+endif()
+
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Package_API_Internal_Functions NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
@@ -681,9 +688,10 @@ endmacro(declare_PID_Component_Documentation)
 #   .. rubric:: Optional parameters
 #
 #   :OPTIONAL: if used then the requirement on build environment is optional.
-#   :LANGUAGE ...: Set of constraint check expressions defining which languages must/can be used (testing only C and C++ is not necessary).
-#   :TOOLSET ...: Set of constraint check expressions defining which toolset must/can be used for target language. If many languages are specified then there must have as many toolsets defined, in same order.
-#   :TOOL ...: Set of constraint check expressions defining which tools (compiler, interpreter, generators, etc.) must/can be used.
+#   :LANGUAGE ...: constraint check expressions defining which language must/can be used (testing only C and C++ is not necessary).
+#   :TOOLSET ...: constraint check expressions defining which toolset must/can be used for target language.
+#   :CONFIGURE ...: set of languages that will be configured by the usage of a toolset, in addition to the one defined by the LANGUAGE keyword. TOOLSET keyword is not mandatory as the toolset may be automatically deduced from LANGUAGE expression.
+#   :TOOL ...: Set of constraint check expressions defining which extra tools must/can be used.
 #
 #   .. admonition:: Constraints
 #      :class: warning
@@ -707,33 +715,39 @@ endmacro(declare_PID_Component_Documentation)
 #
 #      check_PID_Environment(LANGUAGE CXX TOOLSET clang_toolchain[version=9.0])#check that a clang compiler with version >= 9.0 is available
 #
+#      check_PID_Environment(LANGUAGE CXX CONFIGURE C TOOLSET clang_toolchain[version=9.0])#same as previously but the clang_toolchain is also used for C language
+#
+#      check_PID_Environment(LANGUAGE CXX[std=17] CONFIGURE C ASM)#check that compiler/stdlib fully supports C++17. If not AND if a solution can be found then the toolset used will also be used for C and ASM languages
+#
 macro(check_PID_Environment)
-  set(monoValueArg OPTIONAL)
-  set(multiValueArgs LANGUAGE TOOL TOOLSET)
+  set(monoValueArg OPTIONAL LANGUAGE TOOLSET)
+  set(multiValueArgs TOOL CONFIGURE)
   cmake_parse_arguments(CHECK_PID_ENV "" "${monoValueArg}" "${multiValueArgs}" ${ARGN} )
 
   if(NOT CHECK_PID_ENV_LANGUAGE AND NOT CHECK_PID_ENV_TOOL)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
     message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when calling check_PID_Environment you must define at least a constraint expression on a programming language (using LANGUAGE) or an extra tool (using TOOL).")
+  elseif(CHECK_PID_ENV_LANGUAGE AND CHECK_PID_ENV_TOOL)
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when calling check_PID_Environment you can define at least a constraint expression on a programming language (using LANGUAGE) OR an extra tool (using TOOL), NOT BOTH.")
   endif()
   if(CHECK_PID_ENV_TOOLSET)
     if(NOT CHECK_PID_ENV_LANGUAGE)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
       message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when calling check_PID_Environment you must define the LANGUAGE (using LANGUAGE) when you want to use specific toolset (using TOOLSET argument).")
     endif()
-    list(LENGTH CHECK_PID_ENV_TOOLSET SIZE_TOOLSETS)
-    list(LENGTH CHECK_PID_ENV_LANGUAGE SIZE_LANGUAGES)
-    if(NOT SIZE_TOOLSETS EQUAL SIZE_LANGUAGES)
+  endif()
+  if(CHECK_PID_ENV_CONFIGURE)
+    if(NOT CHECK_PID_ENV_LANGUAGE)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when calling check_PID_Environment there is not as many toolsets (${SIZE_TOOLSETS}) as languages defined (${SIZE_LANGUAGES}).")
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when calling check_PID_Environment you must define the LANGUAGE (using LANGUAGE) when you want to defined other languages being configured (using CONFIGURE argument) by the same toolset.")
     endif()
   endif()
-  if(CHECK_PID_ENV_OPTIONAL)
-    set(optional TRUE)
-  else()
-    set(optional FALSE)
+  if(CHECK_PID_ENV_LANGUAGE)
+    check_Environment_Language_Constraints(ERROR "${CHECK_PID_ENV_LANGUAGE}" "${CHECK_PID_ENV_TOOLSET}" "${CHECK_PID_ENV_CONFIGURE}")
+  elseif(CHECK_PID_ENV_TOOL)
+    check_Environment_Tool_Constraints(ERROR  "${CHECK_PID_ENV_TOOL}")
   endif()
-  check_Environment_Constraints(ERROR "${CHECK_PID_ENV_LANGUAGE}" "${CHECK_PID_ENV_TOOLSET}" "${CHECK_PID_ENV_TOOL}" ${optional})
   if(NOT CHECK_PID_ENV_OPTIONAL)
     if(ERROR)
       finish_Progress(${GLOBAL_PROGRESS_VAR})

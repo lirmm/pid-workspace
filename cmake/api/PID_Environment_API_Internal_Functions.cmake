@@ -481,7 +481,7 @@ macro(build_Environment_Project)
   endif()
 
   detect_Current_Platform()
-  evaluate_Environment_Constraints(CONSTRAINTS_OK) #get the parameters passed to the environment
+  evaluate_Environment_Constraints(IN_CONSTRAINTS CONSTRAINTS_OK) #get the parameters passed to the environment
   if(NOT CONSTRAINTS_OK)
     set(EVALUATION_RUN FALSE CACHE INTERNAL "" FORCE)#reset so that new cmake run will not be an evaluation run
     message(FATAL_ERROR "[PID] CRITICAL ERROR: environment ${PROJECT_NAME} cannot fulfill some constraints (see previous logs).")
@@ -521,7 +521,8 @@ macro(build_Environment_Project)
   deduce_Platform_Variables()
   compute_Resulting_Environment_Contraints()
   adjust_Environment_Binary_Variables()#need to set the previously computed expression where it is required
-  generate_Environment_Solution_File()#generate the global solution file
+  string(SHA1 hashcode "${IN_CONSTRAINTS}")
+  generate_Environment_Solution_File("${hashcode}")#generate the global solution file
   generate_Environment_Toolchain_File()#from global solution generate the toolchain file
   set(EVALUATION_RUN FALSE CACHE INTERNAL "" FORCE)#reset so that new cmake run will not be an evaluation run
 endmacro(build_Environment_Project)
@@ -1042,140 +1043,141 @@ endfunction(evaluate_Environment_From_Package)
 #      :environment: the name of the dependency.
 #
 function(import_Solution_From_Dependency environment)
-  if(${environment}_CROSSCOMPILATION)
-    set(${PROJECT_NAME}_CROSSCOMPILATION ${${environment}_CROSSCOMPILATION} CACHE INTERNAL "")
-    if(NOT ${PROJECT_NAME}_TARGET_SYSROOT AND ${environment}_TARGET_SYSROOT)#only if value not set at upper level !
-      set(${PROJECT_NAME}_TARGET_SYSROOT ${${environment}_TARGET_SYSROOT} CACHE INTERNAL "")
+set(prefix ${environment}_${LAST_RUN_HASHCODE})
+  if(${prefix}_CROSSCOMPILATION)
+    set(${PROJECT_NAME}_CROSSCOMPILATION ${${prefix}_CROSSCOMPILATION} CACHE INTERNAL "")
+    if(NOT ${PROJECT_NAME}_TARGET_SYSROOT AND ${prefix}_TARGET_SYSROOT)#only if value not set at upper level !
+      set(${PROJECT_NAME}_TARGET_SYSROOT ${${prefix}_TARGET_SYSROOT} CACHE INTERNAL "")
     endif()
-    if(NOT ${PROJECT_NAME}_TARGET_STAGING AND ${environment}_TARGET_STAGING)#only if value not set at upper level !
-      set(${PROJECT_NAME}_TARGET_STAGING ${${environment}_TARGET_STAGING} CACHE INTERNAL "")
+    if(NOT ${PROJECT_NAME}_TARGET_STAGING AND ${prefix}_TARGET_STAGING)#only if value not set at upper level !
+      set(${PROJECT_NAME}_TARGET_STAGING ${${prefix}_TARGET_STAGING} CACHE INTERNAL "")
     endif()
   endif()
-  if(NOT ${PROJECT_NAME}_TARGET_INSTANCE AND ${environment}_TARGET_INSTANCE)#only if value not set at upper level !
-    set(${PROJECT_NAME}_TARGET_INSTANCE ${${environment}_TARGET_INSTANCE} CACHE INTERNAL "")
+  if(NOT ${PROJECT_NAME}_TARGET_INSTANCE AND ${prefix}_TARGET_INSTANCE)#only if value not set at upper level !
+    set(${PROJECT_NAME}_TARGET_INSTANCE ${${prefix}_TARGET_INSTANCE} CACHE INTERNAL "")
   endif()
 
-  foreach(lang IN LISTS ${environment}_LANGUAGES)
-    math(EXPR max_toolsets "${${environment}_${lang}_TOOLSETS}-1")
+  foreach(lang IN LISTS ${prefix}_LANGUAGES)
+    math(EXPR max_toolsets "${${prefix}_${lang}_TOOLSETS}-1")
     foreach(toolset RANGE ${max_toolsets})
       add_Language_Toolset(${lang} FALSE
-                          "${${environment}_${lang}_TOOLSET_${toolset}_CONSTRAINT_EXPRESSION}"
-                          "${${environment}_${lang}_TOOLSET_${toolset}_CHECK_SCRIPT}"
-                          "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER}"
-                          "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_ID}"
-                          "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_AR}"
-                          "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB}"
-                          "${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS}"
-                          "${${environment}_${lang}_TOOLSET_${toolset}_INTERPRETER}"
-                          "${${environment}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS}"
-                          "${${environment}_${lang}_TOOLSET_${toolset}_LIBRARY}"
-                          "${${environment}_${lang}_TOOLSET_${toolset}_COVERAGE}"
-                          "${${environment}_${lang}_TOOLSET_${toolset}_HOST_COMPILER}"
+                          "${${prefix}_${lang}_TOOLSET_${toolset}_CONSTRAINT_EXPRESSION}"
+                          "${${prefix}_${lang}_TOOLSET_${toolset}_CHECK_SCRIPT}"
+                          "${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER}"
+                          "${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_ID}"
+                          "${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_AR}"
+                          "${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB}"
+                          "${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS}"
+                          "${${prefix}_${lang}_TOOLSET_${toolset}_INTERPRETER}"
+                          "${${prefix}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS}"
+                          "${${prefix}_${lang}_TOOLSET_${toolset}_LIBRARY}"
+                          "${${prefix}_${lang}_TOOLSET_${toolset}_COVERAGE}"
+                          "${${prefix}_${lang}_TOOLSET_${toolset}_HOST_COMPILER}"
       )
     endforeach()
   endforeach()
 
-  foreach(tool IN LISTS ${environment}_EXTRA_TOOLS)
+  foreach(tool IN LISTS ${prefix}_EXTRA_TOOLS)
       add_Extra_Tool(${tool}
-                    "${${environment}_EXTRA_${tool}_CONSTRAINT_EXPRESSION}"
-                    "${${environment}_EXTRA_${tool}_CHECK_SCRIPT}"
+                    "${${prefix}_EXTRA_${tool}_CONSTRAINT_EXPRESSION}"
+                    "${${prefix}_EXTRA_${tool}_CHECK_SCRIPT}"
                     FALSE
-                    "${${environment}_EXTRA_${tool}_PROGRAM}"
-                    "${${environment}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS}"
-                    "${${environment}_EXTRA_${tool}_PROGRAM_DIRS}"
-                    "${${environment}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES}"
-                    "${${environment}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS}"
-                    "${${environment}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS}"
-                    "${${environment}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS}"
-                    "${${environment}_EXTRA_${tool}_PLUGIN_ON_DEMAND}"
+                    "${${prefix}_EXTRA_${tool}_PROGRAM}"
+                    "${${prefix}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS}"
+                    "${${prefix}_EXTRA_${tool}_PROGRAM_DIRS}"
+                    "${${prefix}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES}"
+                    "${${prefix}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS}"
+                    "${${prefix}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS}"
+                    "${${prefix}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS}"
+                    "${${prefix}_EXTRA_${tool}_PLUGIN_ON_DEMAND}"
       )
   endforeach()
 
-  if(${environment}_LINKER)
+  if(${prefix}_LINKER)
     if(${PROJECT_NAME}_LINKER)
       message(FATAL_ERROR "[PID] CRITICAL ERROR : the system linker in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_LINKER}")
       return()
     endif()
-    set(${PROJECT_NAME}_LINKER ${${environment}_LINKER} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_LINKER ${${prefix}_LINKER} CACHE INTERNAL "")
   endif()
-  if(${environment}_AR)
+  if(${prefix}_AR)
     if(${PROJECT_NAME}_AR)
       message(FATAL_ERROR "[PID] CRITICAL ERROR : the system archiver in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_AR}")
       return()
     endif()
-    set(${PROJECT_NAME}_AR ${${environment}_AR} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_AR ${${prefix}_AR} CACHE INTERNAL "")
   endif()
-  if(${environment}_NM)
+  if(${prefix}_NM)
     if(${PROJECT_NAME}_NM)
       message(FATAL_ERROR "[PID] CRITICAL ERROR : the system naming tool in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_NM}")
       return()
     endif()
-    set(${PROJECT_NAME}_NM ${${environment}_NM} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_NM ${${prefix}_NM} CACHE INTERNAL "")
   endif()
-  if(${environment}_RANLIB)
+  if(${prefix}_RANLIB)
     if(${PROJECT_NAME}_RANLIB)
       message(FATAL_ERROR "[PID] CRITICAL ERROR : the system static libraries creator tool in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_RANLIB}")
       return()
     endif()
-    set(${PROJECT_NAME}_RANLIB ${${environment}_RANLIB} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_RANLIB ${${prefix}_RANLIB} CACHE INTERNAL "")
   endif()
-  if(${environment}_OBJDUMP)
+  if(${prefix}_OBJDUMP)
     if(${PROJECT_NAME}_OBJDUMP)
       message(FATAL_ERROR "[PID] CRITICAL ERROR : the system objdump tool in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_OBJDUMP}")
       return()
     endif()
-    set(${PROJECT_NAME}_OBJDUMP ${${environment}_OBJDUMP} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_OBJDUMP ${${prefix}_OBJDUMP} CACHE INTERNAL "")
   endif()
-  if(${environment}_OBJCOPY)
+  if(${prefix}_OBJCOPY)
     if(${PROJECT_NAME}_OBJCOPY)
       message(FATAL_ERROR "[PID] CRITICAL ERROR : the system objcopy tool in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_OBJCOPY}")
       return()
     endif()
-    set(${PROJECT_NAME}_OBJCOPY ${${environment}_OBJCOPY} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_OBJCOPY ${${prefix}_OBJCOPY} CACHE INTERNAL "")
   endif()
-  if(${environment}_RPATH)
+  if(${prefix}_RPATH)
     if(${PROJECT_NAME}_RPATH)
       message(FATAL_ERROR "[PID] CRITICAL ERROR : the system rpath edition tool in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_RPATH}")
       return()
     endif()
-    set(${PROJECT_NAME}_RPATH ${${environment}_RPATH} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_RPATH ${${prefix}_RPATH} CACHE INTERNAL "")
   endif()
 
-  if(${environment}_INCLUDE_DIRS)
-    append_Unique_In_Cache(${PROJECT_NAME}_INCLUDE_DIRS "${${environment}_INCLUDE_DIRS}")
+  if(${prefix}_INCLUDE_DIRS)
+    append_Unique_In_Cache(${PROJECT_NAME}_INCLUDE_DIRS "${${prefix}_INCLUDE_DIRS}")
   endif()
-  if(${environment}_LIBRARY_DIRS)
-    append_Unique_In_Cache(${PROJECT_NAME}_LIBRARY_DIRS "${${environment}_LIBRARY_DIRS}")
+  if(${prefix}_LIBRARY_DIRS)
+    append_Unique_In_Cache(${PROJECT_NAME}_LIBRARY_DIRS "${${prefix}_LIBRARY_DIRS}")
   endif()
-  if(${environment}_PROGRAM_DIRS)
-    append_Unique_In_Cache(${PROJECT_NAME}_PROGRAM_DIRS "${${environment}_PROGRAM_DIRS}")
+  if(${prefix}_PROGRAM_DIRS)
+    append_Unique_In_Cache(${PROJECT_NAME}_PROGRAM_DIRS "${${prefix}_PROGRAM_DIRS}")
   endif()
-  if(${environment}_EXE_LINKER_FLAGS)
-    append_Unique_In_Cache(${PROJECT_NAME}_EXE_LINKER_FLAGS "${${environment}_EXE_LINKER_FLAGS}")
+  if(${prefix}_EXE_LINKER_FLAGS)
+    append_Unique_In_Cache(${PROJECT_NAME}_EXE_LINKER_FLAGS "${${prefix}_EXE_LINKER_FLAGS}")
   endif()
-  if(${environment}_MODULE_LINKER_FLAGS)
-    append_Unique_In_Cache(${PROJECT_NAME}_MODULE_LINKER_FLAGS "${${environment}_MODULE_LINKER_FLAGS}")
+  if(${prefix}_MODULE_LINKER_FLAGS)
+    append_Unique_In_Cache(${PROJECT_NAME}_MODULE_LINKER_FLAGS "${${prefix}_MODULE_LINKER_FLAGS}")
   endif()
-  if(${environment}_SHARED_LINKER_FLAGS)
-    append_Unique_In_Cache(${PROJECT_NAME}_SHARED_LINKER_FLAGS "${${environment}_SHARED_LINKER_FLAGS}")
+  if(${prefix}_SHARED_LINKER_FLAGS)
+    append_Unique_In_Cache(${PROJECT_NAME}_SHARED_LINKER_FLAGS "${${prefix}_SHARED_LINKER_FLAGS}")
   endif()
-  if(${environment}_STATIC_LINKER_FLAGS)
-    append_Unique_In_Cache(${PROJECT_NAME}_STATIC_LINKER_FLAGS "${${environment}_STATIC_LINKER_FLAGS}")
+  if(${prefix}_STATIC_LINKER_FLAGS)
+    append_Unique_In_Cache(${PROJECT_NAME}_STATIC_LINKER_FLAGS "${${prefix}_STATIC_LINKER_FLAGS}")
   endif()
 
-  if(${environment}_GENERATOR_TOOLSET)#may overwrite user choice
+  if(${prefix}_GENERATOR_TOOLSET)#may overwrite user choice
     if(${PROJECT_NAME}_GENERATOR_TOOLSET)
       message(FATAL_ERROR "[PID] CRITICAL ERROR : the geneator toolset in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_GENERATOR_TOOLSET}")
       return()
     endif()
-    set(${PROJECT_NAME}_GENERATOR_TOOLSET ${${environment}_GENERATOR_TOOLSET} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_GENERATOR_TOOLSET ${${prefix}_GENERATOR_TOOLSET} CACHE INTERNAL "")
   endif()
-  if(${environment}_GENERATOR_PLATFORM)#may overwrite user choice
+  if(${prefix}_GENERATOR_PLATFORM)#may overwrite user choice
     if(${PROJECT_NAME}_GENERATOR_PLATFORM)
       message(FATAL_ERROR "[PID] CRITICAL ERROR : the geneator platform in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_GENERATOR_PLATFORM}")
       return()
     endif()
-    set(${PROJECT_NAME}_GENERATOR_PLATFORM ${${environment}_GENERATOR_PLATFORM} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_GENERATOR_PLATFORM ${${prefix}_GENERATOR_PLATFORM} CACHE INTERNAL "")
   endif()
 endfunction(import_Solution_From_Dependency)
 
@@ -1564,16 +1566,24 @@ endmacro(evaluate_Environment_Solution)
 #  evaluate_Environment_Constraints
 #  --------------------------------
 #
-#   .. command:: evaluate_Environment_Constraints()
+#   .. command:: evaluate_Environment_Constraints(CONSTRAINTS_EXPR EVAL_RESULT)
 #
 #   Evaluate the constraints in order to create adequate variables usable in environment script files.
-#
+# 
+#     :CONSTRAINTS_EXPR: the parent scope variable that constains the constraint expression
 #     :EVAL_RESULT: the parent scope variable that is TRUE if any constraints is violated, FALSE otherwise.
 #
-function(evaluate_Environment_Constraints EVAL_RESULT)
+function(evaluate_Environment_Constraints CONSTRAINTS_EXPR EVAL_RESULT)
   set(${EVAL_RESULT} FALSE PARENT_SCOPE)
+  set(${CONSTRAINTS_EXPR} FALSE PARENT_SCOPE)
+  set(const_expr)
   foreach(opt IN LISTS ${PROJECT_NAME}_OPTIONAL_CONSTRAINTS ${PROJECT_NAME}_IN_BINARY_CONSTRAINTS)
     if(opt AND DEFINED VAR_${opt}) #cmake variable containing the input variable exist => input variable passed by the user
+      if(const_expr)
+        set(const_expr "${const_expr}:${opt}=${VAR_${opt}}")
+      else()
+        set(const_expr "${opt}=${VAR_${opt}}")
+      endif()
       parse_Configuration_Expression_Argument_Value(VAL_LIST "${VAR_${opt}}")
       set(${PROJECT_NAME}_${opt} ${VAL_LIST} PARENT_SCOPE)#create the local variable used in scripts
     endif()
@@ -1584,20 +1594,26 @@ function(evaluate_Environment_Constraints EVAL_RESULT)
       message("[PID] ERROR: environment ${PROJECT_NAME} requires ${req} to be defined.")
       return()
     endif()
+    if(const_expr)
+      set(const_expr "${const_expr}:${req}=${VAR_${req}}")
+    else()
+      set(const_expr "${req}=${VAR_${req}}")
+    endif()
     parse_Configuration_Expression_Argument_Value(VAL_LIST "${VAR_${req}}")
     set(${PROJECT_NAME}_${req} ${VAL_LIST} PARENT_SCOPE)#create the local variable used in scripts
   endforeach()
   #also evaluate constraints coming from dependent environment or configuration script
 
-if(FORCE_${PROJECT_NAME}_TARGET_SYSROOT)
-  set(${PROJECT_NAME}_TARGET_SYSROOT ${FORCE_${PROJECT_NAME}_TARGET_SYSROOT} CACHE INTERNAL "")# higher level specified sysroot always takes precedence
-endif()
-if(FORCE_${PROJECT_NAME}_TARGET_STAGING)
-  set(${PROJECT_NAME}_TARGET_STAGING ${FORCE_${PROJECT_NAME}_TARGET_STAGING} CACHE INTERNAL "")#  higher level specified staging always takes precedence
-endif()
-if(FORCE_${PROJECT_NAME}_TARGET_INSTANCE)
-  set(${PROJECT_NAME}_TARGET_INSTANCE ${FORCE_${PROJECT_NAME}_TARGET_INSTANCE} CACHE INTERNAL "")#  higher level specified staging always takes precedence
-endif()
+
+  if(FORCE_${PROJECT_NAME}_TARGET_SYSROOT)
+    set(${PROJECT_NAME}_TARGET_SYSROOT ${FORCE_${PROJECT_NAME}_TARGET_SYSROOT} CACHE INTERNAL "")# higher level specified sysroot always takes precedence
+  endif()
+  if(FORCE_${PROJECT_NAME}_TARGET_STAGING)
+    set(${PROJECT_NAME}_TARGET_STAGING ${FORCE_${PROJECT_NAME}_TARGET_STAGING} CACHE INTERNAL "")#  higher level specified staging always takes precedence
+  endif()
+  if(FORCE_${PROJECT_NAME}_TARGET_INSTANCE)
+    set(${PROJECT_NAME}_TARGET_INSTANCE ${FORCE_${PROJECT_NAME}_TARGET_INSTANCE} CACHE INTERNAL "")#  higher level specified staging always takes precedence
+  endif()
 
 if(FORCE_${PROJECT_NAME}_ARCH_CONSTRAINT) #arch constraint has been forced
   if(${PROJECT_NAME}_ARCH_CONSTRAINT AND (NOT ${PROJECT_NAME}_ARCH_CONSTRAINT STREQUAL FORCE_${PROJECT_NAME}_ARCH_CONSTRAINT))
@@ -1648,7 +1664,7 @@ if(FORCE_${PROJECT_NAME}_DISTRIBUTION_CONSTRAINT)
   endif()
 endif()
 set(${EVAL_RESULT} TRUE PARENT_SCOPE)
-
+set(${CONSTRAINTS_EXPR} "${const_expr}" PARENT_SCOPE)
 endfunction(evaluate_Environment_Constraints)
 
 
@@ -2306,47 +2322,48 @@ endfunction(add_Extra_Tool)
 #  write_Language_Toolset
 #  ----------------------
 #
-#   .. command:: write_Language_Toolset(environment lang toolset)
+#   .. command:: write_Language_Toolset(environment lang toolset prefix)
 #
 #   Write description of a language toolset into the project solution file.
 #
 #     :file: the path to target file to write in.
 #     :lang: the label of target language
 #     :toolset: the index of language toolset
+#     :prefix: prefix for variable corresponding to the fucking constraint used to evaluate the environment
 #
-function(write_Language_Toolset file lang toolset)
+function(write_Language_Toolset file lang toolset prefix)
   #write the constraint expression corresponding to that toolset
-  file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CONSTRAINT_EXPRESSION ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CONSTRAINT_EXPRESSION} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CHECK_SCRIPT ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CHECK_SCRIPT} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_${lang}_TOOLSET_${toolset}_CONSTRAINT_EXPRESSION ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CONSTRAINT_EXPRESSION} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_${lang}_TOOLSET_${toolset}_CHECK_SCRIPT ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_CHECK_SCRIPT} CACHE INTERNAL \"\")\n")
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER)#for compiled languages
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${prefix}_${lang}_TOOLSET_${toolset}_COMPILER ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER} CACHE INTERNAL \"\")\n")
   endif()
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_ID)
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_ID ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_ID} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_ID ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_ID} CACHE INTERNAL \"\")\n")
   endif()
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS)
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS \"${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS}\" CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS \"${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS}\" CACHE INTERNAL \"\")\n")
   endif()
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS)
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${prefix}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS} CACHE INTERNAL \"\")\n")
   endif()
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_LIBRARY)
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_LIBRARY ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_LIBRARY} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${prefix}_${lang}_TOOLSET_${toolset}_LIBRARY ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_LIBRARY} CACHE INTERNAL \"\")\n")
   endif()
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COVERAGE)
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COVERAGE ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COVERAGE} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${prefix}_${lang}_TOOLSET_${toolset}_COVERAGE ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COVERAGE} CACHE INTERNAL \"\")\n")
   endif()
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER)
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${prefix}_${lang}_TOOLSET_${toolset}_INTERPRETER ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_INTERPRETER} CACHE INTERNAL \"\")\n")
   endif()
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_AR)
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_AR ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_AR} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_AR ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_AR} CACHE INTERNAL \"\")\n")
   endif()
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB)
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB} CACHE INTERNAL \"\")\n")
   endif()
   if(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_HOST_COMPILER)#for languages that require C/C++ compiler to generate code
-    file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_HOST_COMPILER ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_HOST_COMPILER} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${prefix}_${lang}_TOOLSET_${toolset}_HOST_COMPILER ${${PROJECT_NAME}_${lang}_TOOLSET_${toolset}_HOST_COMPILER} CACHE INTERNAL \"\")\n")
   endif()
 endfunction(write_Language_Toolset)
 
@@ -2368,18 +2385,19 @@ endfunction(write_Language_Toolset)
 #     :file: the path to target file to write in.
 #
 #     :tool: the name of the extra tool
+#     :prefix: prefix for variable corresponding to the fucking constraint used to evaluate the environment
 #
-function(write_Extra_Tool file tool)
-  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_CONSTRAINT_EXPRESSION \"${${PROJECT_NAME}_EXTRA_${tool}_CONSTRAINT_EXPRESSION}\" CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_CHECK_SCRIPT \"${${PROJECT_NAME}_EXTRA_${tool}_CHECK_SCRIPT}\" CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PROGRAM ${${PROJECT_NAME}_EXTRA_${tool}_PROGRAM} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS ${${PROJECT_NAME}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PROGRAM_DIRS ${${PROJECT_NAME}_EXTRA_${tool}_PROGRAM_DIRS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_ON_DEMAND ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_ON_DEMAND} CACHE INTERNAL \"\")\n")
+function(write_Extra_Tool file tool prefix)
+  file(APPEND ${file} "set(${prefix}_EXTRA_${tool}_CONSTRAINT_EXPRESSION \"${${PROJECT_NAME}_EXTRA_${tool}_CONSTRAINT_EXPRESSION}\" CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_EXTRA_${tool}_CHECK_SCRIPT \"${${PROJECT_NAME}_EXTRA_${tool}_CHECK_SCRIPT}\" CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_EXTRA_${tool}_PROGRAM ${${PROJECT_NAME}_EXTRA_${tool}_PROGRAM} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS ${${PROJECT_NAME}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_EXTRA_${tool}_PROGRAM_DIRS ${${PROJECT_NAME}_EXTRA_${tool}_PROGRAM_DIRS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_EXTRA_${tool}_PLUGIN_ON_DEMAND ${${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_ON_DEMAND} CACHE INTERNAL \"\")\n")
 endfunction(write_Extra_Tool)
 
 #.rst:
@@ -2395,65 +2413,69 @@ endfunction(write_Extra_Tool)
 #   .. command:: generate_Environment_Solution_File()
 #
 #   Create the script file used to manage dependencies between environments.
+#   :hashcode: hash code for input constraints agregated
 #
-function(generate_Environment_Solution_File)
+function(generate_Environment_Solution_File hashcode)
 set(file ${CMAKE_BINARY_DIR}/PID_Environment_Solution_Info.cmake)
+
+set(prefix "${PROJECT_NAME}_${hashcode}")
 file(WRITE ${file} "")#reset the description
 
-file(APPEND ${file} "set(${PROJECT_NAME}_ACTION_INFO \"${${PROJECT_NAME}_ACTION_INFO}\" CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(LAST_RUN_HASHCODE ${hashcode} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${prefix}_ACTION_INFO \"${${PROJECT_NAME}_ACTION_INFO}\" CACHE INTERNAL \"\")\n")
 # need to write the constraints that will lie in binary of the environment
-file(APPEND ${file} "set(${PROJECT_NAME}_CONSTRAINT_EXPRESSION ${${PROJECT_NAME}_CONSTRAINT_EXPRESSION} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_CHECK ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_CHECK} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${prefix}_CONSTRAINT_EXPRESSION ${${PROJECT_NAME}_CONSTRAINT_EXPRESSION} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${prefix}_CHECK ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_CHECK} CACHE INTERNAL \"\")\n")
 
-file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_INSTANCE ${${PROJECT_NAME}_TARGET_INSTANCE} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_PLATFORM ${${PROJECT_NAME}_TARGET_PLATFORM} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_DISTRIBUTION ${${PROJECT_NAME}_TARGET_DISTRIBUTION} CACHE INTERNAL \"\")\n")
-file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_DISTRIBUTION_VERSION ${${PROJECT_NAME}_TARGET_DISTRIBUTION_VERSION} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${prefix}_TARGET_INSTANCE ${${PROJECT_NAME}_TARGET_INSTANCE} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${prefix}_TARGET_PLATFORM ${${PROJECT_NAME}_TARGET_PLATFORM} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${prefix}_TARGET_DISTRIBUTION ${${PROJECT_NAME}_TARGET_DISTRIBUTION} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${prefix}_TARGET_DISTRIBUTION_VERSION ${${PROJECT_NAME}_TARGET_DISTRIBUTION_VERSION} CACHE INTERNAL \"\")\n")
 
-file(APPEND ${file} "set(${PROJECT_NAME}_CROSSCOMPILATION ${${PROJECT_NAME}_CROSSCOMPILATION} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${prefix}_CROSSCOMPILATION ${${PROJECT_NAME}_CROSSCOMPILATION} CACHE INTERNAL \"\")\n")
 if(${PROJECT_NAME}_CROSSCOMPILATION)
-  file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_SYSROOT ${${PROJECT_NAME}_TARGET_SYSROOT} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_TARGET_STAGING ${${PROJECT_NAME}_TARGET_STAGING} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_TARGET_SYSROOT ${${PROJECT_NAME}_TARGET_SYSROOT} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_TARGET_STAGING ${${PROJECT_NAME}_TARGET_STAGING} CACHE INTERNAL \"\")\n")
 endif()
 
-file(APPEND ${file} "set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION ${${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${prefix}_SYSTEM_WIDE_CONFIGURATION ${${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION} CACHE INTERNAL \"\")\n")
 if(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION)
-  file(APPEND ${file} "set(${PROJECT_NAME}_LINKER ${${PROJECT_NAME}_LINKER} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_AR ${${PROJECT_NAME}_AR} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_RANLIB ${${PROJECT_NAME}_RANLIB} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_NM ${${PROJECT_NAME}_NM} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_OBJDUMP ${${PROJECT_NAME}_OBJDUMP} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_OBJCOPY ${${PROJECT_NAME}_OBJCOPY} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_RPATH ${${PROJECT_NAME}_RPATH} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_EXE_LINKER_FLAGS ${${PROJECT_NAME}_EXE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_MODULE_LINKER_FLAGS ${${PROJECT_NAME}_MODULE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_SHARED_LINKER_FLAGS ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_STATIC_LINKER_FLAGS ${${PROJECT_NAME}_STATIC_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_LIBRARY_DIRS ${${PROJECT_NAME}_LIBRARY_DIRS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_INCLUDE_DIRS ${${PROJECT_NAME}_INCLUDE_DIRS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${PROJECT_NAME}_PROGRAM_DIRS ${${PROJECT_NAME}_PROGRAM_DIRS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_LINKER ${${PROJECT_NAME}_LINKER} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_AR ${${PROJECT_NAME}_AR} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_RANLIB ${${PROJECT_NAME}_RANLIB} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_NM ${${PROJECT_NAME}_NM} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_OBJDUMP ${${PROJECT_NAME}_OBJDUMP} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_OBJCOPY ${${PROJECT_NAME}_OBJCOPY} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_RPATH ${${PROJECT_NAME}_RPATH} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_EXE_LINKER_FLAGS ${${PROJECT_NAME}_EXE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_MODULE_LINKER_FLAGS ${${PROJECT_NAME}_MODULE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_SHARED_LINKER_FLAGS ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_STATIC_LINKER_FLAGS ${${PROJECT_NAME}_STATIC_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_LIBRARY_DIRS ${${PROJECT_NAME}_LIBRARY_DIRS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_INCLUDE_DIRS ${${PROJECT_NAME}_INCLUDE_DIRS} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_PROGRAM_DIRS ${${PROJECT_NAME}_PROGRAM_DIRS} CACHE INTERNAL \"\")\n")
 endif()
 
-file(APPEND ${file} "set(${PROJECT_NAME}_LANGUAGES ${${PROJECT_NAME}_LANGUAGES} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${prefix}_LANGUAGES ${${PROJECT_NAME}_LANGUAGES} CACHE INTERNAL \"\")\n")
 foreach(lang IN LISTS ${PROJECT_NAME}_LANGUAGES)#default are C CXX ASM Python Fortran CUDA
-  file(APPEND ${file} "set(${PROJECT_NAME}_${lang}_TOOLSETS ${${PROJECT_NAME}_${lang}_TOOLSETS} CACHE INTERNAL \"\")\n")#write the number of toolsets provided
+  file(APPEND ${file} "set(${prefix}_${lang}_TOOLSETS ${${PROJECT_NAME}_${lang}_TOOLSETS} CACHE INTERNAL \"\")\n")#write the number of toolsets provided
   math(EXPR max_toolset "${${PROJECT_NAME}_${lang}_TOOLSETS}-1")
   foreach(toolset RANGE ${max_toolset})
-    write_Language_Toolset(${file} ${lang} ${toolset})
+    write_Language_Toolset(${file} ${lang} ${toolset} ${prefix})
   endforeach()
 endforeach()
 
-file(APPEND ${file} "set(${PROJECT_NAME}_EXTRA_TOOLS ${${PROJECT_NAME}_EXTRA_TOOLS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${prefix}_EXTRA_TOOLS ${${PROJECT_NAME}_EXTRA_TOOLS} CACHE INTERNAL \"\")\n")
 foreach(tool IN LISTS ${PROJECT_NAME}_EXTRA_TOOLS)
-  write_Extra_Tool(${file} ${tool})
+  write_Extra_Tool(${file} ${tool} ${prefix})
 endforeach()
 
 # Note : those two options should be considered when using Visual studio or Xcode with specific non default configurations
 if(${PROJECT_NAME}_GENERATOR_PLATFORM)
-  file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR_PLATFORM ${${PROJECT_NAME}_GENERATOR_PLATFORM} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_GENERATOR_PLATFORM ${${PROJECT_NAME}_GENERATOR_PLATFORM} CACHE INTERNAL \"\")\n")
 endif()
 if(${PROJECT_NAME}_GENERATOR_TOOLSET)
-  file(APPEND ${file} "set(${PROJECT_NAME}_GENERATOR_TOOLSET ${${PROJECT_NAME}_GENERATOR_TOOLSET} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_GENERATOR_TOOLSET ${${PROJECT_NAME}_GENERATOR_TOOLSET} CACHE INTERNAL \"\")\n")
 endif()
 endfunction(generate_Environment_Solution_File)
 
@@ -2471,48 +2493,48 @@ endfunction(generate_Environment_Solution_File)
 #
 #   Print the solution evaluated by an environment for a given toolset of a given language.
 #
-#     :environment: the name of target environment.
+#     :prefix: the prefix for environment with input constraints.
 #     :lang: the label of target language
 #     :toolset: the index of language toolset
 #
-function(print_Language_Toolset environment lang toolset)
-  if(NOT ${environment}_${lang}_TOOLSETS)
+function(print_Language_Toolset prefix lang toolset)
+  if(NOT ${prefix}_${lang}_TOOLSETS)
     return()
   endif()
   set(lang_str)
   #print the settings of the default language toolset
-  if(${environment}_${lang}_TOOLSET_${toolset}_COMPILER)#for compiled languages
-    if(${environment}_${lang}_TOOLSET_${toolset}_COMPILER_ID)
-      set(lang_str "${lang_str}    * compiler : ${${environment}_${lang}_TOOLSET_${toolset}_COMPILER} (id=${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_ID})\n")
+  if(${prefix}_${lang}_TOOLSET_${toolset}_COMPILER)#for compiled languages
+    if(${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_ID)
+      set(lang_str "${lang_str}    * compiler : ${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER} (id=${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_ID})\n")
     else()
-      set(lang_str "${lang_str}    * compiler : ${${environment}_${lang}_TOOLSET_${toolset}_COMPILER}\n")
+      set(lang_str "${lang_str}    * compiler : ${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER}\n")
     endif()
   endif()
-  if(${environment}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS)
-    fill_String_From_List(flags_str ${environment}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS " ")
+  if(${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS)
+    fill_String_From_List(flags_str ${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS " ")
     set(lang_str "${lang_str}    * compilation flags : ${flags_str}\n")
   endif()
-  if(${environment}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS)
-    fill_String_From_List(incs_str ${environment}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS " ")
+  if(${prefix}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS)
+    fill_String_From_List(incs_str ${prefix}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS " ")
     set(lang_str "${lang_str}    * standard library include dirs : ${incs_str}\n")
   endif()
-  if(${environment}_${lang}_TOOLSET_${toolset}_LIBRARY)
-    set(lang_str "${lang_str}    * standard libraries : ${${environment}_${lang}_TOOLSET_${toolset}_LIBRARY}\n")
+  if(${prefix}_${lang}_TOOLSET_${toolset}_LIBRARY)
+    set(lang_str "${lang_str}    * standard libraries : ${${prefix}_${lang}_TOOLSET_${toolset}_LIBRARY}\n")
   endif()
-  if(${environment}_${lang}_TOOLSET_${toolset}_COVERAGE)
-    set(lang_str "${lang_str}    * coverage tool : ${${environment}_${lang}_TOOLSET_${toolset}_COVERAGE}\n")
+  if(${prefix}_${lang}_TOOLSET_${toolset}_COVERAGE)
+    set(lang_str "${lang_str}    * coverage tool : ${${prefix}_${lang}_TOOLSET_${toolset}_COVERAGE}\n")
   endif()
-  if(${environment}_${lang}_TOOLSET_${toolset}_INTERPRETER)
-    set(lang_str "${lang_str}    * interpreter : ${${environment}_${lang}_TOOLSET_${toolset}_INTERPRETER}\n")
+  if(${prefix}_${lang}_TOOLSET_${toolset}_INTERPRETER)
+    set(lang_str "${lang_str}    * interpreter : ${${prefix}_${lang}_TOOLSET_${toolset}_INTERPRETER}\n")
   endif()
-  if(${environment}_${lang}_TOOLSET_${toolset}_COMPILER_AR)
-    set(lang_str "${lang_str}    * archiver : ${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_AR}\n")
+  if(${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_AR)
+    set(lang_str "${lang_str}    * archiver : ${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_AR}\n")
   endif()
-  if(${environment}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB)
-    set(lang_str "${lang_str}    * static libraries creator : ${${environment}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB}\n")
+  if(${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB)
+    set(lang_str "${lang_str}    * static libraries creator : ${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB}\n")
   endif()
-  if(${environment}_${lang}_TOOLSET_${toolset}_HOST_COMPILER)#for languages that require C/C++ compiler to generate code
-    set(lang_str "${lang_str}    * host compiler : ${${environment}_${lang}_TOOLSET_${toolset}_HOST_COMPILER}\n")
+  if(${prefix}_${lang}_TOOLSET_${toolset}_HOST_COMPILER)#for languages that require C/C++ compiler to generate code
+    set(lang_str "${lang_str}    * host compiler : ${${prefix}_${lang}_TOOLSET_${toolset}_HOST_COMPILER}\n")
   endif()
   message("${lang_str}")
 endfunction(print_Language_Toolset)
@@ -2532,37 +2554,37 @@ endfunction(print_Language_Toolset)
 #
 #   Print the solution evaluated by an environment for a given extra tool.
 #
-#     :environment: the name of target environment.
+#     :prefix: the prefix of target environment.
 #     :tool: the name of extra tool
 #
-function(print_Extra_Tool environment tool)
+function(print_Extra_Tool prefix tool)
   set(tool_str)
-  if(${environment}_EXTRA_${tool}_PROGRAM)
-    set(tool_str "${tool_str}    * program: ${${environment}_EXTRA_${tool}_PROGRAM}\n")
+  if(${prefix}_EXTRA_${tool}_PROGRAM)
+    set(tool_str "${tool_str}    * program: ${${prefix}_EXTRA_${tool}_PROGRAM}\n")
   endif()
-  if(${environment}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS)
-    set(tool_str "${tool_str}    * platform requirements: ${${environment}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS}\n")
+  if(${prefix}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS)
+    set(tool_str "${tool_str}    * platform requirements: ${${prefix}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS}\n")
   endif()
-  if(${environment}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES
-    OR ${environment}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS
-    OR ${environment}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS
-    OR ${environment}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS)
-    if(${environment}_EXTRA_${tool}_PLUGIN_ON_DEMAND)
+  if(${prefix}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES
+    OR ${prefix}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS
+    OR ${prefix}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS
+    OR ${prefix}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS)
+    if(${prefix}_EXTRA_${tool}_PLUGIN_ON_DEMAND)
       set(tool_str "${tool_str}    * on demand plugin callbacks:\n")
     else()
       set(tool_str "${tool_str}    * plugin callbacks:\n")
     endif()
-    if(${environment}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES)
-      set(tool_str "${tool_str}         + before dependencies: ${${environment}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES}\n")
+    if(${prefix}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES)
+      set(tool_str "${tool_str}         + before dependencies: ${${prefix}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES}\n")
     endif()
-    if(${environment}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS)
-      set(tool_str "${tool_str}         + before components: ${${environment}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS}\n")
+    if(${prefix}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS)
+      set(tool_str "${tool_str}         + before components: ${${prefix}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS}\n")
     endif()
-    if(${environment}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS)
-      set(tool_str "${tool_str}         + during components: ${${environment}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS}\n")
+    if(${prefix}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS)
+      set(tool_str "${tool_str}         + during components: ${${prefix}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS}\n")
     endif()
-    if(${environment}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS)
-      set(tool_str "${tool_str}         + after components: ${${environment}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS}\n")
+    if(${prefix}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS)
+      set(tool_str "${tool_str}         + after components: ${${prefix}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS}\n")
     endif()
   endif()
   message("${tool_str}")
@@ -2586,23 +2608,24 @@ endfunction(print_Extra_Tool)
 #
 function(print_Evaluated_Environment environment)
   message("[PID] description of environment ${environment} solution")
+  set(prefix ${environment}_${LAST_RUN_HASHCODE})
   set(crosscomp_str)
-  if(${environment}_CROSSCOMPILATION)#when crosscompiling there are a few specific variables that may be set
+  if(${prefix}_CROSSCOMPILATION)#when crosscompiling there are a few specific variables that may be set
     set(crosscomp_str "- requires crosscompilation\n")
-    if(${environment}_TARGET_SYSTEM_NAME)
-      set(crosscomp_str "${crosscomp_str}  + target OS: ${${environment}_TARGET_SYSTEM_NAME}")
+    if(${prefix}_TARGET_SYSTEM_NAME)
+      set(crosscomp_str "${crosscomp_str}  + target OS: ${${prefix}_TARGET_SYSTEM_NAME}")
     endif()
-    if(${environment}_TARGET_SYSTEM_PROCESSOR)
-      set(crosscomp_str "${crosscomp_str}  + target processor: ${${environment}_TARGET_SYSTEM_PROCESSOR}")
+    if(${prefix}_TARGET_SYSTEM_PROCESSOR)
+      set(crosscomp_str "${crosscomp_str}  + target processor: ${${prefix}_TARGET_SYSTEM_PROCESSOR}")
     endif()
-    if(${environment}_TARGET_SYSROOT)
-      set(crosscomp_str "${crosscomp_str}  + sysroot: ${${environment}_TARGET_SYSROOT}")
+    if(${prefix}_TARGET_SYSROOT)
+      set(crosscomp_str "${crosscomp_str}  + sysroot: ${${prefix}_TARGET_SYSROOT}")
     endif()
-    if(${environment}_TARGET_STAGING)
-      set(crosscomp_str "${crosscomp_str}  + staging: ${${environment}_TARGET_STAGING}")
+    if(${prefix}_TARGET_STAGING)
+      set(crosscomp_str "${crosscomp_str}  + staging: ${${prefix}_TARGET_STAGING}")
     endif()
-    if(${environment}_ABI_CONSTRAINT)
-      set(crosscomp_str "${crosscomp_str}  + c++ library ABI: ${${environment}_ABI_CONSTRAINT}")
+    if(${prefix}_ABI_CONSTRAINT)
+      set(crosscomp_str "${crosscomp_str}  + c++ library ABI: ${${prefix}_ABI_CONSTRAINT}")
     endif()
   endif()
   if(crosscomp_str)
@@ -2610,73 +2633,73 @@ function(print_Evaluated_Environment environment)
   endif()
 
   #more on system wide configruation (not necessarily require crosscompilation)
-  if(${environment}_SYSTEM_WIDE_CONFIGURATION)
-    if(${environment}_LINKER)
-      message("- linker: ${${environment}_LINKER}")
+  if(${prefix}_SYSTEM_WIDE_CONFIGURATION)
+    if(${prefix}_LINKER)
+      message("- linker: ${${prefix}_LINKER}")
     endif()
-    if(${environment}_AR)
-      message("- static libraries archiver: ${${environment}_AR}")
+    if(${prefix}_AR)
+      message("- static libraries archiver: ${${prefix}_AR}")
     endif()
-    if(${environment}_RANLIB)
-      message("- static libraries creator: ${${environment}_RANLIB}")
+    if(${prefix}_RANLIB)
+      message("- static libraries creator: ${${prefix}_RANLIB}")
     endif()
-    if(${environment}_NM)
-      message("- object symbols extractor: ${${environment}_NM}")
+    if(${prefix}_NM)
+      message("- object symbols extractor: ${${prefix}_NM}")
     endif()
-    if(${environment}_OBJDUMP)
-      message("- object symbols explorer: ${${environment}_OBJDUMP}")
+    if(${prefix}_OBJDUMP)
+      message("- object symbols explorer: ${${prefix}_OBJDUMP}")
     endif()
-    if(${environment}_OBJCOPY)
-      message("- object translator: ${${environment}_OBJCOPY}")
+    if(${prefix}_OBJCOPY)
+      message("- object translator: ${${prefix}_OBJCOPY}")
     endif()
-    if(${environment}_RPATH)
-      message("- rpath editor: ${${environment}_RPATH}")
+    if(${prefix}_RPATH)
+      message("- rpath editor: ${${prefix}_RPATH}")
     endif()
-    if(${environment}_EXE_LINKER_FLAGS)
-      message("- linker flags for executables: ${${environment}_EXE_LINKER_FLAGS}")
+    if(${prefix}_EXE_LINKER_FLAGS)
+      message("- linker flags for executables: ${${prefix}_EXE_LINKER_FLAGS}")
     endif()
-    if(${environment}_MODULE_LINKER_FLAGS)
-      message("- linker flags for modules: ${${environment}_MODULE_LINKER_FLAGS}")
+    if(${prefix}_MODULE_LINKER_FLAGS)
+      message("- linker flags for modules: ${${prefix}_MODULE_LINKER_FLAGS}")
     endif()
-    if(${environment}_SHARED_LINKER_FLAGS)
-      message("- linker flags for shared libraries: ${${environment}_SHARED_LINKER_FLAGS}")
+    if(${prefix}_SHARED_LINKER_FLAGS)
+      message("- linker flags for shared libraries: ${${prefix}_SHARED_LINKER_FLAGS}")
     endif()
-    if(${environment}_STATIC_LINKER_FLAGS)
-      message("- linker flags for static libraries: ${${environment}_STATIC_LINKER_FLAGS}")
+    if(${prefix}_STATIC_LINKER_FLAGS)
+      message("- linker flags for static libraries: ${${prefix}_STATIC_LINKER_FLAGS}")
     endif()
-    if(${environment}_LIBRARY_DIRS)
-      message("- system libraries directories: ${${environment}_LIBRARY_DIRS}")
+    if(${prefix}_LIBRARY_DIRS)
+      message("- system libraries directories: ${${prefix}_LIBRARY_DIRS}")
     endif()
-    if(${environment}_INCLUDE_DIRS)
-      message("- system include directories: ${${environment}_INCLUDE_DIRS}")
+    if(${prefix}_INCLUDE_DIRS)
+      message("- system include directories: ${${prefix}_INCLUDE_DIRS}")
     endif()
-    if(${environment}_PROGRAM_DIRS)
-      message("- system program directories: ${${environment}_PROGRAM_DIRS}")
+    if(${prefix}_PROGRAM_DIRS)
+      message("- system program directories: ${${prefix}_PROGRAM_DIRS}")
     endif()
   endif()
 
   #now getting all informations about supported languages
-  if(${environment}_LANGUAGES)
+  if(${prefix}_LANGUAGES)
     message("- configured languages:")
-    foreach(lang IN LISTS ${environment}_LANGUAGES)
+    foreach(lang IN LISTS ${prefix}_LANGUAGES)
       message("  + ${lang}:")
-      print_Language_Toolset(${environment} ${lang} 0)
-      if(${environment}_${lang}_TOOLSETS GREATER 1)
+      print_Language_Toolset(${prefix} ${lang} 0)
+      if(${prefix}_${lang}_TOOLSETS GREATER 1)
         message("    ++ additionnal toolsets:")
-        math(EXPR max_toolset "${${environment}_${lang}_TOOLSETS}-1")
+        math(EXPR max_toolset "${${prefix}_${lang}_TOOLSETS}-1")
         foreach(toolset RANGE 1 ${max_toolset})
-          print_Language_Toolset(${environment} ${lang} ${toolset})
+          print_Language_Toolset(${prefix} ${lang} ${toolset})
         endforeach()
       endif()
     endforeach()
   endif()
 
   #now getting all informations about supported languages
-  if(${environment}_EXTRA_TOOLS)
+  if(${prefix}_EXTRA_TOOLS)
     message("- configured extra tools:")
-    foreach(tool IN LISTS ${environment}_EXTRA_TOOLS)
+    foreach(tool IN LISTS ${prefix}_EXTRA_TOOLS)
       message("  + ${tool}:")
-      print_Extra_Tool(${environment} ${tool})
+      print_Extra_Tool(${prefix} ${tool})
     endforeach()
   endif()
 

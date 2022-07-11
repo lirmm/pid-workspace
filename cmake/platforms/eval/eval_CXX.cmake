@@ -16,73 +16,39 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
+
 function(check_Standards_Supported_By_Compiler_And_StdLib LIST_OF_STDS)
   set(${LIST_OF_STDS} PARENT_SCOPE)
   set(compiler_support_up_to 98)
   set(stdlib_support_up_to 98)
-  #MOST of information comes from https://en.cppreference.com/w/cpp/compiler_support
   #first check for compilers
-  if(CURRENT_CXX_COMPILER STREQUAL "gcc")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 4.8.1)#before version 4.8.1 of gcc the c++ 11 standard is not fully supported
-      list(APPEND compiler_support_up_to 11)
-    endif()
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5)#before version 5.0 of gcc the c++ 14 standard is not fully supported
-      list(APPEND compiler_support_up_to 14)
-    endif()
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 9.1)#before version 9.1 of gcc the c++ 17 standard is not fully supported
-      list(APPEND compiler_support_up_to 17)
-    endif()
-  elseif(CURRENT_CXX_COMPILER STREQUAL "clang")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 3.3)#before version 3.3 of clang the c++ 11 standard is not fully supported
-      list(APPEND compiler_support_up_to 11)
-    endif()
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 3.4)#before version 3.4 of clang the c++ 14 standard is not fully supported
-      list(APPEND compiler_support_up_to 14)
-    endif()
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6)#before version 6 of clang the c++ 17 standard is not fully supported
-      list(APPEND compiler_support_up_to 17)
-    endif()
-  elseif(CURRENT_CXX_COMPILER STREQUAL "appleclang")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0)#since version 10.0 all features are supported
-      list(APPEND compiler_support_up_to 11 14 17)
-    endif()
-  elseif(CURRENT_CXX_COMPILER STREQUAL "msvc")#MSVC == windows == A specific standard library
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.14)#before version 19.14 of MSVC the c++ 11 and 14 standards are not fully supported
-      list(APPEND compiler_support_up_to 11 14)
-      list(APPEND stdlib_support_up_to 11 14)
-    endif()
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.24)#before version 19.24 of MSVC the c++ 17 standard is not fully supported
-      list(APPEND compiler_support_up_to 17)
-      list(APPEND stdlib_support_up_to 17)
-    endif()
-  elseif(CURRENT_CXX_COMPILER STREQUAL "icc")#intel compiler
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)
-      list(APPEND compiler_support_up_to 11)
-    endif()
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 17.0)
-      list(APPEND compiler_support_up_to 14)
-    endif()
-  else()
+  list(FIND KNOWN_CXX_COMPILERS ${CURRENT_CXX_COMPILER} INDEX)
+  if(INDEX EQUAL -1)
     message(WARNING "[PID] unsupported compiler : ${CURRENT_CXX_COMPILER}")
     return()
+  else()
+    foreach(std IN LISTS KNOWN_CXX_STANDARDS)
+      if(${CURRENT_CXX_COMPILER}_std${std}_BEGIN_SUPPORT 
+        AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL ${CURRENT_CXX_COMPILER}_std${std}_BEGIN_SUPPORT)
+        list(APPEND compiler_support_up_to ${std})
+      endif()
+
+    endforeach()
   endif()
   #then check for standard library
-  if(CXX_STD_LIBRARY_NAME STREQUAL "stdc++")
-    if(CXX_STD_LIBRARY_VERSION VERSION_GREATER_EQUAL 6)#before version 6 of stdc++ the c++ 11 standard is not fully supported
-      list(APPEND stdlib_support_up_to 11 14)
-    endif()
-    if(CXX_STD_LIBRARY_VERSION VERSION_GREATER_EQUAL 9)#before version 9 of stdc++ the c++ 17 standard is not fully supported
-      list(APPEND stdlib_support_up_to 17)
-    endif()
-  elseif(CXX_STD_LIBRARY_NAME STREQUAL "c++")
-    if(CXX_STD_LIBRARY_VERSION VERSION_GREATER_EQUAL 3.8)#before version 3.8 of c++ the c++ 11 standard is not fully supported
-      list(APPEND stdlib_support_up_to 11 14)
-    endif()
-    if(CXX_STD_LIBRARY_VERSION VERSION_GREATER_EQUAL 10)#There are still a few missing C++17 features but if we want to build some C++17 code in CI with macOS Catalina we don't have a choice
-      list(APPEND stdlib_support_up_to 17)
-    endif()
+  list(FIND KNOWN_CXX_STDLIBS ${CXX_STD_LIBRARY_NAME} INDEX)
+  if(INDEX EQUAL -1)
+    message(WARNING "[PID] unsupported library : ${CXX_STD_LIBRARY_NAME}")
+    return()
+  else()
+    foreach(std IN LISTS KNOWN_CXX_STANDARDS)
+      if(${CXX_STD_LIBRARY_NAME}_std${std}_BEGIN_SUPPORT
+          AND CXX_STD_LIBRARY_VERSION VERSION_GREATER_EQUAL ${CXX_STD_LIBRARY_NAME}_std${std}_BEGIN_SUPPORT)
+        list(APPEND stdlib_support_up_to ${std})
+      endif()
+    endforeach()
   endif()
-  #now
+  #finally compute possibly usable standards
   set(support_up_to)
   foreach(libstd IN LISTS stdlib_support_up_to)
     list(FIND compiler_support_up_to ${libstd} INDEX)

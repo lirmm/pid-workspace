@@ -836,7 +836,6 @@ function(configure_Environment_Tool)
   if(CONF_ENV_TOOL_LANGUAGE)
     if(CONF_ENV_TOOL_CURRENT)#using current detected compiler settings by default
       set(use_compiler ${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_COMPILER})
-      set(use_compiler_id ${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_COMPILER_ID})
       set(use_compiler_ar ${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_COMPILER_AR})
       set(use_compiler_ranlib ${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_COMPILER_RANLIB})
       set(use_host_compiler ${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_HOST_COMPILER})

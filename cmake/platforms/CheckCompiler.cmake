@@ -151,3 +151,50 @@ endif()
 set(ASM_Language_AVAILABLE TRUE CACHE INTERNAL "")
 set(C_Language_AVAILABLE TRUE CACHE INTERNAL "")
 set(CXX_Language_AVAILABLE TRUE CACHE INTERNAL "")
+
+#registering global knowledge on compiler toolchains
+#MOST of information comes from https://en.cppreference.com/w/cpp/compiler_support
+set(KNOWN_CXX_COMPILERS gcc clang appleclang msvc icc CACHE INTERNAL "")
+set(KNOWN_CXX_STANDARDS 11 14 17 20 CACHE INTERNAL "")
+set(KNOWN_CXX_STDLIBS stdc++ c++ msvc CACHE INTERNAL "")
+#gcc
+set(gcc_std11_BEGIN_SUPPORT 4.8.1 CACHE INTERNAL "")#before version 4.8.1 of gcc the c++ 11 standard is not fully supported
+set(gcc_std14_BEGIN_SUPPORT 5.0 CACHE INTERNAL "")#before version 5.0 of gcc the c++ 14 standard is not fully supported
+set(gcc_std17_BEGIN_SUPPORT 9.1 CACHE INTERNAL "")#before version 9.1 of gcc the c++ 17 standard is not fully supported
+set(gcc_std20_BEGIN_SUPPORT 12.0 CACHE INTERNAL "")#approximation: before version 12.0 of gcc the c++ 17 standard is not fully supported
+set(gcc_PREFERRED_ENVIRONMENT gcc_toolchain CACHE INTERNAL "")
+#clang
+set(clang_std11_BEGIN_SUPPORT 3.3 CACHE INTERNAL "")
+set(clang_std14_BEGIN_SUPPORT 3.4 CACHE INTERNAL "")
+set(clang_std17_BEGIN_SUPPORT 6 CACHE INTERNAL "")
+set(clang_std20_BEGIN_SUPPORT CACHE INTERNAL "")
+set(clang_PREFERRED_ENVIRONMENT clang_toolchain CACHE INTERNAL "")
+#appleclang
+set(appleclang_std11_BEGIN_SUPPORT 10.0 CACHE INTERNAL "")
+set(appleclang_std14_BEGIN_SUPPORT 10.0 CACHE INTERNAL "")
+set(appleclang_std17_BEGIN_SUPPORT 10.0 CACHE INTERNAL "")
+set(appleclang_std20_BEGIN_SUPPORT CACHE INTERNAL "")
+set(appleclang_PREFERRED_ENVIRONMENT CACHE INTERNAL "")
+#msvc
+set(msvc_std11_BEGIN_SUPPORT 19.14 CACHE INTERNAL "")
+set(msvc_std14_BEGIN_SUPPORT 19.14 CACHE INTERNAL "")
+set(msvc_std17_BEGIN_SUPPORT 19.24 CACHE INTERNAL "")
+set(msvc_std20_BEGIN_SUPPORT 19.29 CACHE INTERNAL "")
+set(msvc_PREFERRED_ENVIRONMENT CACHE INTERNAL "")
+#icc
+set(icc_std11_BEGIN_SUPPORT 15.0 CACHE INTERNAL "")
+set(icc_std14_BEGIN_SUPPORT 17.0 CACHE INTERNAL "")
+set(icc_std17_BEGIN_SUPPORT 19.0.1 CACHE INTERNAL "")#approximation
+set(icc_std20_BEGIN_SUPPORT CACHE INTERNAL "")
+set(icc_PREFERRED_ENVIRONMENT CACHE INTERNAL "")
+#stdc++
+set(stdc++_std11_BEGIN_SUPPORT 6 CACHE INTERNAL "")#before version 6 of libstdc++ the c++ 11 standard is not fully supported
+set(stdc++_std14_BEGIN_SUPPORT 6 CACHE INTERNAL "")#before version 6 of libstdc++ the c++ 14 standard is not fully supported
+set(stdc++_std17_BEGIN_SUPPORT 9 CACHE INTERNAL "")#before version 9 of libstdc++ the c++ 17 standard is not fully supported
+set(stdc++_std20_BEGIN_SUPPORT 12 CACHE INTERNAL "")#before version 12 of libstdc++ the c++ 20 standard is not fully supported
+#c++
+set(c++_std11_BEGIN_SUPPORT 3.8 CACHE INTERNAL "")#before version 3.8 of libc++ the c++ 11 standard is not fully supported
+set(c++_std14_BEGIN_SUPPORT 3.8 CACHE INTERNAL "")#before version 3.8 of libc++ the c++ 14 standard is not fully supported
+set(c++_std17_BEGIN_SUPPORT 15 CACHE INTERNAL "")#There are still a few missing C++17 features but if we want to build some C++17 code in CI with macOS Catalina we don't have a choice
+set(c++_std20_BEGIN_SUPPORT CACHE INTERNAL "")#not supported yet
+

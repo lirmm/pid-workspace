@@ -388,18 +388,18 @@ endfunction(remove_Profile)
 #
 #      :profile: The name of the profile
 #
-#      :environment: The name of the target environment to be removed
+#      :environment: The environment expression to be removed
 #
 #      :SUCCESS: The output variable that is TRUE if removal succeeded, FALSE otherwise
 #
 function(remove_Additional_Environment SUCCESS profile environment)
   set(tmp_lst ${PROFILE_${profile}_MORE_ENVIRONMENTS})
-  list(FIND tmp_lst ${environment} INDEX)
+  list(FIND tmp_lst "${environment}" INDEX)
   if(INDEX EQUAL -1)#does not exist
     set(${SUCCESS} FALSE PARENT_SCOPE)
     return()
   endif()
-  list(REMOVE_ITEM tmp_lst ${environment})
+  list(REMOVE_ITEM tmp_lst "${environment}")
   set(PROFILE_${profile}_MORE_ENVIRONMENTS ${tmp_lst} CACHE INTERNAL "")
   set(${SUCCESS} TRUE PARENT_SCOPE)
 endfunction(remove_Additional_Environment)
@@ -804,33 +804,36 @@ function(install_Environment_Scripts BEFORE_DEPS BEFORE_COMPS DURING_COMPS AFTER
   set(res_bef_comps)
   set(res_during_comps)
   set(res_aft_comps)
-  foreach(tool IN LISTS ${environment}_EXTRA_TOOLS)
-    if(${environment}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES)
-      set(path_to_plug_before_deps ${path_to_profile}/plugins/${tool}/before_deps.cmake)
-      install_Plugin_Script(${path_to_plug_before_deps} ${${environment}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES})
-      if(NOT ${environment}_EXTRA_${tool}_PLUGIN_ON_DEMAND)
-        list(APPEND res_bef_deps ${tool})
+  hashcode_From_Expression(env_name env_hash ${environment})
+  set(prefix ${env_name}_${env_hash})
+  foreach(tool IN LISTS ${prefix}_EXTRA_TOOLS)
+    hashcode_From_Expression(tool_name tool_hash ${tool})
+    if(${prefix}_EXTRA_${tool_name}_PLUGIN_BEFORE_DEPENDENCIES)
+      set(path_to_plug_before_deps ${path_to_profile}/plugins/${tool_name}/before_deps.cmake)
+      install_Plugin_Script(${path_to_plug_before_deps} ${${prefix}_EXTRA_${tool_name}_PLUGIN_BEFORE_DEPENDENCIES})
+      if(NOT ${prefix}_EXTRA_${tool_name}_PLUGIN_ON_DEMAND)
+        list(APPEND res_bef_deps ${tool_name})
       endif()
     endif()
-    if(${environment}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS)
-      set(path_to_plug_before_comps ${path_to_profile}/plugins/${tool}/before_comps.cmake)
-      install_Plugin_Script(${path_to_plug_before_comps} ${${environment}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS})
-      if(NOT ${environment}_EXTRA_${tool}_PLUGIN_ON_DEMAND)
-        list(APPEND res_bef_comps ${tool})
+    if(${prefix}_EXTRA_${tool_name}_PLUGIN_BEFORE_COMPONENTS)
+      set(path_to_plug_before_comps ${path_to_profile}/plugins/${tool_name}/before_comps.cmake)
+      install_Plugin_Script(${path_to_plug_before_comps} ${${prefix}_EXTRA_${tool_name}_PLUGIN_BEFORE_COMPONENTS})
+      if(NOT ${prefix}_EXTRA_${tool_name}_PLUGIN_ON_DEMAND)
+        list(APPEND res_bef_comps ${tool_name})
       endif()
     endif()
-    if(${environment}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS)
-      set(path_to_plug_during_comps ${path_to_profile}/plugins/${tool}/during_comps.cmake)
-      install_Plugin_Script(${path_to_plug_during_comps} ${${environment}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS})
-      if(NOT ${environment}_EXTRA_${tool}_PLUGIN_ON_DEMAND)
-        list(APPEND res_during_comps ${tool})
+    if(${prefix}_EXTRA_${tool_name}_PLUGIN_DURING_COMPONENTS)
+      set(path_to_plug_during_comps ${path_to_profile}/plugins/${tool_name}/during_comps.cmake)
+      install_Plugin_Script(${path_to_plug_during_comps} ${${prefix}_EXTRA_${tool_name}_PLUGIN_DURING_COMPONENTS})
+      if(NOT ${prefix}_EXTRA_${tool_name}_PLUGIN_ON_DEMAND)
+        list(APPEND res_during_comps ${tool_name})
       endif()
     endif()
-    if(${environment}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS)
-      set(path_to_plug_after_comps ${path_to_profile}/plugins/${tool}/after_comps.cmake)
-      install_Plugin_Script(${path_to_plug_after_comps} ${${environment}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS})
-      if(NOT ${environment}_EXTRA_${tool}_PLUGIN_ON_DEMAND)
-        list(APPEND res_aft_comps ${tool})
+    if(${prefix}_EXTRA_${tool_name}_PLUGIN_AFTER_COMPONENTS)
+      set(path_to_plug_after_comps ${path_to_profile}/plugins/${tool_name}/after_comps.cmake)
+      install_Plugin_Script(${path_to_plug_after_comps} ${${prefix}_EXTRA_${tool_name}_PLUGIN_AFTER_COMPONENTS})
+      if(NOT ${prefix}_EXTRA_${tool_name}_PLUGIN_ON_DEMAND)
+        list(APPEND res_aft_comps ${tool_name})
       endif()
     endif()
   endforeach()
@@ -876,7 +879,7 @@ function(extract_Plugins_From_Environment BEFORE_DEPS BEFORE_COMPS DURING_COMPS 
        return()
      endif()
     endif()
-    install_Environment_Scripts(res_bef_deps res_bef_comps res_during_comps res_aft_comps ${ENV_NAME} ${install_folder})
+    install_Environment_Scripts(res_bef_deps res_bef_comps res_during_comps res_aft_comps ${environment} ${install_folder})
     set(${BEFORE_DEPS} ${res_bef_deps} PARENT_SCOPE)
     set(${BEFORE_COMPS} ${res_bef_comps} PARENT_SCOPE)
     set(${DURING_COMPS} ${res_during_comps} PARENT_SCOPE)
@@ -924,6 +927,57 @@ function(check_Language_Configuration RESULT NAME CONSTRAINTS CONFIG_CONSTRAINTS
   set(${CONSTRAINTS} ${LIST_OF_CONSTRAINTS} PARENT_SCOPE)
 endfunction(check_Language_Configuration)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_adequate_compiler_toolchain_version| replace:: ``get_adequate_compiler_toolchain_version``
+#  .. _get_adequate_compiler_toolchain_version:
+#
+#  get_adequate_compiler_toolchain_version
+#  ---------------------------------------
+#
+#   .. command:: get_adequate_compiler_toolchain_version(RES_TOOLCHAIN_CONSTRAINT language_constraint)
+#
+#    get the toolset expression to check in order to install an adequate toochain for a language. For now only CXX.
+#
+#     :language_constraint: the language check expression (may contain arguments).
+#
+#     :RES_TOOLCHAIN_CONSTRAINT: the output variable that contains the toolset expression to check, or empty if no solution found
+#
+function(get_adequate_compiler_toolchain_version RES_TOOLCHAIN_CONSTRAINT language_constraint)
+  set(${RES_TOOLCHAIN_CONSTRAINT} PARENT_SCOPE)
+  parse_Configuration_Expression(LANG_NAME LANG_ARGS "${language_constraint}")
+  if(NOT KNOWN_${LANG_NAME}_COMPILERS OR NOT KNOWN_${LANG_NAME}_STANDARDS OR NOT KNOWN_${LANG_NAME}_STDLIBS)#NOTE: for now only for CXX
+    return()#if those variables are not available it means that we do not know how to manage 
+  endif()
+  if(NOT ${CURRENT_${LANG_NAME}_COMPILER}_PREFERRED_ENVIRONMENT)
+    #only some compilers are supported now
+    return()
+  endif()
+  set(argument_couples ${LANG_ARGS})
+  while(argument_couples)
+    list(GET argument_couples 0 name)
+    list(GET argument_couples 1 value)
+    list(REMOVE_AT argument_couples 0 1)#update the list of arguments in parent scope
+    if(name STREQUAL "std")
+      set(target_std ${value})
+      break()
+    endif()
+  endwhile()
+  if(target_std)#OK requirement may have failed due to standard not supported
+    #which toolset /version can be used for a given standard support is defined in workspace variables
+    if(${CURRENT_${LANG_NAME}_COMPILER}_std${target_std}_BEGIN_SUPPORT)
+      #if the standard is supported by a minimum version of the compiler
+      set(${RES_TOOLCHAIN_CONSTRAINT} "${${CURRENT_${LANG_NAME}_COMPILER}_PREFERRED_ENVIRONMENT}[version=${${CURRENT_${LANG_NAME}_COMPILER}_std${target_std}_BEGIN_SUPPORT}]" PARENT_SCOPE)
+      return()
+      endif()
+  endif()
+  #read them to define the toolchain to use according to standard
+#generate the fucking constraint expression eg gcc_toolchain[min_version=12.587]
+
+endfunction(get_adequate_compiler_toolchain_version)
 
 #.rst:
 #
@@ -1046,25 +1100,32 @@ endmacro(evaluate_Language_Configuration)
 #  check_Language_Toolset
 #  ----------------------
 #
-#   .. command:: check_Language_Toolset(RESULT lang toolset mode)
+#   .. command:: check_Language_Toolset(RESULT TOOLSET_NAME TOOLSET_ARGS langs toolset mode)
 #
 #    Check whether the given langauge toolset is available and if yes, set the environment adequately.
 #
-#     :lang: the language for which a specific toolset is required.
+#     :langs: list of languages for which the toolset is required.
 #     :toolset: the environment configuration expression defining the toolset to use.
 #     :mode: the current build mode.
 #
 #     :RESULT: the output variable that is TRUE if language toolset is configured for current package or wrapper.
+#     :TOOLSET_NAME: the output variable that contains language toolset name
+#     :TOOLSET_ARGS: the output variable that is TRUE if language toolset is configured for current package or wrapper.
 #
-function(check_Language_Toolset RESULT lang toolset mode)
+function(check_Language_Toolset RESULT TOOLSET_NAME TOOLSET_ARGS langs toolset mode)
   parse_Configuration_Expression(TS_NAME TS_ARGS "${toolset}")
   if(NOT TS_NAME)
     set(${RESULT} FALSE PARENT_SCOPE)
+    set(${TOOLSET_NAME} PARENT_SCOPE)
+    set(${TOOLSET_ARGS} PARENT_SCOPE)
     message("[PID] CRITICAL ERROR : language toolset check ${toolset} is ill formed.")
     return()
   endif()
-  check_Language_Toolset_Configuration_With_Arguments(RESULT_WITH_ARGS ${lang} ${TS_NAME} TS_ARGS ${mode})
+  check_Language_Toolset_Configuration_With_Arguments(RESULT_WITH_ARGS "${toolset}" "${langs}" ${TS_NAME} TS_ARGS ${mode})
   set(${RESULT} ${RESULT_WITH_ARGS} PARENT_SCOPE)
+  set(${TOOLSET_NAME} ${TS_NAME} PARENT_SCOPE)
+  set(${TOOLSET_ARGS} ${TS_ARGS} PARENT_SCOPE)
+  
 endfunction(check_Language_Toolset)
 
 #.rst:
@@ -1077,18 +1138,19 @@ endfunction(check_Language_Toolset)
 #  check_Language_Toolset_Configuration_With_Arguments
 #  ---------------------------------------------------
 #
-#   .. command:: check_Language_Toolset_Configuration_With_Arguments(CHECK_OK lang_name toolset_name toolset_args_var mode)
+#   .. command:: check_Language_Toolset_Configuration_With_Arguments(CHECK_OK toolset_expr langs toolset_name toolset_args_var mode)
 #
 #    Check whether the given build environment provide the target language toolset.
 #
-#     :lang_name: the name of the language.
+#     :toolset_expr: constraint expression for toolset
+#     :langs: the names of languages configured by the toolset.
 #     :toolset_name: the name of the language tooolset (without argument).
 #     :toolset_args_var: the input variable containing constraints passed as arguments by the user of the toolset (typically version).
 #     :mode: the current build mode.
 #
 #     :CHECK_OK: the output variable that is TRUE if language toolset constraints are satisfied by current build environment.
 #
-function(check_Language_Toolset_Configuration_With_Arguments CHECK_OK lang_name toolset_name toolset_args_var mode)
+function(check_Language_Toolset_Configuration_With_Arguments CHECK_OK toolset_expr langs toolset_name toolset_args_var mode)
   set(${CHECK_OK} FALSE PARENT_SCOPE)
 
   #check if the toolset configuration has already been checked
@@ -1098,7 +1160,7 @@ function(check_Language_Toolset_Configuration_With_Arguments CHECK_OK lang_name 
     return()
   endif()
   if(ADDITIONAL_DEBUG_INFO)
-    message("[PID] INFO: checking language ${lang_name} toolset configuration ${toolset_name}")
+    message("[PID] INFO: checking for toolset ${toolset_name}")
   endif()
   #if code pass here we have to (re)evaluate the toolset configuration
   if(NOT EXISTS ${WORKSPACE_DIR}/environments/${toolset_name})
@@ -1135,7 +1197,7 @@ function(check_Language_Toolset_Configuration_With_Arguments CHECK_OK lang_name 
   # Note: it can be unused in current environment BUT it can also be IMPLICITLY used in the default host environment
   include(${WORKSPACE_DIR}/environments/${toolset_name}/build/PID_Inputs.cmake)
   prepare_Configuration_Expression_Arguments(${toolset_name} ${toolset_args_var} ${toolset_name}_INPUTS)
-  evaluate_Language_Toolset_Configuration(RES ${lang_name} ${toolset_name})
+  evaluate_Language_Toolset_Configuration(RES "${toolset_expr}" "${langs}" ${toolset_name})
   if(NOT RES)#language configuration cannot be satisfied
     set_Configuration_Temporary_Optimization_Variables(${toolset_name} ${mode} FALSE "${${toolset_args_var}}" "")#remember that test failed with those constraints
     return()
@@ -1156,23 +1218,26 @@ endfunction(check_Language_Toolset_Configuration_With_Arguments)
 #  evaluate_Language_Toolset_Configuration
 #  ---------------------------------------
 #
-#   .. command:: evaluate_Language_Toolset_Configuration(lang toolset)
+#   .. command:: evaluate_Language_Toolset_Configuration(RESULT toolset_expr langs toolset)
 #
 #    evaluate a language toolset configuration expression. If test successful the toolset is configured to be used with that language in current project.
 #
-#     :lang: the target language.
+#     :toolset_expr: constraint expression for toolset
+#     :langs: target language configured by the toolset.
 #     :toolset: the target toolset for this language.
+#     :RESULT: output variable TRUE/FALSE
 #
-function(evaluate_Language_Toolset_Configuration RESULT lang toolset)
+function(evaluate_Language_Toolset_Configuration RESULT toolset_expr langs toolset)
   set(${RESULT} FALSE PARENT_SCOPE)
   #in case the environment has already been evaluated
   if(EXISTS ${WORKSPACE_DIR}/environments/${toolset}/build/PID_Environment_Solution_Info.cmake)
     #first check is only for testing if current toolset is not already OK
     include(${WORKSPACE_DIR}/environments/${toolset}/build/PID_Environment_Solution_Info.cmake)
-    if(NOT ${toolset}_CHECK)# no check script defined so cannot evaluate if current build env config is OK
+    hashcode_From_Expression(env_name env_hash "${toolset_expr}")
+    if(NOT ${toolset}_${env_hash}_CHECK)# no check script defined so cannot evaluate if current build env config is OK
       return()
     endif()
-    include(${${toolset}_CHECK})#check again with current parameters
+    include(${${toolset}_${env_hash}_CHECK})#check again with current parameters
     if(ENVIRONMENT_CHECK_RESULT)
       set(${RESULT} TRUE PARENT_SCOPE)
       return()
@@ -1181,14 +1246,14 @@ function(evaluate_Language_Toolset_Configuration RESULT lang toolset)
   #from here check is not successfull, meaning that the current build environment configuration
   # needs to be reconfigured by using an available additional toolset
   if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
-    evaluate_Toolset_From_Environment(IS_OK ${lang} ${toolset} ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
+    evaluate_Toolset_From_Environment(IS_OK "${langs}" ${toolset_expr} ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
     if(IS_OK)
       set(${RESULT} TRUE PARENT_SCOPE)
       return()
     endif()
   endif()
   foreach(env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
-    evaluate_Toolset_From_Environment(IS_OK ${lang} ${toolset} ${env})
+    evaluate_Toolset_From_Environment(IS_OK "${langs}" ${toolset_expr} ${env})
     if(IS_OK)
       set(${RESULT} TRUE PARENT_SCOPE)
       return()
@@ -1201,11 +1266,13 @@ function(evaluate_Language_Toolset_Configuration RESULT lang toolset)
   if(NOT EVAL_OK)
     return()
   endif()
-
-  use_Language_Toolset(${lang} ${toolset}_${lang}_TOOLSET_0)#always toolset 0 since added or overwrite more environments
+  hashcode_From_Expression(env_name thehash ${toolset_expr})
+  foreach (a_lang IN LISTS langs)
+    use_Language_Toolset(${a_lang} ${toolset}_${thehash}_${a_lang}_TOOLSET_0)#always toolset 0 since added or overwrite more environments
+  endforeach()
+  update_Current_Profile_Environments(${toolset_expr} ${toolset})
   set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(evaluate_Language_Toolset_Configuration)
-
 
 #.rst:
 #
@@ -1217,31 +1284,40 @@ endfunction(evaluate_Language_Toolset_Configuration)
 #  evaluate_Toolset_From_Environment
 #  ---------------------------------
 #
-#   .. command:: evaluate_Toolset_From_Environment( RES_OK lang toolset environment_in_solution)
+#   .. command:: evaluate_Toolset_From_Environment( RES_OK langs toolset environment_in_solution)
 #
 #    Check whether the given build environment provide the target language toolset.
 #
-#     :lang: the name of the language
-#     :toolset: the name of the toolset.
-#     :environment: the environment defining the toolset.
+#     :langs: the name of the languages to evaluate
+#     :toolset: the constraint expression for the toolset.
+#     :environment: the environment solution defining the toolset.
 #
 #     :RES_OK: the output variable that is TRUE if language toolset constraints are satisfied by given build environment.
 #
-function(evaluate_Toolset_From_Environment RES_OK lang toolset environment)
+function(evaluate_Toolset_From_Environment RES_OK langs toolset environment)
   set(${RES_OK} FALSE PARENT_SCOPE)
-  list(FIND ${environment}_LANGUAGES ${lang} INDEX)
-  if(INDEX EQUAL -1)
-    return()
-  endif()
-  math(EXPR max_index "${${environment}_${lang}_TOOLSETS}-1")
-  foreach(index RANGE ${max_index})
-    check_Tool_Expression(EXPRESSION_MATCH_REQUIRED ${toolset} ${${environment}_${lang}_TOOLSET_${index}_CONSTRAINT_EXPRESSION})
-    if(EXPRESSION_MATCH_REQUIRED)
-      use_Language_Toolset(${lang} ${environment}_${lang}_TOOLSET_${index})
-      set(${RES_OK} TRUE PARENT_SCOPE)
+  hashcode_From_Expression(env_name env_hash "${environment}")
+  set(prefix ${env_name}_${env_hash})
+  foreach(a_lang IN LISTS langs)
+    list(FIND ${prefix}_LANGUAGES ${a_lang} INDEX)
+    if(INDEX EQUAL -1)
       return()
     endif()
+    set(solution_found FALSE)
+    math(EXPR max_index "${${prefix}_${a_lang}_TOOLSETS}-1")
+    foreach(index RANGE ${max_index})
+      check_Tool_Expression(EXPRESSION_MATCH_REQUIRED ${toolset} ${${prefix}_${a_lang}_TOOLSET_${index}_CONSTRAINT_EXPRESSION})
+      if(EXPRESSION_MATCH_REQUIRED)
+        use_Language_Toolset(${a_lang} ${prefix}_${a_lang}_TOOLSET_${index})
+        set(solution_found TRUE)
+        break()
+      endif()
+      if(NOT solution_found)
+        return()
+      endif()
+    endforeach()
   endforeach()
+  set(${RES_OK} TRUE PARENT_SCOPE)
 endfunction(evaluate_Toolset_From_Environment)
 
 #.rst:
@@ -1552,6 +1628,8 @@ endfunction(write_Current_Configuration_Build_Related_Variables)
 #
 function(get_Extra_Tools_With_On_Demand_Plugins_For_Environment RESULT environment)
   #Note : by construction we know that environment already belongs to more
+  hashcode_From_Expression(name hash ${environment})
+  set(prefix ${name}_${hash})
   set(top_level_env FALSE)
   if(PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL environment)
     set(top_level_env TRUE)
@@ -1563,24 +1641,28 @@ function(get_Extra_Tools_With_On_Demand_Plugins_For_Environment RESULT environme
   endif()
   set(all_tool)
   if(top_level_env)#directly search for all extra tools defined in this top level environment
-    foreach(atool IN LISTS ${environment}_EXTRA_TOOLS)
-      set(prefix ${environment}_EXTRA_${atool})
-      if(${prefix}_PLUGIN_ON_DEMAND)#the tool defines on demand plugins, use it
+    #WARNING: i.e. automatically using the plugin defined in top level environment
+    foreach(atool IN LISTS ${prefix}_EXTRA_TOOLS)
+      if(${prefix}_EXTRA_${atool}_PLUGIN_ON_DEMAND)#the tool defines on demand plugins, use it
         list(APPEND all_tools ${atool})
       endif()
     endforeach()
   else()#we need to search into top level environments if they contain definitions for this extra tool
     set(container_prefix)
-    foreach(tool IN LISTS ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_EXTRA_TOOLS)
-      if(tool STREQUAL environment)#the extra tool is the one required
-        set(container_prefix ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT}_EXTRA_${environment})
+    hashcode_From_Expression(def_name def_hash ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
+    set(def_prefix ${def_name}_${def_hash})
+    foreach(tool IN LISTS ${def_prefix}_EXTRA_TOOLS)
+      if(tool STREQUAL name)#the extra tool is the one required
+        set(container_prefix ${def_prefix}_EXTRA_${name})
+        break()
       endif()
     endforeach()
     if(NOT container_prefix)
       foreach(env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
-        foreach(tool IN LISTS ${env}_EXTRA_TOOLS)
-          if(tool STREQUAL environment)#the extra tool is the one required
-            set(container_prefix ${env}_EXTRA_${environment})
+        hashcode_From_Expression(env_name env_hash ${env})
+        foreach(tool IN LISTS ${env_name}_${env_hash}_EXTRA_TOOLS)
+          if(tool STREQUAL name)#the extra tool is the one required
+            set(container_prefix ${env_name}_${env_hash}_EXTRA_${name})
             break() #no need to search more
           endif()
         endforeach()
@@ -1590,7 +1672,7 @@ function(get_Extra_Tools_With_On_Demand_Plugins_For_Environment RESULT environme
       endforeach()
     endif()
     if(container_prefix)#OK the extra tool has been found in a top level environment
-      if(${prefix}_PLUGIN_ON_DEMAND)#the tool defines on demand plugins, use it
+      if(${container_prefix}_PLUGIN_ON_DEMAND)#the tool defines on demand plugins, use it
         set(all_tools ${environment})#only one possible in this case
       endif()
     endif()
@@ -1627,8 +1709,8 @@ function(check_Extra_Tool_Configuration RESULT CONFIG_CONSTRAINTS tool mode)
     message("[PID] CRITICAL ERROR : extra toolset check ${tool} is ill formed.")
     return()
   endif()
-  check_Extra_Tool_Configuration_With_Arguments(RESULT_WITH_ARGS CONSTRAINTS ${TOOL_NAME} TOOL_ARGS ${mode})
-  add_Required_Extra_Tools(${TOOL_NAME})#the extra tool is explicitly required
+  check_Extra_Tool_Configuration_With_Arguments(RESULT_WITH_ARGS CONSTRAINTS ${tool} ${TOOL_NAME} TOOL_ARGS ${mode})
+  add_Required_Extra_Tools(${tool})#the extra tool is explicitly required
   set(${RESULT} ${RESULT_WITH_ARGS} PARENT_SCOPE)
   set(${CONFIG_CONSTRAINTS} ${CONSTRAINTS} PARENT_SCOPE)
 endfunction(check_Extra_Tool_Configuration)
@@ -1648,6 +1730,7 @@ endfunction(check_Extra_Tool_Configuration)
 #
 #    Check whether the given build environment provide the target language toolset.
 #
+#     :tool_expr: constraint expressionf or the tool
 #     :tool: the name of the extra tool
 #     :tool_args_var: the input variable containing constraints passed as arguments by the user of the tool (typically version).
 #     :mode: the current build mode.
@@ -1655,7 +1738,7 @@ endfunction(check_Extra_Tool_Configuration)
 #     :CHECK_OK: the output variable that is TRUE if language toolset constraints are satisfied by current build environment.
 #     :CONFIGS: the output variable that contains the list of configruation constraints to check when using this tool.
 #
-function(check_Extra_Tool_Configuration_With_Arguments CHECK_OK CONFIGS tool tool_args_var mode)
+function(check_Extra_Tool_Configuration_With_Arguments CHECK_OK CONFIGS tool_expr tool tool_args_var mode)
   set(${CHECK_OK} FALSE PARENT_SCOPE)
   set(${CONFIGS} PARENT_SCOPE)
 
@@ -1704,7 +1787,7 @@ function(check_Extra_Tool_Configuration_With_Arguments CHECK_OK CONFIGS tool too
   include(${WORKSPACE_DIR}/environments/${tool}/build/PID_Inputs.cmake)
   prepare_Configuration_Expression_Arguments(${tool} ${tool_args_var} ${tool}_INPUTS)
 
-  evaluate_Extra_Tool_Configuration(EVAL_OK RES_CONFIGS ${tool})
+  evaluate_Extra_Tool_Configuration(EVAL_OK RES_CONFIGS ${tool_expr} ${tool})
   if(NOT EVAL_OK)#language configuration cannot be satisfied
     set_Configuration_Temporary_Optimization_Variables(${tool} ${mode} FALSE "${${tool_args_var}}" "")#remember that test failed with those constraints
     return()
@@ -1727,28 +1810,30 @@ endfunction(check_Extra_Tool_Configuration_With_Arguments)
 #  check_Tool_Expression
 #  ---------------------
 #
-#   .. command:: check_Tool_Expression(COMPATIBLE tool tool_expression)
+#   .. command:: check_Tool_Expression(COMPATIBLE tool_expression env_expression)
 #
 #    Check whether a constraint expression provided into a profile description is compatible with current constraints of a an extra tool or language toolset.
 #
-#     :tool: the name of the extra tool or language toolset
 #     :tool_expression: the constraints expression to check against.
+#     :env_expression: the constraints expression to check against.
 #
 #     :COMPATIBLE: the output variable that is TRUE if tool_expression is compatible with tool constraints.
 #
-function(check_Tool_Expression COMPATIBLE tool tool_expression)
+function(check_Tool_Expression COMPATIBLE tool_expression env_expression)
   set(${COMPATIBLE} FALSE PARENT_SCOPE)
+
   parse_Configuration_Expression(TOOL_NAME TOOL_ARGS "${tool_expression}")
-  if(TOOL_NAME STREQUAL tool)
-    prepare_Configuration_Expression_Arguments(temp_${tool} TOOL_ARGS ${tool}_INPUTS)
-    #getting toolset args coming from the local expression (i.e. package level constraint) into current context
+  parse_Configuration_Expression(IN_ENV_NAME IN_ENV_ARGS "${env_expression}")
+  if(TOOL_NAME STREQUAL IN_ENV_NAME)
+    prepare_Configuration_Expression_Arguments(temp_${TOOL_NAME} IN_ENV_ARGS ${TOOL_NAME}_INPUTS)
+    #evaluate the already loaded environment according to local constraints (toolset args coming from the local expression)
     set(RESULT_VERS TRUE)# by default (no constraint required) result is OK
     set(RESULT_ARCH TRUE)# by default (no constraint required) result is OK
-    if(${tool}_version)# a specific version is required
-      check_Environment_Version(RESULT_VERS ${tool}_version "${${tool}_exact}" "${temp_${tool}_version}")
+    if(${TOOL_NAME}_version)# a specific version is required
+      check_Environment_Version(RESULT_VERS ${TOOL_NAME}_version "${${TOOL_NAME}_exact}" "${temp_${TOOL_NAME}_version}")
     endif()
-    if(${tool}_architecture)# a specific architecture is required
-      check_Environment_Architecture(RESULT_ARCH ${tool}_architecture "${temp_${tool}_architecture}")
+    if(${TOOL_NAME}_architecture)# a specific architecture is required
+      check_Environment_Architecture(RESULT_ARCH ${TOOL_NAME}_architecture "${temp_${TOOL_NAME}_architecture}")
     endif()
     if(RESULT_VERS AND RESULT_ARCH)
       set(${COMPATIBLE} TRUE PARENT_SCOPE)
@@ -1781,11 +1866,13 @@ endfunction(check_Tool_Expression)
 function(evaluate_Extra_Tool_In_Environment RESULT CONFIGS_TO_CHECK tool environment)
   set(${RESULT} FALSE PARENT_SCOPE)
   set(${CONFIGS_TO_CHECK} PARENT_SCOPE)
-  foreach(extra IN LISTS ${environment}_EXTRA_TOOLS)
+  hashcode_From_Expression(name hash ${environment})
+  set(prefix ${name}_${hash})
+  foreach(extra IN LISTS ${prefix}_EXTRA_TOOLS)
     if(tool STREQUAL extra)
-      check_Tool_Expression(EXPRESSION_MATCH_REQUIRED ${tool} ${${environment}_EXTRA_${tool}_CONSTRAINT_EXPRESSION})
+      check_Tool_Expression(EXPRESSION_MATCH_REQUIRED ${tool} ${${prefix}_EXTRA_${tool}_CONSTRAINT_EXPRESSION})
       if(EXPRESSION_MATCH_REQUIRED)
-        set(${CONFIGS_TO_CHECK} ${${environment}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS} PARENT_SCOPE)
+        set(${CONFIGS_TO_CHECK} ${${prefix}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS} PARENT_SCOPE)
         set(${RESULT} TRUE PARENT_SCOPE)
         return()
       endif()
@@ -1812,7 +1899,7 @@ endfunction(evaluate_Extra_Tool_In_Environment)
 #     :RESULT_OK: the output variable that is TRUE if extra tool constraints are satisfied by current profile.
 #     :CONFIGS: the output variable that contains the list of configuration constraints to check when using this tool.
 #
-function(evaluate_Extra_Tool_Configuration RESULT_OK CONFIGS tool)
+function(evaluate_Extra_Tool_Configuration RESULT_OK CONFIGS tool_expr tool)
   set(${RESULT_OK} FALSE PARENT_SCOPE)
   set(${CONFIGS} PARENT_SCOPE)
   if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
@@ -1838,8 +1925,8 @@ function(evaluate_Extra_Tool_Configuration RESULT_OK CONFIGS tool)
   if(NOT EVAL_OK)
     return()
   endif()
-  evaluate_Extra_Tool_In_Environment(RESULT_FROM_ENV CONFIGS_TO_CHECK ${tool} ${tool})
-  update_Current_Profile_Environments(${tool})
+  evaluate_Extra_Tool_In_Environment(RESULT_FROM_ENV CONFIGS_TO_CHECK ${tool} ${tool_expr})
+  update_Current_Profile_Environments(${tool_expr} ${tool})
   set(${RESULT_OK} ${RESULT_FROM_ENV} PARENT_SCOPE)
   set(${CONFIGS} ${CONFIGS_TO_CHECK} PARENT_SCOPE)
 endfunction(evaluate_Extra_Tool_Configuration)
@@ -1855,19 +1942,20 @@ endfunction(evaluate_Extra_Tool_Configuration)
 #  update_Current_Profile_Environments
 #  -----------------------------------
 #
-#   .. command:: update_Current_Profile_Environments(environment)
+#   .. command:: update_Current_Profile_Environments(environment_expr)
 #
 #    Add an extra environment to current profile.
+#      
+#     :environment_expr: the environment constraint to add
+#     :environment: the environment name
 #
-#     :environment: the environment to add
-#
-function(update_Current_Profile_Environments environment)
+function(update_Current_Profile_Environments environment_expr environment)
   #memorize choice made at gobal scope so that it will be keep at next evaluation of workspace
-  add_Managed_Profile(${CURRENT_PROFILE} ENVIRONMENT ${environment})
+  add_Managed_Profile(${CURRENT_PROFILE} ENVIRONMENT ${environment_expr})
   write_Profiles_Description_File()#update global description
   #now also update the full descriptive solution file of the current profile
   #this will allow to avoid unecessary operations at next config
-  append_Unique_In_Cache(PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS ${environment})#update locally
+  append_Unique_In_Cache(PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS ${environment_expr})#update locally
   file(READ ${WORKSPACE_DIR}/environments/${environment}/build/PID_Environment_Solution_Info.cmake
         temp_str)
   #Note: overewrite current profile additional environments to update globally for every package/wrapper
@@ -1876,7 +1964,7 @@ function(update_Current_Profile_Environments environment)
   file(APPEND ${WORKSPACE_DIR}/build/${CURRENT_PROFILE}/Workspace_Solution_File.cmake "${to_input}")
   # finally also need to update plugins
   install_Environment_Scripts(res_bef_deps res_bef_comps res_during_comps res_aft_comps
-                              ${environment} ${WORKSPACE_DIR}/build/${CURRENT_PROFILE})
+                              ${environment_expr} ${WORKSPACE_DIR}/build/${CURRENT_PROFILE})
 
   #finally update those who require automatic execution into adequate files
   update_Automatic_Plugins(${WORKSPACE_DIR}/build/${CURRENT_PROFILE}

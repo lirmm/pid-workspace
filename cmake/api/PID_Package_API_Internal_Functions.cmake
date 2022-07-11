@@ -75,16 +75,7 @@ include(Environment_Definition NO_POLICY_SCOPE) #to be able to interpret descrip
 macro(declare_Package author institution mail year license address public_address description readme_file code_style contrib_space)
 manage_Current_Platform("${CMAKE_BINARY_DIR}" "NATIVE") #loading the current platform configuration and perform adequate actions if any changes
 set(PACKAGE_SPECIFIC_BUILD_INFO_FILE ${CMAKE_BINARY_DIR}/Package_Build_Info.cmake)
-# TODO check all of that
-if(EXISTS ${PACKAGE_SPECIFIC_BUILD_INFO_FILE}) #loading package specific build info
-	file(READ ${PACKAGE_SPECIFIC_BUILD_INFO_FILE} SPECIFIC_BUILD LIMIT 5)#reading only 5 first bytes
-	string(LENGTH "${SPECIFIC_BUILD}" SIZE)
-	if(SIZE GREATER_EQUAL 5)#ok there is some modified content
-		include(${PACKAGE_SPECIFIC_BUILD_INFO_FILE})#will overwrite some build related variables (in build mode specific folders)
-	endif()
-else()
-	file(WRITE "${PACKAGE_SPECIFIC_BUILD_INFO_FILE}" "")#create the file (only useful in build mode specific folders)
-endif()
+file(WRITE "${PACKAGE_SPECIFIC_BUILD_INFO_FILE}" "")#create the file (only useful in build mode specific folders)
 
 set(${PROJECT_NAME}_ROOT_DIR CACHE INTERNAL "")
 activate_Adequate_Languages()
@@ -736,163 +727,165 @@ function(set_Current_Version major minor patch)
 	set_Install_Cache_Variables()
 endfunction(set_Current_Version)
 
+
+
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |check_Environment_Constraints| replace:: ``check_Environment_Constraints``
-#  .. _check_Environment_Constraints:
+#  .. |check_Environment_Tool_Constraints| replace:: ``check_Environment_Tool_Constraints``
+#  .. _check_Environment_Tool_Constraints:
 #
-#  check_Environment_Constraints
-#  -----------------------------
+#  check_Environment_Tool_Constraints
+#  -----------------------------------
 #
-#   .. command:: check_Environment_Constraints(RESULT language_constraints tool_constraints optional)
+#   .. command:: check_Environment_Tool_Constraints(RESULT tool_constraints)
 #
-#     Check that the environment constraints provided match the current build profile configuration.
+#     Check that the tools required is provided by the current build profile.
 #
-#     :language_constraints: check on available languages.
-#     :lang_toolsets: list of language toolsets expressed as environment check expressions
-#     :tool_constraints: check on available tools.
-#     :optional: if constraints are optional.
+#     :tool_constraints: check if tool is available with constraints.
 #
 #     :ERROR: the output variable that is empty if constraints are satisfied, contains the error message if any constraint cannot be satisfied.
 #
-function(check_Environment_Constraints ERROR language_constraints lang_toolsets tool_constraints optional)
-
-set(${ERROR} PARENT_SCOPE)
-set(error_messages)
-set(languages_to_memorize)
-set(config_constraints)
-
-#first checking language constraints (not bound to a specific environment)
-if(language_constraints)
-	if(lang_toolsets)
-		set(index 0)
-	endif()
-	foreach(lang IN LISTS language_constraints) ## all configuration constraints must be satisfied
-		check_Language_Configuration(RESULT_OK LANG_NAME LANG_CONSTRAINTS PLATFORM_CONSTRAINTS "${lang}" ${CMAKE_BUILD_TYPE})
-		if(NOT RESULT_OK)
-			if(error_messages)
-				set(error_messages "${error_messages}, ${lang}")
-			else()
-				set(error_messages "language constraints violated: ${lang}")
-			endif()
-		endif()
-		if(RESULT_OK OR NOT optional)#if the result if FALSE and the constraint was optional then skip it
-			set(config_eval_result TRUE)
-			if(PLATFORM_CONSTRAINTS)
-				# need to memorize the constraint to automatically add it to components
-				foreach(config IN LISTS PLATFORM_CONSTRAINTS)
-					#checking all platform configurations required by the language toolset
-					check_Platform_Constraints(RESULT IS_CURRENT "" "" "" "" "${config}"  "${optional}")
-					if(NOT RESULT)#bad result
-						set(config_eval_result FALSE)
-						if(error_messages)
-							set(error_messages "${error_messages}, ${config}")
-						else()
-							set(error_messages "language ${lang} has unsatisfied platform constraints: ${config}")
-						endif()
-					else()
-						append_Unique_In_Cache(${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${USE_MODE_SUFFIX} ${config})
-					endif()
-				endforeach()
-			endif()
-			if(config_eval_result)
-				list(APPEND languages_to_memorize ${LANG_NAME})#memorize name of the configuration
-				set(${LANG_NAME}_constraints_to_memorize ${LANG_CONSTRAINTS})#then memorize all constraints that apply to the configuration
-			elseif(NOT optional)#language constraint is not optional so error
-				break()#directly exit the loop
-			endif()
-		endif()
-		if(lang_toolsets)
-			if(RESULT_OK)
-				list(GET lang_toolsets ${index} corresponding_toolset)
-				if(NOT corresponding_toolset STREQUAL "-")#Note: "-" is the specific character used to denote no toolset constraint
-					set(${LANG_NAME}_toolset_to_check ${corresponding_toolset})
-				endif()
-			endif()
-			math(EXPR index "${index}+1")
-		endif()
-	endforeach()
-
-	#exit if errors
-	if(error_messages)
-		set(${ERROR} ${error_messages} PARENT_SCOPE)
+function(check_Environment_Tool_Constraints ERROR tool_constraints)
+	set(${ERROR} PARENT_SCOPE)
+	check_Extra_Tool_Configuration(RESULT_OK CONFIG_CONSTRAINTS "${tool_constraints}" ${CMAKE_BUILD_TYPE})
+	if(NOT RESULT_OK)
+		set(${ERROR} "tool constraints violated: ${tool_constraints}" PARENT_SCOPE)
 		return()
 	endif()
-
-	#now check toolsets
-	foreach(lang IN LISTS languages_to_memorize)
-		if(${lang}_toolset_to_check)#there are paremeters for that configuration, they need to be registered
-			check_Language_Toolset(RESULT_OK "${LANG_NAME}" "${corresponding_toolset}" ${CMAKE_BUILD_TYPE})
-			if(NOT RESULT_OK)
-				if(error_messages)
-					set(error_messages "${error_messages}, ${corresponding_toolset} for ${LANG_NAME}")
-				else()
-					set(error_messages "language toolset requirement not satisfied: ${corresponding_toolset} for ${LANG_NAME}")
-				endif()
-			endif()
+	foreach(config IN LISTS CONFIG_CONSTRAINTS)
+		#checking all platform configurations required by the language toolset
+		check_Platform_Constraints(RESULT IS_CURRENT "" "" "" "" "${config}" "${optional}")
+		if(NOT RESULT)#bad result
+			set(${ERROR}  "extra tool ${tool_constraints} has unsatisfied platform constraints: ${config}" PARENT_SCOPE)
+			return()
 		endif()
 	endforeach()
+endfunction(check_Environment_Tool_Constraints)
 
-	#exit if errors
-	if(error_messages)
-		set(${ERROR} ${error_messages} PARENT_SCOPE)
-		return()
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |configure_With_Project_Specific_Toolchain| replace:: ``configure_With_Project_Specific_Toolchain``
+#  .. _configure_With_Project_Specific_Toolchain:
+#
+#  configure_With_Project_Specific_Toolchain
+#  -----------------------------------------
+#
+#   .. command:: configure_With_Project_Specific_Toolchain()
+#
+#     genetae a toolchain file if required by toolsets then reconfigure the current project with this toolchain file
+#
+#
+function(configure_With_Project_Specific_Toolchain)
+	set(reconfigure FALSE)
+	file(READ ${PACKAGE_SPECIFIC_BUILD_INFO_FILE} env_toolchains)
+	if(env_toolchains)#there is configuration information
+		file(READ ${WORKSPACE_DIR}/build/PID_Toolchain.cmake global_toolchain)
+		set(global_str "${global_toolchain}\n${env_toolchains}")
+		if(EXISTS ${WORKSPACE_DIR}/build/${PROJECT_NAME}_PID_Toolchain.cmake)
+			file(READ ${WORKSPACE_DIR}/build/${PROJECT_NAME}_PID_Toolchain.cmake project_toolchain)
+			if(project_toolchain STREQUAL global_str)
+				return()#Just to avoid infinite recursion
+			endif()
+		endif()
+		#last environment evaluation has generated a toolchain, simply use it 
+		file(WRITE ${WORKSPACE_DIR}/build/${PROJECT_NAME}_PID_Toolchain.cmake "${global_str}")
+		set(reconfigure TRUE)
+	else()#no toolchain defined
+		if(EXISTS ${WORKSPACE_DIR}/build/${PROJECT_NAME}_PID_Toolchain.cmake)
+			#old toolchain must be suppressed
+			file(REMOVE ${WORKSPACE_DIR}/build/${PROJECT_NAME}_PID_Toolchain.cmake)
+			set(reconfigure TRUE)
+		endif()
 	endif()
+	if(reconfigure)
+		#NOTE: since content of env is placed AFTER global it will overwrite it
+		message("[PID] INFO: reconfigure from scratch with new toolchain ...")
+		hard_Clean_Build_Folder(${CMAKE_SOURCE_DIR}/build)
+		execute_process(COMMAND ${CMAKE_COMMAND} -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_SOURCE_DIR}/build -G "${CMAKE_GENERATOR}"
+						WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/build)
+		message(FATAL_ERROR "[PID] INFO: stopping initial configuration ...")
+	endif()
+endfunction(configure_With_Project_Specific_Toolchain)
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Environment_Language_Constraints| replace:: ``check_Environment_Language_Constraints``
+#  .. _check_Environment_Language_Constraints:
+#
+#  check_Environment_Language_Constraints
+#  ---------------------------------------
+#
+#   .. command:: check_Environment_Language_Constraints(RESULT language_constraint lang_toolset bound_langs)
+#
+#     Check that the language specification required are provided by the current build profile.
+#
+#     :language_constraint: check on available languages.
+#     :lang_toolset: list of language toolsets expressed as environment check expressions
+#     :bound_langs: list of language whose configuration is bound to the current language (basically C can be bound to CXX). Most often use when the toolset needed to be changed either explicitly or automatically.
+#
+#     :ERROR: the output variable that is empty if constraints are satisfied, contains the error message if any constraint cannot be satisfied.
+#
+function(check_Environment_Language_Constraints ERROR language_constraint lang_toolset bound_langs)
+	#TODO simplify to only allow ONE language
+	#TODO move the management of external tools into another function
+	set(${ERROR} PARENT_SCOPE)
+	set(automatic FALSE)
+	set(error_messages)
+	set(config_constraints)
 
-	#then memorize language configuration
-	append_Unique_In_Cache(${PROJECT_NAME}_LANGUAGE_CONFIGURATIONS${USE_MODE_SUFFIX} ${languages_to_memorize})
-	foreach(lang IN LISTS languages_to_memorize)
-		if(${lang}_constraints_to_memorize)#there are paremeters for that configuration, they need to be registered
-			list(REMOVE_DUPLICATES ${lang}_constraints_to_memorize)
-			set(${PROJECT_NAME}_LANGUAGE_CONFIGURATION_${lang}_ARGS${USE_MODE_SUFFIX} "${${lang}_constraints_to_memorize}" CACHE INTERNAL "")
-		endif()
-	endforeach()
-endif()
-
-#second checking tool constraints (bound to a specific environment)
-if(tool_constraints)
-	foreach(tool IN LISTS tool_constraints) ## all environment constraints must be satisfied
-		check_Extra_Tool_Configuration(RESULT_OK CONFIG_CONSTRAINTS "${tool}" ${CMAKE_BUILD_TYPE})
-		if(NOT RESULT_OK AND NOT optional)
-			if(error_messages)
-				set(error_messages "${error_messages}, ${tool}")
-			else()
-				set(error_messages "tool constraints violated: ${tool}")
-			endif()
-			#if the result is FALSE and the constraint was optional then skip it
-			break()
-		endif()
-		set(config_eval_result TRUE)
-		if(RESULT_OK)
-			foreach(config IN LISTS CONFIG_CONSTRAINTS)
+	#first checking language constraints (not bound to a specific environment)
+	check_Language_Configuration(RESULT_OK LANG_NAME LANG_CONSTRAINTS PLATFORM_CONSTRAINTS "${language_constraint}" ${CMAKE_BUILD_TYPE})
+	if(RESULT_OK)#if the result if FALSE and the constraint was optional then skip it
+		if(PLATFORM_CONSTRAINTS)
+			# need to memorize the constraint to automatically add it to components
+			foreach(config IN LISTS PLATFORM_CONSTRAINTS)
 				#checking all platform configurations required by the language toolset
-				check_Platform_Constraints(RESULT IS_CURRENT "" "" "" "" "${config}" "${optional}")
-				if(NOT RESULT AND NOT optional)#bad result
-					set(config_eval_result FALSE)
-					if(error_messages)
-						set(error_messages "${error_messages}, ${config}")
-					else()
-						set(error_messages "extra tool ${tool} has unsatisfied platform constraints: ${config}")
-					endif()
+				check_Platform_Constraints(RESULT IS_CURRENT "" "" "" "" "${config}"  "${optional}")
+				if(NOT RESULT)#bad result
+					set(${ERROR} "language ${LANG_NAME} has unsatisfied platform constraints: ${config}" PARENT_SCOPE)
+					return()
+				else()
+					list(APPEND config_constraints ${config})
 				endif()
 			endforeach()
 		endif()
-		if(NOT config_eval_result)
-			break()
+	else()
+		# here set the toolset to use using lang_toolset
+		get_adequate_compiler_toolchain_version(RES_TOOLCHAIN_CONSTRAINT ${language_constraint})
+		if(NOT RES_TOOLCHAIN_CONSTRAINT)
+			set(${ERROR} "language ${LANG_NAME} constraints violated: ${LANG_CONSTRAINTS}" PARENT_SCOPE)
+			return()
+		else()
+			#overwritte the lang_toolset var
+			set(lang_toolset ${RES_TOOLCHAIN_CONSTRAINT})
 		endif()
-	endforeach()
-
-	#exit if errors
-	if(error_messages)
-		set(${ERROR} ${error_messages} PARENT_SCOPE)
-		return()
 	endif()
-endif()
+	if(lang_toolset)
+		set(all_langs ${LANG_NAME} ${bound_langs})
+		check_Language_Toolset(RESULT_OK TS_NAME TS_ARGS "${all_langs}" "${lang_toolset}" ${CMAKE_BUILD_TYPE})
+		if(NOT RESULT_OK)
+			set(${ERROR}  "language toolset requirement not satisfied: ${lang_toolset} for ${LANG_NAME}" PARENT_SCOPE)
+			return()
+		endif()
+		#OK toolset is available
+	endif()
 
-endfunction(check_Environment_Constraints)
+	#then memorize language configuration
+	append_Unique_In_Cache(${PROJECT_NAME}_LANGUAGE_CONFIGURATIONS${USE_MODE_SUFFIX} ${LANG_NAME})
+	set(${PROJECT_NAME}_LANGUAGE_CONFIGURATION_${LANG_NAME}_ARGS${USE_MODE_SUFFIX} "${LANG_CONSTRAINTS}" CACHE INTERNAL "")
+	if(config_constraints)
+		append_Unique_In_Cache(${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${USE_MODE_SUFFIX} ${config_constraints})
+	endif()
+
+endfunction(check_Environment_Language_Constraints)
 
 #.rst:
 #
@@ -1059,6 +1052,9 @@ if(INDEX EQUAL -1)
 	append_Unique_In_Cache(${PROJECT_NAME}_LANGUAGE_CONFIGURATIONS${USE_MODE_SUFFIX} CXX)
 	set(${PROJECT_NAME}_LANGUAGE_CONFIGURATION_CXX_ARGS${USE_MODE_SUFFIX} ${LANG_CONSTRAINTS} CACHE INTERNAL "")
 endif()
+
+#now generate toolchain file and reconfigure if needed
+configure_With_Project_Specific_Toolchain()
 
 get_Platform_Variables(BASENAME curr_platform_name PKG_STRING cpack_platform_str)
 
@@ -1236,8 +1232,6 @@ if(NUM_PREDECLARED_COMPS GREATER 0)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : These predeclared components have not been declared in the package: ${${PROJECT_NAME}_PREDECLARED_COMPS}")
 endif()
 
-# specific case : resolve which compile option to use to enable the adequate language standard
-resolve_Build_Options_For_Targets()
 
 ##########################################################
 ############ MANAGING non source files ###################
@@ -1797,6 +1791,7 @@ foreach(config IN LISTS ${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${USE_MODE_
 		"" "" ""
 	)
 endforeach()
+
 endfunction(declare_Library_Component)
 
 #.rst:
