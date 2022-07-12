@@ -156,7 +156,6 @@ if(TARGET_ENVIRONMENT)# a framework is created
 	endif()
 	# from here we are sure the request is well formed
 	if(OPTIONNAL_GIT_URL)
-		#HERE
 		test_Remote_Initialized(${TARGET_ENVIRONMENT} ${OPTIONNAL_GIT_URL} IS_INITIALIZED)#the framework is initialized as soon as it has a branch
 		if(IS_INITIALIZED)#simply clone
 			clone_Environment_Repository(IS_DEPLOYED ${TARGET_ENVIRONMENT} ${OPTIONNAL_GIT_URL})

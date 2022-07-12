@@ -1420,6 +1420,7 @@ function(reset_Package_Description_Cached_Variables)
   reset_Extra_Tool_Cache_Variables()#reset info on plugins used
 	# package dependencies declaration must be reinitialized otherwise some problem (uncoherent dependancy versions) would appear
 	foreach(dep_package IN LISTS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
+    reset_Version_Strings_Recursive(${dep_package})#reset resolved version
     set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
     set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")
@@ -1431,6 +1432,7 @@ function(reset_Package_Description_Cached_Variables)
 
 	# external package dependencies declaration must be reinitialized
 	foreach(dep_package IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+    reset_Version_Strings_Recursive(${dep_package})#reset resolved version
     set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
     set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
 		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")

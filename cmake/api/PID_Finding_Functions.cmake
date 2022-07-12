@@ -103,13 +103,42 @@ endfunction(set_Version_Strings)
 #
 #
 #     :package: the name of the package.
+#
 function (reset_Version_Strings package)
-	set(${package}_VERSION_MAJOR CACHE INTERNAL "")
-	set(${package}_VERSION_MINOR CACHE INTERNAL "")
-	set(${package}_VERSION_PATCH CACHE INTERNAL "")
-	set(${package}_VERSION_STRING CACHE INTERNAL "")
-	set(${package}_VERSION_RELATIVE_PATH CACHE INTERNAL "")
+	unset(${package}_VERSION_MAJOR CACHE)
+	unset(${package}_VERSION_MINOR CACHE)
+	unset(${package}_VERSION_PATCH CACHE)
+	unset(${package}_VERSION_STRING CACHE)
+	unset(${package}_VERSION_RELATIVE_PATH CACHE)
 endfunction(reset_Version_Strings)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Version_Strings_Recursive| replace:: ``reset_Version_Strings_Recursive``
+#  .. _reset_Version_Strings_Recursive:
+#
+#  reset_Version_Strings_Recursive
+#  -------------------------------
+#
+#   .. command:: reset_Version_Strings_Recursive(package)
+#
+#    Reset cache variables memorizing versions for a package and its dependencies
+#
+#
+#     :package: the name of the package.
+#
+function (reset_Version_Strings_Recursive package)
+	reset_Version_Strings(${package})
+	foreach(dep_package IN LISTS ${package}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+		reset_Version_Strings_Recursive(${dep_package})
+	endforeach()
+	foreach(dep_package IN LISTS ${package}_DEPENDENCIES${USE_MODE_SUFFIX})
+		reset_Version_Strings_Recursive(${dep_package})
+	endforeach()
+endfunction(reset_Version_Strings_Recursive)
+
 
 #.rst:
 #
@@ -364,21 +393,21 @@ function (check_Exact_Version VERSION_FOUND package install_dir major minor patc
 set(${VERSION_FOUND} FALSE PARENT_SCOPE)
 list_Version_Subdirectories(version_dirs ${install_dir})
 if(version_dirs)#seaking for a good version only if there are versions installed
-  if(patch)
-    set(curr_patch_version ${patch})
-  else()#no preliminary contraints applies to version
-    set(curr_patch_version 0)
-  endif()
-  update_Package_Installed_Version(${package} ${major} ${minor} "${patch}" true "${version_dirs}" "${BUILD_RELEASE_ONLY}")#updating only if there are installed versions
-  foreach(version IN LISTS version_dirs)
-    if(version MATCHES "^${major}\\.${minor}\\.([0-9]+)$")
-      if(NOT (CMAKE_MATCH_1 LESS curr_patch_version)) #=minor >= patch
-        set(result TRUE)
-        #a more recent patch version found with same minor version
-        set(curr_patch_version ${CMAKE_MATCH_1})
-      endif()
-    endif()
-  endforeach()
+	if(patch)
+		set(curr_patch_version ${patch})
+	else()#no preliminary contraints applies to version
+		set(curr_patch_version 0)
+	endif()
+	update_Package_Installed_Version(${package} ${major} ${minor} "${patch}" true "${version_dirs}" "${BUILD_RELEASE_ONLY}")#updating only if there are installed versions
+	foreach(version IN LISTS version_dirs)
+		if(version MATCHES "^${major}\\.${minor}\\.([0-9]+)$")
+			if(CMAKE_MATCH_1 GREATER_EQUAL curr_patch_version) #=minor >= patch
+				set(result TRUE)
+				#a more recent patch version found with same minor version
+				set(curr_patch_version ${CMAKE_MATCH_1})
+			endif()
+		endif()
+	endforeach()
 
 	if(result)#at least a good version has been found
 		set(${VERSION_FOUND} TRUE PARENT_SCOPE)
@@ -400,7 +429,8 @@ endfunction(check_Exact_Version)
 #
 #   .. command:: check_Best_Version(VERSION_FOUND package install_dir major minor patch)
 #
-#    Check whether there is a compatible version of the package installed in the workspace, considering the native policy: any version with greater minor is valid. The patch argument is used only if =major and =minor is found.
+#    Check whether there is a compatible version of the package installed in the workspace, considering the native policy: any version with greater minor is valid. 
+#    The patch argument is used only if =major and =minor is found.
 #
 #     :package: the name of package to check.
 #     :install_dir: the path to package install folder.
@@ -420,18 +450,34 @@ if(version_dirs)#seaking for a good version only if there are versions installed
     set(curr_patch_version 0)
   endif()
   update_Package_Installed_Version(${package} ${major} ${minor} "${patch}" false "${version_dirs}" "${BUILD_RELEASE_ONLY}")#updating only if there are installed versions
+  set(exact_minor_found FALSE)
+  set(curr_minor 99999)#stupidly high number ~= MAX value
   foreach(version IN LISTS version_dirs)
 		if(version MATCHES "^${major}\\.${minor}\\.([0-9]+)$")
 			if(CMAKE_MATCH_1 GREATER_EQUAL curr_patch_version) #=minor AND >= patch
 				set(result TRUE)
 				#a more recent patch version found with same minor version
 				set(curr_patch_version ${CMAKE_MATCH_1})
+				set(exact_minor_found TRUE)
+				set(curr_minor ${minor})
 			endif()
+		elseif(NOT exact_minor_found
+				AND version MATCHES "^${major}\\.([0-9]+)\\.([0-9]+)$")
+				if(CMAKE_MATCH_1 GREATER ${minor}) #it is binary compatible
+					if(CMAKE_MATCH_1 LESS curr_minor)#closer to the required version
+						set(curr_minor ${CMAKE_MATCH_1})
+						set(curr_patch_version ${CMAKE_MATCH_2})
+						set(result TRUE)
+					elseif(CMAKE_MATCH_1 EQUAL curr_minor #if as close as previously in terms of available features
+							AND CMAKE_MATCH_2 GREATER curr_patch_version)#but a more recent version with bug fixes
+						set(curr_patch_version ${CMAKE_MATCH_2})
+					endif()
+				endif()
 		endif()
 	endforeach()
 	if(result)#at least a good version has been found
 		set(${VERSION_FOUND} TRUE PARENT_SCOPE)
-		set_Version_Strings(${package} ${major} ${minor} ${curr_patch_version})
+		set_Version_Strings(${package} ${major} ${curr_minor} ${curr_patch_version})
 	endif()
 endif()
 endfunction(check_Best_Version)
@@ -1263,9 +1309,9 @@ endfunction(is_External_Version_Compatible_With_Previous_Constraints)
 function(add_To_Install_Package_Specification package version version_exact)
 list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
 if(INDEX EQUAL -1)#not found
-	set(${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}} ${package} CACHE INTERNAL "")
+	append_Unique_In_Cache(${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${package})
 	if(version AND NOT version STREQUAL "")
-    set(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
+		set(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
 		if(version_exact)
 			set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
 		else()
@@ -1276,7 +1322,7 @@ else()#package already required as "to install"
 	if(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
 		list(FIND ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} ${version} INDEX)
 		if(INDEX EQUAL -1)#version not already required
-			set(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
+			append_Unique_In_Cache(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX} ${version})
 			if(version_exact)
 				set(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
 			else()
@@ -1920,7 +1966,7 @@ if(EXIST)
 		if(${package}_FIND_VERSION_EXACT) #using a specific version (only patch number can be adapted)
 			check_Exact_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR} "${${package}_FIND_VERSION_PATCH}")
 		else() #using the best version as regard of version constraints (only minor and patch numbers can be adapted)
-      check_Best_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR} "${${package}_FIND_VERSION_PATCH}")
+      		check_Best_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH} ${${package}_FIND_VERSION_MAJOR} ${${package}_FIND_VERSION_MINOR} "${${package}_FIND_VERSION_PATCH}")
 		endif()
 	else() #no specific version targetted using last available version (major minor and patch numbers can be adapted)
 		check_Last_Version(VERSION_HAS_BEEN_FOUND "${package}" ${PACKAGE_${package}_SEARCH_PATH})
@@ -1944,25 +1990,25 @@ if(EXIST)
 				exitFindScript(${package} "[PID] CRITICAL ERROR when configuring ${PROJECT_NAME} : the  selected version of ${package} (${${package}_VERSION_STRING}) has no configuration file or file is corrupted.")
 			endif()
 		endif()
-    #need to check if debug binaries are provided (based on ${package}_BUILT_RELEASE_ONLY variable provided in Use file)
-    if(CMAKE_BUILD_TYPE MATCHES Debug)
-      if(${package}_BUILT_RELEASE_ONLY)#debug binaries are not available, so package is not found
-        if(${package}_FIND_VERSION)#force the version patch to be the one resolved
-          #Note: this is to ensure that the rebuild of dependency is done on adequate patch version even if this version is not released yet
-          set(${package}_FIND_VERSION_PATCH ${${package}_VERSION_PATCH})
-        endif()
-		unload_Binary_Package_Install_Manifest(${package}) #clean the cache with info coming from use file
-		reset_Version_Strings(${package})#clean the cache with info coming from dependency version resolution
-        exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the package ${package} with version ${${package}_FIND_VERSION} has been found but does not provide debug artifacts as required. Considered as not found.")
-      endif()
-    endif()
+		#need to check if debug binaries are provided (based on ${package}_BUILT_RELEASE_ONLY variable provided in Use file)
+		if(CMAKE_BUILD_TYPE MATCHES Debug)
+			if(${package}_BUILT_RELEASE_ONLY)#debug binaries are not available, so package is not found
+				if(${package}_FIND_VERSION)#force the version patch to be the one resolved
+				#Note: this is to ensure that the rebuild of dependency is done on adequate patch version even if this version is not released yet
+				set(${package}_FIND_VERSION_PATCH ${${package}_VERSION_PATCH})
+				endif()
+				unload_Binary_Package_Install_Manifest(${package}) #clean the cache with info coming from use file
+				reset_Version_Strings(${package})#clean the cache with info coming from dependency version resolution
+				exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the package ${package} with version ${${package}_FIND_VERSION} has been found but does not provide debug artifacts as required. Considered as not found.")
+			endif()
+		endif()
 
-    #here everything has been found => setting global standard CMake find process variables to adequate values
-    set(${package}_FOUND${VAR_SUFFIX} TRUE CACHE INTERNAL "")
-    set(${package}_ROOT_DIR ${PATH_TO_PACKAGE_VERSION} CACHE INTERNAL "")
-    append_Unique_In_Cache(${PROJECT_NAME}_ALL_USED_PACKAGES ${package})
+		#here everything has been found => setting global standard CMake find process variables to adequate values
+		set(${package}_FOUND${VAR_SUFFIX} TRUE CACHE INTERNAL "")
+		set(${package}_ROOT_DIR ${PATH_TO_PACKAGE_VERSION} CACHE INTERNAL "")
+		append_Unique_In_Cache(${PROJECT_NAME}_ALL_USED_PACKAGES ${package})
 
-    if(${package}_FIND_VERSION)
+		if(${package}_FIND_VERSION)
 			if(${package}_FIND_VERSION_EXACT)
 				set(${package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
 				set(${package}_REQUIRED_VERSION_EXACT "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}" CACHE INTERNAL "")
@@ -1972,15 +2018,15 @@ if(EXIST)
 		endif()
 
 		#registering PID system version for that package
-    list_Regular_Files(ALL_CMAKE_FILES ${PATH_TO_PACKAGE_VERSION}/share/cmake)
-    set(${package}_PID_VERSION 0 CACHE INTERNAL "")#default version is 0
-    foreach(a_file IN LISTS ALL_CMAKE_FILES)
-      if(a_file MATCHES "^.+\\.cmake$")
-        include(${PATH_TO_PACKAGE_VERSION}/share/cmake/${a_file})
-      endif()
-    endforeach()
+		list_Regular_Files(ALL_CMAKE_FILES ${PATH_TO_PACKAGE_VERSION}/share/cmake)
+		set(${package}_PID_VERSION 0 CACHE INTERNAL "")#default version is 0
+		foreach(a_file IN LISTS ALL_CMAKE_FILES)
+			if(a_file MATCHES "^.+\\.cmake$")
+				include(${PATH_TO_PACKAGE_VERSION}/share/cmake/${a_file})
+			endif()
+		endforeach()
 	else()#no adequate version found
-    exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the package ${package} with version ${${package}_FIND_VERSION} cannot be found in the workspace.")
+    	exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the package ${package} with version ${${package}_FIND_VERSION} cannot be found in the workspace.")
 	endif()
 else() #if the directory does not exist it means the package cannot be found
   exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the required package ${package} cannot be found in the workspace.")

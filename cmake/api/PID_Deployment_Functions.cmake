@@ -519,7 +519,7 @@ endfunction(update_Package_Installed_Version)
 #
 #      :package: The name of the package for which a version must be found.
 #
-#      :RESOLUTION_OK: the output variable that is TRUE if a version of the package has been proposed by teh resolution process, FALSE otherwise.
+#      :RESOLUTION_OK: the output variable that is TRUE if a version of the package has been proposed by the resolution process, FALSE otherwise.
 #      :MINIMUM_VERSION: the output variable that contains the minimum version to use.
 #      :IS_EXACT: the output variable that is TRUE if MINIMUM_VERSION must be exact, false otherwise.
 #
@@ -572,7 +572,7 @@ else()# a version of the package is already used == package already found, proba
   if(USE_VERSION_CONSTRAINT VERSION_GREATER ${package}_VERSION_STRING)
     set(${MINIMUM_VERSION} ${USE_VERSION_CONSTRAINT} PARENT_SCOPE)#use the new minimum version specified
   else()
-    set(${MINIMUM_VERSION} PARENT_SCOPE)#use the new minimum version specified
+    set(${MINIMUM_VERSION} PARENT_SCOPE)
   endif()
 endif()
 set(${RESOLUTION_OK} TRUE PARENT_SCOPE)
@@ -679,7 +679,7 @@ endfunction(package_Reference_Exists_In_Workspace)
 #
 #   .. command:: install_Native_Package(INSTALL_OK package reinstall release_only)
 #
-#     Install a given native package in workspace.
+#     Install a given native package in workspace according to previous install requirements.
 #
 #      :package: The name of the package to install.
 #      :reinstall: a boolean to indicate if version must be reinstalled

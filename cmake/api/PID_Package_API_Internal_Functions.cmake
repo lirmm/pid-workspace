@@ -1093,7 +1093,7 @@ need_Install_Native_Packages(INSTALL_REQUIRED)
 if(INSTALL_REQUIRED)
 	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)#when automatic download engaged (default) then automatically install
 		if(ADDITIONAL_DEBUG_INFO)
-			message("[PID] INFO : ${PROJECT_NAME} needs to install requires native packages : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}.")
+			message("[PID] INFO : ${PROJECT_NAME} needs to install required native packages : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}.")
 		endif()
 	else()
 		finish_Progress(${GLOBAL_PROGRESS_VAR})

@@ -233,16 +233,16 @@ if(EXISTS ${thefile})
 	else()
 		list(APPEND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package})
 		list(REMOVE_DUPLICATES MANAGED_PACKAGES_IN_CURRENT_PROCESS)
-    if(version)
-      get_Version_String_Numbers(${version} major minor patch)
-      if(DEFINED major)# valid version string
-        list(APPEND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${version}")
-        list(REMOVE_DUPLICATES ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
-        set(${package}_${version}_STATE_IN_CURRENT_PROCESS ${state})
-      endif()
-    endif()
+		if(version)
+			get_Version_String_Numbers(${version} major minor patch)
+			if(DEFINED major)# valid version string
+				list(APPEND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${version}")
+				list(REMOVE_DUPLICATES ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
+				set(${package}_${version}_STATE_IN_CURRENT_PROCESS ${state})
+			endif()
+		endif()
 	endif()
-  update_Progress_File()
+  	update_Progress_File()
 endif()
 endfunction(add_Managed_Package_In_Current_Process)
 
@@ -371,7 +371,8 @@ endfunction(check_Contribution_Spaces_Updated_In_Current_Process)
 #
 #   .. command:: check_Package_Version_Managed_In_Current_Process(package version RESULT)
 #
-#    Check whether a given package version has already been managed (i.e. its build procedure has been launched) since beginning of the current build process. This does NOT tell if the package build has been successful or not.
+#    Check whether a given package version has already been managed (i.e. its build procedure has been launched) since beginning of the current build process. 
+#    This does NOT tell if the package build has been successful or not.
 #
 #      :package: the name of managed package.
 #      :version: the version of the managed package.
