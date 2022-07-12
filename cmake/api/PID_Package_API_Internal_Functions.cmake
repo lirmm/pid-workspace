@@ -238,6 +238,17 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			COMMENT "[PID] Building package ${PROJECT_NAME} (Release mode only) for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
+		add_custom_target(build_release
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
+			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
+			COMMENT "[PID] Release build of package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+			VERBATIM
+		)
+		add_dependencies(build_release reconfigure) #checking if reconfiguration is necessary before build
+		add_dependencies(build_release check-branch)#checking if not built on master branch or released tag
+		if(${PROJECT_NAME}_ADDRESS)
+			add_dependencies(build_release check-repository) #checking if remote addrr needs to be changed
+		endif()
 	else()
 		add_custom_target(build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
@@ -267,8 +278,8 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		add_dependencies(build_debug reconfigure) #checking if reconfiguration is necessary before build
 		add_dependencies(build_debug check-branch)#checking if not built on master branch or released tag
 		if(${PROJECT_NAME}_ADDRESS)
-		add_dependencies(build_debug check-repository) #checking if remote addrr needs to be changed
-	  endif()
+			add_dependencies(build_debug check-repository) #checking if remote addrr needs to be changed
+	  	endif()
 	endif()
 
 	add_dependencies(build reconfigure) #checking if reconfiguration is necessary before build
@@ -316,8 +327,8 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
   	COMMAND ${CMAKE_COMMAND}
             -DWORKSPACE_DIR=${WORKSPACE_DIR}
             -DTARGET_PACKAGE=${PROJECT_NAME}
-  					-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
-  					-P ${WORKSPACE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
+			-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
+			-P ${WORKSPACE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
   	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   )
 
@@ -332,11 +343,11 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	# reference file generation target
 	add_custom_target(patching
 		COMMAND ${CMAKE_COMMAND}
-						-DWORKSPACE_DIR=${WORKSPACE_DIR}
-						-DTARGET_PACKAGE=${PROJECT_NAME}
-						-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
-						-DTARGET_VERSION=\${version}
-						-P ${WORKSPACE_DIR}/cmake/commands/Patch_PID_Package.cmake
+				-DWORKSPACE_DIR=${WORKSPACE_DIR}
+				-DTARGET_PACKAGE=${PROJECT_NAME}
+				-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
+				-DTARGET_VERSION=\${version}
+				-P ${WORKSPACE_DIR}/cmake/commands/Patch_PID_Package.cmake
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 		COMMENT "[PID] Patching package ${PROJECT_NAME} ..."
 	)
