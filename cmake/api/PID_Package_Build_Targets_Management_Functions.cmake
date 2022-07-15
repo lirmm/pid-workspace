@@ -456,6 +456,8 @@ function(create_Static_Lib_Target c_name c_standard cxx_standard sources exporte
 	set(COMP_OPTS ${exported_compiler_options} ${internal_compiler_options})
 	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${INC_DIRS}" "" "${DEFS}" "${COMP_OPTS}" "")#no linking with static libraries so do not manage internal_flags
 	manage_Additional_Component_Exported_Flags(${c_name} "${INSTALL_NAME_SUFFIX}" "${exported_inc_dirs}" "" "${exported_defs}" "${exported_compiler_options}" "${exported_links}")
+
+	set_property(TARGET ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTY POSITION_INDEPENDENT_CODE TRUE)#always PIC
 endfunction(create_Static_Lib_Target)
 
 #.rst:
@@ -571,14 +573,20 @@ function(create_Executable_Target c_name c_standard cxx_standard sources interna
 	install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX}
 		RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH}
 	)
+	include(CheckPIESupported)
+	check_pie_supported(LANGUAGES C CXX)
+	if(CMAKE_C_LINK_NO_PIE_SUPPORTED AND CMAKE_CXX_LINK_NO_PIE_SUPPORTED)
+		#by default if allowed by the linker produce non PIE code for executables
+		set_property(TARGET ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTY POSITION_INDEPENDENT_CODE FALSE)
+	endif()
 	#setting the default rpath for the target
 	if(APPLE)
 		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../.rpath/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the application targets a specific folder that contains symbolic links to used shared libraries
 	elseif(UNIX)
 		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "\$ORIGIN/../.rpath/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the application targets a specific folder that contains symbolic links to used shared libraries
-  elseif(WIN32)#need to install a specific run.bat script file
-	install(FILES ${WORKSPACE_DIR}/cmake/patterns/packages/run.bat DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH})
-	file(COPY ${WORKSPACE_DIR}/cmake/patterns/packages/run.bat DESTINATION ${CMAKE_BINARY_DIR}/apps)
+	elseif(WIN32)#need to install a specific run.bat script file
+		install(FILES ${WORKSPACE_DIR}/cmake/patterns/packages/run.bat DESTINATION ${${PROJECT_NAME}_INSTALL_BIN_PATH})
+		file(COPY ${WORKSPACE_DIR}/cmake/patterns/packages/run.bat DESTINATION ${CMAKE_BINARY_DIR}/apps)
 	endif()
 endfunction(create_Executable_Target)
 
@@ -609,6 +617,13 @@ function(create_TestUnit_Target c_name c_standard cxx_standard sources internal_
 	add_executable(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} ${sources})
 	manage_Additional_Component_Internal_Flags(${c_name} "${c_standard}" "${cxx_standard}" "${INSTALL_NAME_SUFFIX}" "${internal_inc_dirs}" "" "${internal_defs}" "${internal_compiler_options}" "${internal_links}")
 	file(COPY ${WORKSPACE_DIR}/cmake/patterns/packages/run.bat DESTINATION ${CMAKE_BINARY_DIR}/test)
+
+	include(CheckPIESupported)
+	check_pie_supported(LANGUAGES C CXX)
+	if(CMAKE_C_LINK_NO_PIE_SUPPORTED AND CMAKE_CXX_LINK_NO_PIE_SUPPORTED)
+		#by default if allowed by the linker produce non PIE code for executables
+		set_property(TARGET ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTY POSITION_INDEPENDENT_CODE FALSE)
+	endif()
 endfunction(create_TestUnit_Target)
 
 #.rst:
