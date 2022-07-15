@@ -149,8 +149,7 @@ foreach(component IN LISTS ${PACKAGE_NAME}_COMPONENTS)
 
 		#managing auxiliary sources
 		if(NOT DEFINED FILE_PACKAGE_ALL_SRC)#check if sources from src dir have already been found
-			set(aux_root_dir ${path_to_package}/src)
-				get_All_Sources_Relative(FILE_PACKAGE_ALL_SRC ${aux_root_dir})
+			get_All_Sources_Relative(FILE_PACKAGE_ALL_SRC ${path_to_package})
 		endif()
 
 		Find_Unique_Auxiliary_Elements(
@@ -159,7 +158,7 @@ foreach(component IN LISTS ${PACKAGE_NAME}_COMPONENTS)
 				"${FILE_PACKAGE_ALL_SRC}" 		#really existing sources on filesystem
 				TO_ADD
 				TO_REMOVE
-				${aux_root_dir})
+				${path_to_package})
 
 		list(APPEND REMOVED_FILES ${TO_REMOVE})
 		list(APPEND ADDED_FILES ${TO_ADD})
@@ -168,7 +167,8 @@ foreach(component IN LISTS ${PACKAGE_NAME}_COMPONENTS)
 		set(current_dir ${path_to_package}/include/${${PACKAGE_NAME}_${component}_HEADER_DIR_NAME})
 		get_All_Headers_Relative(FILE_PACKAGE_HEADERS ${current_dir} "${${PACKAGE_NAME}_${component}_HEADERS_ADDITIONAL_FILTERS}")
 
-		Find_Unique_Elements(	"${${PACKAGE_NAME}_${component}_HEADERS}"	#registered headers
+		Find_Unique_Elements(	
+					"${${PACKAGE_NAME}_${component}_HEADERS}"	#registered headers
 					"${FILE_PACKAGE_HEADERS}" 			#really existing headers
 					TO_REMOVE
 					TO_ADD
@@ -179,36 +179,33 @@ foreach(component IN LISTS ${PACKAGE_NAME}_COMPONENTS)
 	elseif(${PACKAGE_NAME}_${component}_SOURCE_DIR) # this component is an application or module
 		if(${PACKAGE_NAME}_${component}_TYPE STREQUAL "MODULE")
 			set(current_dir ${path_to_package}/src/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
-			set(aux_root_dir ${path_to_package}/src)
 			if(NOT DEFINED FILE_PACKAGE_ALL_SRC)#check if sources from src dir have already been found
-				get_All_Sources_Relative(FILE_PACKAGE_ALL_SRC ${aux_root_dir})
+				get_All_Sources_Relative(FILE_PACKAGE_ALL_SRC ${path_to_package})
 			endif()
 			set(FILE_PACKAGE_AUX_SOURCES ${FILE_PACKAGE_ALL_SRC})
 		elseif(${PACKAGE_NAME}_${component}_TYPE STREQUAL "TEST")
 			set(current_dir ${path_to_package}/test/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
-			set(aux_root_dir ${path_to_package}/test)
 			if(NOT DEFINED FILE_PACKAGE_ALL_TESTS)#check if sources from src dir have already been found
-				get_All_Sources_Relative(FILE_PACKAGE_ALL_TESTS ${aux_root_dir})
+				get_All_Sources_Relative(FILE_PACKAGE_ALL_TESTS ${path_to_package})
 			endif()
 			set(FILE_PACKAGE_AUX_SOURCES ${FILE_PACKAGE_ALL_TESTS})
 		elseif(${PACKAGE_NAME}_${component}_TYPE STREQUAL "PYTHON")
 			set(current_dir ${path_to_package}/share/script/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
-			set(aux_root_dir ${path_to_package}/share/script)
 			if(NOT DEFINED FILE_PACKAGE_ALL_SCRIPTS)#check if sources from src dir have already been found
-				get_All_Sources_Relative(FILE_PACKAGE_ALL_SCRIPTS ${aux_root_dir})
+				get_All_Sources_Relative(FILE_PACKAGE_ALL_SCRIPTS ${path_to_package})
 			endif()
 			set(FILE_PACKAGE_AUX_SOURCES ${FILE_PACKAGE_ALL_SCRIPTS})
 		else() #otherwise this is an example or standard application
 			set(current_dir ${path_to_package}/apps/${${PACKAGE_NAME}_${component}_SOURCE_DIR})
-			set(aux_root_dir ${path_to_package}/apps)
 			if(NOT DEFINED FILE_PACKAGE_ALL_APPS)#check if sources from src dir have already been found
-				get_All_Sources_Relative(FILE_PACKAGE_ALL_APPS ${aux_root_dir})
+				get_All_Sources_Relative(FILE_PACKAGE_ALL_APPS ${path_to_package})
 			endif()
 			set(FILE_PACKAGE_AUX_SOURCES ${FILE_PACKAGE_ALL_APPS})
 		endif()
 
 		get_All_Sources_Relative(FILE_PACKAGE_SOURCES ${current_dir})
-		Find_Unique_Elements(	"${${PACKAGE_NAME}_${component}_SOURCE_CODE}"	#registered sources
+		Find_Unique_Elements(	
+					"${${PACKAGE_NAME}_${component}_SOURCE_CODE}"	#registered sources
 					"${FILE_PACKAGE_SOURCES}" 			#really existing sources
 					TO_REMOVE
 					TO_ADD
@@ -224,7 +221,7 @@ foreach(component IN LISTS ${PACKAGE_NAME}_COMPONENTS)
 				"${FILE_PACKAGE_AUX_SOURCES}" 		#really existing sources on filesystem
 				TO_ADD
 				TO_REMOVE
-				${aux_root_dir})
+				${path_to_package})
 		list(APPEND REMOVED_FILES ${TO_REMOVE})
 		list(APPEND ADDED_FILES ${TO_ADD})
 	endif()
