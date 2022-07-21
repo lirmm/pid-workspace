@@ -2166,6 +2166,38 @@ function(build_Option_For_Example example_comp)
 CMAKE_DEPENDENT_OPTION(BUILD_EXAMPLE_${example_comp} "Package build the example application ${example_comp}" ON "BUILD_EXAMPLES" ON)
 endfunction(build_Option_For_Example)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |project_Has_Tests_Or_Examples| replace:: ``project_Has_Tests_Or_Examples``
+#  .. project_Has_Tests_Or_Examples:
+#
+#  project_Has_Tests_Or_Examples
+#  ------------------------
+#
+#   .. command:: project_Has_Tests_Or_Examples(HAS_TESTS HAS_EXAMPLES)
+#
+#   Tells whether the project contain tests or examples
+#
+#     :HAS_TESTS: ouput var TRUE if project has tests
+#     :HAS_TESTS: ouput var TRUE if project has examples
+#
+function(project_Has_Tests_Or_Examples HAS_TESTS HAS_EXAMPLES)
+  set(PACKAGE_HAS_EXAMPLES FALSE)
+  set(PACKAGE_HAS_TESTS FALSE)
+  foreach(component IN LISTS ${PROJECT_NAME}_DECLARED_COMPS)#looking into all declared components
+    if(${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE")
+      set(PACKAGE_HAS_EXAMPLES TRUE)
+    elseif(${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
+      set(PACKAGE_HAS_TESTS TRUE)
+    endif()
+  endforeach()
+  set(${HAS_TESTS} ${PACKAGE_HAS_TESTS} PARENT_SCOPE)
+  set(${HAS_EXAMPLES} ${PACKAGE_HAS_EXAMPLES} PARENT_SCOPE)
+endfunction(project_Has_Tests_Or_Examples)
+
 #.rst:
 #
 # .. ifmode:: internal

@@ -144,15 +144,15 @@ else()
 endif()
 
 # are there tests and examples ?
+project_Has_Tests_Or_Examples(has_tests has_examples)
 set(PACKAGE_CI_HAS_TESTS "false")
+if(has_tests)
+	set(PACKAGE_CI_HAS_TESTS "true")
+endif()
 set(PACKAGE_CI_HAS_EXAMPLES "false")
-foreach(component IN LISTS ${PROJECT_NAME}_DECLARED_COMPS)#looking into all declared components
-	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE")
-		set(PACKAGE_CI_HAS_EXAMPLES "true")
-	elseif(${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
-		set(PACKAGE_CI_HAS_TESTS "true")
-	endif()
-endforeach()
+if(has_tests)
+	set(PACKAGE_CI_HAS_EXAMPLES "true")
+endif()
 
 #is there a static site defined for the project ?
 check_Documentation_Site_Generated(IS_GENERATED)
