@@ -150,7 +150,7 @@ if(has_tests)
 	set(PACKAGE_CI_HAS_TESTS "true")
 endif()
 set(PACKAGE_CI_HAS_EXAMPLES "false")
-if(has_tests)
+if(has_examples)
 	set(PACKAGE_CI_HAS_EXAMPLES "true")
 endif()
 
