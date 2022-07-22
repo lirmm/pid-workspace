@@ -950,7 +950,7 @@ function(get_adequate_compiler_toolchain_version RES_TOOLCHAIN_CONSTRAINT langua
   set(${RES_TOOLCHAIN_CONSTRAINT} PARENT_SCOPE)
   parse_Configuration_Expression(LANG_NAME LANG_ARGS "${language_constraint}")
   if(NOT KNOWN_${LANG_NAME}_COMPILERS OR NOT KNOWN_${LANG_NAME}_STANDARDS OR NOT KNOWN_${LANG_NAME}_STDLIBS)#NOTE: for now only for CXX
-    return()#if those variables are not available it means that we do not know how to manage 
+    return()#if those variables are not available it means that we do not know how to manage standards for the language
   endif()
   if(NOT ${CURRENT_${LANG_NAME}_COMPILER}_PREFERRED_ENVIRONMENT)
     #only some compilers are supported now
@@ -961,18 +961,46 @@ function(get_adequate_compiler_toolchain_version RES_TOOLCHAIN_CONSTRAINT langua
     list(GET argument_couples 0 name)
     list(GET argument_couples 1 value)
     list(REMOVE_AT argument_couples 0 1)#update the list of arguments in parent scope
-    if(name STREQUAL "std")
+    if(name STREQUAL "std")#a minimum standard is required
       set(target_std ${value})
-      break()
+    elseif(name STREQUAL "compiler_min")#minimum version for at least one toolset is proposed
+      set(target_compiler ${value})
     endif()
   endwhile()
-  if(target_std)#OK requirement may have failed due to standard not supported
-    #which toolset /version can be used for a given standard support is defined in workspace variables
-    if(${CURRENT_${LANG_NAME}_COMPILER}_std${target_std}_BEGIN_SUPPORT)
-      #if the standard is supported by a minimum version of the compiler
-      set(${RES_TOOLCHAIN_CONSTRAINT} "${${CURRENT_${LANG_NAME}_COMPILER}_PREFERRED_ENVIRONMENT}[version=${${CURRENT_${LANG_NAME}_COMPILER}_std${target_std}_BEGIN_SUPPORT}]" PARENT_SCOPE)
-      return()
+  if(target_std OR target_compiler)
+    set(target_env_toolchain ${${CURRENT_${LANG_NAME}_COMPILER}_PREFERRED_ENVIRONMENT})
+    #what we search for is a minimum version
+    set(target_version)
+    if(target_std)#OK requirement may have failed due to standard not supported
+      #which toolset /version can be used for a given standard support is defined in workspace variables
+      if(${CURRENT_${LANG_NAME}_COMPILER}_std${target_std}_BEGIN_SUPPORT)
+        #if the standard is supported by a minimum version of the compiler
+        set(target_version ${${CURRENT_${LANG_NAME}_COMPILER}_std${target_std}_BEGIN_SUPPORT})
+      else()#no solution => no need to continue
+        return()
       endif()
+    endif()
+    if(target_compiler)#description may want minimum version of a comiler (eventually cumulative with standard requirement)
+      string(REPLACE "," ";" compilers_version "${target_compiler}")
+      foreach(compiler_min_vers IN LISTS compilers_version)
+        string(REPLACE "-" ";" compiler_minversion "${compiler_min_vers}")
+        list(GET compiler_minversion 0 toolchain)
+        list(GET compiler_minversion 1 min_version)
+        if(toolchain STREQUAL target_env_toolchain)#OK there is a solution for one toolchain
+          if(target_version)#if version already selected using standard then check if explicit toolchain min version is greater
+            if(min_version VERSION_GREATER target_version)
+              set(target_version ${min_version})
+            endif()
+          else()
+            set(target_version ${min_version})
+          endif()
+          break()
+        endif()
+      endforeach()
+    endif()
+    if(target_version)
+      set(${RES_TOOLCHAIN_CONSTRAINT} "${target_env_toolchain}[version=${target_version}]" PARENT_SCOPE)
+    endif()
   endif()
   #read them to define the toolchain to use according to standard
 #generate the fucking constraint expression eg gcc_toolchain[min_version=12.587]
