@@ -741,7 +741,7 @@ macro(manage_Current_Platform build_folder type)
 		if(CURRENT_PLATFORM)# a current platform is already defined
 			#if any of the following variable changed, the cache of the CMake project needs to be regenerated from scratch
 			set(TEMP_PLATFORM ${CURRENT_PLATFORM})
-			set(TEMP_ASM_COMPILER ${TEMP_ASM_COMPILER})
+			set(TEMP_ASM_COMPILER ${CMAKE_ASM_COMPILER})
 			set(TEMP_C_COMPILER ${CMAKE_C_COMPILER})
 			set(TEMP_CXX_COMPILER ${CMAKE_CXX_COMPILER})
 			set(TEMP_CMAKE_LINKER ${CMAKE_LINKER})
