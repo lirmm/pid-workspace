@@ -1640,9 +1640,10 @@ endfunction(update_Package_Repository_Versions)
 #     :path_to_repo: the path to the deployment unit's repository in local workspace.
 #     :git_url: the url of the deployment unit's official repository.
 #
+#     :OFFICIAL_REMOTE_CONNECTED: output variable that is TRUE if a connection with official repository exists.
+#
 function(adjust_Official_Remote_Address OFFICIAL_REMOTE_CONNECTED path_to_repo verbose)
 set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE)
-
 is_Repository_Remote_Defined(CONNECTED ${path_to_repo} official) #check if the repository has a fetch URL defined
 get_Deployment_Unit_Repository_Address_In_Description(${path_to_repo} URL PUBLIC_URL) #get addresses of official remote from deployment unit description
 if(NOT CONNECTED)#no official remote (due to old deployment unit style or due to a misuse of git command within a deployment unit)
@@ -1680,7 +1681,7 @@ if(NOT CONNECTED)#no official remote (due to old deployment unit style or due to
         #for now only updating the official remote address so that update can occur
         reconnect_Repository_Remote(${path_to_repo} ${REF_ADDR} "${REF_PUB_ADDR}" official)
         test_Remote_Connection(CONNECTED ${path_to_repo} official) #test again connection
-        if(NOT CONNECTED)#cannot do mush more, even the referenced address is bad
+        if(NOT CONNECTED)#cannot do much more, even the referenced address is bad
           if(verbose)
             if(PUBLIC_URL)#the repository has a public address where anyone can get it
               message("[PID] WARNING : repository ${path_to_repo} lost connection with its official remote : no official remote defined, address from its reference (${PUBLIC_URL}) is no more reachable ! Please check your network connection.")
@@ -1762,15 +1763,18 @@ elseif(URL) # official repository is connected and has an official repository de
     get_Deployment_Unit_Reference_Info(${path_to_repo} REF_FILE_EXISTS REF_ADDR REF_PUB_ADDR)
     if(NOT REF_FILE_EXISTS) #reference not found, may mean the deployment unit has been removed OR has never been referenced (for instance pid tests packages)
       #simply considering the result is OK since we have no clue
-      set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE) #simply exitting
+      test_Remote_Connection(CONNECTED ${path_to_repo} official)#testing the connection to know if local package is OK
+      set(${OFFICIAL_REMOTE_CONNECTED} ${CONNECTED} PARENT_SCOPE) #simply testing connection
       return()
     endif()
     if (REF_PUB_ADDR STREQUAL RES_OFFICIAL_FETCH
         AND REF_ADDR STREQUAL RES_OFFICIAL_PUSH)#OK no change from official => nothing to do
-      set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE) #simply exitting
+        test_Remote_Connection(CONNECTED ${path_to_repo} official)#simply testing connection
+        set(${OFFICIAL_REMOTE_CONNECTED} ${CONNECTED} PARENT_SCOPE) #simply exitting
       return()
     elseif(NOT REF_PUB_ADDR AND REF_ADDR STREQUAL RES_OFFICIAL_FETCH)#no public address defined in reference but fetch addr in reference matches the official address
-      set(${OFFICIAL_REMOTE_CONNECTED} TRUE PARENT_SCOPE) #simply exitting
+      test_Remote_Connection(CONNECTED ${path_to_repo} official)#simply testing connection OK
+      set(${OFFICIAL_REMOTE_CONNECTED} ${CONNECTED} PARENT_SCOPE) #simply exitting
       return()
     endif()
 
