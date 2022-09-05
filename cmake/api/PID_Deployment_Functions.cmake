@@ -2291,27 +2291,37 @@ function(build_And_Install_External_Package_Version INSTALLED package version is
   endif()
   target_Options_Passed_Via_Environment(use_env)
   if(${use_env})
-     set(ENV{version} ${version})
-     if(is_system)
-         set(ENV{os_variant} true)
-     endif()
-     execute_process(#call the wrapper command used to build the version of the external package
-         COMMAND ${CMAKE_MAKE_PROGRAM} build
-         WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
-         RESULT_VARIABLE BUILD_RES
-     )
-     unset(ENV{version})
-     unset(ENV{os_variant})
+    set(ENV{version} ${version})
+    if(is_system)
+        set(ENV{os_variant} true)
+    endif()
+    if(SHOW_WRAPPERS_BUILD_OUTPUT)
+      set(ENV{show_build_output} ON)
+    else()
+      set(ENV{show_build_output} OFF)
+    endif()
+    execute_process(#call the wrapper command used to build the version of the external package
+        COMMAND ${CMAKE_MAKE_PROGRAM} build
+        WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
+        RESULT_VARIABLE BUILD_RES
+    )
+    unset(ENV{version})
+    unset(ENV{os_variant})
   else()
-     set(args_to_use version=${version})
-     if(is_system)
-         set(args_to_use ${args_to_use} os_variant=true)
-     endif()
-     execute_process(#call the wrapper command used to build the version of the external package
-         COMMAND ${CMAKE_MAKE_PROGRAM} build ${args_to_use}
-         WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
-         RESULT_VARIABLE BUILD_RES
-     )
+    set(args_to_use version=${version})
+    if(is_system)
+      set(args_to_use ${args_to_use} os_variant=true)
+    endif()
+    if(SHOW_WRAPPERS_BUILD_OUTPUT)
+      set(args_to_use ${args_to_use} show_build_output=ON)
+    else()
+      set(args_to_use ${args_to_use} show_build_output=OFF)
+    endif()
+    execute_process(#call the wrapper command used to build the version of the external package
+        COMMAND ${CMAKE_MAKE_PROGRAM} build ${args_to_use}
+        WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
+        RESULT_VARIABLE BUILD_RES
+    )
   endif()
 
   if(BUILD_RES EQUAL 0

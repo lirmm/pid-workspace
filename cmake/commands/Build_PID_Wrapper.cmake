@@ -67,6 +67,13 @@ if(DEFINED ENV{os_variant})
 	unset(ENV{os_variant})
 endif()
 
+if(DEFINED ENV{show_build_output})#this is usually set by workspace level commands and so should take precedence over the local value
+	set(SHOW_WRAPPERS_BUILD_OUTPUT $ENV{show_build_output} CACHE INTERNAL "" FORCE)
+endif()
+if(DEFINED ENV{show_build_output})
+	unset(ENV{show_build_output})
+endif()
+
 if(USE_SYSTEM_VARIANT AND (USE_SYSTEM_VARIANT STREQUAL "true" OR USE_SYSTEM_VARIANT STREQUAL "TRUE"  OR USE_SYSTEM_VARIANT STREQUAL "ON" ))
 	set(use_os_variant TRUE)
 endif()

@@ -33,7 +33,8 @@ if(DIR_NAME STREQUAL "build")
 	### set global workspace variables ###
 	set(WORKSPACE_DIR ${CMAKE_SOURCE_DIR} CACHE INTERNAL "")
 	option(IN_CI_PROCESS "Determine wether the build takes place in a CI environment (ON) or not (default to OFF)." OFF)
-	option(ADDITIONAL_DEBUG_INFO "Get debug infi from configuration" OFF)
+	option(ADDITIONAL_DEBUG_INFO "Get debug info from configuration" OFF)
+	option(SHOW_WRAPPERS_BUILD_OUTPUT "Force to always display the wrappers build output (only shown on error by default)" OFF)
 	set(LIMITED_JOBS_PACKAGES "" CACHE STRING "List of packages to build with only one job")
 	option(FORCE_DUAL_MODE "Force all build and deployment to be made in dual mode -Release and Debug" OFF)
 	mark_as_advanced(IN_CI_PROCESS)
@@ -355,6 +356,7 @@ macro(add_PID_Command name script)
 			${OPTIONS}
 			-DWORKSPACE_DIR=${CMAKE_SOURCE_DIR}
 			-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
+			-DSHOW_WRAPPERS_BUILD_OUTPUT=${SHOW_WRAPPERS_BUILD_OUTPUT}
 			-P ${CMAKE_SOURCE_DIR}/cmake/commands/${script}
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)

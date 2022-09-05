@@ -2648,7 +2648,6 @@ endmacro(return_External_Project_Error)
 #
 #     .. rubric:: Optional parameters
 #
-#     :QUIET: if used then the output of this command will be silent.
 #     :COMMENT <string>: A string to append to message to inform about special thing you are doing. Usefull if you intend to buildmultiple time the same external project with different options.
 #     :DEFINITIONS <list of definitions>: the CMake definitions you need to provide to the cmake build script.
 #
@@ -2682,8 +2681,13 @@ function(build_Waf_External_Project)
   endif()
 
   if(BUILD_WAF_EXTERNAL_PROJECT_QUIET)
-    # waf outputs its messages on cerr...
-    set(OUTPUT_MODE OUTPUT_QUIET ERROR_QUIET)
+    message("[PID] INFO : build_Waf_External_Project QUIET option is now deprecated, use the SHOW_WRAPPERS_BUILD_OUTPUT variable instead")
+  endif()
+
+  if(NOT SHOW_WRAPPERS_BUILD_OUTPUT)
+    set(OUTPUT_MODE OUTPUT_VARIABLE process_output ERROR_VARIABLE process_output)
+  else()
+    set(OUTPUT_MODE)
   endif()
 
   if(BUILD_WAF_EXTERNAL_PROJECT_COMMENT)
@@ -2766,9 +2770,12 @@ function(build_Waf_External_Project)
 
   message("[PID] INFO : Building ${BUILD_WAF_EXTERNAL_PROJECT_PROJECT} ${use_comment} in ${TARGET_MODE} mode using ${jnumber} jobs...")
 
-  execute_process(COMMAND ${CURRENT_PYTHON_EXECUTABLE} waf distclean configure build install ${BUILD_WAF_EXTERNAL_PROJECT_OPTIONS} ${jobs} --prefix=${TARGET_INSTALL_DIR} ..
-                  WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}
-                  RESULT_VARIABLE result)
+  execute_process(
+    COMMAND ${CURRENT_PYTHON_EXECUTABLE} waf distclean configure build install ${BUILD_WAF_EXTERNAL_PROJECT_OPTIONS} ${jobs} --prefix=${TARGET_INSTALL_DIR} ..
+    WORKING_DIRECTORY ${project_dir}
+    RESULT_VARIABLE result
+    ${OUTPUT_MODE}
+  )
 
   #put back environment variables in previous state
   set(ENV{LDFLAGS} "${TEMP_LD}")
@@ -2778,6 +2785,9 @@ function(build_Waf_External_Project)
   set(ENV{CXX} "${TEMP_CXX_COMPILER}")
   set(ENV{LD} "${TEMP_LD}")
   if(NOT result EQUAL 0)#error at configuration time
+    if(OUTPUT_MODE)
+      message("${build_output}")
+    endif()
     message("[PID] ERROR : cannot configure/build/install Waf project ${BUILD_WAF_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
@@ -2810,7 +2820,6 @@ endfunction(build_Waf_External_Project)
 #
 #     .. rubric:: Optional parameters
 #
-#     :QUIET: if used then the output of this command will be silent.
 #     :COMMENT <string>: A string to append to message to inform about special thing you are doing. Usefull if you intend to buildmultiple time the same external project with different options.
 #     :DEFINITIONS <list of definitions>: the CMake definitions you need to provide to the cmake build script.
 #
@@ -2846,9 +2855,12 @@ function(build_CMake_External_Project)
     return()
   endif()
 
-  if(BUILD_CMAKE_EXTERNAL_PROJECT_QUIET
-    AND NOT ADDITIONAL_DEBUG_INFO)
-    set(OUTPUT_MODE OUTPUT_QUIET)
+  if(BUILD_CMAKE_EXTERNAL_PROJECT_QUIET)
+    message("[PID] INFO : build_CMake_External_Project QUIET option is now deprecated, use the SHOW_WRAPPERS_BUILD_OUTPUT variable instead")
+  endif()
+
+  if(NOT SHOW_WRAPPERS_BUILD_OUTPUT)
+    set(OUTPUT_MODE OUTPUT_VARIABLE process_output ERROR_VARIABLE process_output)
   else()
     set(OUTPUT_MODE)
   endif()
@@ -2932,12 +2944,14 @@ function(build_CMake_External_Project)
                             -C ${BUILD_INFO_FILE}
                             ${COMMAND_ARGS_AS_LIST}
                             ..
-    WORKING_DIRECTORY ${project_build_dir}
-    ${OUTPUT_MODE}
-    RESULT_VARIABLE result)
+      WORKING_DIRECTORY ${project_build_dir}
+      ${OUTPUT_MODE}
+      RESULT_VARIABLE result
+    )
   if(NOT result EQUAL 0)#error at configuration time
-    message("[PID] ERROR : cannot configure CMake project ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+    message("${process_output}")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+    message("[PID] ERROR : cannot configure CMake project ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     return()
   endif()
   #once configure, build it
@@ -2962,6 +2976,7 @@ function(build_CMake_External_Project)
     RESULT_VARIABLE result
   )
   if(NOT result EQUAL 0)#error at configuration time
+    message("${process_output}")
     message("[PID] ERROR : cannot build CMake project ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
@@ -2973,6 +2988,7 @@ function(build_CMake_External_Project)
     RESULT_VARIABLE result
   )
   if(NOT result EQUAL 0)#error at configuration time
+    message("${process_output}")
     message("[PID] ERROR : cannot install CMake project ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
