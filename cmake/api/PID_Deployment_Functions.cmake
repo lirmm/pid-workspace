@@ -188,6 +188,7 @@ endfunction(generate_Wrapper_Reference_File)
 #      :release_only: if TRUE the resolution process will consider only release binaries in install tree.
 #
 function(resolve_Package_Dependencies package mode first_time release_only)
+list(APPEND RESOLVE_PACKAGE_DEPENDENCIES_REQUIRED_BY ${package})
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 ################## management of configuration : for both external and native packages ##################
 set(list_of_unresolved_configs)
@@ -347,7 +348,17 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
 endforeach()
 
 if(list_of_conflicting_dependencies)#the package has conflicts in its dependencies
-  message("[PID] WARNING : package ${package} has conflicting dependencies:")
+  set(required_by_info)
+  foreach(pack IN LISTS RESOLVE_PACKAGE_DEPENDENCIES_REQUIRED_BY)
+    set(new_pack_info "${pack} (${${pack}_VERSION_STRING})")
+    if(required_by_info)
+      set(required_by_info "${required_by_info} -> ${new_pack_info}")
+    else()
+      set(required_by_info "${new_pack_info}")
+    endif()
+  endforeach()
+
+  message("[PID] WARNING : package ${package} required by ${required_by_info} has conflicting dependencies:")
   foreach(dep IN LISTS list_of_conflicting_dependencies)
     if(${dep}_REQUIRED_VERSION_EXACT)
       if(${dep}_REQUIRED_VERSION_SYSTEM)
@@ -358,6 +369,8 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
     elseif(${dep}_ALL_REQUIRED_VERSIONS)
       set(OUTPUT_STR "already required versions are : ${${dep}_ALL_REQUIRED_VERSIONS}")
     endif()
+    get_Dependency_Resolution_Path_For(required_by_info ${dep} ${mode})
+    message("Already required by ${required_by_info}")
     get_Package_Type(${dep} PACK_TYPE)
     if(PACK_TYPE STREQUAL "EXTERNAL")
       if(${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX})
@@ -411,6 +424,7 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
     endif()
   endif()
 endif()
+list(POP_BACK RESOLVE_PACKAGE_DEPENDENCIES_REQUIRED_BY)
 endfunction(resolve_Package_Dependencies)
 
 #############################################################################################
