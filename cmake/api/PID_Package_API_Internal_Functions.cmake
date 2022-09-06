@@ -1251,6 +1251,7 @@ generate_Package_Readme_Files() # generating and putting into source directory t
 if(${CMAKE_BUILD_TYPE} MATCHES Release) # generating and putting into source directory the .gitignore file removing all unwanted artifacts
   update_Git_Ignore_File(${WORKSPACE_DIR}/cmake/patterns/packages/package/.gitignore)
 endif()
+generate_Package_Authors_File()  # generating and putting into source directory the file containing the list of contributors
 generate_Package_License_File() # generating and putting into source directory the file containing license info about the package
 generate_Package_Install_Script() # generating and putting into source directory the file and folder containing stand alone install scripts
 generate_Package_Find_File() # generating/installing the generic cmake find file for the package
@@ -1544,6 +1545,7 @@ endif()
 # dealing with plugins at the end of the configuration process
 manage_Plugins_In_Package_After_Components_Description()
 reset_Removed_Examples_Build_Option()
+
 finish_Progress(${GLOBAL_PROGRESS_VAR})
 endmacro(build_Package)
 

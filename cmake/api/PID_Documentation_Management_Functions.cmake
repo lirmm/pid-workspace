@@ -462,19 +462,19 @@ if(CMAKE_BUILD_TYPE MATCHES Release)
 	endif()
 
 	if(	${PROJECT_NAME}_LICENSE )
-    resolve_License_File(PATH_TO_FILE ${${PROJECT_NAME}_LICENSE})
-	  if(NOT PATH_TO_FILE)
+		resolve_License_File(PATH_TO_FILE ${${PROJECT_NAME}_LICENSE})
+		if(NOT PATH_TO_FILE)
 			message("[PID] WARNING : license configuration file for ${${PROJECT_NAME}_LICENSE} not found in any contribution space installed in workspace, license file will not be generated.")
 		else()
 			#prepare license generation
 			set(${PROJECT_NAME}_FOR_LICENSE ${PROJECT_NAME})
-      generate_Formatted_String("${${PROJECT_NAME}_DESCRIPTION}" ${PROJECT_NAME}_DESCRIPTION_FOR_LICENSE)
+      		generate_Formatted_String("${${PROJECT_NAME}_DESCRIPTION}" ${PROJECT_NAME}_DESCRIPTION_FOR_LICENSE)
 			set(${PROJECT_NAME}_YEARS_FOR_LICENSE ${${PROJECT_NAME}_YEARS})
 			foreach(author IN LISTS ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS)
 				generate_Full_Author_String(${author} STRING_TO_APPEND)
 				set(${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE "${${PROJECT_NAME}_AUTHORS_LIST_FOR_LICENSE} ${STRING_TO_APPEND}")
 			endforeach()
-      include(${PATH_TO_FILE})
+      		include(${PATH_TO_FILE})
 			file(WRITE ${CMAKE_SOURCE_DIR}/license.txt ${LICENSE_LEGAL_TERMS})
 			install(FILES ${CMAKE_SOURCE_DIR}/license.txt DESTINATION ${${PROJECT_NAME}_DEPLOY_PATH})
 			file(WRITE ${CMAKE_BINARY_DIR}/share/file_header_comment.txt.in ${LICENSE_HEADER_FILE_DESCRIPTION})
@@ -487,19 +487,32 @@ endfunction(generate_Package_License_File)
 #
 # .. ifmode:: internal
 #
-#  .. |generate_Package_Git_Ignore_File| replace:: ``generate_Package_Git_Ignore_File``
-#  .. _generate_Package_Git_Ignore_File:
+#  .. |generate_Package_Authors_File| replace:: ``generate_Package_Authors_File``
+#  .. _generate_Package_Authors_File:
 #
-#  generate_Package_Git_Ignore_File
-#  --------------------------------
+#  generate_Package_Authors_File
+#  -----------------------------
 #
-#   .. command:: generate_Package_Git_Ignore_File()
+#   .. command:: generate_Package_Authors_File()
 #
-#     Create/Update the .gitignore file for current package project.
+#     Create the Authors.md file for current package project.
 #
-function(generate_Package_Git_Ignore_File)
+function(generate_Package_Authors_File)
+if(CMAKE_BUILD_TYPE MATCHES Release)
+	set(thefile ${CMAKE_SOURCE_DIR}/AUTHORS.md)
+	if(EXISTS ${thefile})# a license has already been generated
+		file(REMOVE ${thefile})
+	endif()
+	get_Formatted_Package_Contact_String(${PROJECT_NAME} contact)
+	file(WRITE ${thefile} "# Contact \n\n To get more info about the project ask to ${contact}")
 
-endfunction(generate_Package_Git_Ignore_File)
+	file(APPEND ${thefile} "\n\n# Contributors \n")
+	foreach(author IN LISTS ${PROJECT_NAME}_AUTHORS_AND_INSTITUTIONS)
+		generate_Full_Author_String(${author} STRING_TO_APPEND)
+		file(APPEND ${thefile} "\n+ ${STRING_TO_APPEND}")
+	endforeach()
+endif()
+endfunction(generate_Package_Authors_File)
 
 #.rst:
 #
