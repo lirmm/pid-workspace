@@ -2399,8 +2399,13 @@ function(install_External_Project)
         if(INSTALL_EXTERNAL_PROJECT_PROJECT)
           message("[PID] INFO : Downloading ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
         endif()
+        if(SHOW_WRAPPERS_BUILD_OUTPUT)
+          set(SHOW_DOWNLOAD_PROGRESS SHOW_PROGRESS)
+        else()
+          set(SHOW_DOWNLOAD_PROGRESS)
+        endif()
         file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${archive_name}
-             SHOW_PROGRESS
+             ${SHOW_DOWNLOAD_PROGRESS}
              STATUS dl_result)
         list(GET dl_result 0 return_val)
         if(NOT return_val EQUAL 0)
@@ -2410,7 +2415,7 @@ function(install_External_Project)
           file(REMOVE ${TARGET_BUILD_DIR}/${archive_name})
           execute_process(COMMAND ${CMAKE_COMMAND} -E sleep 10  OUTPUT_QUIET ERROR_QUIET)
           file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${archive_name}
-                SHOW_PROGRESS
+                ${SHOW_DOWNLOAD_PROGRESS}
                 STATUS dl_result)
           list(GET dl_result 0 return_val)
           if(NOT return_val EQUAL 0)

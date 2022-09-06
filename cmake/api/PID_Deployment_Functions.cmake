@@ -2021,13 +2021,19 @@ if(ADDITIONAL_DEBUG_INFO)
 endif()
 set(MISSING_DEBUG_VERSION FALSE)
 
+if(ADDITIONAL_DEBUG_INFO)
+  set(SHOW_DOWNLOAD_PROGRESS SHOW_PROGRESS)
+else()
+  set(SHOW_DOWNLOAD_PROGRESS)
+endif()
+
 ###### downloading the binary package ######
 #release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
 generate_Binary_Package_Name(${package} ${version} Release FILE_BINARY FOLDER_BINARY)#whatever the platform is with instance or not, archive and folder are named the same way
 set(download_url ${${package}_REFERENCE_${version}_${platform}_URL})#platform in download url may contain also the instance extension
-file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
+file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res ${SHOW_DOWNLOAD_PROGRESS} TLS_VERIFY OFF)
 list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)
@@ -2042,7 +2048,7 @@ if(NOT release_only)
   set(FOLDER_BINARY_DEBUG "")
   generate_Binary_Package_Name(${package} ${version} Debug FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
   set(download_url_dbg ${${package}_REFERENCE_${version}_${platform}_URL_DEBUG})#platform in download url may contain also the instance extension
-  file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg SHOW_PROGRESS TLS_VERIFY OFF)
+  file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg ${SHOW_DOWNLOAD_PROGRESS} TLS_VERIFY OFF)
   list(GET res-dbg 0 numeric_error_dbg)
   list(GET res-dbg 1 status_dbg)
   if(NOT numeric_error_dbg EQUAL 0)#there is an error
@@ -3080,6 +3086,12 @@ if(ADDITIONAL_DEBUG_INFO)
 	message("[PID] INFO : installing external package ${package}, version ${version}...")
 endif()
 
+if(ADDITIONAL_DEBUG_INFO)
+  set(SHOW_DOWNLOAD_PROGRESS SHOW_PROGRESS)
+else()
+  set(SHOW_DOWNLOAD_PROGRESS)
+endif()
+
 #1) release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
@@ -3087,7 +3099,7 @@ generate_Binary_Package_Name(${package} ${version} Release FILE_BINARY FOLDER_BI
 set(download_url ${${package}_REFERENCE_${version}_${platform}_URL})#mechanism: "platform" in the name of download url variable contains the instance extension, if any
 set(FOLDER_BINARY ${${package}_REFERENCE_${version}_${platform}_FOLDER})#mechanism: "platform" in the name of archive folder variable contains the instance extension, if any
 file(MAKE_DIRECTORY  ${CMAKE_BINARY_DIR}/share/release)
-file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
+file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY} STATUS res ${SHOW_DOWNLOAD_PROGRESS} TLS_VERIFY OFF)
 list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)
@@ -3104,7 +3116,7 @@ if(NOT release_only)
   	set(download_url_dbg ${${package}_REFERENCE_${version}_${platform}_URL_DEBUG})#mechanism: "platform" in the name of download url variable contains the instance extension, if any
   	set(FOLDER_BINARY_DEBUG ${${package}_REFERENCE_${version}_${platform}_FOLDER_DEBUG})#mechanism: "platform" in the name of archive folder variable contains the instance extension, if any
     file(MAKE_DIRECTORY  ${CMAKE_BINARY_DIR}/share/debug)
-  	file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG} STATUS res-dbg SHOW_PROGRESS TLS_VERIFY OFF)
+  	file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG} STATUS res-dbg ${SHOW_DOWNLOAD_PROGRESS} TLS_VERIFY OFF)
   	list(GET res-dbg 0 numeric_error_dbg)
   	list(GET res-dbg 1 status_dbg)
   	if(NOT numeric_error_dbg EQUAL 0)#there is an error
