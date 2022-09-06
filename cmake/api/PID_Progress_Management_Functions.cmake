@@ -529,6 +529,98 @@ if(EXISTS ${thefile})
 endif()
 endfunction(get_Chosen_Version_In_Current_Process)
 
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Dependency_Resolution_Path_For| replace:: ``get_Dependency_Resolution_Path_For``
+#  .. _get_Dependency_Resolution_Path_For:
+#
+#  get_Dependency_Resolution_Path_For
+#  -------------------------------------
+#
+#   .. command:: get_Dependency_Resolution_Path_For(OUT_STR package)
+#
+#    Get a printable string representing all possible path that were used to resolve a dependency
+#
+#      :package: the name of the given package.
+#
+#      :OUT_STR: the output variable that contains the tree of path leading the dependency resolution, as a string 
+#
+function(get_Dependency_Resolution_Path_For OUT_STR package mode)
+set(${OUT_STR} PARENT_SCOPE)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
+if(EXISTS ${thefile})
+	include (${thefile})
+	if(NOT FOUND EQUAL -1)# there is a chosen version for that package
+		get_Dependency_Resolution_Path_For_Impl_Recurse(VAR ${package} "0" ${mode})
+		set(${OUT_STR} ${VAR} PARENT_SCOPE)
+  	endif()
+endif()
+endfunction(get_Dependency_Resolution_Path_For)
+
+function(get_spaces_to_print OUT_STR nb_tabs)
+set(tmp_str "")
+while(NOT nb_tabs EQUAL 0)
+	set(tmp_str "${tmp_str}|   ")
+	math(EXPR nb_tabs "${nb_tabs}-1")
+endwhile()
+set(${OUT_STR} "${tmp_str}" PARENT_SCOPE)
+endfunction(get_spaces_to_print)
+
+function(get_Dependency_Resolution_Path_For_Impl_Recurse OUT_STR package nb_tabs mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+set(final_str "")
+set(package_marker "+--")
+set(line_marker "|")
+get_spaces_to_print(SPACES "${nb_tabs}")
+math(EXPR NEXT_REQUESTOR_INDENT "${nb_tabs}+1")
+get_Package_Type(${package} PT)
+if(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
+	foreach(req IN LISTS ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
+		set(curr_version)
+		if(${req}_CHOSEN_VERSION_IN_CURRENT_PROCESS)
+			set(curr_version ${${req}_CHOSEN_VERSION_IN_CURRENT_PROCESS})
+		elseif(${req}_VERSION_STRING)
+			set(curr_version ${${req}_VERSION_STRING})
+		elseif(${req}_VERSION)
+			set(curr_version ${${req}_VERSION})
+		endif()
+		if(nb_tabs EQUAL 0)
+			set(final_str "${final_str}\n${package_marker} ${req}: ${curr_version}")
+		else()
+			set(final_str "${final_str}\n${SPACES}${package_marker} ${req}: ${curr_version}")
+		endif()
+		
+		set(requirer_dep)
+		if(PACK_TYPE STREQUAL "NATIVE")
+			if(${req}_DEPENDENCY_${package}_VERSION${VAR_SUFFIX})
+				set(requirer_dep "-> ${${req}_DEPENDENCY_${package}_VERSION${VAR_SUFFIX}}")
+				if(${req}_DEPENDENCY_${package}_VERSION_EXACT${VAR_SUFFIX})
+					set(requirer_dep "${requirer_dep} (exact)")
+				endif()
+			endif()
+		else()
+			if(${req}_EXTERNAL_DEPENDENCY_${package}_VERSION${VAR_SUFFIX})
+				set(requirer_dep "-> ${${req}_EXTERNAL_DEPENDENCY_${package}_VERSION${VAR_SUFFIX}}")
+				if(${req}_EXTERNAL_DEPENDENCY_${package}_VERSION_SYSTEM${VAR_SUFFIX})
+					set(requirer_dep "${requirer_dep} (system)")
+				elseif(${req}_EXTERNAL_DEPENDENCY_${package}_VERSION_EXACT${VAR_SUFFIX})
+					set(requirer_dep "${requirer_dep} (exact)")
+				endif()
+			endif()
+		endif()
+		
+		get_Dependency_Resolution_Path_For_Impl_Recurse(TO_APPEND ${req} ${NEXT_REQUESTOR_INDENT} ${mode})
+		set(final_str "${final_str}${requirer_dep}${TO_APPEND}")
+	endforeach()
+endif()
+set(${OUT_STR} ${final_str} PARENT_SCOPE)
+endfunction(get_Dependency_Resolution_Path_For_Impl_Recurse)
+
 ###########################################################################################
 ######################## Control progress of a current process ############################
 ###########################################################################################
