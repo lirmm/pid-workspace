@@ -29,6 +29,9 @@ set(WRAPPER_DEFINITION_INCLUDED TRUE)
 
 cmake_minimum_required(VERSION 3.15.7)
 
+# prevent CMake automatic detection messages from appearing
+set(CMAKE_MESSAGE_LOG_LEVEL NOTICE CACHE INTERNAL "")
+
 get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
 set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)
 set(CMAKE_TOOLCHAIN_FILE ${WORKSPACE_DIR}/build/PID_Toolchain.cmake CACHE INTERNAL "" FORCE)
@@ -1018,7 +1021,7 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #     :DEFINITIONS <defs>: preprocessor definitions used in the component’s interface.
 #     :INCLUDES <folders>: include folders to pass to any component using the current component. Path are interpreted relative to the installed external package version root folder.
 #     :SHARED_LINKS <links>: shared link flags. Path are interpreted relative to the installed external package version root folder.
-#     :FORCED_SHARED_LINKS <links>: shared links whose binary is forced to be linked into dependent dinaries (see -Wl,no-as-needed) 
+#     :FORCED_SHARED_LINKS <links>: shared links whose binary is forced to be linked into dependent dinaries (see -Wl,no-as-needed)
 #     :STATIC_LINKS <links>: static link flags. Path are interpreted relative to the installed external package version root folder.
 #     :OPTIONS <compile options>: compiler options to be used whenever a third party code use this component. This should be used only for options bound to compiler usage, not definitions or include directories.
 #     :RUNTIME_RESOURCES <list of path>: list of path relative to the installed external package version root folder.
