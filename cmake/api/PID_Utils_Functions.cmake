@@ -6063,3 +6063,25 @@ function(update_Git_Ignore_File gitignore_pattern)
     file(COPY ${gitignore_pattern} DESTINATION ${CMAKE_SOURCE_DIR})
   endif()
 endfunction(update_Git_Ignore_File)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |stop_Make_To_Print_Directories| replace:: ``stop_Make_To_Print_Directories``
+#  .. _stop_Make_To_Print_Directories:
+#
+#  stop_Make_To_Print_Directories
+#  ----------------------
+#
+#   .. command:: stop_Make_To_Print_Directories()
+#
+#     Make sure --no-print-directory is in ENV{MAKEFLAGS} to stop make to print directory entry/exit messages.
+#
+function(stop_Make_To_Print_Directories)
+  string(FIND "$ENV{MAKEFLAGS}" "--no-print-directory" no_print_dir_pos)
+  if(no_print_dir_pos EQUAL -1)
+    set(ENV{MAKEFLAGS} "$ENV{MAKEFLAGS} --no-print-directory")
+  endif()
+endfunction(stop_Make_To_Print_Directories)

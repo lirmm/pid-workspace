@@ -35,6 +35,7 @@ include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 
 include(CMakeParseArguments)
 load_Current_Platform_Only()
+stop_Make_To_Print_Directories()
 
 ##################################################################################################
 #################### API to ease the description of system configurations ########################

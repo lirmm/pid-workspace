@@ -34,6 +34,8 @@ include(PID_Git_Functions NO_POLICY_SCOPE)
 
 include(CMakeParseArguments)
 
+stop_Make_To_Print_Directories()
+
 ##################################################################################################
 #################### API to ease the description of external packages ############################
 ##################################################################################################
