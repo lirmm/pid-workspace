@@ -29,6 +29,9 @@ set(WRAPPER_DEFINITION_INCLUDED TRUE)
 
 cmake_minimum_required(VERSION 3.15.7)
 
+# prevent CMake automatic detection messages from appearing
+set(CMAKE_MESSAGE_LOG_LEVEL NOTICE CACHE INTERNAL "")
+
 get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
 set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)
 set(CMAKE_TOOLCHAIN_FILE ${WORKSPACE_DIR}/build/PID_Toolchain.cmake CACHE INTERNAL "" FORCE)
@@ -39,6 +42,8 @@ include(Package_Definition NO_POLICY_SCOPE) #to enable the use of get_PID_Platfo
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 
 include(CMakeParseArguments)
+
+stop_Make_To_Print_Directories()
 
 #########################################################################################
 ######################## API to be used in wrapper description ##########################
@@ -1018,7 +1023,7 @@ endmacro(declare_PID_Wrapper_External_Dependency)
 #     :DEFINITIONS <defs>: preprocessor definitions used in the component’s interface.
 #     :INCLUDES <folders>: include folders to pass to any component using the current component. Path are interpreted relative to the installed external package version root folder.
 #     :SHARED_LINKS <links>: shared link flags. Path are interpreted relative to the installed external package version root folder.
-#     :FORCED_SHARED_LINKS <links>: shared links whose binary is forced to be linked into dependent dinaries (see -Wl,no-as-needed) 
+#     :FORCED_SHARED_LINKS <links>: shared links whose binary is forced to be linked into dependent dinaries (see -Wl,no-as-needed)
 #     :STATIC_LINKS <links>: static link flags. Path are interpreted relative to the installed external package version root folder.
 #     :OPTIONS <compile options>: compiler options to be used whenever a third party code use this component. This should be used only for options bound to compiler usage, not definitions or include directories.
 #     :RUNTIME_RESOURCES <list of path>: list of path relative to the installed external package version root folder.
@@ -2396,8 +2401,13 @@ function(install_External_Project)
         if(INSTALL_EXTERNAL_PROJECT_PROJECT)
           message("[PID] INFO : Downloading ${INSTALL_EXTERNAL_PROJECT_PROJECT}${version_str} ...")
         endif()
+        if(SHOW_WRAPPERS_BUILD_OUTPUT)
+          set(SHOW_DOWNLOAD_PROGRESS SHOW_PROGRESS)
+        else()
+          set(SHOW_DOWNLOAD_PROGRESS)
+        endif()
         file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${archive_name}
-             SHOW_PROGRESS
+             ${SHOW_DOWNLOAD_PROGRESS}
              STATUS dl_result)
         list(GET dl_result 0 return_val)
         if(NOT return_val EQUAL 0)
@@ -2407,7 +2417,7 @@ function(install_External_Project)
           file(REMOVE ${TARGET_BUILD_DIR}/${archive_name})
           execute_process(COMMAND ${CMAKE_COMMAND} -E sleep 10  OUTPUT_QUIET ERROR_QUIET)
           file(DOWNLOAD ${INSTALL_EXTERNAL_PROJECT_URL} ${TARGET_BUILD_DIR}/${archive_name}
-                SHOW_PROGRESS
+                ${SHOW_DOWNLOAD_PROGRESS}
                 STATUS dl_result)
           list(GET dl_result 0 return_val)
           if(NOT return_val EQUAL 0)
@@ -2648,7 +2658,6 @@ endmacro(return_External_Project_Error)
 #
 #     .. rubric:: Optional parameters
 #
-#     :QUIET: if used then the output of this command will be silent.
 #     :COMMENT <string>: A string to append to message to inform about special thing you are doing. Usefull if you intend to buildmultiple time the same external project with different options.
 #     :DEFINITIONS <list of definitions>: the CMake definitions you need to provide to the cmake build script.
 #
@@ -2682,8 +2691,13 @@ function(build_Waf_External_Project)
   endif()
 
   if(BUILD_WAF_EXTERNAL_PROJECT_QUIET)
-    # waf outputs its messages on cerr...
-    set(OUTPUT_MODE OUTPUT_QUIET ERROR_QUIET)
+    message("[PID] INFO : build_Waf_External_Project QUIET option is now deprecated, use the SHOW_WRAPPERS_BUILD_OUTPUT variable instead")
+  endif()
+
+  if(NOT SHOW_WRAPPERS_BUILD_OUTPUT)
+    set(OUTPUT_MODE OUTPUT_VARIABLE process_output ERROR_VARIABLE process_output)
+  else()
+    set(OUTPUT_MODE)
   endif()
 
   if(BUILD_WAF_EXTERNAL_PROJECT_COMMENT)
@@ -2766,9 +2780,12 @@ function(build_Waf_External_Project)
 
   message("[PID] INFO : Building ${BUILD_WAF_EXTERNAL_PROJECT_PROJECT} ${use_comment} in ${TARGET_MODE} mode using ${jnumber} jobs...")
 
-  execute_process(COMMAND ${CURRENT_PYTHON_EXECUTABLE} waf distclean configure build install ${BUILD_WAF_EXTERNAL_PROJECT_OPTIONS} ${jobs} --prefix=${TARGET_INSTALL_DIR} ..
-                  WORKING_DIRECTORY ${project_dir} ${OUTPUT_MODE}
-                  RESULT_VARIABLE result)
+  execute_process(
+    COMMAND ${CURRENT_PYTHON_EXECUTABLE} waf distclean configure build install ${BUILD_WAF_EXTERNAL_PROJECT_OPTIONS} ${jobs} --prefix=${TARGET_INSTALL_DIR} ..
+    WORKING_DIRECTORY ${project_dir}
+    RESULT_VARIABLE result
+    ${OUTPUT_MODE}
+  )
 
   #put back environment variables in previous state
   set(ENV{LDFLAGS} "${TEMP_LD}")
@@ -2778,6 +2795,9 @@ function(build_Waf_External_Project)
   set(ENV{CXX} "${TEMP_CXX_COMPILER}")
   set(ENV{LD} "${TEMP_LD}")
   if(NOT result EQUAL 0)#error at configuration time
+    if(OUTPUT_MODE)
+      message("${build_output}")
+    endif()
     message("[PID] ERROR : cannot configure/build/install Waf project ${BUILD_WAF_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
@@ -2810,7 +2830,6 @@ endfunction(build_Waf_External_Project)
 #
 #     .. rubric:: Optional parameters
 #
-#     :QUIET: if used then the output of this command will be silent.
 #     :COMMENT <string>: A string to append to message to inform about special thing you are doing. Usefull if you intend to buildmultiple time the same external project with different options.
 #     :DEFINITIONS <list of definitions>: the CMake definitions you need to provide to the cmake build script.
 #
@@ -2846,9 +2865,12 @@ function(build_CMake_External_Project)
     return()
   endif()
 
-  if(BUILD_CMAKE_EXTERNAL_PROJECT_QUIET
-    AND NOT ADDITIONAL_DEBUG_INFO)
-    set(OUTPUT_MODE OUTPUT_QUIET)
+  if(BUILD_CMAKE_EXTERNAL_PROJECT_QUIET)
+    message("[PID] INFO : build_CMake_External_Project QUIET option is now deprecated, use the SHOW_WRAPPERS_BUILD_OUTPUT variable instead")
+  endif()
+
+  if(NOT SHOW_WRAPPERS_BUILD_OUTPUT)
+    set(OUTPUT_MODE OUTPUT_VARIABLE process_output ERROR_VARIABLE process_output)
   else()
     set(OUTPUT_MODE)
   endif()
@@ -2932,12 +2954,14 @@ function(build_CMake_External_Project)
                             -C ${BUILD_INFO_FILE}
                             ${COMMAND_ARGS_AS_LIST}
                             ..
-    WORKING_DIRECTORY ${project_build_dir}
-    ${OUTPUT_MODE}
-    RESULT_VARIABLE result)
+      WORKING_DIRECTORY ${project_build_dir}
+      ${OUTPUT_MODE}
+      RESULT_VARIABLE result
+    )
   if(NOT result EQUAL 0)#error at configuration time
-    message("[PID] ERROR : cannot configure CMake project ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
+    message("${process_output}")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
+    message("[PID] ERROR : cannot configure CMake project ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     return()
   endif()
   #once configure, build it
@@ -2962,6 +2986,7 @@ function(build_CMake_External_Project)
     RESULT_VARIABLE result
   )
   if(NOT result EQUAL 0)#error at configuration time
+    message("${process_output}")
     message("[PID] ERROR : cannot build CMake project ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()
@@ -2973,6 +2998,7 @@ function(build_CMake_External_Project)
     RESULT_VARIABLE result
   )
   if(NOT result EQUAL 0)#error at configuration time
+    message("${process_output}")
     message("[PID] ERROR : cannot install CMake project ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} ${use_comment} ...")
     set(ERROR_IN_SCRIPT TRUE PARENT_SCOPE)
     return()

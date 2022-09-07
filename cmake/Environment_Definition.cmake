@@ -25,6 +25,9 @@ if(ENVIRONMENT_DEFINITION_INCLUDED)
 endif()
 set(ENVIRONMENT_DEFINITION_INCLUDED TRUE)
 
+# prevent CMake automatic detection messages from appearing
+set(CMAKE_MESSAGE_LOG_LEVEL NOTICE CACHE INTERNAL "")
+
 get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
 set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
@@ -33,6 +36,8 @@ include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Environment_API_Internal_Functions NO_POLICY_SCOPE)
 
 include(CMakeParseArguments)
+
+stop_Make_To_Print_Directories()
 
 #.rst:
 #

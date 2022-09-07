@@ -25,6 +25,9 @@ if(CONFIGURATION_DEFINITION_INCLUDED)
 endif()
 set(CONFIGURATION_DEFINITION_INCLUDED TRUE)
 
+# prevent CMake automatic detection messages from appearing
+set(CMAKE_MESSAGE_LOG_LEVEL NOTICE CACHE INTERNAL "")
+
 include(PID_Set_Policies NO_POLICY_SCOPE)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
@@ -32,6 +35,7 @@ include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 
 include(CMakeParseArguments)
 load_Current_Platform_Only()
+stop_Make_To_Print_Directories()
 
 ##################################################################################################
 #################### API to ease the description of system configurations ########################
@@ -150,15 +154,20 @@ endmacro(installable_PID_Configuration)
 #
 macro(execute_OS_Configuration_Command)
 if(NOT DO_NOT_INSTALL)
+  set(exec_opts OUTPUT_VARIABLE process_output ERROR_VARIABLE process_output RESULT_VARIABLE result)
   if("${ARGV0}" STREQUAL "NOT_PRIVILEGED")
     set(args ${ARGN})
     list(REMOVE_AT args 0)
-    execute_process(COMMAND ${args})
+    execute_process(${exec_opts} COMMAND ${args})
   elseif(IN_CI_PROCESS)
-    execute_process(COMMAND ${ARGN})
+    execute_process(${exec_opts} COMMAND ${ARGN})
   else()
-    execute_process(COMMAND sudo ${ARGN})#need to have super user privileges except in CI where suding sudi is forbidden
+    execute_process(${exec_opts} COMMAND sudo ${ARGN})#need to have super user privileges except in CI where suding sudi is forbidden
   endif()
+  if(NOT result EQUAL 0)
+    message("${process_output}")
+  endif()
+  set(exec_opts)
 endif()
 endmacro(execute_OS_Configuration_Command)
 

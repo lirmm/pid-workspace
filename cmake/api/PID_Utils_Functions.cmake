@@ -482,7 +482,7 @@ endmacro(execute_OS_Command)
 #
 #   .. command:: execute_System_Packaging_Command([list_of_packages])
 #
-#      invoque the system packager in use. Either execute a system update/upggrade or install given packages.
+#      invoke the system packager in use. Either execute a system update/upggrade or install given packages.
 #
 #     :list_of_packages: the system package to install. If none given a system update/upgrade will be performed.
 #
@@ -499,15 +499,49 @@ function(execute_System_Packaging_Command)
   foreach(command IN LISTS sys_pack_commands)
     if(IN_CI_PROCESS)
       if(CURRENT_PACKAGING_SYSTEM_FORCE_NON_ROOT_USER)
-        execute_process(COMMAND sudo -u builduser ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN})#use the specific user called builduser
+        #use the specific user called builduser
+        execute_process(
+          OUTPUT_VARIABLE process_output
+          ERROR_VARIABLE process_output
+          RESULT_VARIABLE result
+          COMMAND sudo -u builduser ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN}
+        )
       else()#directly use the root user
-        execute_process(COMMAND ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN})#use root user
+        execute_process(
+          OUTPUT_VARIABLE process_output
+          ERROR_VARIABLE process_output
+          RESULT_VARIABLE result
+          COMMAND ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN}
+        )
+      endif()
+      # In CI only print on error (ADDITIONAL_DEBUG_INFO is always set)
+      if(NOT result EQUAL 0)
+        message("${process_output}")
       endif()
     else()
-      if(CURRENT_PACKAGING_SYSTEM_FORCE_NON_ROOT_USER)
-        execute_process(COMMAND ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN})#use the current user
+      # Locally show the output on error or if requested using ADDITIONAL_DEBUG_INFO
+      if(NOT ADDITIONAL_DEBUG_INFO)
+        set(OUTPUT_MODE OUTPUT_VARIABLE process_output ERROR_VARIABLE process_output)
       else()
-        execute_process(COMMAND sudo ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN})#need to have super user privileges except in CI where sudo is forbidden
+        set(OUTPUT_MODE)
+      endif()
+      if(CURRENT_PACKAGING_SYSTEM_FORCE_NON_ROOT_USER)
+        #use the current user
+        execute_process(
+          ${OUTPUT_MODE}
+          RESULT_VARIABLE result
+          COMMAND ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN}
+        )
+      else()
+        #need to have super user privileges except in CI where sudo is forbidden
+        execute_process(
+          ${OUTPUT_MODE}
+          RESULT_VARIABLE result
+          COMMAND sudo ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN}
+        )
+      endif()
+      if(NOT result EQUAL 0 AND OUTPUT_MODE)
+        message("${process_output}")
       endif()
     endif()
   endforeach()
@@ -3377,7 +3411,7 @@ endfunction(resolve_External_Libs_Path)
 #
 #   .. command:: convert_To_Forced_Shared_Linker_Option(RES_OPTIONS list_of_links)
 #
-#    Convert the links passed onto a linker option that enforces the 
+#    Convert the links passed onto a linker option that enforces the
 #
 #     :list_of_links: the list of shared libraries links to force linking with
 #
@@ -6029,3 +6063,25 @@ function(update_Git_Ignore_File gitignore_pattern)
     file(COPY ${gitignore_pattern} DESTINATION ${CMAKE_SOURCE_DIR})
   endif()
 endfunction(update_Git_Ignore_File)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |stop_Make_To_Print_Directories| replace:: ``stop_Make_To_Print_Directories``
+#  .. _stop_Make_To_Print_Directories:
+#
+#  stop_Make_To_Print_Directories
+#  ----------------------
+#
+#   .. command:: stop_Make_To_Print_Directories()
+#
+#     Make sure --no-print-directory is in ENV{MAKEFLAGS} to stop make to print directory entry/exit messages.
+#
+function(stop_Make_To_Print_Directories)
+  string(FIND "$ENV{MAKEFLAGS}" "--no-print-directory" no_print_dir_pos)
+  if(no_print_dir_pos EQUAL -1)
+    set(ENV{MAKEFLAGS} "$ENV{MAKEFLAGS} --no-print-directory")
+  endif()
+endfunction(stop_Make_To_Print_Directories)

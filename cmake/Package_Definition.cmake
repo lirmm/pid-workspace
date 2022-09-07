@@ -28,6 +28,9 @@ set(PACKAGE_DEFINITION_INCLUDED TRUE)
 
 cmake_minimum_required(VERSION 3.15.7)
 
+# prevent CMake automatic detection messages from appearing
+set(CMAKE_MESSAGE_LOG_LEVEL NOTICE CACHE INTERNAL "")
+
 list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake)
 get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
 set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)
@@ -43,6 +46,8 @@ include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Package_API_Internal_Functions NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(CMakeParseArguments)
+
+stop_Make_To_Print_Directories()
 
 #.rst:
 #
@@ -1068,9 +1073,9 @@ macro(PID_Component)
 endmacro(PID_Component)
 
 macro(declare_PID_Component)
-set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER 
-            APPLICATION APP EXAMPLE_APPLICATION EXAMPLE TEST_APPLICATION TEST 
-            PYTHON_PACK PYTHON 
+set(options STATIC_LIB STATIC SHARED_LIB SHARED MODULE_LIB MODULE HEADER_LIB HEADER
+            APPLICATION APP EXAMPLE_APPLICATION EXAMPLE TEST_APPLICATION TEST
+            PYTHON_PACK PYTHON
             LOGGABLE
             INTERNAL_ONLY FOR_EXAMPLES FOR_TESTS)
 set(oneValueArgs MANAGE_SYMBOLS NAME DIRECTORY C_STANDARD C_MAX_STANDARD CXX_STANDARD CXX_MAX_STANDARD DOCUMENTATION WARNING_LEVEL)

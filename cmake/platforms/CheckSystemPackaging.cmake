@@ -107,10 +107,12 @@ if(NOT PID_CROSSCOMPILATION) #there is a pâckaging system only if a distributio
     endif()
   endif()
 endif()
-if(CURRENT_PACKAGING_SYSTEM)
-  message("[PID] INFO: package manager detected is: ${CURRENT_PACKAGING_SYSTEM}")
-else()
-  message("[PID] WARNING: no package manager detected")
+if(ADDITIONAL_DEBUG_INFO)
+  if(CURRENT_PACKAGING_SYSTEM)
+    message("[PID] INFO: package manager detected is: ${CURRENT_PACKAGING_SYSTEM}")
+  else()
+    message("[PID] WARNING: no package manager detected")
+  endif()
 endif()
 
   #Note: In CI update/upgrade operation is automatic

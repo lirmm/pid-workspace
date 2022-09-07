@@ -28,12 +28,17 @@ set(FRAMEWORK_DEFINITION_INCLUDED TRUE)
 
 cmake_minimum_required(VERSION 3.15.7)
 
+# prevent CMake automatic detection messages from appearing
+set(CMAKE_MESSAGE_LOG_LEVEL NOTICE CACHE INTERNAL "")
+
 get_filename_component(abs_path_to_ws ${WORKSPACE_DIR} ABSOLUTE)
 set(WORKSPACE_DIR ${abs_path_to_ws} CACHE PATH "" FORCE)
 include(PID_Set_Modules_Path NO_POLICY_SCOPE)
 include(PID_Framework_API_Internal_Functions NO_POLICY_SCOPE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(CMakeParseArguments)
+
+stop_Make_To_Print_Directories()
 
 #.rst:
 #

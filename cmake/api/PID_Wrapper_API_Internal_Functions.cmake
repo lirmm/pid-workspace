@@ -273,17 +273,18 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	  ######## create global targets ##################
 	  #################################################
 		add_custom_target(build
-	    COMMAND ${CMAKE_COMMAND}
-						 -DWORKSPACE_DIR=${WORKSPACE_DIR}
-	           -DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
-	           -DTARGET_EXTERNAL_VERSION=\${version}
-						 -DTARGET_BUILD_MODE=\${mode}
-					   -DGENERATE_BINARY_ARCHIVE=\${archive}
-	           -DDO_NOT_EXECUTE_SCRIPT=\${skip_script}
-					 	 -DUSE_SYSTEM_VARIANT=\${os_variant}
-						 -DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
-						 -P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Wrapper.cmake
-	    COMMENT "[PID] Building external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+			COMMAND ${CMAKE_COMMAND}
+				-DWORKSPACE_DIR=${WORKSPACE_DIR}
+				-DTARGET_EXTERNAL_PACKAGE=${PROJECT_NAME}
+				-DSHOW_WRAPPERS_BUILD_OUTPUT=${SHOW_WRAPPERS_BUILD_OUTPUT}
+				-DTARGET_EXTERNAL_VERSION=\${version}
+				-DTARGET_BUILD_MODE=\${mode}
+				-DGENERATE_BINARY_ARCHIVE=\${archive}
+				-DDO_NOT_EXECUTE_SCRIPT=\${skip_script}
+				-DUSE_SYSTEM_VARIANT=\${os_variant}
+				-DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
+				-P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Wrapper.cmake
+			COMMENT "[PID] Building external package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	  )
 
@@ -384,6 +385,7 @@ endmacro(declare_Wrapper)
 #
 macro(declare_Wrapper_Global_Cache_Options)
 option(ADDITIONAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
+option(SHOW_WRAPPERS_BUILD_OUTPUT "Force to always display the wrappers build output (only shown on error by default)" OFF)
 option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
 option(BUILD_RELEASE_ONLY "Package is built in release mode" ON)
 if(FORCE_DUAL_MODE)#if dual mode forced
@@ -2422,7 +2424,7 @@ function(generate_OS_Variant_Symlinks package platform version install_dir)
 				generate_OS_Variant_Symlink_For_Path(${install_dir} ${RESULT_LIB_PATH} "${${package}_LIBRARIES}")
 			endif()
 		endforeach()
-		if(		${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS 
+		if(		${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS
 			OR 	${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_FORCED_SHARED_LINKS)
 
 			if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME)#the component SONAME has priority over package SONAME
@@ -2668,8 +2670,8 @@ endmacro(define_Wrapper_Framework_Contribution)
 #      :RES_SHARED_LINKS: the output variable containing all shared libraries to set when using the component.
 #      :RES_RESOURCES: the output variable containing all runtime resources used by the component.
 #
-function(agregate_All_Build_Info_For_Component package component mode RES_INCS 	RES_LIB_DIRS RES_DEFS RES_OPTS 
-																				RES_STD_C RES_STD_MAX_C RES_STD_CXX RES_STD_MAX_CXX 
+function(agregate_All_Build_Info_For_Component package component mode RES_INCS 	RES_LIB_DIRS RES_DEFS RES_OPTS
+																				RES_STD_C RES_STD_MAX_C RES_STD_CXX RES_STD_MAX_CXX
 																				RES_LINKS RES_SHARED_LINKS RES_RESOURCES)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #the variables containing the adequate values are located in the use file of the package containing the component
@@ -2894,7 +2896,7 @@ function(set_Build_Info_For_Dependency prefix dep_package component)
 												RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS
 												RES_STD_C RES_STD_MAX_C RES_STD_CXX RES_STD_MAX_CXX
 												RES_LINKS RES_SHARED_LINKS RES_RESOURCES)
-		
+
 		list(APPEND runtime_links ${RES_SHARED_LINKS})
 		list(APPEND links ${RES_LINKS})
 		list(APPEND includes ${RES_INCS})

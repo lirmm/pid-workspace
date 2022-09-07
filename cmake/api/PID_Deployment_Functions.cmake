@@ -2021,13 +2021,19 @@ if(ADDITIONAL_DEBUG_INFO)
 endif()
 set(MISSING_DEBUG_VERSION FALSE)
 
+if(ADDITIONAL_DEBUG_INFO)
+  set(SHOW_DOWNLOAD_PROGRESS SHOW_PROGRESS)
+else()
+  set(SHOW_DOWNLOAD_PROGRESS)
+endif()
+
 ###### downloading the binary package ######
 #release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
 generate_Binary_Package_Name(${package} ${version} Release FILE_BINARY FOLDER_BINARY)#whatever the platform is with instance or not, archive and folder are named the same way
 set(download_url ${${package}_REFERENCE_${version}_${platform}_URL})#platform in download url may contain also the instance extension
-file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
+file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res ${SHOW_DOWNLOAD_PROGRESS} TLS_VERIFY OFF)
 list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)
@@ -2042,7 +2048,7 @@ if(NOT release_only)
   set(FOLDER_BINARY_DEBUG "")
   generate_Binary_Package_Name(${package} ${version} Debug FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
   set(download_url_dbg ${${package}_REFERENCE_${version}_${platform}_URL_DEBUG})#platform in download url may contain also the instance extension
-  file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg SHOW_PROGRESS TLS_VERIFY OFF)
+  file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY_DEBUG} STATUS res-dbg ${SHOW_DOWNLOAD_PROGRESS} TLS_VERIFY OFF)
   list(GET res-dbg 0 numeric_error_dbg)
   list(GET res-dbg 1 status_dbg)
   if(NOT numeric_error_dbg EQUAL 0)#there is an error
@@ -2291,27 +2297,37 @@ function(build_And_Install_External_Package_Version INSTALLED package version is
   endif()
   target_Options_Passed_Via_Environment(use_env)
   if(${use_env})
-     set(ENV{version} ${version})
-     if(is_system)
-         set(ENV{os_variant} true)
-     endif()
-     execute_process(#call the wrapper command used to build the version of the external package
-         COMMAND ${CMAKE_MAKE_PROGRAM} build
-         WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
-         RESULT_VARIABLE BUILD_RES
-     )
-     unset(ENV{version})
-     unset(ENV{os_variant})
+    set(ENV{version} ${version})
+    if(is_system)
+        set(ENV{os_variant} true)
+    endif()
+    if(SHOW_WRAPPERS_BUILD_OUTPUT)
+      set(ENV{show_build_output} ON)
+    else()
+      set(ENV{show_build_output} OFF)
+    endif()
+    execute_process(#call the wrapper command used to build the version of the external package
+        COMMAND ${CMAKE_MAKE_PROGRAM} build
+        WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
+        RESULT_VARIABLE BUILD_RES
+    )
+    unset(ENV{version})
+    unset(ENV{os_variant})
   else()
-     set(args_to_use version=${version})
-     if(is_system)
-         set(args_to_use ${args_to_use} os_variant=true)
-     endif()
-     execute_process(#call the wrapper command used to build the version of the external package
-         COMMAND ${CMAKE_MAKE_PROGRAM} build ${args_to_use}
-         WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
-         RESULT_VARIABLE BUILD_RES
-     )
+    set(args_to_use version=${version})
+    if(is_system)
+      set(args_to_use ${args_to_use} os_variant=true)
+    endif()
+    if(SHOW_WRAPPERS_BUILD_OUTPUT)
+      set(args_to_use ${args_to_use} show_build_output=ON)
+    else()
+      set(args_to_use ${args_to_use} show_build_output=OFF)
+    endif()
+    execute_process(#call the wrapper command used to build the version of the external package
+        COMMAND ${CMAKE_MAKE_PROGRAM} build ${args_to_use}
+        WORKING_DIRECTORY ${WORKSPACE_DIR}/wrappers/${package}/build
+        RESULT_VARIABLE BUILD_RES
+    )
   endif()
 
   if(BUILD_RES EQUAL 0
@@ -3070,6 +3086,12 @@ if(ADDITIONAL_DEBUG_INFO)
 	message("[PID] INFO : installing external package ${package}, version ${version}...")
 endif()
 
+if(ADDITIONAL_DEBUG_INFO)
+  set(SHOW_DOWNLOAD_PROGRESS SHOW_PROGRESS)
+else()
+  set(SHOW_DOWNLOAD_PROGRESS)
+endif()
+
 #1) release code
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
@@ -3077,7 +3099,7 @@ generate_Binary_Package_Name(${package} ${version} Release FILE_BINARY FOLDER_BI
 set(download_url ${${package}_REFERENCE_${version}_${platform}_URL})#mechanism: "platform" in the name of download url variable contains the instance extension, if any
 set(FOLDER_BINARY ${${package}_REFERENCE_${version}_${platform}_FOLDER})#mechanism: "platform" in the name of archive folder variable contains the instance extension, if any
 file(MAKE_DIRECTORY  ${CMAKE_BINARY_DIR}/share/release)
-file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY} STATUS res SHOW_PROGRESS TLS_VERIFY OFF)
+file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY} STATUS res ${SHOW_DOWNLOAD_PROGRESS} TLS_VERIFY OFF)
 list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)
@@ -3094,7 +3116,7 @@ if(NOT release_only)
   	set(download_url_dbg ${${package}_REFERENCE_${version}_${platform}_URL_DEBUG})#mechanism: "platform" in the name of download url variable contains the instance extension, if any
   	set(FOLDER_BINARY_DEBUG ${${package}_REFERENCE_${version}_${platform}_FOLDER_DEBUG})#mechanism: "platform" in the name of archive folder variable contains the instance extension, if any
     file(MAKE_DIRECTORY  ${CMAKE_BINARY_DIR}/share/debug)
-  	file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG} STATUS res-dbg SHOW_PROGRESS TLS_VERIFY OFF)
+  	file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG} STATUS res-dbg ${SHOW_DOWNLOAD_PROGRESS} TLS_VERIFY OFF)
   	list(GET res-dbg 0 numeric_error_dbg)
   	list(GET res-dbg 1 status_dbg)
   	if(NOT numeric_error_dbg EQUAL 0)#there is an error
