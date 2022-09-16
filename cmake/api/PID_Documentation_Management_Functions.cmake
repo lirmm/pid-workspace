@@ -1696,7 +1696,7 @@ endfunction(generate_Dependency_Site)
 function(generate_External_Dependency_Site RES_CONTENT dependency list_of_versions exact_versions)
   include_External_Reference_File(PATH_TO_FILE ${dependency})
   if(NOT PATH_TO_FILE)
-  	message(FATAL_ERROR "[PID] CRITICAL ERROR: reference file not found for package ${package}!! This is certainly due to a badly referenced package. Please contact the administrator of package ${package} !!!")
+  	message(FATAL_ERROR "[PID] CRITICAL ERROR: reference file not found for package ${dependency}!! This is certainly due to a badly referenced package. Please contact the administrator of package ${dependency} !!!")
   	return()
   endif()
 
