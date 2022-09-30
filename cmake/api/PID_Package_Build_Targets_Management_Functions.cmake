@@ -335,19 +335,22 @@ endfunction(manage_Python_Scripts)
 #
 function(create_Module_Lib_Target c_name c_standard cxx_standard sources internal_inc_dirs internal_defs internal_compiler_options internal_links hide_symbols)
 	add_library(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} MODULE ${sources})
-  if(hide_symbols)
-    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS OFF)
-    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES VISIBILITY_INLINES_HIDDEN ON)
-    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES C_VISIBILITY_PRESET hidden)
-    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES CXX_VISIBILITY_PRESET hidden)
-  else()
-    #NOTE: on UNIX by default all symbols are exported
-    #on Windows symbols are hifdden by default so we need to export all of them explicitly to get homogeneous behavior
-    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
-  endif()
-  install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX}
-		LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
-	)
+	if(hide_symbols)
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES VISIBILITY_INLINES_HIDDEN ON)
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES C_VISIBILITY_PRESET hidden)
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES CXX_VISIBILITY_PRESET hidden)
+	else()
+		#NOTE: on UNIX by default all symbols are exported
+		#on Windows symbols are hifdden by default so we need to export all of them explicitly to get homogeneous behavior
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+	endif()
+	will_be_Installed(WILL_BE ${c_name})
+	if(WILL_BE)
+		install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX}
+			LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}
+		)
+	endif()
 	#setting the default rpath for the target (rpath target a specific folder of the binary package for the installed version of the component)
 	if(APPLE)
 		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../.rpath/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the library targets a specific folder that contains symbolic links to used shared libraries
@@ -392,20 +395,23 @@ endfunction(create_Module_Lib_Target)
 #
 function(create_Shared_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links internal_links hide_symbols)
 	add_library(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} SHARED ${sources})
-  if(hide_symbols)
-    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS OFF)
-    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES VISIBILITY_INLINES_HIDDEN ON)
-    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES C_VISIBILITY_PRESET hidden)
-    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES CXX_VISIBILITY_PRESET hidden)
-  else()
-    set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
-  endif()
-  if(WIN32)
-  	install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .dll
-  	install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .lib
-  else()
-    install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH})
-  endif()
+	if(hide_symbols)
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES VISIBILITY_INLINES_HIDDEN ON)
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES C_VISIBILITY_PRESET hidden)
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES CXX_VISIBILITY_PRESET hidden)
+	else()
+		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+	endif()
+	will_be_Installed(WILL_BE ${c_name})
+	if(WILL_BE)
+		if(WIN32)
+			install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} RUNTIME DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .dll
+			install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH}) # for .lib
+		else()
+			install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} LIBRARY DESTINATION ${${PROJECT_NAME}_INSTALL_LIB_PATH})
+		endif()
+	endif()
 	#setting the default rpath for the target (rpath target a specific folder of the binary package for the installed version of the component)
 	if(APPLE)
 		set_target_properties(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../.rpath/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX};${CMAKE_INSTALL_RPATH}") #the library targets a specific folder that contains symbolic links to used shared libraries
@@ -448,9 +454,12 @@ endfunction(create_Shared_Lib_Target)
 #
 function(create_Static_Lib_Target c_name c_standard cxx_standard sources exported_inc_dirs internal_inc_dirs exported_defs internal_defs exported_compiler_options internal_compiler_options exported_links)
 	add_library(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} STATIC ${sources})
-	install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX}
-		ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_AR_PATH}
-	)
+	will_be_Installed(WILL_BE ${c_name})
+	if(WILL_BE)
+		install(TARGETS ${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX}
+			ARCHIVE DESTINATION ${${PROJECT_NAME}_INSTALL_AR_PATH}
+		)
+	endif()
 	set(INC_DIRS ${internal_inc_dirs} ${exported_inc_dirs})
 	set(DEFS ${internal_defs} ${exported_defs})
 	set(COMP_OPTS ${exported_compiler_options} ${internal_compiler_options})

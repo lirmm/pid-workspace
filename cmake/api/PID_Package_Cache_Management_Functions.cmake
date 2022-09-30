@@ -1087,6 +1087,9 @@ set(${package}_${component}_AUX_MONITORED_PATH CACHE INTERNAL "")
 set(${package}_${component}_RUNTIME_RESOURCES${VAR_SUFFIX} CACHE INTERNAL "")
 set(${package}_${component}_DESCRIPTION CACHE INTERNAL "")
 set(${package}_${component}_USAGE_INCLUDES CACHE INTERNAL "")
+set(${package}_${component}_INTERNAL_ONLY CACHE INTERNAL "")
+set(${package}_${component}_FOR_EXAMPLES CACHE INTERNAL "")
+set(${package}_${component}_FOR_TESTS CACHE INTERNAL "")
 endfunction(reset_Component_Cached_Variables)
 
 #.rst:
@@ -2107,6 +2110,12 @@ function(will_be_Installed RESULT component)
 if( (${PROJECT_NAME}_${component}_TYPE STREQUAL "TEST")
 	OR (${PROJECT_NAME}_${component}_TYPE STREQUAL "EXAMPLE" AND (NOT BUILD_EXAMPLES OR NOT BUILD_EXAMPLE_${component})))
 	set(${RESULT} FALSE PARENT_SCOPE)
+elseif(${PROJECT_NAME}_${component}_INTERNAL_ONLY)#internal libraries are never installed
+  if(${PROJECT_NAME}_${component}_FOR_EXAMPLES AND BUILD_EXAMPLES)#except if they are used for examples and examples are built
+    set(${RESULT} TRUE PARENT_SCOPE)
+    return()
+  endif()
+  set(${RESULT} FALSE PARENT_SCOPE)
 else()
 	if(${PROJECT_NAME}_${component}_TYPE STREQUAL "MODULE")### to know wehether a module is a python wrapped module and is really compilable
 		contains_Python_Code(HAS_WRAPPER ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_${component}_SOURCE_DIR})
@@ -2478,15 +2487,39 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
   else()
     file(APPEND ${file} "set(${package}_BUILT_RELEASE_ONLY FALSE CACHE INTERNAL \"\")\n")
   endif()
+  #need to resolve components that will really lie in the resulting install tree
+  set(list_of_comps)
+  set(list_of_apps)
+  set(list_of_libs)
+  foreach(comp IN LISTS ${package}_COMPONENTS)
+    will_be_Installed(INSTALLED ${comp})
+    if(INSTALLED)
+      list(APPEND list_of_comps ${comp})
+      if(${package}_${comp}_TYPE STREQUAL "APP" OR ${package}_${comp}_TYPE STREQUAL "EXAMPLE")
+        list(APPEND list_of_apps ${comp})
+      else()
+        list(APPEND list_of_libs ${comp})
+      endif()
+    endif()
+  endforeach()
+  #also need to resolve their alias, if any
+  set(list_of_aliases)
+  foreach(alias IN LISTS ${package}_ALIASES)
+    list(FIND list_of_comps ${${package}_${alias}_IS_ALIAS_OF} INDEX)
+    if(NOT INDEX EQUAL -1)#alias matches a component that will be installed
+      list(APPEND list_of_aliases ${alias})
+    endif()
+  endforeach()
+
 	file(APPEND ${file} "######### declaration of package components ########\n")
-	file(APPEND ${file} "set(${package}_COMPONENTS ${${package}_COMPONENTS} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${${package}_COMPONENTS_APPS} CACHE INTERNAL \"\")\n")
-	file(APPEND ${file} "set(${package}_COMPONENTS_LIBS ${${package}_COMPONENTS_LIBS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_COMPONENTS ${list_of_comps} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_COMPONENTS_APPS ${list_of_apps} CACHE INTERNAL \"\")\n")
+	file(APPEND ${file} "set(${package}_COMPONENTS_LIBS ${list_of_libs} CACHE INTERNAL \"\")\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS_SCRIPTS ${${package}_COMPONENTS_SCRIPTS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${package}_ALIASES ${${package}_ALIASES} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${package}_ALIASES ${list_of_aliases} CACHE INTERNAL \"\")\n")
 
 	file(APPEND ${file} "####### internal specs of package components #######\n")
-	foreach(a_component IN LISTS ${package}_COMPONENTS_LIBS)
+	foreach(a_component IN LISTS list_of_libs)
 		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
 		if(NOT ${package}_${a_component}_TYPE STREQUAL "MODULE")#modules do not have public interfaces
 			file(APPEND ${file} "set(${package}_${a_component}_HEADER_DIR_NAME ${${package}_${a_component}_HEADER_DIR_NAME} CACHE INTERNAL \"\")\n")
@@ -2495,13 +2528,13 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
       file(APPEND ${file} "set(${package}_${a_component}_HAS_PYTHON_WRAPPER TRUE CACHE INTERNAL \"\")\n")
     endif()
 	endforeach()
-	foreach(a_component IN LISTS ${package}_COMPONENTS_APPS)
+	foreach(a_component IN LISTS list_of_apps)
 		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
 	endforeach()
 	foreach(a_component IN LISTS ${package}_COMPONENTS_SCRIPTS)
 		file(APPEND ${file} "set(${package}_${a_component}_TYPE ${${package}_${a_component}_TYPE} CACHE INTERNAL \"\")\n")
 	endforeach()
-  foreach(an_alias IN LISTS ${package}_ALIASES)
+  foreach(an_alias IN LISTS list_of_aliases)
     file(APPEND ${file} "set(${package}_${an_alias}_IS_ALIAS_OF ${${package}_${an_alias}_IS_ALIAS_OF} CACHE INTERNAL \"\")\n")
   endforeach()
 else()
@@ -2584,7 +2617,7 @@ endif()
 
 # 3) internal+external components specifications
 file(APPEND ${file} "#### declaration of components exported flags and binary in ${CMAKE_BUILD_TYPE} mode ####\n")
-foreach(a_component IN LISTS ${package}_COMPONENTS)
+foreach(a_component IN LISTS list_of_comps)
 	is_Built_Component(IS_BUILT_COMP ${package} ${a_component})#nNote: o need to manage aliases since variable contains only base name of components in current project (by construction)
 	is_HeaderFree_Component(IS_HF_COMP ${package} ${a_component})#Note: no need to manage aliases since variable contains only base name of components in current project (by construction)
 	if(IS_BUILT_COMP)#if not a pure header library
@@ -2621,7 +2654,7 @@ endforeach()
 
 # 4) package internal component dependencies
 file(APPEND ${file} "#### declaration package internal component dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-foreach(a_component IN LISTS ${package}_COMPONENTS)
+foreach(a_component IN LISTS list_of_comps)
 	if(${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}) # the component has internal dependencies
 		file(APPEND ${file} "set(${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX} ${${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		foreach(a_int_dep IN LISTS ${package}_${a_component}_INTERNAL_DEPENDENCIES${MODE_SUFFIX})
@@ -2636,7 +2669,7 @@ endforeach()
 
 # 5) component dependencies
 file(APPEND ${file} "#### declaration of component dependencies in ${CMAKE_BUILD_TYPE} mode ####\n")
-foreach(a_component IN LISTS ${package}_COMPONENTS)
+foreach(a_component IN LISTS list_of_comps)
 	if(${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX}) # the component has package dependencies
 		file(APPEND ${file} "set(${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX} ${${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX}} CACHE INTERNAL \"\")\n")
 		foreach(dep_package IN LISTS ${package}_${a_component}_DEPENDENCIES${MODE_SUFFIX})

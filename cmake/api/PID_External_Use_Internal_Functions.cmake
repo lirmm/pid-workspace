@@ -779,11 +779,11 @@ endfunction(manage_Dependent_PID_External_Package)
 #
 #   .. command:: add_Managed_PID_Resources(local_target files dirs)
 #
-#    Define runtime resources used by the local target. These resources will be doscoverable at runtime using pid-rpath API.
+#    Define runtime resources used by the local target. These resources will be discoverable at runtime using pid-rpath API.
 #
 #     :local_target: the name of the local target defining the resources
 #     :files: list of files
-#     :dirs: list of firectories.
+#     :dirs: list of directories.
 #
 function(add_Managed_PID_Resources local_target files dirs)
 

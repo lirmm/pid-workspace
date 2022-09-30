@@ -1680,7 +1680,9 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") # a module library has 
 		get_All_Headers_Absolute(${PROJECT_NAME}_${c_name}_ALL_HEADERS ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} "${more_headers}")
 
 		#install the include folder with only header file
-		install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING REGEX "${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
+		if(NOT internal_only)
+			install(DIRECTORY ${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR} DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH} FILES_MATCHING REGEX "${${PROJECT_NAME}_${c_name}_HEADERS_SELECTION_PATTERN}")
+		endif()
 	elseif(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")
 		#problem only header libraries may have no folder !!
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -1737,7 +1739,9 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "SHARED")
 		create_Shared_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${${PROJECT_NAME}_${c_name}_TEMP_INCLUDE_DIR}" "${use_includes}" "${exported_defs}" "${internal_defs}" "${exported_compiler_options}" "${internal_compiler_options}" "${exported_links}" "${internal_links}" "${manage_symbols}")
-		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
+		if(NOT internal_only)
+			install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
+		endif()
 		register_Component_Binary(${c_name})
 	elseif(${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE") #a static library has no exported links (no interface)
 		contains_Python_Code(HAS_WRAPPER ${CMAKE_CURRENT_SOURCE_DIR}/${dirname})
@@ -1752,7 +1756,9 @@ if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "HEADER")# a header library has n
 		else()
 			create_Module_Lib_Target(${c_name} "${c_standard}" "${cxx_standard}" "${${PROJECT_NAME}_${c_name}_ALL_SOURCES}" "${use_includes}" "${internal_defs}" "${internal_compiler_options}" "${internal_links}" "${manage_symbols}")
 		endif()
-		install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
+		if(NOT internal_only)
+			install(DIRECTORY DESTINATION ${${PROJECT_NAME}_INSTALL_RPATH_DIR}/${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX})#create the folder that will contain symbolic links (e.g. to shared libraries) used by the component (will allow full relocation of components runtime dependencies at install time)
+		endif()
 		register_Component_Binary(${c_name})#need to register before calling manage python
 		register_Runtime_Component_Binary(${c_name} "MODULE")#need to register before calling manage python
 		if(HAS_WRAPPER)
@@ -1779,9 +1785,11 @@ if(manage_symbols)
 	
 	if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE")
 		#NOTE: a module does not define an interface, just implement an existing one so no need to install
-		install(FILES ${target_exporting_header}
-				DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH}/${${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME}/${manage_symbols}
-		)
+		if(NOT internal_only)
+			install(FILES ${target_exporting_header}
+					DESTINATION ${${PROJECT_NAME}_INSTALL_HEADERS_PATH}/${${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME}/${manage_symbols}
+			)
+		endif()
 	endif()
 endif()
 # registering exported flags for all kinds of libs

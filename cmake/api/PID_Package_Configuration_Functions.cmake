@@ -1677,6 +1677,11 @@ if(NOT COMP_IS_RUNTIME)
 	return()
 endif()
 
+will_be_Installed(WILL_BE_INSTALLED ${component})
+if(NOT WILL_BE_INSTALLED)
+  return()
+endif()
+
 # 1) getting all public runtime dependencies
 get_Source_Component_Runtime_Links(ALL_RUNTIME_DEPS ${real_comp_name} ${mode})
 # 2) getting direct and undirect runtime resources dependencies
@@ -1686,7 +1691,7 @@ list(APPEND ALL_RUNTIME_DEPS ${RES_RESOURCES})
 if(ALL_RUNTIME_DEPS)
   list(REMOVE_DUPLICATES ALL_RUNTIME_DEPS)
 endif()
-if(WIN32)
+if(WIN32)#TODO CHECK THIS: WHy IS THIS NECESSARY ????
   create_Source_Component_Symlinks_Build_Tree(${real_comp_name} ${mode} ALL_RUNTIME_DEPS)
 endif()
 create_Source_Component_Symlinks(${real_comp_name} ${mode} ALL_RUNTIME_DEPS)
