@@ -1,116 +1,119 @@
 before_script:
-    - . share/pid.sh
-    - pid configure -DIN_CI_PROCESS=ON -DADDITIONAL_DEBUG_INFO=ON
-    - pid contributions cmd=add update=git@gite.lirmm.fr:pid/tests/pid-tests.git
-    - pid contributions cmd=prio_max space=pid-tests
+  - . share/pid.sh
+  - pid configure -DIN_CI_PROCESS=ON -DADDITIONAL_DEBUG_INFO=ON
+  - pid contributions cmd=add update=git@gite.lirmm.fr:pid/tests/pid-tests.git
+  - pid contributions cmd=prio_max space=pid-tests
 
 stages:
- - create_and_build
- - deploy
- - external_use
+  - create_and_build
+  - deploy
+  - external_use
 
- ############ generic jobs patterns #############
+  ############ generic jobs patterns #############
 
- ### configure (cmake configuration), build (compile/test/install), deploy (make interesting part of the result available wiki+doc, binaries)
+  ### configure (cmake configuration), build (compile/test/install), deploy (make interesting part of the result available wiki+doc, binaries)
 .create_and_build_: &create_and_build
-   stage: create_and_build
-   script:
-        - pid create package=foobar author=CI
-        - pid build package=foobar
-        - pid rebuild package=foobar
-        - pid info package=foobar
-        - sh -c "! ./pid info package=foobar2" # assert failure
-   interruptible: true
-
+  stage: create_and_build
+  script:
+    - pid create package=foobar author=CI
+    - pid build package=foobar
+    - pid rebuild package=foobar
+    - pid info package=foobar
+    - sh -c "! ./pid info package=foobar2" # assert failure
+  interruptible: true
 
 .deploy_: &deploy
-   stage: deploy
-   script:
-        - pid deploy package=mytestpackage
-        - pid deploy package=open-phri version=1.0.1
-        - pid deploy package=opencv version=4.0.1
-   interruptible: true
+  stage: deploy
+  script:
+    - pid deploy package=mytestpackage
+    - pid deploy package=open-phri version=1.0.1
+    - pid deploy package=opencv version=4.0.1
+  interruptible: true
 
 .external_use_: &external_use
-   stage: external_use
-   script:
-        - pid deploy package=cooperative-task-controller branch=integration
-        - echo "[PID] Testing external use of a collection of PID packages using dedicated cmake API"
-        - mkdir tmp && cd tmp && git clone git@gite.lirmm.fr:pid/tests/test_external_use.git
-        - cd test_external_use/build && cmake -DPATH_TO_PID_WS="../../.." .. && make
-        - cd ../../..
-        - echo "[PID] Testing external use of a collection of PID packages using system install"
-        - pid deploy package=pid-log version=3.1.5
-        - cd tmp && git clone git@gite.lirmm.fr:pid/tests/test_system_install.git && cd ..
-        - pid sysinstall package=pid-log version=3.1.5 folder=`pwd`/tmp/test_system_install/install
-        - export LD_LIBRARY_PATH=`pwd`/tmp/test_system_install/install/lib
-        - export PATH=`pwd`/tmp/test_system_install/install/bin:$PATH
-        - export RUNTIME_RESOURCE_PATH=`pwd`/tmp/test_system_install/install/share/runtime_resources
-        - cd tmp/test_system_install/build && cmake .. && make
-   interruptible: true
+  stage: external_use
+  script:
+    - pid deploy package=cooperative-task-controller branch=integration
+    - echo "[PID] Testing external use of a collection of PID packages using dedicated cmake API"
+    - mkdir tmp && cd tmp && git clone git@gite.lirmm.fr:pid/tests/test_external_use.git
+    - cd test_external_use/build && cmake -DPATH_TO_PID_WS="../../.." .. && make
+    - cd ../../..
+    - echo "[PID] Testing external use of a collection of PID packages using system install"
+    - pid deploy package=pid-log version=3.1.5
+    - cd tmp && git clone git@gite.lirmm.fr:pid/tests/test_system_install.git && cd ..
+    - pid sysinstall package=pid-log version=3.1.5 folder=`pwd`/tmp/test_system_install/install
+    - export LD_LIBRARY_PATH=`pwd`/tmp/test_system_install/install/lib
+    - export PATH=`pwd`/tmp/test_system_install/install/bin:$PATH
+    - export RUNTIME_RESOURCE_PATH=`pwd`/tmp/test_system_install/install/share/runtime_resources
+    - cd tmp/test_system_install/build && cmake .. && make
+  interruptible: true
 
 .external_use_ros: &external_use_ros
-   stage: external_use
-   script:
-        - source /opt/ros/melodic/setup.bash
-        - mkdir tmp && cd tmp && git clone git@gite.lirmm.fr:pid/tests/test_external_use_deploy.git
-        - cd test_external_use_deploy/build && cmake -DPATH_TO_PID_WS="../../.." -DTEST_DIRECT_SYSTEM_DEPLOYMENT=ON .. && make
-   interruptible: true
+  stage: external_use
+  script:
+    - source /opt/ros/melodic/setup.bash
+    - mkdir tmp && cd tmp && git clone git@gite.lirmm.fr:pid/tests/test_external_use_deploy.git
+    - cd test_external_use_deploy/build && cmake -DPATH_TO_PID_WS="../../.." -DTEST_DIRECT_SYSTEM_DEPLOYMENT=ON .. && make
+  interruptible: true
 
 ############ patterns for platforms selection #############
 # here the project generates patterns for runner selection according for all platforms defined in the workspace
 #platform x86_64_linux_stdc++11
 
 .selection_raspbian_: &selection_raspbian
-   tags:
-        - pid
-        - raspbian
+  tags:
+    - pid
+    - raspbian
 
 .selection_ubuntu16: &selection_ubuntu16
-   tags:
-        - pid
-        - x86_64_linux_stdc++11__ub16_gcc7__
+  tags:
+    - pid
+    - x86_64_linux_stdc++11__ub16_gcc7__
 
 .selection_ubuntu18: &selection_ubuntu18
-   tags:
-        - pid
-        - x86_64_linux_stdc++11__ub18_gcc9__
+  tags:
+    - pid
+    - x86_64_linux_stdc++11__ub18_gcc9__
 
-.selection_ubuntu18: &selection_ubuntu20
-   tags:
-        - pid
-        - x86_64_linux_stdc++11__ub20_gcc9__
+.selection_ubuntu20: &selection_ubuntu20
+  tags:
+    - pid
+    - x86_64_linux_stdc++11__ub20_gcc9__
+
+.selection_ubuntu22: &selection_ubuntu22
+  tags:
+    - pid
+    - x86_64_linux_stdc++11__ub22_gcc11__
 
 .selection_archlinux_: &selection_archlinux
-   tags:
-        - pid
-        - x86_64_linux_stdc++11__arch_gcc__
+  tags:
+    - pid
+    - x86_64_linux_stdc++11__arch_gcc__
 
 .selection_debian_: &selection_debian
-   tags:
-        - pid
-        - x86_64_linux_stdc++11__deb10_gcc8__
+  tags:
+    - pid
+    - x86_64_linux_stdc++11__deb10_gcc8__
 
 .selection_fedora_: &selection_fedora
-   tags:
-        - pid
-        - x86_64_linux_stdc++11__fedo36_gcc12__
-
+  tags:
+    - pid
+    - x86_64_linux_stdc++11__fedo36_gcc12__
 
 .selection_freebsd_: &selection_freebsd
-   tags:
-        - pid
-        - x86_64_freebsd_c++
+  tags:
+    - pid
+    - x86_64_freebsd_c++
 
 .selection_macos_catalina_: &selection_macos_catalina
-   tags:
-        - pid
-        - x86_64_macos_c++
+  tags:
+    - pid
+    - x86_64_macos_c++
 
 .selection_windows10_: &selection_windows10
-   tags:
-        - pid
-        - x86_64_windows_msvc
+  tags:
+    - pid
+    - x86_64_windows_msvc
 
 ############ jobs description #############
 
@@ -145,6 +148,14 @@ ubuntu20 deploy:
 ubuntu20 create_and_build:
   <<: *create_and_build
   <<: *selection_ubuntu20
+
+ubuntu22 deploy:
+  <<: *deploy
+  <<: *selection_ubuntu22
+
+ubuntu22 create_and_build:
+  <<: *create_and_build
+  <<: *selection_ubuntu22
 
 archlinux external_use:
   <<: *external_use
@@ -181,7 +192,6 @@ debian deploy:
 debian create_and_build:
   <<: *create_and_build
   <<: *selection_debian
-
 # freebsd deploy:
 #   <<: *deploy
 #   <<: *selection_freebsd
