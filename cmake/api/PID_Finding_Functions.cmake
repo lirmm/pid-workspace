@@ -429,7 +429,7 @@ endfunction(check_Exact_Version)
 #
 #   .. command:: check_Best_Version(VERSION_FOUND package install_dir major minor patch)
 #
-#    Check whether there is a compatible version of the package installed in the workspace, considering the native policy: any version with greater minor is valid. 
+#    Check whether there is a compatible version of the package installed in the workspace, considering the native policy: any version with greater minor is valid.
 #    The patch argument is used only if =major and =minor is found.
 #
 #     :package: the name of package to check.
@@ -1400,20 +1400,28 @@ endfunction(need_Install_Native_Packages)
 #  need_Install_Native_Package
 #  ---------------------------
 #
-#   .. command:: need_Install_Native_Package(NEED package)
+#   .. command:: need_Install_Native_Package(NEED FIND package)
 #
 #    Tell whether a native package must be installed in current process.
 #
 #     :package: the name of the given native package.
 #
 #     :NEED: the output variable that is TRUE if given native package must be installed.
+#     :FIND: the output variable that is TRUE if given external package must be found.
 #
-function(need_Install_Native_Package NEED package)
+function(need_Install_Native_Package NEED FIND package)
   list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
   if(INDEX EQUAL -1)#package not found in list of packages to install
   	set(${NEED} FALSE PARENT_SCOPE)
+  	set(${FIND} FALSE PARENT_SCOPE)
   else()
+	if(${package}_FOUND${USE_MODE_SUFFIX})
+		set(${NEED} FALSE PARENT_SCOPE)
+		set(${FIND} TRUE PARENT_SCOPE)
+		return()
+	endif()
   	set(${NEED} TRUE PARENT_SCOPE)
+	set(${FIND} TRUE PARENT_SCOPE)
   endif()
 endfunction(need_Install_Native_Package)
 
@@ -1575,20 +1583,28 @@ endfunction(need_Install_External_Packages)
 #  need_Install_External_Package
 #  -----------------------------
 #
-#   .. command:: need_Install_External_Package(NEED package)
+#   .. command:: need_Install_External_Package(NEED FIND package)
 #
 #    Tell whether a package must be installed in current process.
 #
 #     :package: the name of the given external package.
 #
 #     :NEED: the output variable that is TRUE if given external package must be installed.
+#     :FIND: the output variable that is TRUE if given external package must be found.
 #
-function(need_Install_External_Package NEED package)
+function(need_Install_External_Package NEED FIND package)
   list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
   if(INDEX EQUAL -1)#package not found in list of packages to install
   	set(${NEED} FALSE PARENT_SCOPE)
+  	set(${FIND} FALSE PARENT_SCOPE)
   else()
+	if(${package}_FOUND${USE_MODE_SUFFIX})
+		set(${NEED} FALSE PARENT_SCOPE)
+		set(${FIND} TRUE PARENT_SCOPE)
+		return()
+	endif()
   	set(${NEED} TRUE PARENT_SCOPE)
+	set(${FIND} TRUE PARENT_SCOPE)
   endif()
 endfunction(need_Install_External_Package)
 

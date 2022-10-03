@@ -3746,7 +3746,7 @@ function(resolve_Wrapper_Dependencies package version os_variant)
 	# 1) resolving dependencies of required external packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
 	foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES)#contains only used dependencies
-		need_Install_External_Package(MUST_BE_INSTALLED ${dep_pack})
+		need_Install_External_Package(MUST_BE_INSTALLED MUST_BE_FOUND ${dep_pack})
 		if(MUST_BE_INSTALLED)
 			install_External_Package(INSTALL_OK ${dep_pack} FALSE FALSE "${BUILD_RELEASE_ONLY}")
 			if(NOT INSTALL_OK)
@@ -3754,6 +3754,8 @@ function(resolve_Wrapper_Dependencies package version os_variant)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace contribution spaces and try to fond ReferExternal${dep_pack}.cmake file references subfolders.")
 				return()
 			endif()
+		endif()
+		if(MUST_BE_FOUND)
 			resolve_External_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${prefix} ${dep_pack} Release)#launch again the resolution
 			if(NOT ${dep_pack}_FOUND)#this time the package must be found since installed => internal BUG in PID
 				finish_Progress(${GLOBAL_PROGRESS_VAR})

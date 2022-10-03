@@ -804,7 +804,7 @@ function(configure_With_Project_Specific_Toolchain)
 				return()#Just to avoid infinite recursion
 			endif()
 		endif()
-		#last environment evaluation has generated a toolchain, simply use it 
+		#last environment evaluation has generated a toolchain, simply use it
 		file(WRITE ${WORKSPACE_DIR}/build/${PROJECT_NAME}_PID_Toolchain.cmake "${global_str}")
 		set(reconfigure TRUE)
 	else()#no toolchain defined
@@ -1118,7 +1118,7 @@ endif()
 # 1) resolving dependencies of required external packages versions (different versions can be required at the same time)
 # we get the set of all packages undirectly required
 foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
-	need_Install_External_Package(MUST_BE_INSTALLED ${dep_pack})
+	need_Install_External_Package(MUST_BE_INSTALLED MUST_BE_FOUND ${dep_pack})
 	if(MUST_BE_INSTALLED)
 		install_External_Package(INSTALL_OK ${dep_pack} FALSE FALSE "${BUILD_RELEASE_ONLY}")
 		if(NOT INSTALL_OK)
@@ -1126,6 +1126,8 @@ foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace contributions folder and try to find ReferExternal${dep_pack}.cmake file.")
 			return()
 		endif()
+	endif()
+	if(MUST_BE_FOUND)
 		resolve_External_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${PROJECT_NAME} ${dep_pack} ${CMAKE_BUILD_TYPE})#launch again the resolution
 		if(NOT ${dep_pack}_FOUND${USE_MODE_SUFFIX})#this time the package must be found since installed => internal BUG in PID
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -1166,7 +1168,7 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	# 1) resolving dependencies of required native packages versions (different versions can be required at the same time)
 	# we get the set of all packages undirectly required
 	foreach(dep_pack IN LISTS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
-		need_Install_Native_Package(MUST_BE_INSTALLED ${dep_pack})
+		need_Install_Native_Package(MUST_BE_INSTALLED MUST_BE_FOUND ${dep_pack})
 		if(MUST_BE_INSTALLED)
 			install_Native_Package(INSTALL_OK ${dep_pack} FALSE "${BUILD_RELEASE_ONLY}")
 			if(NOT INSTALL_OK)
@@ -1174,6 +1176,8 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install native package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace contributions and try to find Refer${dep_pack}.cmake file.")
 				return()
 			endif()
+		endif()
+		if(MUST_BE_FOUND)
 			resolve_Native_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${PROJECT_NAME} ${dep_pack} ${CMAKE_BUILD_TYPE})#launch again the resolution
 			if(NOT ${dep_pack}_FOUND${USE_MODE_SUFFIX})#this time the package must be found since installed => internal BUG in PID
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -1590,9 +1594,9 @@ endmacro(build_Package)
 #     :is_loggable: if TRUE the componnet can be uniquely identified by the logging system.
 #     :aliases: the list of alias for the component.
 #     :manage_symbols: if not empty export of symbols of the library will be managed by hand and are all hidden by default, the path given will contain the generated header defining macro for exporting symbols. Otherwise if empty all symbols are exported.
-#     :internal_only: if TRUE means the library is not provided by the package but is used for internal purpose only. 
-#     :for_examples: if TRUE means the library must be internal_only and is used for example purpose. 
-#     :for_tests: if TRUE means the librarymust be internal_only and is used for test purpose. 
+#     :internal_only: if TRUE means the library is not provided by the package but is used for internal purpose only.
+#     :for_examples: if TRUE means the library must be internal_only and is used for example purpose.
+#     :for_tests: if TRUE means the librarymust be internal_only and is used for test purpose.
 #
 function(declare_Library_Component 	c_name dirname type
 									c_standard c_max_standard cxx_standard cxx_max_standard
@@ -1782,7 +1786,7 @@ if(manage_symbols)
 		DESTINATION ${exporting_header_path_in_build_tree})
 	target_include_directories(${PROJECT_NAME}_${c_name}${INSTALL_NAME_SUFFIX} PUBLIC
 		${CMAKE_CURRENT_BINARY_DIR}/include/${${PROJECT_NAME}_${c_name}_HEADER_DIR_NAME})
-	
+
 	if(NOT ${PROJECT_NAME}_${c_name}_TYPE STREQUAL "MODULE")
 		#NOTE: a module does not define an interface, just implement an existing one so no need to install
 		if(NOT internal_only)
