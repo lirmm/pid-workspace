@@ -248,7 +248,6 @@ else()# a package deployment is required
 	elseif(USE_SOURCE STREQUAL "true" OR USE_SOURCE STREQUAL "TRUE")
 		set(deploy_mode "SOURCE")
 	endif()
-
 	if(deploy_mode STREQUAL "BINARY")
 		#if no source required then binary references must exist
 		load_Package_Binary_References(REFERENCES_OK ${DEPLOYED_PACKAGE})# now load the binary references of the package
@@ -307,7 +306,7 @@ else()# a package deployment is required
 	if(MANAGE_PROGRESS)#conditionate the progress management to allow an external CMake project to preconfigure some constraints on external packages
 		remove_Progress_File() #reset the build progress information (sanity action)
 		begin_Progress(workspace GLOBAL_PROGRESS_VAR)
-  else()
+  	else()
 		set(GLOBAL_PROGRESS_VAR FALSE)#to avoid troubles when progres managed from an external project
 	endif()
 

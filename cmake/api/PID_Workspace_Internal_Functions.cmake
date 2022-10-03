@@ -1839,13 +1839,11 @@ set(MAX_CURR_VERSION 0.0.0)
 if(NOT version)#deploying the latest version of the package
 	if(NOT deploy_mode STREQUAL "SOURCE")
 		#first try to directly download its archive
-		if(${package}_REFERENCES) #there are references to external package binaries
-			foreach(version_i IN LISTS ${package}_REFERENCES)
-				list(FIND ${package}_REFERENCE_${version_i} ${CURRENT_PLATFORM} INDEX)
-				if(NOT INDEX EQUAL -1) #a reference for this OS is known
-					if(version_i VERSION_GREATER MAX_CURR_VERSION)
-						set(MAX_CURR_VERSION ${version_i})
-					endif()
+		get_Available_Binary_Package_Versions(${package} available_versions available_with_platform)
+		if(available_versions)
+			foreach(version_i IN LISTS available_versions)
+				if(version_i VERSION_GREATER MAX_CURR_VERSION)
+					set(MAX_CURR_VERSION ${version_i})
 				endif()
 			endforeach()
 			if(NOT MAX_CURR_VERSION STREQUAL 0.0.0)
