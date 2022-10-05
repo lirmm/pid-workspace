@@ -24,39 +24,42 @@ fi
 platform=$1
 
 # 1 extract target platform information from runner tags
-platform=${platform/pid/" "}
-platform=${platform/site/" "}
+platform=${platform//"["/""}
+platform=${platform//"]"/""}
+platform=${platform//" "/""}
+platform=${platform/pid/""}
+platform=${platform/site/""}
 platform=${platform//","/" "}
-
+platform=${platform//"  "/" "}
 
 # 2 separate platform and environment names
 instance=""
-reg_expr="^(.+)__(.+)__$"
 
 reg_expr_job="^build_wrapper_(.+)__(.+)__$"
 
 if [[ $CI_JOB_NAME =~ $reg_expr_job ]]; then
-    instance_job=${BASH_REMATCH[2]}
-    platform_job=${BASH_REMATCH[1]}
+    instance_job=${BASH_REMATCH[3]}
+    platform_job=${BASH_REMATCH[2]}
     platform_job=${platform_job//plusplus/"++"}
 
-    IFS=' ' read -ra my_array <<< "$platform"
-
+    IFS=' ' read -ra my_array <<< $platform
+    found=""
+    expr="$platform_job__$instance_job__"
     #among all tags of the runner
     for i in "${my_array[@]}"
     do
-      if [[ $i =~ $reg_expr ]]; then
-
-        tmp_instance=${BASH_REMATCH[2]}
-        tmp_platform=${BASH_REMATCH[1]}
-
-        if [ $platform_job = $tmp_platform ] && [ $instance_job = $tmp_instance ]; then
-          instance=$tmp_instance
-          platform=$tmp_platform
+      if [[ $i =~ "$expr" ]]; then
+          instance=$instance_job
+          platform=$platform_job
+          found="1"
           break
-        fi
       fi
     done
+
+    if [[ $found == "" ]]; then
+      echo "runner not capable of running job for platform $platform_job with instance $instance_job"
+      exit 1
+    fi
 fi
 
 if [  "$instance" != "" ]; then
