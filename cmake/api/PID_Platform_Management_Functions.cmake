@@ -1677,7 +1677,6 @@ endfunction(is_Allowed_Language_Configuration)
 function(memorize_Platform_Configuration_Inputs config index)
   set(eval_input_file ${CMAKE_BINARY_DIR}/input_vars.txt)#using a txt file that is read to avoid inclusion that implicitly generates a reconfiguration when modified
   if(FORCE_REEVAL)#if forced reevaluation, simply stop as inputs will not be modified
-    message("FORCED REEVALUATION")
     return()
   endif()
   if(NOT EXISTS ${eval_input_file})
