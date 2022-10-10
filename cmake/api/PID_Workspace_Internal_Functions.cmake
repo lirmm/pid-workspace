@@ -1583,19 +1583,18 @@ endfunction(deploy_PID_Environment)
 #  bind_Installed_Package
 #  -----------------------
 #
-#   .. command:: bind_Installed_Package(DEPLOYED package version only_resolve release_only)
+#   .. command:: bind_Installed_Package(DEPLOYED package version release_only)
 #
 #   Binding an installed package by resolving its runtime symlinks.
 #
 #      :platform: the platform for which the target package has been built for.
 #      :package: the name of the package to bind.
 #      :version: the version to bind
-#      :only_resolve: if TRUE only resolve do not redeploy if required by binding
 #      :release_only: if TRUE only resolve release binaries
 #
 #      :BOUND: the output variable that is true of binding process succeede, FALSE otherwise
 #
-function(bind_Installed_Package BOUND platform package version only_resolve release_only)
+function(bind_Installed_Package BOUND platform package version release_only)
 	set(${BOUND} FALSE PARENT_SCOPE)
 	set(BIN_PACKAGE_PATH ${WORKSPACE_DIR}/install/${platform}/${package}/${version})
 	get_Package_Type(${package} PACK_TYPE)
@@ -1638,11 +1637,6 @@ function(bind_Installed_Package BOUND platform package version only_resolve rele
 	set(${package}_ROOT_DIR ${BIN_PACKAGE_PATH} CACHE INTERNAL "")
 	set(${package}_VERSION_STRING ${version} CACHE INTERNAL "")
 	set(PROJECT_NAME workspace)
-	if(only_resolve)
-		set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD OFF CACHE BOOL "" FORCE)
-	else()
-		set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE BOOL "" FORCE)
-	endif()
 	if(NOT release_only)
 		set(CMAKE_BUILD_TYPE Debug)#to adequately interpret external packages description
 		set(${package}_FOUND_DEBUG TRUE CACHE INTERNAL "")
@@ -1684,7 +1678,6 @@ endfunction(bind_Installed_Package)
 #
 function(deploy_PID_Native_Package DEPLOYED package version verbose deploy_mode branch run_tests release_only)
 set(PROJECT_NAME ${package})
-set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE BOOL "" FORCE)
 if(verbose)
 	set(ADDITIONAL_DEBUG_INFO ON)
 else()
@@ -1736,7 +1729,7 @@ if(NOT version)#no specific version required
 					#so no more to do -> there is no solution
 					return()
 				endif()
-				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${RES_VERSION} FALSE "${release_only}")
+				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${RES_VERSION} "${release_only}")
 				if(BOUND)
 					message("[PID] INFO : deploying ${package} binary archive version ${RES_VERSION} success !")
 					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
@@ -1761,7 +1754,7 @@ else()#deploying a specific version
 			if(NOT BIN_DEPLOYED)
 				message("[PID] WARNING : problem deploying ${package} binary archive version ${version}. This may be due to binary compatibility problems. Try building from sources...")
 			else()
-				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${version} FALSE "${release_only}")
+				bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${version} "${release_only}")
 				if(BOUND)
 					message("[PID] INFO : deploying ${package} binary archive version ${version} success !")
 					set(${DEPLOYED} "BINARY" PARENT_SCOPE)
@@ -1829,7 +1822,6 @@ if(NOT REFERENCES_FOUND AND deploy_mode STREQUAL "BINARY")
 	return()
 endif()
 set(PROJECT_NAME ${package})
-set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE BOOL "" FORCE)
 #check if the repository of the external package wrapper lies in the workspace
 set(REPOSITORY_IN_WORKSPACE FALSE)
 if(EXISTS ${WORKSPACE_DIR}/wrappers/${package})
@@ -1857,7 +1849,7 @@ if(NOT version)#deploying the latest version of the package
 					message("[PID] ERROR : cannot deploy ${package} binary archive version ${MAX_CURR_VERSION}. This is certainy due to a bad, missing or unaccessible archive or due to no archive exists for current platform and build constraints. Please contact the administrator of the package ${package}.")
 					return()
 				else()
-					bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${MAX_CURR_VERSION} FALSE "${release_only}")
+					bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${MAX_CURR_VERSION} "${release_only}")
 					if(BOUND)
 						message("[PID] INFO : deploying ${package} binary archive version ${MAX_CURR_VERSION} success !")
 						set(${DEPLOYED} "BINARY" PARENT_SCOPE)
@@ -1911,7 +1903,7 @@ else()#deploying a specific version of the external package
 					message("[PID] ERROR : problem deploying ${package} binary archive version ${version}. Deployment aborted !")
 					return()
 				else()
-					bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${version} FALSE "${release_only}")
+					bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${package} ${version} "${release_only}")
 					if(BOUND)
 						message("[PID] INFO : deploying ${package} binary archive version ${version} success !")
 						set(${DEPLOYED} "BINARY" PARENT_SCOPE)
@@ -3721,7 +3713,6 @@ function(install_Package_In_System IS_INSTALLED package version)
 	set(${package}_ROOT_DIR ${BIN_PACKAGE_PATH} CACHE INTERNAL "")
 
 	set(PROJECT_NAME workspace)
-	set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD OFF CACHE BOOL "" FORCE)#do not install this must be done before
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 	set(${package}_FOUND${VAR_SUFFIX} TRUE CACHE INTERNAL "")
 	set(${package}_VERSION_STRING ${version} CACHE INTERNAL "")

@@ -1370,30 +1370,6 @@ endfunction(reset_To_Install_Packages)
 #
 # .. ifmode:: internal
 #
-#  .. |need_Install_Native_Packages| replace:: ``need_Install_Native_Packages``
-#  .. _need_Install_Native_Packages:
-#
-#  need_Install_Native_Packages
-#  ----------------------------
-#
-#   .. command:: need_Install_Native_Packages(NEED)
-#
-#    Tell whether there are packages that need to be installed.
-#
-#     :NEED: the output variable that is TRUE is at least one package version must be installed.
-#
-function(need_Install_Native_Packages NEED)
-if(${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX})
-	set(${NEED} TRUE PARENT_SCOPE)
-else()
-	set(${NEED} FALSE PARENT_SCOPE)
-endif()
-endfunction(need_Install_Native_Packages)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
 #  .. |need_Install_Native_Package| replace:: ``need_Install_Native_Package``
 #  .. _need_Install_Native_Package:
 #
@@ -1553,31 +1529,6 @@ foreach(a_used_package IN LISTS ${PROJECT_NAME}_ALL_USED_PACKAGES)
 endforeach()
 set(${PROJECT_NAME}_ALL_USED_PACKAGES CACHE INTERNAL "")
 endfunction(reset_Found_Native_Packages)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |need_Install_External_Packages| replace:: ``need_Install_External_Packages``
-#  .. _need_Install_External_Packages:
-#
-#  need_Install_External_Packages
-#  ------------------------------
-#
-#   .. command:: need_Install_External_Packages(NEED)
-#
-#    Tell whether there are external packages that need to be installed.
-#
-#     :NEED: the output variable that is TRUE is at least one external package version must be installed.
-#
-function(need_Install_External_Packages NEED)
-if(${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX})
-	set(${NEED} TRUE PARENT_SCOPE)
-else()
-	set(${NEED} FALSE PARENT_SCOPE)
-endif()
-endfunction(need_Install_External_Packages)
-
 
 #.rst:
 #
@@ -1939,7 +1890,6 @@ endmacro(exitFindScript)
 #     :message_to_send: message to print when exitting the script.
 #
 macro(exit_And_Manage_Install_Requirement_For_Native package message_to_send)
-if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
     if(${package}_FIND_REQUIRED)
       if(${package}_FIND_VERSION)
         if(${package}_FIND_VERSION_PATCH)
@@ -1951,10 +1901,6 @@ if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
         add_To_Install_Package_Specification(${package} "" FALSE)
       endif()
     endif()
-    return()
-  else()
-    exitFindScript(${package} "${message}")
-  endif()
 endmacro(exit_And_Manage_Install_Requirement_For_Native)
 
 #.rst:
@@ -2082,17 +2028,12 @@ endmacro(finding_Package)
 #     :message_to_send: message to print when exitting the script.
 #
 macro(exit_And_Manage_Install_Requirement_For_External package message is_exact is_system)
-	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-		if(${package}_FIND_REQUIRED)
-			if(${package}_FIND_VERSION)
-				add_To_Install_External_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" ${is_exact} ${is_system})
-			else()
-				add_To_Install_External_Package_Specification(${package} "" FALSE FALSE)
-			endif()
+	if(${package}_FIND_REQUIRED)
+		if(${package}_FIND_VERSION)
+			add_To_Install_External_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" ${is_exact} ${is_system})
+		else()
+			add_To_Install_External_Package_Specification(${package} "" FALSE FALSE)
 		endif()
-		return()
-	else()
-		exitFindScript(${package} "${message}")
 	endif()
 endmacro(exit_And_Manage_Install_Requirement_For_External)
 

@@ -215,7 +215,6 @@ else
 fi
 
 echo "Configuring $package_name ..."
-cmake_options="-DREQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=ON"
 cmake_options="$cmake_options -DADDITIONAL_DEBUG_INFO=OFF"
 cmake_options="$cmake_options -DENABLE_PARALLEL_BUILD=ON"
 cmake_options="$cmake_options -DBUILD_API_DOC=OFF"

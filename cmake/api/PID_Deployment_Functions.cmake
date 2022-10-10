@@ -255,35 +255,30 @@ foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	resolve_External_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${package} ${dep_ext_pack} ${mode})
 	if(NOT ${dep_ext_pack}_FOUND${VAR_SUFFIX})#not found in local workspace => need to install them
 		# list(APPEND TO_INSTALL_EXTERNAL_DEPS ${dep_ext_pack})
-    if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #download or clone of dependencies is automatic
-      install_External_Package(INSTALL_OK ${dep_ext_pack} FALSE FALSE "${release_only}")
-      # Note: the install process adapts to requirements of current platform settings and packages dependencies versions
-      # So consequently only a compatible binary package (if any) will be installed
-      # OR the source package will be rebuild taking into account these requirements, so if the build succeed
-      # the resulting binary must match all constraints in next resolve_External_Package_Dependency
-      if(NOT INSTALL_OK)
-        finish_Progress(${GLOBAL_PROGRESS_VAR})
-        message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external package: ${dep_ext_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace's contributions folder and try to find ReferExternal${dep_ext_pack}.cmake file.")
-  		endif()
-      resolve_External_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${package} ${dep_ext_pack} ${mode})#launch again the resolution
-      if(NOT ${dep_ext_pack}_FOUND${VAR_SUFFIX})#this time the package must be found since installed => internal BUG in PID
-        finish_Progress(${GLOBAL_PROGRESS_VAR})
-        message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_ext_pack}. This is an internal bug maybe due to a bad find file for ${dep_ext_pack}.")
-      elseif(NOT IS_VERSION_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
-        finish_Progress(${GLOBAL_PROGRESS_VAR})
-        message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${dep_ext_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dep_ext_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_ext_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${dep_ext_pack}_VERSION${VAR_SUFFIX}}.")
-      elseif(NOT IS_ABI_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
-        finish_Progress(${GLOBAL_PROGRESS_VAR})
-        message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent external package ${dep_ext_pack} with an ABI compatible with current platform. This may mean there is no wrapper for ${package} and no available binary package is compliant with current platform ABI.")
-      else()#OK resolution took place !!
-        add_Chosen_Package_Version_In_Current_Process(${dep_ext_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
-        if(${dep_ext_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
-          resolve_Package_Dependencies(${dep_ext_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
-        endif()
-      endif()
-    else()
+    install_External_Package(INSTALL_OK ${dep_ext_pack} FALSE FALSE "${release_only}")
+    # Note: the install process adapts to requirements of current platform settings and packages dependencies versions
+    # So consequently only a compatible binary package (if any) will be installed
+    # OR the source package will be rebuild taking into account these requirements, so if the build succeed
+    # the resulting binary must match all constraints in next resolve_External_Package_Dependency
+    if(NOT INSTALL_OK)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR :  external package dependency to ${dep_ext_pack} cannot be resolved since the automatic download of packages is not activated in ${PROJECT_NAME}. You may set the REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD option to ON.")
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external package: ${dep_ext_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace's contributions folder and try to find ReferExternal${dep_ext_pack}.cmake file.")
+    endif()
+    resolve_External_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${package} ${dep_ext_pack} ${mode})#launch again the resolution
+    if(NOT ${dep_ext_pack}_FOUND${VAR_SUFFIX})#this time the package must be found since installed => internal BUG in PID
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_ext_pack}. This is an internal bug maybe due to a bad find file for ${dep_ext_pack}.")
+    elseif(NOT IS_VERSION_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${dep_ext_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dep_ext_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_ext_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${dep_ext_pack}_VERSION${VAR_SUFFIX}}.")
+    elseif(NOT IS_ABI_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent external package ${dep_ext_pack} with an ABI compatible with current platform. This may mean there is no wrapper for ${package} and no available binary package is compliant with current platform ABI.")
+    else()#OK resolution took place !!
+      add_Chosen_Package_Version_In_Current_Process(${dep_ext_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
+      if(${dep_ext_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
+        resolve_Package_Dependencies(${dep_ext_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
+      endif()
     endif()
   elseif(NOT IS_VERSION_COMPATIBLE OR NOT IS_ABI_COMPATIBLE)#the dependency version is not compatible with previous constraints set by other packages
     list(APPEND list_of_conflicting_dependencies ${dep_ext_pack})#try to reinstall it from sources if possible, simply add it to the list of packages to install
@@ -303,31 +298,26 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
 	# 1) resolving direct dependencies
 	resolve_Native_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${package} ${dep_pack} ${mode})
 	if(NOT ${dep_pack}_FOUND${VAR_SUFFIX})# package is not found => need to install it
-    if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD) #download or clone of dependencies is automatic
-      install_Native_Package(INSTALL_OK ${dep_pack} FALSE "${release_only}")
-      if(NOT INSTALL_OK)
-        finish_Progress(${GLOBAL_PROGRESS_VAR})
-        message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install native package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace contributions and try to fond Refer${dep_pack}.cmake file.")
-  		endif()
-      resolve_Native_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${package} ${dep_pack} ${mode})#launch again the resolution
-      if(NOT ${dep_pack}_FOUND${VAR_SUFFIX})#this time the package must be found since installed => internal BUG in PID
-        finish_Progress(${GLOBAL_PROGRESS_VAR})
-        message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed native package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_pack}.")
-      elseif(NOT IS_VERSION_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
-        finish_Progress(${GLOBAL_PROGRESS_VAR})
-        message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent native package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dep_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}.")
-      elseif(NOT IS_ABI_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has its ABI compatible (otherwise there is simply no solution)
-        finish_Progress(${GLOBAL_PROGRESS_VAR})
-        message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent native package ${dep_pack} with an ABI compatible with current platform. This may mean you have no access to ${package} repository and no available binary package is compliant with current platform ABI.")
-      else()#OK resolution took place !!
-        add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
-        if(${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} OR ${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
-          resolve_Package_Dependencies(${dep_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
-        endif()
-      endif()
-    else()
+    install_Native_Package(INSTALL_OK ${dep_pack} FALSE "${release_only}")
+    if(NOT INSTALL_OK)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR :  native package dependency to ${dep_pack} cannot be resolved since the automatic download of packages is not activated in ${PROJECT_NAME}. You may set the REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD option to ON.")
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install native package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace contributions and try to fond Refer${dep_pack}.cmake file.")
+    endif()
+    resolve_Native_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${package} ${dep_pack} ${mode})#launch again the resolution
+    if(NOT ${dep_pack}_FOUND${VAR_SUFFIX})#this time the package must be found since installed => internal BUG in PID
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed native package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_pack}.")
+    elseif(NOT IS_VERSION_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent native package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${package}. All required versions are : ${${dep_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}.")
+    elseif(NOT IS_ABI_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has its ABI compatible (otherwise there is simply no solution)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent native package ${dep_pack} with an ABI compatible with current platform. This may mean you have no access to ${package} repository and no available binary package is compliant with current platform ABI.")
+    else()#OK resolution took place !!
+      add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
+      if(${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} OR ${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
+        resolve_Package_Dependencies(${dep_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
+      endif()
     endif()
   elseif(NOT IS_VERSION_COMPATIBLE OR NOT IS_ABI_COMPATIBLE)#package binary found in install tree but is not compatible !
     if(ADDITIONAL_DEBUG_INFO)
@@ -1132,9 +1122,9 @@ function(configure_Source CONFIGURED package non_essential_opts_in_var optim_bui
   set(controllable_options)
   if(DEFINED ${non_essential_opts_in_var})
     if(${non_essential_opts_in_var})
-      list(APPEND controllable_options -DGENERATE_INSTALLER=ON -DBUILD_API_DOC=ON -DBUILD_LATEX_API_DOC=ON -DWARNINGS_AS_ERRORS=ON -DREQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=ON -DBUILD_DEPENDENT_PACKAGES=ON)
+      list(APPEND controllable_options -DGENERATE_INSTALLER=ON -DBUILD_API_DOC=ON -DBUILD_LATEX_API_DOC=ON -DWARNINGS_AS_ERRORS=ON -DBUILD_DEPENDENT_PACKAGES=ON)
     else()
-      list(APPEND controllable_options -DGENERATE_INSTALLER=OFF -DBUILD_API_DOC=OFF -DBUILD_LATEX_API_DOC=OFF -DWARNINGS_AS_ERRORS=OFF -DREQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD=ON -DBUILD_DEPENDENT_PACKAGES=OFF)
+      list(APPEND controllable_options -DGENERATE_INSTALLER=OFF -DBUILD_API_DOC=OFF -DBUILD_LATEX_API_DOC=OFF -DWARNINGS_AS_ERRORS=OFF -DBUILD_DEPENDENT_PACKAGES=OFF)
     endif()
 
   endif()

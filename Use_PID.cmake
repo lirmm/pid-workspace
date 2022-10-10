@@ -128,7 +128,6 @@ macro(import_PID_Workspace)
 	load_Platform_Info()
 	#need to reset the variables used to describe dependencies
 	reset_Local_Components_Info(${WORKSPACE_DIR} ${mode})
-	set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD ON CACHE INTERNAL "")
 	#enforce constraints before finding packages
 	begin_Progress(workspace GLOBAL_PROGRESS_VAR)
 	if(IMPORT_PID_WORKSPACE_SYSTEM_DEPENDENCIES)

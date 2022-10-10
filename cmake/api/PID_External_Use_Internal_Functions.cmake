@@ -142,7 +142,6 @@ function(reset_Local_Components_Info path mode)
   set(DECLARED_SYSTEM_DEPENDENCIES CACHE INTERNAL "")
   #do not manage automatic install since outside from a PID workspace
   #the install will be done through a global function targetting workspacz
-  set(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD FALSE CACHE INTERNAL "")
   set(WORKSPACE_MODE ${mode} CACHE INTERNAL "")
 endfunction(reset_Local_Components_Info)
 

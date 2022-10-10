@@ -1085,33 +1085,6 @@ endif()
 ############ MANAGING the configuration of package dependencies #################
 #################################################################################
 # from here only direct dependencies existing in workspace have been satisfied
-# 0) check if there are packages to install in workspace => if packages must be installed and no automatic install then failure
-set(INSTALL_REQUIRED FALSE)
-need_Install_External_Packages(INSTALL_REQUIRED)
-if(INSTALL_REQUIRED)
-	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)#when automatic download engaged (default) then automatically install
-		if(ADDITIONAL_DEBUG_INFO)
-			message("[PID] INFO : ${PROJECT_NAME} needs to install requires external packages : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}.")
-		endif()
-	else()
-		finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} cannot install unresolved required external package dependencies : ${${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX}}. You may use the REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD option to install them automatically.")
-		return()
-	endif()
-endif()
-set(INSTALL_REQUIRED FALSE)
-need_Install_Native_Packages(INSTALL_REQUIRED)
-if(INSTALL_REQUIRED)
-	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)#when automatic download engaged (default) then automatically install
-		if(ADDITIONAL_DEBUG_INFO)
-			message("[PID] INFO : ${PROJECT_NAME} needs to install required native packages : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}.")
-		endif()
-	else()
-		finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : ${PROJECT_NAME} cannot install unresolved required native package dependencies : ${${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX}}. You may use the REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD option to install them automatically.")
-		return()
-	endif()
-endif()
 
 #resolving external dependencies for project external dependencies
 
@@ -1534,7 +1507,7 @@ if(${PROJECT_NAME}_ADDRESS)
 endif()
 
 if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	if(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD AND GLOBAL_PROGRESS_VAR)
+	if(GLOBAL_PROGRESS_VAR)
 		some_Packages_Managed_Last_Time(DEPLOYED)
 		if(DEPLOYED)
 			message("------------------------------------------------------------------")
@@ -2195,10 +2168,6 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 					add_Chosen_Package_Version_In_Current_Process(${dep_package} ${PROJECT_NAME})
 				endif()
 				if(NOT IS_ABI_COMPATIBLE)#need to reinstall the package anyway because it is not compatible with current platform
-					if(NOT REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-						message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding its ABI constraints. You can activate the option REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD to try reinstalling it.")
-						return()
-					endif()
 					#from here we can add it to versions to install (force reinstall)
 					add_To_Install_Package_Specification(${dep_package} "${${dep_package}_VERSION_STRING}" ${USE_EXACT})
 				endif()
@@ -2411,10 +2380,6 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 				add_Chosen_Package_Version_In_Current_Process(${dep_package} ${PROJECT_NAME})#report the choice made to global build process
 			endif()
 			if(NOT IS_ABI_COMPATIBLE)#need to reinstall the package anyway because it is not compatible with current platform
-				if(NOT REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD)
-					message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding its ABI constraints. You can activate the option REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD to try reinstalling it.")
-					return()
-				endif()
 				#from here we can add it to versions to install to force reinstall
 				if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")
 					add_To_Install_External_Package_Specification(${dep_package} "${${dep_package}_VERSION}" TRUE TRUE)

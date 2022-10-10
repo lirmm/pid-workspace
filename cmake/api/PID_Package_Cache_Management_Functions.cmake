@@ -59,13 +59,13 @@ else()
   option(BUILD_RELEASE_ONLY "Package only build release version" ON)
 endif()
 option(GENERATE_INSTALLER "Package generates an OS installer for UNIX system" OFF)
-option(REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD "Enabling the automatic download of not found packages marked as required" ON)
 option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with respect to system properties" ON)
 option(BUILD_DEPENDENT_PACKAGES "the build will leads to the rebuild of its dependent package that lies in the workspace as source packages" ON)
 option(ADDITIONAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
 option(BUILD_STATIC_CODE_CHECKING_REPORT "running static checks on libraries and applications, if tests are run then additionnal static code checking tests are automatically added." OFF)
 option(ENABLE_SANITIZERS "Enable the sanitizers on the package's components" OFF)
 option(WARNINGS_AS_ERRORS "Generating errors when warnings are notified" OFF)
+option(REQUIRED_PACKAGES_AUTOMATIC_UPDATE "Package will try to install new version when configuring" OFF)
 
 # dependent options
 include(CMakeDependentOption)
@@ -77,9 +77,6 @@ list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS RUN_TESTS_IN_DEBUG)
 
 CMAKE_DEPENDENT_OPTION(BUILD_COVERAGE_REPORT "Package build a coverage report in debug mode" ON "BUILD_AND_RUN_TESTS;RUN_TESTS_IN_DEBUG" OFF)
 list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS BUILD_COVERAGE_REPORT)
-
-CMAKE_DEPENDENT_OPTION(REQUIRED_PACKAGES_AUTOMATIC_UPDATE "Package will try to install new version when configuring" OFF "REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD" OFF)
-list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS REQUIRED_PACKAGES_AUTOMATIC_UPDATE)
 
 CMAKE_DEPENDENT_OPTION(SANITIZE_ADDRESS "Enable the address sanitizer" ON "ENABLE_SANITIZERS" OFF)
 CMAKE_DEPENDENT_OPTION(SANITIZE_LEAK "Enable the memory leak sanitizer" ON "ENABLE_SANITIZERS" OFF)
@@ -228,7 +225,6 @@ function(set_Mode_Specific_Options_From_Global)
   write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} RUN_TESTS_IN_DEBUG BOOL managed_options)
   write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} BUILD_RELEASE_ONLY BOOL managed_options)
   write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} GENERATE_INSTALLER BOOL managed_options)
-  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD BOOL managed_options)
   write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} REQUIRED_PACKAGES_AUTOMATIC_UPDATE BOOL managed_options)
   write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} ENABLE_PARALLEL_BUILD BOOL managed_options)
   write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} BUILD_DEPENDENT_PACKAGES BOOL managed_options)
@@ -370,7 +366,7 @@ function(set_Global_Options_From_Mode_Specific)
   else()
     set(LINES_GLOBAL)
   endif()
-	
+
 	file(STRINGS ${CMAKE_BINARY_DIR}/optionsRELEASE.txt LINES_RELEASE)
   # searching new cache entries in release mode cache
 	foreach(line IN LISTS LINES_RELEASE)
@@ -2268,7 +2264,7 @@ endfunction(register_Component_Binary)
 #
 #   .. command:: register_Runtime_Component_Binary(component type)
 #
-#   Memorize in cache the generated binary name of a component. 
+#   Memorize in cache the generated binary name of a component.
 #
 #     :component: the name of the component.
 #     :type: the type of the component.
@@ -2511,7 +2507,7 @@ if(${build_mode} MATCHES Release) #mode independent info written only once in th
   else()
     file(APPEND ${file} "set(${package}_BUILT_RELEASE_ONLY FALSE CACHE INTERNAL \"\")\n")
   endif()
- 
+
 
 	file(APPEND ${file} "######### declaration of package components ########\n")
 	file(APPEND ${file} "set(${package}_COMPONENTS ${list_of_comps} CACHE INTERNAL \"\")\n")

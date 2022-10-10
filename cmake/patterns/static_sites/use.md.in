@@ -20,8 +20,6 @@ If you want a specific version (recommended), for instance the currently last re
 PID_Dependency(@PACKAGE_NAME@ VERSION @PACKAGE_LAST_VERSION_WITHOUT_PATCH@)
 {% endhighlight %}
 
-Notice that PID will automatically install the last available patch version of the package when configuring the project with the option `REQUIRED_PACKAGES_AUTOMATIC_DOWNLOAD` to **ON** (default value).
-
 ## Components
 
 @PACKAGE_COMPONENTS_DESCRIPTION@

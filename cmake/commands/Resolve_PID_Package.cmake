@@ -71,7 +71,7 @@ if(RESOLVED_PACKAGE AND TARGET_VERSION)
 	remove_Progress_File() #reset the build progress information (sanity action)
 	begin_Progress(workspace GLOBAL_PROGRESS_VAR)
 
-	bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${RESOLVED_PACKAGE} ${TARGET_VERSION} TRUE "${RELEASE_ONLY}")
+	bind_Installed_Package(BOUND ${CURRENT_PLATFORM} ${RESOLVED_PACKAGE} ${TARGET_VERSION} "${RELEASE_ONLY}")
 	if(NOT BOUND)
 		message(SEND_ERROR "[PID] ERROR : cannot configure runtime dependencies for installed version ${TARGET_VERSION} of package ${RESOLVED_PACKAGE}.")
 	else()
