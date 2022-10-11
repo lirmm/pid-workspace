@@ -1576,7 +1576,7 @@ endmacro(evaluate_Environment_Solution)
 #   .. command:: evaluate_Environment_Constraints(CONSTRAINTS_EXPR EVAL_RESULT)
 #
 #   Evaluate the constraints in order to create adequate variables usable in environment script files.
-# 
+#
 #     :CONSTRAINTS_EXPR: the parent scope variable that constains the constraint expression
 #     :EVAL_RESULT: the parent scope variable that is TRUE if any constraints is violated, FALSE otherwise.
 #
@@ -2159,7 +2159,6 @@ function(set_System_Wide_Configuration gen_toolset gen_platform
                                        inc_dirs lib_dirs prog_dirs
                                        exe_flags module_flags static_flags shared_flags
                                       )
-
   #manage generator toolsets
   if(gen_toolset)
     set(${PROJECT_NAME}_GENERATOR_TOOLSET ${gen_toolset} CACHE INTERNAL "")
@@ -2454,10 +2453,14 @@ if(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION)
   file(APPEND ${file} "set(${prefix}_OBJDUMP ${${PROJECT_NAME}_OBJDUMP} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${prefix}_OBJCOPY ${${PROJECT_NAME}_OBJCOPY} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${prefix}_RPATH ${${PROJECT_NAME}_RPATH} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${prefix}_EXE_LINKER_FLAGS ${${PROJECT_NAME}_EXE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${prefix}_MODULE_LINKER_FLAGS ${${PROJECT_NAME}_MODULE_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${prefix}_SHARED_LINKER_FLAGS ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
-  file(APPEND ${file} "set(${prefix}_STATIC_LINKER_FLAGS ${${PROJECT_NAME}_STATIC_LINKER_FLAGS} CACHE INTERNAL \"\")\n")
+  fill_String_From_List(res_exe_linker_flags ${PROJECT_NAME}_EXE_LINKER_FLAGS " ")
+  file(APPEND ${file} "set(${prefix}_EXE_LINKER_FLAGS \"${res_exe_linker_flags}\" CACHE INTERNAL \"\")\n")
+  fill_String_From_List(res_module_linker_flags ${PROJECT_NAME}_MODULE_LINKER_FLAGS " ")
+  file(APPEND ${file} "set(${prefix}_MODULE_LINKER_FLAGS \"${res_module_linker_flags}\" CACHE INTERNAL \"\")\n")
+  fill_String_From_List(res_shared_linker_flags ${PROJECT_NAME}_SHARED_LINKER_FLAGS " ")
+  file(APPEND ${file} "set(${prefix}_SHARED_LINKER_FLAGS \"${res_shared_linker_flags}\" CACHE INTERNAL \"\")\n")
+  fill_String_From_List(res_static_linker_flags ${PROJECT_NAME}_STATIC_LINKER_FLAGS " ")
+  file(APPEND ${file} "set(${prefix}_STATIC_LINKER_FLAGS \"${res_static_linker_flags}\" CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${prefix}_LIBRARY_DIRS ${${PROJECT_NAME}_LIBRARY_DIRS} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${prefix}_INCLUDE_DIRS ${${PROJECT_NAME}_INCLUDE_DIRS} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${prefix}_PROGRAM_DIRS ${${PROJECT_NAME}_PROGRAM_DIRS} CACHE INTERNAL \"\")\n")
