@@ -155,6 +155,68 @@ endfunction(write_Platform_Reporting_File)
 #
 # .. ifmode:: internal
 #
+#  .. |detect_Platform_From_Environment| replace:: ``detect_Platform_From_Environment``
+#  .. _detect_Platform_From_Environment:
+#
+#  detect_Platform_From_Environment
+#  ----------------------------------
+#
+#   .. command:: detect_Platform_From_Environment(languages dev_tools)
+#
+#     Puts into cmake variables the description of current platform, deduced from current environment.
+#
+#     :languages: list of languages to reevaluate
+#     :dev_tools: TRUE if dev tools need to be reevaluated
+#
+macro(detect_Platform_From_Environment languages dev_tools)
+  list(FIND languages "C" INDEX)
+  set(check_complex FALSE)
+  if(NOT INDEX EQUAL -1)
+    set(check_complex TRUE)
+  endif()
+  list(FIND languages "CXX" INDEX)
+  if(NOT INDEX EQUAL -1)
+    set(check_complex TRUE)
+  endif()
+  if(check_complex)
+    #NOTE: this is an optimization to speed up 
+    # Now detect the current platform according to host environemnt selection (call to script for platform detection)
+    include(CheckCompiler)#only useful for further checking
+    include(CheckInstructionSet)
+    set(CURRENT_SPECIFIC_INSTRUCTION_SET ${CPU_ALL_AVAILABLE_OPTIMIZATIONS} CACHE INTERNAL "" FORCE)
+    include(CheckABI)
+    set(CURRENT_PLATFORM_ABI "${CURRENT_CXX_ABI}" CACHE INTERNAL "" FORCE)
+  endif()
+	
+  list(FIND languages "Python" INDEX)
+  if(NOT INDEX EQUAL -1)
+    include(CheckPython)
+  endif()
+
+  list(FIND languages "Fortran" INDEX)
+  if(NOT INDEX EQUAL -1)
+    include(CheckLanguage)
+    include(CheckFortran)
+  endif()
+  
+  list(FIND languages "CUDA" INDEX)
+  if(NOT INDEX EQUAL -1)
+    include(CheckLanguage)
+    include(CheckCUDA)
+  endif()
+  
+  if(dev_tools OR check_complex)
+    include(CheckDevTools)
+  endif()
+endmacro(detect_Platform_From_Environment)
+
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |detect_Current_Platform| replace:: ``detect_Current_Platform``
 #  .. detect_Current_Platform:
 #

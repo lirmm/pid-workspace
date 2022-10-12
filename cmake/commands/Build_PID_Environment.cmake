@@ -132,6 +132,8 @@ if(CURRENT_GENERATOR_PLATFORM)
 	set(CMAKE_GENERATOR_PLATFORM "${CURRENT_GENERATOR_PLATFORM}")
 endif()
 reset_Profile_Info()
+#force reevaluation of the host build /platform variables
+reevaluate_Host_Default_Platform()
 evaluate_Environment_From_Script(EVAL_OK ${TARGET_ENVIRONMENT}
 				"${TARGET_INSTANCE}"
 				"${TARGET_SYSROOT}"

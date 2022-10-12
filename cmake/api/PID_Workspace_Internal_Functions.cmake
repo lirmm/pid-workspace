@@ -4132,6 +4132,92 @@ endforeach()
 file(REMOVE_RECURSE ${WORKSPACE_DIR}/external)#removing all existing installed external packages
 endfunction(manage_Migrations)
 
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reevaluate_Host_Default_Platform| replace:: ``reevaluate_Host_Default_Platform``
+#  .. _reevaluate_Host_Default_Platform:
+#
+#  reevaluate_Host_Default_Platform
+#  ---------------------------------
+#
+#   .. command:: reevaluate_Host_Default_Platform()
+#
+#     force reevalaution of host default platform to get correct build variables
+#
+function(reevaluate_Host_Default_Platform)
+	set(host_config_folder ${WORKSPACE_DIR}/build/host)
+	if(NOT EXISTS ${host_config_folder})
+		file(MAKE_DIRECTORY ${host_config_folder})
+	endif()
+	check_Host_Configuration_Evaluated_In_Current_Process(ALREADY_EVALUATED)
+	if(NOT ALREADY_EVALUATED)
+		execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR} -B ${WORKSPACE_DIR}/build/host
+						-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO} 
+						-DWORKSPACE_DIR=${WORKSPACE_DIR}
+						WORKING_DIRECTORY ${WORKSPACE_DIR}/build/host)
+		set_Host_Configuration_Evaluated_In_Current_Process()
+	endif()
+endfunction(reevaluate_Host_Default_Platform)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Host_Default_Platform| replace:: ``manage_Host_Default_Platform``
+#  .. _manage_Host_Default_Platform:
+#
+#  manage_Host_Default_Platform
+#  ----------------------------
+#
+#   .. command:: manage_Host_Default_Platform()
+#
+#     Define the current configuration of the host.
+#
+function(manage_Host_Default_Platform)
+# detecting which platform is in use according to environment description
+detect_Current_Platform()
+write_Platform_Description(${WORKSPACE_DIR}/build/host/Workspace_Platforms_Description.cmake)
+# defining all build configuration variables related to the current platform
+write_Current_Configuration_Build_Related_Variables(${WORKSPACE_DIR}/build/host/Workspace_Build_Info.cmake)
+# defining all build configuration variables related to the current platform
+write_CMake_Info(${WORKSPACE_DIR}/build/host/Workspace_CMake_Info.cmake)
+endfunction(manage_Host_Default_Platform)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Host_Default_Platform| replace:: ``get_Host_Default_Platform``
+#  .. _get_Host_Default_Platform:
+#
+#  get_Host_Default_Platform
+#  ----------------------------
+#
+#   .. command:: get_Host_Default_Platform()
+#
+#     Get the current configuration of the host.
+#
+function(get_Host_Default_Platform)
+
+set(wpd_file ${WORKSPACE_DIR}/build/host/Workspace_Platforms_Description.cmake)
+set(wbi_file ${WORKSPACE_DIR}/build/host/Workspace_Build_Info.cmake)
+set(wci_file ${WORKSPACE_DIR}/build/host/Workspace_CMake_Info.cmake)
+if(EXISTS ${wpd_file} AND  EXISTS ${wbi_file} AND EXISTS ${wci_file})
+	include(${wpd_file})
+	include(${wbi_file})
+	include(${wci_file})
+endif()
+endfunction(get_Host_Default_Platform)
+
+
+
+
 #.rst:
 #
 # .. ifmode:: internal

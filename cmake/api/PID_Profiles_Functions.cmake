@@ -483,7 +483,6 @@ macro(reset_Profiles)
     file(WRITE ${dir}/Workspace_Solution_File.cmake "${full_solution_str}")
   endif()
 
-
   # apply result of profile evaluation to the subfolder (reconfigure current project into subfolders)
   # then perform manage platform/plugins to detect all languages features and plugins (automatically done by rerun in subfolder)
   # need to set the definitions used in evalutaion of profile specific configuration

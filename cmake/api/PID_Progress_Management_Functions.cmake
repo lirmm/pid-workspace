@@ -198,6 +198,9 @@ foreach(pack IN LISTS CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS)
 endforeach()
 #memorize if an update of used contribution spaces has been made
 file(APPEND ${thefile} "set(CONTRBUTION_SPACES_UPDATED ${CONTRBUTION_SPACES_UPDATED})\n")
+
+#memorize if an evaluation of host configruation has been made
+file(APPEND ${thefile} "set(HOST_CONFIGURATION_UPDATED ${HOST_CONFIGURATION_UPDATED})\n")
 endfunction(update_Progress_File)
 
 #.rst:
@@ -332,9 +335,59 @@ if(EXISTS ${thefile})
 endif()
 endfunction(set_Contribution_Spaces_Updated_In_Current_Process)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Host_Configuration_Evaluated_In_Current_Process| replace:: ``set_Host_Configuration_Evaluated_In_Current_Process``
+#  .. _set_Host_Configuration_Evaluated_In_Current_Process:
+#
+#  set_Host_Configuration_Evaluated_In_Current_Process
+#  ----------------------------------------------------
+#
+#   .. command:: set_Host_Configuration_Evaluated_In_Current_Process()
+#
+#    Mark the current process has having performed an evaluation of current host configuration 
+#
+function(set_Host_Configuration_Evaluated_In_Current_Process)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
+if(EXISTS ${thefile})
+	include (${thefile})
+  set(HOST_CONFIGURATION_UPDATED TRUE)
+  update_Progress_File()
+  return()
+endif()
+endfunction(set_Host_Configuration_Evaluated_In_Current_Process)
+
 ####################################################################################################
 ######################## Utility functions to check state of the process ###########################
 ####################################################################################################
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Host_Configuration_Evaluated_In_Current_Process| replace:: ``check_Host_Configuration_Evaluated_In_Current_Process``
+#  .. _check_Host_Configuration_Evaluated_In_Current_Process:
+#
+#  check_Host_Configuration_Evaluated_In_Current_Process
+#  -----------------------------------------------------
+#
+#   .. command:: check_Host_Configuration_Evaluated_In_Current_Process(RESULT)
+#
+#    Check whether host configuration has already been evaluated during this run.
+#
+#      :RESULT: the output variable that is TRUE if host configuration has been evaluated FALSE otherwise.
+#
+function(check_Host_Configuration_Evaluated_In_Current_Process RESULT)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
+set(${RESULT} FALSE PARENT_SCOPE) #not already managed of no file exists
+if(EXISTS ${thefile})
+	include (${thefile})
+  set(${RESULT} ${HOST_CONFIGURATION_UPDATED} PARENT_SCOPE) #not already managed of no file exists
+endif()
+endfunction(check_Host_Configuration_Evaluated_In_Current_Process)
 
 #.rst:
 #

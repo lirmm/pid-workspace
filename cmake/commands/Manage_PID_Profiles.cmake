@@ -305,6 +305,7 @@ endif()
 write_Profiles_Description_File()
 
 if(need_reconfigure)
+	reevaluate_Host_Default_Platform()
 	execute_process(COMMAND ${CMAKE_COMMAND}
 									-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
 									-DFORCE_CURRENT_PROFILE_EVALUATION=TRUE

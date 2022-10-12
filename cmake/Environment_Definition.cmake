@@ -1315,7 +1315,14 @@ endfunction(get_Environment_Target_ABI_Flags)
 #        endif()
 #
 macro(evaluate_Host_Platform RESULT)
-detect_Current_Platform() #update host platform variables
+set(options DEV_TOOLS)
+set(multivalueargs LANGUAGES)
+cmake_parse_arguments(EVAL_HOST_PLATFORM "${options}" "" "${multivalueargs}" ${ARGN})
+if(EVAL_HOST_PLATFORM_LANGUAGES OR EVAL_HOST_PLATFORM_DEV_TOOLS)
+  detect_Platform_From_Environment("${EVAL_HOST_PLATFORM_LANGUAGES}" ${EVAL_HOST_PLATFORM_DEV_TOOLS})
+else()
+  detect_Platform_From_Environment("ASM;C;CXX;Fortran;CUDA;Python" TRUE)
+endif()
 set(${RESULT} TRUE)
 if(${PROJECT_NAME}_CHECK)#there is a file for checking configuration of the host
   if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/${${PROJECT_NAME}_CHECK})#addintionnal check is required to manage input constraints

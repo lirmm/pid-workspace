@@ -39,6 +39,7 @@ include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
+include(PID_Workspace_Internal_Functions NO_POLICY_SCOPE)
 
 #.rst:
 #
@@ -475,12 +476,11 @@ macro(build_Environment_Project)
     generate_Environment_Readme_Files() # generating and putting into source directory the readme file used by git hosting service
     generate_Environment_License_File() # generating and putting into source directory the file containing license info about the package
     return()#directly exit
-  else()#the make build will do the evaluation run
-    message("------------------------------------------------------")
+  else()#the build command will do the evaluation run
     message("[PID] INFO: evaluating environment ${PROJECT_NAME} ...")
   endif()
 
-  detect_Current_Platform()
+  get_Host_Default_Platform()# get information about host
   evaluate_Environment_Constraints(IN_CONSTRAINTS CONSTRAINTS_OK) #get the parameters passed to the environment
   if(NOT CONSTRAINTS_OK)
     set(EVALUATION_RUN FALSE CACHE INTERNAL "" FORCE)#reset so that new cmake run will not be an evaluation run
@@ -1006,6 +1006,7 @@ get_Platform_Constraints_Definitions(PLATFORM_DEFS ${environment}
         "${CURRENT_PLATFORM_OS}" "${CURRENT_PLATFORM_ABI}"
         "${CURRENT_DISTRIBUTION}" "${CURRENT_DISTRIBUTION_VERSION}")
 
+reevaluate_Host_Default_Platform()
 execute_process(COMMAND ${CMAKE_COMMAND}
                         -DEVALUATION_RUN=TRUE
                         ${list_of_defs}
