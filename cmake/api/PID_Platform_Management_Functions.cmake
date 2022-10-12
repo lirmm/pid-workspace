@@ -2007,6 +2007,7 @@ macro(evaluate_Platform_Configuration config path_to_config force_reeval)
       file(WRITE ${eval_project_file} "cmake_minimum_required(VERSION 3.15.7)\n")
       file(APPEND ${eval_project_file} "set(WORKSPACE_DIR ${the_path} CACHE PATH \"root of the PID workspace\")\n")
       file(APPEND ${eval_project_file} "list(APPEND CMAKE_MODULE_PATH \${WORKSPACE_DIR}/cmake \${WORKSPACE_DIR}/cmake/api)\n")
+      file(APPEND ${eval_project_file} "set(CMAKE_TOOLCHAIN_FILE ${WORKSPACE_DIR}/build/PID_Toolchain.cmake CACHE INTERNAL \"\" FORCE)\n")
       file(APPEND ${eval_project_file} "include(Configuration_Definition NO_POLICY_SCOPE)\n")# to interpret user defined eval files
       file(APPEND ${eval_project_file} "include(PID_Platform_Management_Functions NO_POLICY_SCOPE)\n")# to acces functions of platform management API
       file(APPEND ${eval_project_file} "project(test_${config} ${eval_languages})\n")
