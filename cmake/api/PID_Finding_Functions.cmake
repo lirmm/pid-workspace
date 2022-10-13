@@ -1395,7 +1395,8 @@ function(need_Install_Native_Package NEED FIND package)
 		set(${NEED} FALSE PARENT_SCOPE)
 
 		resolve_Required_Native_Package_Version(RESOLUTION_OK MINIMUM_VERSION IS_EXACT ${package})
-		if(MINIMUM_VERSION VERSION_GREATER ${package}_VERSION_STRING)
+		# MINIMUM_VERSION will be empty if the version already selected is compatible
+		if(MINIMUM_VERSION AND MINIMUM_VERSION VERSION_GREATER ${package}_VERSION_STRING)
 			set(${NEED} TRUE PARENT_SCOPE)
 		endif()
 
@@ -1559,10 +1560,11 @@ function(need_Install_External_Package NEED FIND package)
 		set(${NEED} FALSE PARENT_SCOPE)
 
 		resolve_Required_External_Package_Version(VERSION_POSSIBLE SELECTED IS_EXACT IS_SYSTEM ${package})
+		# SELECTED will be an empty string if the version already selected is compatible
 		if(NOT VERSION_POSSIBLE)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR :in ${PROJECT_NAME}, impossible to find a compatible version for dependency ${package}")
-		elseif(NOT SELECTED VERSION_EQUAL ${package}_VERSION_STRING)
+		elseif(NOT SELECTED STREQUAL "" AND NOT SELECTED VERSION_EQUAL ${package}_VERSION_STRING)
 			set(${NEED} TRUE PARENT_SCOPE)
 		endif()
 
