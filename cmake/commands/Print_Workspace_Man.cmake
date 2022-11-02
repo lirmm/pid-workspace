@@ -209,7 +209,7 @@ set(release_cmd_args
 "                  package=<name>\n"
 "                    Target package to release.\n\n"
 "                  --- [optional] Parameters ---\n"
-"                  nextversion=MAJOR | MINOR | PATCH\n"
+"                  nextversion=major | minor | patch\n"
 "                    Indicates which version number to increase.\n"
 "                  recursive=true | false\n"
 "                    Makes the release process recursive so that if version of dependencies have\n"

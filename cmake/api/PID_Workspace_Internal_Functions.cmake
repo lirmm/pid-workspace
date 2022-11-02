@@ -2678,6 +2678,8 @@ else()# check that integration branch is a fast forward of master
 	endif()
 	list(GET DIGITS 0 major)
 
+	# Allow for both lower case and upper case
+	string(TOUPPER "${next}" next)
 	if("${next}" STREQUAL "MAJOR")
 		math(EXPR major "${major}+1")
 		set(minor 0)
@@ -4157,7 +4159,7 @@ function(reevaluate_Host_Default_Platform)
 	check_Host_Configuration_Evaluated_In_Current_Process(ALREADY_EVALUATED)
 	if(NOT ALREADY_EVALUATED)
 		execute_process(COMMAND ${CMAKE_COMMAND} -S ${WORKSPACE_DIR} -B ${WORKSPACE_DIR}/build/host
-						-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO} 
+						-DADDITIONAL_DEBUG_INFO=${ADDITIONAL_DEBUG_INFO}
 						-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						WORKING_DIRECTORY ${WORKSPACE_DIR}/build/host)
 		set_Host_Configuration_Evaluated_In_Current_Process()
