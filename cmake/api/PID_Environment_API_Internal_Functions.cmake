@@ -2259,17 +2259,29 @@ function(set_Extra_Tool tool expression script tool_program tool_configs tool_pr
   set(${PROJECT_NAME}_EXTRA_${tool}_PROGRAM ${tool_program} CACHE INTERNAL "")
   set(${PROJECT_NAME}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS ${tool_configs} CACHE INTERNAL "")
   set(${PROJECT_NAME}_EXTRA_${tool}_PROGRAM_DIRS ${tool_program_dirs} CACHE INTERNAL "")
+
+  set(tool_plugin_prefix ${CMAKE_SOURCE_DIR}/src/)
+
+  # plugins coming from dependencies have an absolute path but local ones only have a script name
+  if(IS_ABSOLUTE "${tool_plugin_before_deps}" OR
+     IS_ABSOLUTE "${tool_plugin_before_comps}" OR
+     IS_ABSOLUTE "${tool_plugin_during_comps}" OR
+     IS_ABSOLUTE "${tool_plugin_after_comps}")
+     # no prefix for absolute paths
+     set(tool_plugin_prefix)
+  endif()
+
   if(tool_plugin_before_deps)
-    set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES ${CMAKE_SOURCE_DIR}/src/${tool_plugin_before_deps} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_DEPENDENCIES ${tool_plugin_prefix}${tool_plugin_before_deps} CACHE INTERNAL "")
   endif()
   if(tool_plugin_before_comps)
-    set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS ${CMAKE_SOURCE_DIR}/src/${tool_plugin_before_comps} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_BEFORE_COMPONENTS ${tool_plugin_prefix}${tool_plugin_before_comps} CACHE INTERNAL "")
   endif()
   if(tool_plugin_during_comps)
-    set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS ${CMAKE_SOURCE_DIR}/src/${tool_plugin_during_comps} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_DURING_COMPONENTS ${tool_plugin_prefix}${tool_plugin_during_comps} CACHE INTERNAL "")
   endif()
   if(tool_plugin_after_comps)
-    set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS ${CMAKE_SOURCE_DIR}/src/${tool_plugin_after_comps} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_AFTER_COMPONENTS ${tool_plugin_prefix}${tool_plugin_after_comps} CACHE INTERNAL "")
   endif()
   set(${PROJECT_NAME}_EXTRA_${tool}_PLUGIN_ON_DEMAND ${tool_plugin_ondemand} CACHE INTERNAL "")
 endfunction(set_Extra_Tool)
