@@ -2464,7 +2464,11 @@ function(install_External_Project)
     execute_process(
       COMMAND ${CMAKE_COMMAND} -E tar xf ${archive_name}
       WORKING_DIRECTORY ${TARGET_BUILD_DIR}
+      RESULT_VARIABLE RES
     )
+    if(NOT RES EQUAL 0)
+      file(REMOVE ${archive_name})
+    endif()
   elseif(INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT)
     if(EXISTS ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
       file(REMOVE_RECURSE ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER})
