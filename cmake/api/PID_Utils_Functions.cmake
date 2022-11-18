@@ -1639,6 +1639,10 @@ function(parse_Package_Dependency_All_Version_Arguments package all_args LIST_OF
       message("[PID] ERROR : you cannot use EXACT, FROM or TO keywords without using the VERSION keyword (e.g. EXACT VERSION 3.0.4).")
       set(${PARSE_RESULT} FALSE PARENT_SCOPE)
       return()
+    else()
+      message("[PID] ERROR : missing version after VERSION keyword (e.g. VERSION 3.0.4).")
+      set(${PARSE_RESULT} FALSE PARENT_SCOPE)
+      return()
     endif()
 	endwhile()
   #need to manage the "closing" of a FROM expression
