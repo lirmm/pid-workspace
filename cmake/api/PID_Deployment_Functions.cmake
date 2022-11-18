@@ -529,6 +529,14 @@ endfunction(update_Package_Installed_Version)
 #
 function(resolve_Required_Native_Package_Version RESOLUTION_OK MINIMUM_VERSION IS_EXACT package)
 
+# If a version constraint is not defined by the current project
+if(NOT ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
+  set(${RESOLUTION_OK} TRUE PARENT_SCOPE)
+  set(${IS_EXACT} FALSE PARENT_SCOPE)
+  set(${MINIMUM_VERSION} PARENT_SCOPE)
+  return()
+endif()
+
 foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	get_Version_String_Numbers("${version}" compare_major compare_minor compared_patch)
   if(NOT DEFINED compare_major)
