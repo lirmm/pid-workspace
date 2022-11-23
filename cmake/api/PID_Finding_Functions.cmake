@@ -1903,6 +1903,8 @@ macro(exit_And_Manage_Install_Requirement_For_Native package message_to_send)
         add_To_Install_Package_Specification(${package} "" FALSE)
       endif()
     endif()
+	message(${message_to_send})
+	return()
 endmacro(exit_And_Manage_Install_Requirement_For_Native)
 
 #.rst:
@@ -1978,7 +1980,7 @@ if(EXIST)
 				endif()
 				unload_Binary_Package_Install_Manifest(${package}) #clean the cache with info coming from use file
 				reset_Version_Strings(${package})#clean the cache with info coming from dependency version resolution
-				exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the package ${package} with version ${${package}_FIND_VERSION} has been found but does not provide debug artifacts as required. Considered as not found.")
+				exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] WARNING when configuring ${PROJECT_NAME} : the package ${package} with version ${${package}_FIND_VERSION} has been found but does not provide debug artifacts as required. Considered as not found.")
 			endif()
 		endif()
 
@@ -2005,10 +2007,10 @@ if(EXIST)
 			endif()
 		endforeach()
 	else()#no adequate version found
-    	exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the package ${package} with version ${${package}_FIND_VERSION} cannot be found in the workspace.")
+    	exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] WARNING when configuring ${PROJECT_NAME} : the package ${package} with version ${${package}_FIND_VERSION} cannot be found in the workspace.")
 	endif()
 else() #if the directory does not exist it means the package cannot be found
-  exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] ERROR when configuring ${PROJECT_NAME} : the required package ${package} cannot be found in the workspace.")
+  exit_And_Manage_Install_Requirement_For_Native(${package} "[PID] WARNING when configuring ${PROJECT_NAME} : the required package ${package} cannot be found in the workspace.")
 endif()
 endmacro(finding_Package)
 
@@ -2029,7 +2031,7 @@ endmacro(finding_Package)
 #     :package: the name of the package.
 #     :message_to_send: message to print when exitting the script.
 #
-macro(exit_And_Manage_Install_Requirement_For_External package message is_exact is_system)
+macro(exit_And_Manage_Install_Requirement_For_External package message_to_send is_exact is_system)
 	if(${package}_FIND_REQUIRED)
 		if(${package}_FIND_VERSION)
 			add_To_Install_External_Package_Specification(${package} "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" ${is_exact} ${is_system})
@@ -2037,6 +2039,8 @@ macro(exit_And_Manage_Install_Requirement_For_External package message is_exact 
 			add_To_Install_External_Package_Specification(${package} "" FALSE FALSE)
 		endif()
 	endif()
+	message(${message_to_send})
+	return()
 endmacro(exit_And_Manage_Install_Requirement_For_External)
 
 #.rst:
@@ -2103,14 +2107,14 @@ if(EXIST)
 		if(is_system)# an OS variant is required
 			if(NOT ${package}_BUILT_OS_VARIANT)#the binary package is NOT an OS variant
 				unset(${package}_ROOT_DIR CACHE)
-				exit_And_Manage_Install_Requirement_For_External(${package} "[PID] ERROR : the required OS variant version (${VERSION_TO_USE}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
+				exit_And_Manage_Install_Requirement_For_External(${package} "[PID] WARNING : the required OS variant version (${VERSION_TO_USE}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
 			endif()
 		else()# when not a system install the package may be built in release only mode
 			if(CMAKE_BUILD_TYPE MATCHES Debug)
 				if(${package}_BUILT_RELEASE_ONLY)#debug binaries are not available, so package is not found
 					unload_Binary_Package_Install_Manifest(${package}) #clean the cache with info coming from use file
 					reset_Version_Strings(${package})#clean the cache with info coming from dependency version resolution
-					exit_And_Manage_Install_Requirement_For_External(${package} "[PID] ERROR : the package ${package} with version ${${package}_FIND_VERSION} has been found but does not provide debug artifacts as required. Considered as not found." ${is_exact} ${is_system})
+					exit_And_Manage_Install_Requirement_For_External(${package} "[PID] WARNING : the package ${package} with version ${${package}_FIND_VERSION} has been found but does not provide debug artifacts as required. Considered as not found." ${is_exact} ${is_system})
 				endif()
 			endif()
 		# else even if an OS variant is not required, an OS variant can be used
@@ -2132,9 +2136,9 @@ if(EXIST)
 			endif()
 		endif()
 	else()#no adequate version found
-    	exit_And_Manage_Install_Requirement_For_External(${package} "[PID] ERROR : the required version(${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
+    	exit_And_Manage_Install_Requirement_For_External(${package} "[PID] WARNING : the required version(${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
 	endif()
 else() #if the directory does not exist it means the external package cannot be found
-  exit_And_Manage_Install_Requirement_For_External(${package} "[PID] ERROR : the required external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
+  exit_And_Manage_Install_Requirement_For_External(${package} "[PID] WARNING : the required external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
 endif()
 endmacro(finding_External_Package)
