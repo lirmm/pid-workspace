@@ -5928,7 +5928,7 @@ function(get_Join_Generator_Expression EXPR_VAR join_list join_flag)
     list(REMOVE_DUPLICATES join_list)
     set(res "")
     foreach(element IN LISTS join_list)
-      set(res "${res}${join_flag}${element} ")
+      set(res "${res}${join_flag}${element}$<SEMICOLON>")
     endforeach()
     string(STRIP "${res}" res)
     set(${EXPR_VAR} "$<1:${res}>" PARENT_SCOPE)#produces the content of the right side of the generator expression

@@ -152,23 +152,20 @@ function(add_Static_Check component is_library)
   # getting include automatically search by the compiler => this allow also to be robust to cross compilation requests
   set(CPP_CHECK_DEPENDENCIES_TARGETS)
 
-  set(SYSTEM_INCLUDES ${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES} ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
-  get_Join_Generator_Expression(CPP_CHECK_DEPENDENCIES_TARGETS "${SYSTEM_INCLUDES}" "-I")
-
   if(${PROJECT_NAME}_${component}_TYPE STREQUAL "HEADER")
 		#header targets have no sources => list them by hand
 		set(SOURCES_TO_CHECK)
 		foreach(source IN LISTS ${PROJECT_NAME}_${component}_HEADERS)
 			list(APPEND SOURCES_TO_CHECK ${CMAKE_SOURCE_DIR}/include/${${PROJECT_NAME}_${component}_HEADER_DIR_NAME}/${source})
 		endforeach()
-    #only use the interface properties
-    list(APPEND CPP_CHECK_DEPENDENCIES_TARGETS "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_INCLUDE_DIRECTORIES>, -I>>")
-    list(APPEND CPP_CHECK_DEPENDENCIES_TARGETS "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_COMPILE_DEFINITIONS>>:-D$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_COMPILE_DEFINITIONS>, -D>>")
+		#only use the interface properties
+		list(APPEND CPP_CHECK_DEPENDENCIES_TARGETS "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_INCLUDE_DIRECTORIES>,$<SEMICOLON>-I>>")
+		list(APPEND CPP_CHECK_DEPENDENCIES_TARGETS "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_COMPILE_DEFINITIONS>>:-D$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INTERFACE_COMPILE_DEFINITIONS>,$<SEMICOLON>-D>>")
 	else()
 		#getting sources of the target
 		get_target_property(SOURCES_TO_CHECK ${PROJECT_NAME}_${component} SOURCES)
-    list(APPEND CPP_CHECK_DEPENDENCIES_TARGETS "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INCLUDE_DIRECTORIES>, -I>>")
-    list(APPEND CPP_CHECK_DEPENDENCIES_TARGETS "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},COMPILE_DEFINITIONS>>:-D$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},COMPILE_DEFINITIONS>, -D>>")
+		list(APPEND CPP_CHECK_DEPENDENCIES_TARGETS "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INCLUDE_DIRECTORIES>>:-I$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},INCLUDE_DIRECTORIES>,$<SEMICOLON>-I>>")
+		list(APPEND CPP_CHECK_DEPENDENCIES_TARGETS "$<$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},COMPILE_DEFINITIONS>>:-D$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_${component},COMPILE_DEFINITIONS>,$<SEMICOLON>-D>>")
   endif()
 
   #filtering sources to keep only C/C++ sources
@@ -176,28 +173,34 @@ function(add_Static_Check component is_library)
   if(SOURCES_TO_CHECK)
   	# getting specific settings of the target (using generator expression to make it robust)
     get_Join_Generator_Expression(CPP_CHECK_DEPENDENCIES_TARGETS "${CPP_CHECK_DEPENDENCIES_TARGETS}" "")
-    string(REPLACE "  " " " CPP_CHECK_DEPENDENCIES_TARGETS "${CPP_CHECK_DEPENDENCIES_TARGETS}")
     set(CPPCHECK_TEMPLATE_TEST --template="{severity}: {message}")
     set(CPPCHECK_LANGUAGE --language=c++)#always using c++ language
     set(CPPCHECK_NO_WARN --inline-suppr)#supress warnings that have been manually removed
     if(BUILD_AND_RUN_TESTS) #adding a test target to check only for errors
-  		add_test(NAME ${component}_staticcheck
-      COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${CPPCHECK_NO_WARN} ${PARALLEL_JOBS_FLAG} ${CPP_CHECK_DEPENDENCIES_TARGETS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK} VERBATIM)
+  		add_test(
+			NAME ${component}_staticcheck
+			COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${CPPCHECK_NO_WARN} ${PARALLEL_JOBS_FLAG} ${CPP_CHECK_DEPENDENCIES_TARGETS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK}
+			COMMAND_EXPAND_LISTS
+		)
+
   		set_tests_properties(${component}_staticcheck PROPERTIES FAIL_REGULAR_EXPRESSION "error: [^Ss][^y][^n][^t][^a][^x].*")
   	endif()#TODO also manage the language standard here (option -std=)!! necessary ?
 
   	set(CPPCHECK_TEMPLATE_GLOBAL --template="{id} in file {file} line {line}: {severity}: {message}")
+
+	set(CPPCHECK_ARGS --suppress=*:${WORKSPACE_DIR}/install/* --suppress=preprocessorErrorDirective )
   	if(is_library) #only adding stylistic issues for library, not unused functions (because by definition libraries own source code has unused functions)
-  		set(CPPCHECK_ARGS --enable=style --inconclusive)
+  		list(APPEND CPPCHECK_ARGS --enable=style --inconclusive)
   	else()
-  		set(CPPCHECK_ARGS --enable=all --inconclusive)
+  		list(APPEND CPPCHECK_ARGS --enable=all --inconclusive)
   	endif()
 
   	#adding a target to print all issues for the given target, this is used to generate a report
   	add_custom_command(TARGET staticchecks PRE_BUILD
   		COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
-  		COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${PARALLEL_JOBS_FLAG}  ${CPPCHECK_NO_WARN} ${CPP_CHECK_DEPENDENCIES_TARGETS} ${CPPCHECK_ARGS} --xml-version=2 ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
+  		COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${PARALLEL_JOBS_FLAG} ${CPPCHECK_NO_WARN} ${CPP_CHECK_DEPENDENCIES_TARGETS} ${CPPCHECK_ARGS} --xml-version=2 ${SOURCES_TO_CHECK} 2> ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result_${component}.xml
   		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+		COMMAND_EXPAND_LISTS
   		COMMENT "[PID] INFO: Running cppcheck on target ${component}..."
       VERBATIM)
   else()
