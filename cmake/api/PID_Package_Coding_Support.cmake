@@ -177,9 +177,9 @@ function(add_Static_Check component is_library)
     set(CPPCHECK_TEMPLATE_TEST --template="{severity}: {message}")
     set(CPPCHECK_LANGUAGE --language=c++)#always using c++ language
     set(CPPCHECK_NO_WARN --inline-suppr)#supress warnings that have been manually removed
-	set(CPPCHECK_SUPPRESSIONS)
+	set(CPPCHECK_SUPPRESSIONS --suppress=*:${WORKSPACE_DIR}/install/* --suppress=preprocessorErrorDirective)
 	if(EXISTS ${CMAKE_SOURCE_DIR}/share/cppcheck_suppressions.txt)
-		set(CPPCHECK_SUPPRESSIONS "--suppressions-list=${CMAKE_SOURCE_DIR}/share/cppcheck_suppressions.txt")
+		list(APPEND CPPCHECK_SUPPRESSIONS "--suppressions-list=${CMAKE_SOURCE_DIR}/share/cppcheck_suppressions.txt")
 	endif()
 
     if(BUILD_AND_RUN_TESTS) #adding a test target to check only for errors
@@ -194,11 +194,11 @@ function(add_Static_Check component is_library)
 
   	set(CPPCHECK_TEMPLATE_GLOBAL --template="{id} in file {file} line {line}: {severity}: {message}")
 
-	set(CPPCHECK_ARGS --suppress=*:${WORKSPACE_DIR}/install/* --suppress=preprocessorErrorDirective )
+	set(CPPCHECK_ARGS)
   	if(is_library) #only adding stylistic issues for library, not unused functions (because by definition libraries own source code has unused functions)
-  		list(APPEND CPPCHECK_ARGS --enable=style --inconclusive)
+  		set(CPPCHECK_ARGS --enable=style --inconclusive)
   	else()
-  		list(APPEND CPPCHECK_ARGS --enable=all --inconclusive)
+  		set(CPPCHECK_ARGS --enable=all --inconclusive)
   	endif()
 
   	#adding a target to print all issues for the given target, this is used to generate a report
