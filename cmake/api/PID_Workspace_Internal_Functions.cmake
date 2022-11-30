@@ -3328,7 +3328,7 @@ if(is_external)
 				file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${package}::${dep_name_to_use},INTERFACE_COMPILE_DEFINITIONS>)\n")
 				file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${package}::${dep_name_to_use},INTERFACE_COMPILE_OPTIONS>)\n")
 				file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${package}::${dep_name_to_use})\n")
-			else()
+			elseif(${package}_${component}_TYPE STREQUAL "SHARED" OR ${package}_${component}_TYPE STREQUAL "MODULE")
 				file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${package}::${dep_name_to_use})\n")
 			endif()#exporting the linked libraries in any case
 		endforeach()
@@ -3342,7 +3342,7 @@ if(is_external)
   				file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_COMPILE_DEFINITIONS>)\n")
   				file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_COMPILE_OPTIONS>)\n")
   				file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${dep_package}::${dep_name_to_use})\n")
-  			else()
+  			elseif(${package}_${component}_TYPE STREQUAL "SHARED" OR ${package}_${component}_TYPE STREQUAL "MODULE")
   				file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}::${dep_name_to_use})\n")
   			endif()#exporting the linked libraries in any case
 		  endforeach()
@@ -3433,15 +3433,17 @@ else()#Note: part for native packages
 				endif()
 			endforeach()
 			# managing private link time flags (private links are never put in the interface)#TODO check that
-			foreach(link IN LISTS PRIVATE_LINKS)
-				get_Link_Type(RES_TYPE ${link})
-				get_filename_component(LIB_NAME ${link} NAME)
-				if(RES_TYPE STREQUAL OPTION) #this is an option => simply pass it to the link interface
-					file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${link})\n")
-				else()#this is a full path to a library
-					file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ext${LIB_NAME})\n")
-				endif()
-			endforeach()
+			if(${package}_${component}_TYPE STREQUAL "SHARED" OR ${package}_${component}_TYPE STREQUAL "MODULE")
+				foreach(link IN LISTS PRIVATE_LINKS)
+					get_Link_Type(RES_TYPE ${link})
+					get_filename_component(LIB_NAME ${link} NAME)
+					if(RES_TYPE STREQUAL OPTION) #this is an option => simply pass it to the link interface
+						file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${link})\n")
+					else()#this is a full path to a library
+						file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ext${LIB_NAME})\n")
+					endif()
+				endforeach()
+			endif()
 
 			foreach(link IN LISTS SYSTEM_STATIC)#force the use of a system static link
 				if(WIN32)
@@ -3462,7 +3464,7 @@ else()#Note: part for native packages
 						file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_COMPILE_DEFINITIONS>)\n")
 						file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_COMPILE_OPTIONS>)\n")
 						file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${dep_package}::${dep_name_to_use})\n")
-					else()
+					elseif(${package}_${component}_TYPE STREQUAL "SHARED" OR ${package}_${component}_TYPE STREQUAL "MODULE")
 						file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}::${dep_name_to_use})\n")
 					endif()#exporting the linked libraries in any case
 			  endforeach()
@@ -3480,7 +3482,7 @@ else()#Note: part for native packages
 						file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${package}::${dep_name_to_use},INTERFACE_COMPILE_DEFINITIONS>)\n")
 						file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${package}::${dep_name_to_use},INTERFACE_COMPILE_OPTIONS>)\n")
 						file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${package}::${dep_name_to_use})\n")
-					else()
+					elseif(${package}_${component}_TYPE STREQUAL "SHARED" OR ${package}_${component}_TYPE STREQUAL "MODULE")
 						file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${package}::${dep_name_to_use})\n")
 					endif()#exporting th
 				endif()
@@ -3498,7 +3500,7 @@ else()#Note: part for native packages
 							file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_COMPILE_DEFINITIONS>)\n")
 							file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_COMPILE_OPTIONS $<TARGET_PROPERTY:${dep_package}::${dep_name_to_use},INTERFACE_COMPILE_OPTIONS>)\n")
 							file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${dep_package}::${dep_name_to_use})\n")
-						else()
+						elseif(${package}_${component}_TYPE STREQUAL "SHARED" OR ${package}_${component}_TYPE STREQUAL "MODULE")
 							file(APPEND ${file_name} "    set_property(TARGET ${package}::${component} APPEND PROPERTY IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}::${dep_name_to_use})\n")
 						endif()
 					endif()
