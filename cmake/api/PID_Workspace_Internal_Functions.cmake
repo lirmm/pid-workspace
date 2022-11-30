@@ -3566,9 +3566,9 @@ if(NOT IS_SYSTEM_DEPENDENCY_WRAPPER)#for OS variant version of external packages
 		endif()
 		file(COPY ${includes} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
 	endif()
-	if(EXISTS ${package_workspace_path}/lib AND IS_DIRECTORY ${package_workspace_path}/lib)
-		set(libs_path ${package_workspace_path}/lib)
-		file(GLOB libs ${libs_path}/*.so* ${libs_path}/*.a ${libs_path}/*.la ${libs_path}/*.dylib ${libs_path}/*.dll ${libs_path}/*.lib)
+	set(libs_path ${package_workspace_path}/lib)
+	if(EXISTS ${libs_path} AND IS_DIRECTORY ${libs_path})
+		file(GLOB_RECURSE libs ${libs_path}/*.so* ${libs_path}/*.a ${libs_path}/*.la ${libs_path}/*.dylib ${libs_path}/*.dll ${libs_path}/*.lib)
 		file(COPY ${libs} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 	endif()
 	#management of contained runtime resources
