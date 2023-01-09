@@ -38,8 +38,8 @@ instance=""
 reg_expr_job="^build_wrapper_(.+)__(.+)__$"
 
 if [[ $CI_JOB_NAME =~ $reg_expr_job ]]; then
-    instance_job=${BASH_REMATCH[3]}
-    platform_job=${BASH_REMATCH[2]}
+    instance_job=${BASH_REMATCH[2]}
+    platform_job=${BASH_REMATCH[1]}
     platform_job=${platform_job//plusplus/"++"}
 
     IFS=' ' read -ra my_array <<< $platform
