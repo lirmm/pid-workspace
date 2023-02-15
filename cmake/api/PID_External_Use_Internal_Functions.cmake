@@ -205,13 +205,17 @@ function(prepare_Local_Target_Configuration local_target target_type)
   endif()
   if(target_type STREQUAL "EXE" OR target_type STREQUAL "LIB")
     get_property(therpath TARGET ${local_target} PROPERTY INSTALL_RPATH)
-    if(NOT (thepath MATCHES "^.*\\.rpath/${local_target}"))#if the rpath has not already been set for this local component
-      if(APPLE)
-        set_property(TARGET ${local_target} APPEND_STRING PROPERTY INSTALL_RPATH "@loader_path/.rpath/${local_target_name};@loader_path/../.rpath/${local_target_name};@loader_path/../lib;@loader_path") #the library targets a specific folder that contains symbolic links to used shared libraries
-      elseif(UNIX)
-        set_property(TARGET ${local_target} APPEND_STRING PROPERTY INSTALL_RPATH "\$ORIGIN/.rpath/${local_target_name};\$ORIGIN/../.rpath/${local_target_name};\$ORIGIN/../lib;\$ORIGIN") #the library targets a specific folder that contains symbolic links to used shared libraries
-      endif()
+    extract_All_Words("${therpath}" ";" ALL_WORDS_IN_LIST)
+    set(RPATH_SPEC)
+    if(APPLE)
+      set(RPATH_SPEC "@loader_path/.rpath/${local_target_name};@loader_path/../.rpath/${local_target_name};@loader_path/../lib;@loader_path")
+    elseif(UNIX)
+      set(RPATH_SPEC "\$ORIGIN/.rpath/${local_target_name};\$ORIGIN/../.rpath/${local_target_name};\$ORIGIN/../lib;\$ORIGIN")
     endif()
+    list(APPEND ALL_WORDS_IN_LIST ${RPATH_SPEC})
+    list(REMOVE_DUPLICATES ALL_WORDS_IN_LIST)
+    list(JOIN ALL_WORDS_IN_LIST ";" RES_STRING)
+    set_property(TARGET ${local_target} APPEND_STRING PROPERTY INSTALL_RPATH "${RES_STRING}")
   endif()
 
   #updating list of local components bound to pid components
@@ -245,13 +249,6 @@ function(configure_Local_Target_With_PID_Components local_target target_type com
   get_target_property(local_target_name ${local_target} OUTPUT_NAME)
   if(NOT local_target_name)
     set(local_target_name ${local_target})
-  endif()
-  if(target_type STREQUAL "EXE" OR target_type STREQUAL "LIB")
-    if(APPLE)
-      set_property(TARGET ${local_target} APPEND_STRING PROPERTY INSTALL_RPATH "@loader_path/.rpath/${local_target_name};@loader_path/../.rpath/${local_target_name};@loader_path/../lib;@loader_path") #the library targets a specific folder that contains symbolic links to used shared libraries
-    elseif(UNIX)
-      set_property(TARGET ${local_target} APPEND_STRING PROPERTY INSTALL_RPATH "\$ORIGIN/.rpath/${local_target_name};\$ORIGIN/../.rpath/${local_target_name};\$ORIGIN/../lib;\$ORIGIN") #the library targets a specific folder that contains symbolic links to used shared libraries
-    endif()
   endif()
 
   #for the given component memorize its pid dependencies
@@ -345,7 +342,7 @@ endfunction(configure_Local_Target_With_PID_Components)
 #  generate_Local_Component_Symlinks
 #  ----------------------------------
 #
-#   .. command:: generate_Local_Component_Symlinks(local_target_folder_name local_dependency undirect_deps)
+#   .. command:: generate_Local_Component_Symlinks(local_target_folder_name package component mode)
 #
 #    Generate symlinks for runtime resources in the install tree of a non PID defined component depending on a given PID component.
 #
@@ -381,7 +378,7 @@ function(generate_Local_Component_Symlinks local_target_folder_name package comp
     list(REMOVE_DUPLICATES to_symlink)
   endif()
   foreach(resource IN LISTS to_symlink)
-    install_Runtime_Symlink(${resource} "${CMAKE_INSTALL_PREFIX}/.rpath" ${local_target_folder_name})
+    install_Runtime_Symlink(${resource} ".rpath" ${local_target_folder_name})
   endforeach()
 
   ### STEP B: create symlinks in build tree (to allow the runtime resources PID mechanism to work at runtime)
@@ -474,7 +471,7 @@ endfunction(configure_Local_Target_With_Local_Component)
 function(generate_Local_Component_Runtime_Resources_Symlinks local_target_folder_name local_dependency mode)
   foreach(resource IN LISTS ${local_dependency}_RUNTIME_RESOURCES)
     #install a symlink to the resource that lies in the install tree
-    install_Runtime_Symlink(${CMAKE_INSTALL_PREFIX}/share/resources/${resource} "${CMAKE_INSTALL_PREFIX}/.rpath" ${local_target_folder_name})
+    install_Runtime_Symlink(${CMAKE_INSTALL_PREFIX}/share/resources/${resource} ".rpath" ${local_target_folder_name})
     #create a symlink to the resource that lies in the source tree
     create_Runtime_Symlink(${CMAKE_CURRENT_SOURCE_DIR}/${resource} "${CMAKE_BINARY_DIR}/.rpath" ${local_target_folder_name})
   endforeach()
@@ -800,7 +797,7 @@ function(add_Managed_PID_Resources local_target files dirs)
     )
     foreach(a_file IN LISTS files)
       #install a symlink to the resource that lies in the install tree
-      install_Runtime_Symlink(${CMAKE_INSTALL_PREFIX}/share/resources/${a_file} "${CMAKE_INSTALL_PREFIX}/.rpath" ${local_target_folder_name})
+      install_Runtime_Symlink(${CMAKE_INSTALL_PREFIX}/share/resources/${a_file} ".rpath" ${local_target_folder_name})
       #create a symlink to the resource that lies in the source tree
       create_Runtime_Symlink(${CMAKE_CURRENT_SOURCE_DIR}/${a_file} "${CMAKE_BINARY_DIR}/.rpath" ${local_target_folder_name})
     endforeach()
@@ -813,7 +810,7 @@ function(add_Managed_PID_Resources local_target files dirs)
     )
     foreach(a_dir IN LISTS dirs)
       #install a symlink to the resource that lies in the install tree
-      install_Runtime_Symlink(${CMAKE_INSTALL_PREFIX}/share/resources/${a_dir} "${CMAKE_INSTALL_PREFIX}/.rpath" ${local_target_folder_name})
+      install_Runtime_Symlink(${CMAKE_INSTALL_PREFIX}/share/resources/${a_dir} ".rpath" ${local_target_folder_name})
       #create a symlink to the resource that lies in the source tree
       create_Runtime_Symlink(${CMAKE_CURRENT_SOURCE_DIR}/${a_dir} "${CMAKE_BINARY_DIR}/.rpath" ${local_target_folder_name})
     endforeach()
