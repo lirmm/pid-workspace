@@ -1375,6 +1375,7 @@ endfunction(reset_External_Package_Dependency_Cached_Variables_From_Use)
 #
 function(reset_Extra_Tool_Cache_Variables)
   set(${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED CACHE INTERNAL "")
+  set(${PROJECT_NAME}_EXTRA_TOOLS_INSTANCES_REQUIRED CACHE INTERNAL "")
 endfunction(reset_Extra_Tool_Cache_Variables)
 
 #.rst:
@@ -1394,9 +1395,12 @@ endfunction(reset_Extra_Tool_Cache_Variables)
 #     :environment: the name of required environment defining extra tools
 #
 function(add_Required_Extra_Tools environment)
-  get_Extra_Tools_With_On_Demand_Plugins_For_Environment(ALL_EXTRA ${environment})
+  get_Extra_Tools_With_On_Demand_Plugins_For_Environment(ALL_EXTRA ALL_EXTRA_INSTANCES ${environment})
   foreach(extra IN LISTS ALL_EXTRA)
+    list(FIND ALL_EXTRA ${extra} index)
+    list(GET ALL_EXTRA_INSTANCES ${index} instance)
     append_Unique_In_Cache(${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED ${extra})
+    append_Unique_In_Cache(${PROJECT_NAME}_EXTRA_TOOLS_INSTANCES_REQUIRED ${instance})
   endforeach()
 endfunction(add_Required_Extra_Tools)
 

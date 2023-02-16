@@ -69,6 +69,7 @@ function(reset_Wrapper_Version_Info version soname compatibility deploy_file_nam
 	endforeach()
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS CACHE INTERNAL "")
 	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_EXTRA_TOOLS  CACHE INTERNAL "")
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_EXTRA_TOOLS_INSTANCES  CACHE INTERNAL "")
 	#reset platform configurations
 	foreach(config IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS)
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS CACHE INTERNAL "")
@@ -608,6 +609,7 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_TOOLSET ${${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_TOOLSET} CACHE INTERNAL \"\")\n")
 	endforeach()
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_EXTRA_TOOLS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_EXTRA_TOOLS} CACHE INTERNAL \"\")\n")
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_EXTRA_TOOLS_INSTANCES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_EXTRA_TOOLS_INSTANCES} CACHE INTERNAL \"\")\n")
 
 	#manage platform configuration description
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS} CACHE INTERNAL \"\")\n")
@@ -1011,6 +1013,7 @@ function(declare_Wrapped_Environment_Configuration NEED_EXIT languages lang_tool
 	if(tools)
 		foreach(tool IN LISTS tools) ## all environment constraints must be satisfied
 			set(${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED CACHE INTERNAL "")#reset to avoid any problem
+			set(${PROJECT_NAME}_EXTRA_TOOLS_INSTANCES_REQUIRED CACHE INTERNAL "")#reset to avoid any problem
 			check_Extra_Tool_Configuration(RESULT_OK CONFIG_CONSTRAINTS "${tool}" Release)
 			if(NOT RESULT_OK)
 				if(NOT optional)
@@ -1021,6 +1024,7 @@ function(declare_Wrapped_Environment_Configuration NEED_EXIT languages lang_tool
 			else()#the tool is available
 				if(${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED)#if the tool define a plugin it may be useful for the wrapper
 					append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_EXTRA_TOOLS "${${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED}")# update the list
+					append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_EXTRA_TOOLS_INSTANCES "${${PROJECT_NAME}_EXTRA_TOOLS_INSTANCES_REQUIRED}")# update the list
 				endif()
 				list(APPEND config_constraints ${CONFIG_CONSTRAINTS})#memorize platform configurations required by the environment
 			endif()

@@ -1645,66 +1645,60 @@ endfunction(write_Current_Configuration_Build_Related_Variables)
 #  get_Extra_Tools_With_On_Demand_Plugins_For_Environment
 #  ------------------------------------------------------
 #
-#   .. command:: get_Extra_Tools_With_On_Demand_Plugins_For_Environment(RESULT environment)
+#   .. command:: get_Extra_Tools_With_On_Demand_Plugins_For_Environment(TOOLS TOOLS_INSTANCES environment)
 #
 #    Get all extra tools that define an on demand plugin (that does not appear in automatically executed plugins).
 #
 #     :environment: the environment required by a package or wrapper.
 #
-#     :RESULT: the output variable that contains all tools defining on demand plugins contained by the required environment.
+#     :TOOLS: the output variable that contains all tools defining on demand plugins contained by the required environment.
+#     :TOOLS_INSTANCES: the output variable that contains all tools defining on demand plugins contained by the required environment.
 #
-function(get_Extra_Tools_With_On_Demand_Plugins_For_Environment RESULT environment)
+function(get_Extra_Tools_With_On_Demand_Plugins_For_Environment TOOLS TOOLS_INSTANCES environment)
+  hashcode_From_Expression(req_name req_hash ${environment})
+  set(all_tools)
+  set(all_tools_instances)
+  set(${TOOLS} PARENT_SCOPE) #reset in case the variable is not empty
+  set(${TOOLS_INSTANCES} PARENT_SCOPE) #reset in case the variable is not empty
   #Note : by construction we know that environment already belongs to more
-  hashcode_From_Expression(name hash ${environment})
-  set(prefix ${name}_${hash})
-  set(top_level_env FALSE)
-  if(PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL environment)
-    set(top_level_env TRUE)
+  if(PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
+    set(list_of_env ${PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS})
   else()
-    list(FIND PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS ${environment} INDEX)
-    if(NOT INDEX EQUAL -1)
-      set(top_level_env TRUE)
-    endif()
+    set(list_of_env ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT} ${PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS})
+
   endif()
-  set(all_tool)
-  if(top_level_env)#directly search for all extra tools defined in this top level environment
-    #WARNING: i.e. automatically using the plugin defined in top level environment
-    foreach(atool IN LISTS ${prefix}_EXTRA_TOOLS)
-      if(${prefix}_EXTRA_${atool}_PLUGIN_ON_DEMAND)#the tool defines on demand plugins, use it
-        list(APPEND all_tools ${atool})
-      endif()
-    endforeach()
-  else()#we need to search into top level environments if they contain definitions for this extra tool
-    set(container_prefix)
-    hashcode_From_Expression(def_name def_hash ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
-    set(def_prefix ${def_name}_${def_hash})
-    foreach(tool IN LISTS ${def_prefix}_EXTRA_TOOLS)
-      if(tool STREQUAL name)#the extra tool is the one required
-        set(container_prefix ${def_prefix}_EXTRA_${name})
-        break()
-      endif()
-    endforeach()
-    if(NOT container_prefix)
-      foreach(env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
-        hashcode_From_Expression(env_name env_hash ${env})
-        foreach(tool IN LISTS ${env_name}_${env_hash}_EXTRA_TOOLS)
-          if(tool STREQUAL name)#the extra tool is the one required
-            set(container_prefix ${env_name}_${env_hash}_EXTRA_${name})
-            break() #no need to search more
+  foreach(env IN LISTS list_of_env)
+    hashcode_From_Expression(env_name env_hash ${env})
+    set(env_prefix ${env_name}_${env_hash})
+    if(env_name STREQUAL req_name 
+      AND env_hash STREQUAL req_hash)
+      #perfect matching with a top level environment
+      foreach(tool IN LISTS ${env_prefix}_EXTRA_TOOLS)
+        if(${env_prefix}_EXTRA_${tool}_PLUGIN_ON_DEMAND)#the tool defines on demand plugins, use it
+          list(APPEND all_tools ${tool})
+          list(APPEND all_tools_instances ${env_prefix})
+        endif()
+      endforeach()
+      set(${TOOLS} ${all_tools} PARENT_SCOPE)
+      set(${TOOLS_INSTANCES} ${all_tools_instances} PARENT_SCOPE)
+      return()
+    else()
+      #check if required environment is contained into top level environment
+      foreach(tool IN LISTS ${env_prefix}_EXTRA_TOOLS)
+        if(tool STREQUAL req_name)#the extra tool is the one required
+          if(${env_prefix}_EXTRA_${tool}_PLUGIN_ON_DEMAND)#there is a on demand plugin for this tool
+            #now need to check if constraint expression matches the one of the environment 
+            hashcode_From_Expression(tool_name tool_hash ${${env_prefix}_EXTRA_${tool}_CONSTRAINT_EXPRESSION})
+            if(tool_hash STREQUAL req_hash)#OK they are matching we can immediately take this one, and only this one
+              set(${TOOLS} ${tool_name} PARENT_SCOPE)
+              set(${TOOLS_INSTANCES} ${env_prefix} PARENT_SCOPE)
+              return()
+            endif()
           endif()
-        endforeach()
-        if(container_prefix)
-          break() #no need to search more
         endif()
       endforeach()
     endif()
-    if(container_prefix)#OK the extra tool has been found in a top level environment
-      if(${container_prefix}_PLUGIN_ON_DEMAND)#the tool defines on demand plugins, use it
-        set(all_tools ${environment})#only one possible in this case
-      endif()
-    endif()
-  endif()
-  set(${RESULT} ${all_tools} PARENT_SCOPE)
+  endforeach()
 endfunction(get_Extra_Tools_With_On_Demand_Plugins_For_Environment)
 
 #.rst:

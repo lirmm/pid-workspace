@@ -52,6 +52,10 @@ macro(manage_Plugins_In_Wrapper filename package version)
   #Note: if they are part of _EXTRA_TOOLS_REQUIRED variable this means they have been required
   foreach(tool IN LISTS ${package}_KNOWN_VERSION_${version}_EXTRA_TOOLS)
     if(EXISTS ${plugins_path}/${tool}/${filename}.cmake)
+      #get the corresponding instance in current profile description
+      list(FIND ${package}_KNOWN_VERSION_${version}_EXTRA_TOOLS ${tool} index)
+      list(GET ${package}_KNOWN_VERSION_${version}_EXTRA_TOOLS_INSTANCES ${index} instance)
+      set(${tool}_TOOL_INSTANCE ${instance})
       include(${plugins_path}/${tool}/${filename}.cmake)
     endif()
   endforeach()
@@ -132,6 +136,10 @@ macro(manage_Plugins_In_Package filename)
   #Note: if they are part of _EXTRA_TOOLS_REQUIRED variable this means they have been required
   foreach(tool IN LISTS ${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED)
     if(EXISTS ${plugins_path}/${tool}/${filename}.cmake)
+      #get the corresponding instance in current profile description
+      list(FIND ${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED ${tool} index)
+      list(GET ${PROJECT_NAME}_EXTRA_TOOLS_INSTANCES_REQUIRED ${index} instance)
+      set(${tool}_TOOL_INSTANCE ${instance})
       include(${plugins_path}/${tool}/${filename}.cmake)
     endif()
   endforeach()
@@ -262,13 +270,13 @@ endmacro(manage_Plugins_In_Package_Before_Dependencies_Description)
 #
 # .. ifmode:: internal
 #
-#  .. |find_Environment_Tool_For_Current_Profile| replace:: ``find_Environment_Tool_For_Current_Profile``
-#  .. _find_Environment_Tool_For_Current_Profile:
+#  .. |find_Automatic_Tool_Prefix_For_Current_Profile| replace:: ``find_Automatic_Tool_Prefix_For_Current_Profile``
+#  .. _find_Automatic_Tool_For_Current_Profile:
 #
-#  find_Environment_Tool_For_Current_Profile
+#  find_Automatic_Tool_Prefix_For_Current_Profile
 #  ------------------------------------------
 #
-#   .. command:: find_Environment_Tool_For_Current_Profile( RES_PREFIX profile)
+#   .. command:: find_Automatic_Tool_Prefix_For_Current_Profile( RES_PREFIX profile)
 #
 #    Find the prefix to use to get description of configuration for an additional tool for a given profile
 #
@@ -277,35 +285,35 @@ endmacro(manage_Plugins_In_Package_Before_Dependencies_Description)
 #     :RES_PREFIX: the prefix for variable holding the value for the given environment
 #
 #
-function(find_Environment_Tool_For_Current_Profile RES_PREFIX environment)
+function(find_Automatic_Tool_Prefix_For_Current_Profile RES_PREFIX environment)
   set(${RES_PREFIX} PARENT_SCOPE)
   hashcode_From_Expression(def_name def_hash ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
-  find_Environment_Tool(RES_DEF ${def_name}_${def_hash} ${environment})
+  find_Automatic_Tool_Prefix(RES_DEF ${def_name}_${def_hash} ${environment})
   if(RES_DEF)
     set(${RES_PREFIX} ${RES_DEF} PARENT_SCOPE)
   else()
     foreach(env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
       hashcode_From_Expression(name hash ${env})
-      find_Environment_Tool(RES_ADD ${name}_${hash} ${environment})
+      find_Automatic_Tool_Prefix(RES_ADD ${name}_${hash} ${environment})
       if(RES_ADD)
         set(${RES_PREFIX} ${RES_ADD} PARENT_SCOPE)
         return()
       endif()
     endforeach()
   endif()
-endfunction(find_Environment_Tool_For_Current_Profile)
+endfunction(find_Automatic_Tool_Prefix_For_Current_Profile)
 
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |find_Environment_Tool| replace:: ``find_Environment_Tool``
+#  .. |find_Automatic_Tool_Prefix| replace:: ``find_Automatic_Tool_Prefix``
 #  .. _find_Environment_Tool:
 #
-#  find_Environment_Tool
-#  ----------------------
+#  find_Automatic_Tool_Prefix
+#  --------------------------
 #
-#   .. command:: find_Environment_Tool()
+#   .. command:: find_Automatic_Tool_Prefix()
 #
 #    Find the prefix to use to get description of configuration for an additional tool
 #
@@ -315,11 +323,33 @@ endfunction(find_Environment_Tool_For_Current_Profile)
 #     :RES_PREFIX: the prefix for variable holding the value for the given environment
 #
 #
-function(find_Environment_Tool RES_PREFIX env_prefix environment)
+function(find_Automatic_Tool_Prefix RES_PREFIX env_prefix environment)
   set(${RES_PREFIX} PARENT_SCOPE)
   list(FIND ${env_prefix}_EXTRA_TOOLS ${environment} INDEX)
   if(INDEX EQUAL -1)
     return()#not found
   endif()
   set(${RES_PREFIX} ${env_prefix}_EXTRA_${environment} PARENT_SCOPE)
-endfunction(find_Environment_Tool)
+endfunction(find_Automatic_Tool_Prefix)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |find_On_Demand_Tool_Prefix| replace:: ``find_On_Demand_Tool_Prefix``
+#  .. _find_On_Demand_Tool_Prefix:
+#
+#  find_On_Demand_Tool_Prefix
+#  ---------------------------
+#
+#   .. command:: find_On_Demand_Tool_Prefix(RES_PREFIX tool)
+#
+#    Find the prefix to use to get description of configuration for an additional tool
+#
+#     :tool: name of the tool
+#     :RES_PREFIX: output variable containing the prefix for variable holding the values for the given tool
+#
+#
+function(find_On_Demand_Tool_Prefix RES_PREFIX tool)
+  set(${RES_PREFIX} ${${tool}_TOOL_INSTANCE}_EXTRA_${tool} PARENT_SCOPE)
+endfunction(find_On_Demand_Tool_Prefix)

@@ -183,6 +183,7 @@ else()#by default build the given package version using external project specifi
 	else()
 		message("[PID] INFO : all required build environment language configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
 	endif()
+
 	#callback for plugins execution
 	manage_Plugins_In_Wrapper_Before_Dependencies_Description(${TARGET_EXTERNAL_PACKAGE} ${version})
 
