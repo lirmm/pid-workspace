@@ -2432,13 +2432,13 @@ function(generate_OS_Variant_Symlinks package platform version install_dir)
 			OR 	${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_FORCED_SHARED_LINKS)
 
 			if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME)#the component SONAME has priority over package SONAME
-				set(USE_SONAME ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME})
+				set(USE_SONAME "${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME}")
 			else()
-				set(USE_SONAME ${${package}_KNOWN_VERSION_${version}_SONAME})
+				set(USE_SONAME "${${package}_KNOWN_VERSION_${version}_SONAME}")
 			endif()
 			set(all_shared ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS} ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_FORCED_SHARED_LINKS})
 			foreach(sha_link IN LISTS all_shared)
-				if(USE_SONAME) # need to create the adequate link for PID component
+				if(USE_SONAME OR USE_SONAME EQUAL 0) # need to create the adequate link for PID component
 					create_Shared_Lib_Path(RESULT_LIB_PATH ${sha_link} ${platform} "${USE_SONAME}")
 					if(NOT RESULT_LIB_PATH MATCHES "^-l.*$")#only generate symlinks for non OS libraries
 						generate_OS_Variant_Symlink_For_Path(${install_dir} ${RESULT_LIB_PATH} "${${package}_RPATH}")
