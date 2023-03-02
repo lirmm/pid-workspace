@@ -1020,17 +1020,17 @@ function(sort_Version_List list_var)
     return()#return if input list is empty
   endif()
   set(sorted_list)
-  while(${input_list_var})
-    list(GET elements_to_sort 0 curr_min_version)
-    foreach(comp_version IN LISTS ${input_list_var})
+  while(${list_var})
+    list(GET ${list_var} 0 curr_min_version)
+    foreach(comp_version IN LISTS ${list_var})
       if(comp_version VERSION_LESS curr_min_version)
         set(curr_min_version ${comp_version})
       endif()
     endforeach()
-    list(REMOVE_ITEM ${input_list_var} ${curr_min_version})
+    list(REMOVE_ITEM ${list_var} ${curr_min_version})
     list(APPEND sorted_list ${curr_min_version})
   endwhile()
-  set(${input_list_var} ${sorted_list} PARENT_SCOPE)#reset content of output
+  set(${list_var} ${sorted_list} PARENT_SCOPE)#reset content of output
 endfunction(sort_Version_List)
 
 #############################################################
@@ -1650,9 +1650,10 @@ function(parse_Package_Dependency_All_Version_Arguments package all_args LIST_OF
     collect_Versions_From_Constraints(RES_INTERVAL_VERSIONS ${package} "${already_from}" "")
     list(APPEND all_versions ${RES_INTERVAL_VERSIONS})
   endif()
-  #produce the reply
+  #produce the reply: reorder from higher to lower version
   if(all_versions)
-    list(REVERSE all_versions)
+    sort_Version_List(all_versions)#sorted from lower to higher
+    list(REVERSE all_versions)#sorted from higher to lower
   endif()
   set(${REMAINING_TO_PARSE} ${TO_PARSE} PARENT_SCOPE)
   set(${LIST_OF_VERSIONS} ${all_versions} PARENT_SCOPE)
