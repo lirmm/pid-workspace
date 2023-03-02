@@ -2251,13 +2251,13 @@ endfunction(load_And_Configure_Wrapper)
 #
 # .. ifmode:: internal
 #
-#  .. |get_Wrapper_Known_Versions| replace:: ``get_Wrapper_Known_Versions``
-#  .. get_Wrapper_Known_Versions:
+#  .. |get_Wrapper_Buildable_Versions| replace:: ``get_Wrapper_Buildable_Versions``
+#  .. _get_Wrapper_Buildable_Versions:
 #
-#  get_Wrapper_Known_Versions
-#  --------------------------
+#  get_Wrapper_Buildable_Versions
+#  ------------------------------
 #
-#   .. command:: get_Wrapper_Known_Versions(RES_VERSIONS package)
+#   .. command:: get_Wrapper_Buildable_Versions(RES_VERSIONS package)
 #
 #   Get all versions that can be built from an external package wrapper.
 #
@@ -2270,9 +2270,15 @@ endfunction(load_And_Configure_Wrapper)
 #
 #        Wrapper must be configured and loaded before the call to this function (see load_And_Configure_Wrapper)
 #
-function(get_Wrapper_Known_Versions RES_VERSIONS package)
-set(${RES_VERSIONS} ${${package}_KNOWN_VERSIONS} PARENT_SCOPE)
-endfunction(get_Wrapper_Known_Versions RES_VERSIONS package)
+function(get_Wrapper_Buildable_Versions RES_VERSIONS package)
+  set(result)
+  foreach(version IN LISTS ${package}_KNOWN_VERSIONS)
+    if(${package}_KNOWN_VERSION_${version}_CONFIGURE_OK)
+      list(APPEND result ${version})
+    endif()
+  endforeach()
+  set(${RES_VERSIONS} ${result} PARENT_SCOPE)
+endfunction(get_Wrapper_Buildable_Versions)
 
 ### building an external package from its wrapper
 
@@ -2430,7 +2436,7 @@ if(NOT LOADED)
   restore_Repository_Context(${package} TRUE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
-get_Wrapper_Known_Versions(ALL_VERSIONS ${package})
+get_Wrapper_Buildable_Versions(ALL_VERSIONS ${package})
 select_Last_Version(RES_VERSION "${ALL_VERSIONS}")
 if(NOT RES_VERSION)
   #need to check if the wrapper only define a system configuration
@@ -2514,7 +2520,7 @@ if(NOT LOADED)
   restore_Repository_Context(${package} TRUE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
-get_Wrapper_Known_Versions(ALL_VERSIONS ${package})
+get_Wrapper_Buildable_Versions(ALL_VERSIONS ${package})
 
 if(is_exact)
 	select_Exact_External_Version(RES_VERSION ${min_version} "${ALL_VERSIONS}")

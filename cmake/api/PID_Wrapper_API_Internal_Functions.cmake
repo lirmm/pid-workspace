@@ -53,6 +53,7 @@ include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 #     Reset all cache variables of the currently built wrapper. Used to ensure consistency of wrapper description.
 #
 #      :version: version to reset.
+#      :buidable: true if version can be locally build, false otherwise.
 #      :soname: the global soname for the version.
 #      :compatibility: the previous compatible version
 #      :deploy_file_name: the path to the deployment script used to build/install the given version, relative to this version folder.
@@ -61,7 +62,8 @@ include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 #      :cmake folder: the path to the installed cmake module scripts.
 #      :pkgconfig_folder: the path to the installed pkg-config scripts.
 #
-function(reset_Wrapper_Version_Info version soname compatibility deploy_file_name post_install_script pre_use_script cmake_folder pkgconfig_folder)
+function(reset_Wrapper_Version_Info version buidable soname compatibility deploy_file_name post_install_script pre_use_script cmake_folder pkgconfig_folder)
+	set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURE_OK ${buidable} CACHE INTERNAL "")
 	foreach(lang IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS)
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS CACHE INTERNAL "")
 		set(${PROJECT_NAME}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_OPTIONAL CACHE INTERNAL "")
@@ -176,7 +178,7 @@ function(reset_Wrapper_Description_Cached_Variables)
 #reset versions description
 foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 	#reset language configurations
-	reset_Wrapper_Version_Info(${version} "" "" "" "" "" "" "")
+	reset_Wrapper_Version_Info(${version} FALSE "" "" "" "" "" "" "")
 endforeach()
 set(${PROJECT_NAME}_KNOWN_VERSIONS CACHE INTERNAL "")
 
@@ -593,6 +595,7 @@ function(generate_Wrapper_Build_File path_to_file)
 #write info about versions
 file(WRITE ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSIONS ${${PROJECT_NAME}_KNOWN_VERSIONS} CACHE INTERNAL \"\")\n")
 foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
+	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURE_OK ${${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURE_OK} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT ${${PROJECT_NAME}_KNOWN_VERSION_${version}_DEPLOY_SCRIPT} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT ${${PROJECT_NAME}_KNOWN_VERSION_${version}_POST_INSTALL_SCRIPT} CACHE INTERNAL \"\")\n")
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT ${${PROJECT_NAME}_KNOWN_VERSION_${version}_PRE_USE_SCRIPT} CACHE INTERNAL \"\")\n")
@@ -940,7 +943,7 @@ if(NOT INDEX EQUAL -1)
 	return()
 endif()
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSIONS ${version})
-reset_Wrapper_Version_Info(${version} "${so_name}" "${compatible_with_version}" "${deploy_file_name}" "${post_install_script}" "${pre_use_script}" "${cmake_folder}" "${pkgconfig_folder}")
+reset_Wrapper_Version_Info(${version} TRUE "${so_name}" "${compatible_with_version}" "${deploy_file_name}" "${post_install_script}" "${pre_use_script}" "${cmake_folder}" "${pkgconfig_folder}")
 set(CURRENT_MANAGED_VERSION ${version} CACHE INTERNAL "")
 endfunction(add_Known_Version)
 
@@ -1052,8 +1055,7 @@ endfunction(declare_Wrapped_Environment_Configuration)
 #    Declare the current version as unavailable, so use will not be able to build it.
 #
 macro(declare_Current_Version_Unavailable)
-	reset_Wrapper_Version_Info(${CURRENT_MANAGED_VERSION} "" "" "" "" "" "" "")
-	remove_From_Cache(${PROJECT_NAME}_KNOWN_VERSIONS ${CURRENT_MANAGED_VERSION})
+	set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_CONFIGURE_OK FALSE CACHE INTERNAL "")
 	message(WARNING "[PID] WARNING: version ${CURRENT_MANAGED_VERSION} of ${PROJECT_NAME} cannot be generated since some of its platform or environments required contraints or required dependencies cannot be resolved (see previous outputs). This version cannot be built.")
 	unset(CURRENT_MANAGED_VERSION)
 endmacro(declare_Current_Version_Unavailable)
