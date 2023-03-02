@@ -605,10 +605,8 @@ set(${OUT_STR} PARENT_SCOPE)
 set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 if(EXISTS ${thefile})
 	include (${thefile})
-	if(NOT FOUND EQUAL -1)# there is a chosen version for that package
-		get_Dependency_Resolution_Path_For_Impl_Recurse(VAR ${package} "0" ${mode})
-		set(${OUT_STR} ${VAR} PARENT_SCOPE)
-  	endif()
+	get_Dependency_Resolution_Path_For_Impl_Recurse(VAR ${package} "0" ${mode})
+	set(${OUT_STR} ${VAR} PARENT_SCOPE)
 endif()
 endfunction(get_Dependency_Resolution_Path_For)
 
