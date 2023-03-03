@@ -2312,7 +2312,27 @@ else()#classical build => perform only corrective actions if cache variable is n
 				if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")#check version specified by user except if system is required
 					list(FIND list_of_possible_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
 					if(INDEX EQUAL -1)#no possible version found -> bad input of the user
-						message("[PID] WARNING: version constraint given by user for dependency boost (${${dep_package}_ALTERNATIVE_VERSION_USED}) is not possible ... fixing to default version (${default_version}).")
+						message("[PID] WARNING: version constraint given by user for dependency ${dep_package} (${${dep_package}_ALTERNATIVE_VERSION_USED}) is not possible ... fixing to default version (${default_version}).")
+						#simply reset the description to first found
+						if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
+							set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
+						else()#many possible versions now !!
+							set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
+						endif()
+					endif()
+				else()#system dependency
+					set(need_reset FALSE)
+					check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${PROJECT_NAME} "${dep_package}" ${CMAKE_BUILD_TYPE})
+					if(NOT RESULT_OK OR NOT ${dep_package}_VERSION)
+						set(need_reset TRUE)
+					else()
+						list(FIND list_of_possible_versions ${${dep_package}_VERSION} INDEX)
+						if(INDEX EQUAL -1)#no possible version found -> bad input of the user or dependent build
+							set(need_reset TRUE)
+						endif()
+					endif()
+					if(need_reset)
+						message("[PID] WARNING: SYSTEM version constraint given by user for dependency ${dep_package} is not possible ... fixing to default version (${default_version}).")
 						#simply reset the description to first found
 						if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
 							set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
