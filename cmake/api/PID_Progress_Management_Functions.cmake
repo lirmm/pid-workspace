@@ -592,11 +592,12 @@ endfunction(get_Chosen_Version_In_Current_Process)
 #  get_Dependency_Resolution_Path_For
 #  -------------------------------------
 #
-#   .. command:: get_Dependency_Resolution_Path_For(OUT_STR package)
+#   .. command:: get_Dependency_Resolution_Path_For(OUT_STR package mode)
 #
 #    Get a printable string representing all possible path that were used to resolve a dependency
 #
-#      :package: the name of the given package.
+#      :package: the name of the given package that is the dependency.
+#      :mode: the considered build mode
 #
 #      :OUT_STR: the output variable that contains the tree of path leading the dependency resolution, as a string 
 #
@@ -610,23 +611,62 @@ if(EXISTS ${thefile})
 endif()
 endfunction(get_Dependency_Resolution_Path_For)
 
-function(get_spaces_to_print OUT_STR nb_tabs)
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Spaces_To_Print| replace:: ``get_Spaces_To_Print``
+#  .. _get_Spaces_To_Print:
+#
+#  get_Spaces_To_Print
+#  -------------------
+#
+#   .. command:: get_Spaces_To_Print(OUT_STR nb_tabs)
+#
+#    Get a printable string containing the adequate number of spaces for representing a given number of tabulations
+#
+#      :nb_tabs: desired number of tabulations
+#
+#      :OUT_STR: the output variable that contains the spaces
+#
+function(get_Spaces_To_Print OUT_STR nb_tabs)
 set(tmp_str "")
 while(NOT nb_tabs EQUAL 0)
 	set(tmp_str "${tmp_str}|   ")
 	math(EXPR nb_tabs "${nb_tabs}-1")
 endwhile()
 set(${OUT_STR} "${tmp_str}" PARENT_SCOPE)
-endfunction(get_spaces_to_print)
+endfunction(get_Spaces_To_Print)
 
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Dependency_Resolution_Path_For_Impl_Recurse| replace:: ``get_Dependency_Resolution_Path_For_Impl_Recurse``
+#  .. _get_Dependency_Resolution_Path_For_Impl_Recurse:
+#
+#  get_Dependency_Resolution_Path_For_Impl_Recurse
+#  -----------------------------------------------
+#
+#   .. command:: get_Dependency_Resolution_Path_For_Impl_Recurse(OUT_STR package nb_tabs mode)
+#
+#    Get a printable string describing a tree of all packages requiring the given package as a dependency
+#
+#      :package: the package that is the dependency
+#	   :nb_tabs: number of tabulations to print as prefix of the dependency tree
+#      :mode: the considered build mode
+#      :OUT_STR: the output variable that contains the printable string
+#
 function(get_Dependency_Resolution_Path_For_Impl_Recurse OUT_STR package nb_tabs mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(final_str "")
 set(package_marker "+--")
 set(line_marker "|")
-get_spaces_to_print(SPACES "${nb_tabs}")
+get_Spaces_To_Print(SPACES "${nb_tabs}")
 math(EXPR NEXT_REQUESTOR_INDENT "${nb_tabs}+1")
-get_Package_Type(${package} PT)
+get_Package_Type(${package} PACK_TYPE)
 if(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
 	foreach(req IN LISTS ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
 		set(curr_version)
@@ -637,32 +677,30 @@ if(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
 		elseif(${req}_VERSION)
 			set(curr_version ${${req}_VERSION})
 		endif()
-		if(nb_tabs EQUAL 0)
-			set(final_str "${final_str}\n${package_marker} ${req}: ${curr_version}")
-		else()
-			set(final_str "${final_str}\n${SPACES}${package_marker} ${req}: ${curr_version}")
-		endif()
+		set(final_str "${final_str}\n   ${SPACES}${package_marker} ${req} (${curr_version})")
 		
 		set(requirer_dep)
 		if(PACK_TYPE STREQUAL "NATIVE")
 			if(${req}_DEPENDENCY_${package}_VERSION${VAR_SUFFIX})
-				set(requirer_dep "-> ${${req}_DEPENDENCY_${package}_VERSION${VAR_SUFFIX}}")
 				if(${req}_DEPENDENCY_${package}_VERSION_EXACT${VAR_SUFFIX})
-					set(requirer_dep "${requirer_dep} (exact)")
+					set(requirer_dep " -> ${package} (exact ${${req}_DEPENDENCY_${package}_VERSION${VAR_SUFFIX}})")
+				else()
+					set(requirer_dep " -> ${package} (${${req}_DEPENDENCY_${package}_VERSION${VAR_SUFFIX}})")
 				endif()
 			endif()
 		else()
 			if(${req}_EXTERNAL_DEPENDENCY_${package}_VERSION${VAR_SUFFIX})
-				set(requirer_dep "-> ${${req}_EXTERNAL_DEPENDENCY_${package}_VERSION${VAR_SUFFIX}}")
 				if(${req}_EXTERNAL_DEPENDENCY_${package}_VERSION_SYSTEM${VAR_SUFFIX})
-					set(requirer_dep "${requirer_dep} (system)")
+					set(requirer_dep " -> ${package} (system ${${req}_EXTERNAL_DEPENDENCY_${package}_VERSION${VAR_SUFFIX}})")
 				elseif(${req}_EXTERNAL_DEPENDENCY_${package}_VERSION_EXACT${VAR_SUFFIX})
-					set(requirer_dep "${requirer_dep} (exact)")
+					set(requirer_dep " -> ${package} (exact ${${req}_EXTERNAL_DEPENDENCY_${package}_VERSION${VAR_SUFFIX}})")
+				else()
+					set(requirer_dep " -> ${package} (${${req}_EXTERNAL_DEPENDENCY_${package}_VERSION${VAR_SUFFIX}})")
 				endif()
 			endif()
 		endif()
-		
-		get_Dependency_Resolution_Path_For_Impl_Recurse(TO_APPEND ${req} ${NEXT_REQUESTOR_INDENT} ${mode})
+		set(TO_APPEND)
+		get_Dependency_Resolution_Path_For_Impl_Recurse(TO_APPEND ${req} "${NEXT_REQUESTOR_INDENT}" ${mode})
 		set(final_str "${final_str}${requirer_dep}${TO_APPEND}")
 	endforeach()
 endif()
