@@ -1495,7 +1495,7 @@ if(NOT UPDATE_OK)
 	return()
 endif()
 
-get_Repository_Version_Tags(VERSION_NUMBERS ${package}) #get all version tags
+get_Repository_Version_Tags(VERSION_NUMBERS ${package}) #get all version tags -> currently available versions
 if(NOT VERSION_NUMBERS) #no version available => BUG
 	message("[PID] ERROR : no version available for source package ${package}. Maybe this is a malformed package, please contact the administrator of this package.")
 	restore_Repository_Context(${package} FALSE ${CURRENT_COMMIT} ${SAVED_CONTENT})

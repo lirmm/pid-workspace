@@ -311,6 +311,44 @@ if(EXISTS ${thefile})
 endif()
 endfunction(add_Chosen_Package_Version_In_Current_Process)
 
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |remove_Chosen_Package_Version_In_Current_Process| replace:: ``remove_Chosen_Package_Version_In_Current_Process``
+#  .. _remove_Chosen_Package_Version_In_Current_Process:
+#
+#  remove_Chosen_Package_Version_In_Current_Process
+#  ------------------------------------------------
+#
+#   .. command:: remove_Chosen_Package_Version_In_Current_Process(package requestor)
+#
+#    Remove the chosen version for a given package chosen by a given requestor package.
+#
+#      :package: the name of package.
+#
+function(remove_Chosen_Package_Version_In_Current_Process package requestor)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
+if(EXISTS ${thefile})
+	include (${thefile})
+	#updating variables
+	if(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
+		list(REMOVE_ITEM ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS "${requestor}")
+		list(REMOVE_ITEM CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${package})
+	endif()
+	update_Progress_File()
+	return()
+endif()
+endfunction(remove_Chosen_Package_Version_In_Current_Process)
+
+
+
+
+
+
 #.rst:
 #
 # .. ifmode:: internal
