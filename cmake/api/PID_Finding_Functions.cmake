@@ -271,26 +271,56 @@ if(NOT DEFINED MAJOR)#not a valid version string
   set(${RES_VERSION} PARENT_SCOPE)
 endif()
 set(curr_major -1)
-if(DEFINED PATCH)
-	set(curr_max_patch_number ${PATCH})
+set(curr_minor -1)
+set(curr_patch -1)
+
+if(NOT DEFINED MINOR)
+	set(target_min_minor 0)
 else()
-	set(curr_max_patch_number -1)
+	set(target_min_minor ${MINOR})
 endif()
+if(NOT DEFINED PATCH)
+	set(target_min_patch 0)
+else()
+	set(target_min_patch ${PATCH})
+endif()
+
 foreach(version IN LISTS available_versions)
 	get_Version_String_Numbers("${version}" COMPARE_MAJOR COMPARE_MINOR COMPARE_PATCH)
-	if(COMPARE_MAJOR EQUAL MAJOR)
-		if(	COMPARE_MINOR EQUAL MINOR)
-      if (NOT COMPARE_PATCH LESS PATCH)#do not use GREATER as if a patch version is defined we can be in a situation where PATCH=PATCH and curr_major has never been set
-        set(curr_major ${MAJOR})
-        set(curr_max_patch_number ${COMPARE_PATCH})# taking the newest patch version for the current major.minor
-      endif()
-    endif()
+	if(COMPARE_MAJOR EQUAL MAJOR)# major version mutch exactly match
+		if(COMPARE_MINOR EQUAL target_min_minor) # perfect matching
+			# we need to check that minimum patch required is OK
+      		if (COMPARE_PATCH GREATER_EQUAL target_min_patch)#do not use GREATER as if a patch version is defined we can be in a situation where PATCH=PATCH and curr_major has never been set
+			  if(COMPARE_PATCH GREATER curr_patch)#take the highest possible patch with the closest version to minimum_version
+					set(curr_major ${MAJOR})
+					set(curr_minor ${MINOR})
+					set(curr_patch ${COMPARE_PATCH})# taking the newest patch version for the current major.minor
+				endif()
+			endif()
+		elseif(COMPARE_MINOR GREATER target_min_minor) # unperfect matching
+			if(curr_minor EQUAL -1)#no solution found yet
+				# take this version
+				set(curr_major ${MAJOR})
+				set(curr_minor ${COMPARE_MINOR})
+				set(curr_patch ${COMPARE_PATCH})# taking the newest patch version for the current major.minor
+			elseif(COMPARE_MINOR LESS curr_minor)# a solution  has already been found and this one has a lower minor version
+				#a previous minor version has been taken into account but is was also unperfect
+				#but this new minor is "closer" to the minimum required
+				set(curr_minor ${COMPARE_MINOR})
+				set(curr_patch ${COMPARE_PATCH})# taking the newest patch version for the current major.minor
+			elseif(COMPARE_MINOR EQUAL curr_minor)# a solution  has already been found with same minor version
+				if(COMPARE_PATCH GREATER curr_patch) #current version has a greater patch version -> use it
+					set(curr_patch ${COMPARE_PATCH})# taking the newest patch version for the current major.minor
+				endif()
+				#same 
+			endif()
+    	endif()
 	endif()
 endforeach()
-if(curr_max_patch_number EQUAL -1 OR curr_major EQUAL -1)#i.e. nothing found
+if(curr_patch EQUAL -1 OR curr_major EQUAL -1 OR curr_minor EQUAL -1)#i.e. nothing found
 	set(${RES_VERSION} PARENT_SCOPE)
 else()
-	set(${RES_VERSION} "${curr_major}.${MINOR}.${curr_max_patch_number}" PARENT_SCOPE)
+	set(${RES_VERSION} "${curr_major}.${curr_minor}.${curr_patch}" PARENT_SCOPE)
 endif()
 endfunction(select_Best_Native_Version)
 
