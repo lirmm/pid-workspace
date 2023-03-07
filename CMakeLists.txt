@@ -52,6 +52,9 @@ if(DIR_NAME STREQUAL "build")
 	endif()
 	# automatically managing reference to official remote repository #####
 	set(PID_OFFICIAL_REMOTE_ADDRESS "https://gite.lirmm.fr/pid/pid-workspace.git" CACHE STRING "address of the official PID repository") #this is the "central" repo for PID system
+	if(NOT PID_OFFICIAL_REMOTE_ADDRESS)#if no official remote defined reset it to its initial value
+		set(PID_OFFICIAL_REMOTE_ADDRESS "https://gite.lirmm.fr/pid/pid-workspace.git" CACHE STRING "address of the official PID repository" FORCE)
+	endif()
 	execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR} git remote -v OUTPUT_VARIABLE res)
 	string(REPLACE "\n" ";" GIT_REMOTES ${res})
 	set(OFFICIAL_EXISTS)
