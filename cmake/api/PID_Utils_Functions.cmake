@@ -1272,7 +1272,11 @@ function(set_PID_Compatible_Rpath path_to_binary)
 		set(rpath "\$ORIGIN/../.rpath:\$ORIGIN/../lib:\$ORIGIN")
 		execute_process(COMMAND ${RPATH_UTILITY} --force-rpath --set-rpath "${rpath}" ${path_to_binary}
 										WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-									  ERROR_QUIET OUTPUT_QUIET)
+									  ERROR_VARIABLE output OUTPUT_VARIABLE output
+                    RESULT_VARIABLE res)
+    if(NOT res EQUAL 0)
+      message("[PID] ERROR: when setting rpath of ${path_to_binary}. Reason: ${output}")
+    endif()
 	endif()
 endfunction(set_PID_Compatible_Rpath)
 

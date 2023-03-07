@@ -1831,6 +1831,8 @@ function(set_External_Runtime_Component_Rpath package version)
 		foreach(bin IN LISTS ${package}_KNOWN_VERSION_${version}_BUILD_LOCAL_RUNTIME_EXE)
 			set_PID_Compatible_Rpath(${bin})
 		endforeach()
+	else()
+		message("[PID] WARNING: no rpath utility found, cannot set rpath of ${package} components. You can install a rpath utilisty like patchelf (unix) or install-name-tool (macos) the reconfigure yoru workspace to solve the problem.")
 	endif()
 endfunction(set_External_Runtime_Component_Rpath)
 
