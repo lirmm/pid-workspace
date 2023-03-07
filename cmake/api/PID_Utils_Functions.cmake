@@ -5850,37 +5850,6 @@ function(remove_Duplicates_From_List list_name)
 	endif()
 endfunction(remove_Duplicates_From_List)
 
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |define_Parallel_Jobs_Flag| replace:: ``define_Parallel_Jobs_Flag``
-#  .. _define_Parallel_Jobs_Flag:
-#
-#  define_Parallel_Jobs_Flag
-#  -------------------------
-#
-#   .. command:: define_Parallel_Jobs_Flag(PARALLEL_JOBS_FLAG)
-#
-#    Get the build system flag to use in order to get optimal number of jobs when building.
-#
-#     :PARALLEL_JOBS_FLAG: the output variable containing the native build system flag.
-#
-function(define_Parallel_Jobs_Flag PARALLEL_JOBS_FLAG)
-  if(DEFINED ENV{PID_MAX_JOBS_NUMBER})
-    set(PARALLEL_JOBS_FLAG "-j$ENV{PID_MAX_JOBS_NUMBER}" PARENT_SCOPE)
-  else()
-    include(ProcessorCount)
-    ProcessorCount(NUMBER_OF_JOBS)
-    math(EXPR NUMBER_OF_JOBS "${NUMBER_OF_JOBS}+1")#according to
-    if(NUMBER_OF_JOBS GREATER 1)#TODO manage variants between generators
-      set(${PARALLEL_JOBS_FLAG} "-j${NUMBER_OF_JOBS}" PARENT_SCOPE)
-    else()
-      set(${PARALLEL_JOBS_FLAG} PARENT_SCOPE)
-    endif()
-  endif()
-endfunction(define_Parallel_Jobs_Flag)
-
 
 #.rst:
 #
@@ -6094,3 +6063,101 @@ function(stop_Make_To_Print_Directories)
     set(ENV{MAKEFLAGS} "$ENV{MAKEFLAGS} --no-print-directory")
   endif()
 endfunction(stop_Make_To_Print_Directories)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |compute_Default_Parallel_Job_Count| replace:: ``compute_Default_Parallel_Job_Count``
+#  .. _compute_Default_Parallel_Job_Count:
+#
+#  compute_Default_Parallel_Job_Count
+#  ----------------------
+#
+#   .. command:: compute_Default_Parallel_Job_Count()
+#
+#     Compute the number of parallel compilation jobs to run.
+#
+#     The decision is influenced by the PID_MAX_JOBS_NUMBER environement variable (if defined) and the processor core count.
+#
+#     :jobs: the number of jobs to use, or -1 if it can't be computed automatically (no user limit and cannot get the number of cores available)
+#
+function(compute_Default_Parallel_Job_Count jobs)
+  # Take the PID_MAX_JOBS_NUMBER environment variable if specified and
+  # use an heuristic based on the processor count if not
+  if(DEFINED ENV{PID_MAX_JOBS_NUMBER})
+    set(${jobs} $ENV{PID_MAX_JOBS_NUMBER} PARENT_SCOPE)
+  else()
+    include(ProcessorCount)
+    ProcessorCount(jnumber)
+    if(${jnumber} EQUAL 0)
+      set(${jobs} -1 PARENT_SCOPE)
+    else()
+      math(EXPR jnumber "${jnumber}+1")
+      set(${jobs} ${jnumber} PARENT_SCOPE)
+    endif()
+  endif()
+endfunction(compute_Default_Parallel_Job_Count)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Job_Count_For| replace:: ``get_Job_Count_For``
+#  .. _get_Job_Count_For:
+#
+#  get_Job_Count_For
+#  ----------------------
+#
+#   .. command:: get_Job_Count_For()
+#
+#     Give the number of compilation jobs to be used for the given package.
+#
+#     The decision is influenced by the ENABLE_PARALLEL_BUILD package option, the LIMITED_JOBS_PACKAGES workspace variable and the PID_MAX_JOBS_NUMBER environement variable.
+#
+#     If ENABLE_PARALLEL_BUILD is OFF, then job count will be set to 1. If it is ON, the job count will be computed using the above variables.
+#
+#     LIMITED_JOBS_PACKAGES is expected to be a list of package names with optional job count specified, eg package1=4;package2=8;package3.
+#     A single job will be used if left unspecified.
+#
+#     If a limit appears in LIMITED_JOBS_PACKAGES and PID_MAX_JOBS_NUMBER is defined, the lowest value between the two will be used.
+#
+#     :package: the package to get the compilation job count for
+#     :jobs: the number of jobs to use, or -1 if we can't compute it automatically (no user limit and cannot get the number of cores available)
+#
+function(get_Job_Count_For package jobs)
+  if(ENABLE_PARALLEL_BUILD)
+    set(job_count 0)
+
+    # First check if the user imposes a job limit on the given package
+    foreach(option IN LISTS LIMITED_JOBS_PACKAGES)
+      string(REGEX MATCH "^(.[^=]+)=*(.*)" dump ${option})
+      if(CMAKE_MATCH_1 STREQUAL ${package})
+        # If the user gives a number of jobs take it, otherwise default to 1 job (legacy behavior before =N was introduced)
+        if(CMAKE_MATCH_2)
+          set(job_count ${CMAKE_MATCH_2})
+        else()
+          set(job_count 1)
+        endif()
+        break()
+      endif()
+    endforeach()
+
+    # PID_MAX_JOBS_NUMBER environement variable can be used to lower a limit from LIMITED_JOBS_PACKAGES
+    if(job_count GREATER 0
+       AND DEFINED ENV{PID_MAX_JOBS_NUMBER}
+       AND "$ENV{PID_MAX_JOBS_NUMBER}" LESS job_count)
+      set(job_count $ENV{PID_MAX_JOBS_NUMBER})
+    endif()
+
+    # No limit specified
+    if(job_count EQUAL 0)
+      compute_Default_Parallel_Job_Count(job_count)
+    endif()
+    set(${jobs} ${job_count} PARENT_SCOPE)
+  else()
+    # Parallel build disabled, force to one job
+    set(${jobs} 1 PARENT_SCOPE)
+  endif()
+endfunction(get_Job_Count_For)

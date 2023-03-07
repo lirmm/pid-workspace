@@ -2098,30 +2098,18 @@ function(get_Environment_Info)
 
   #returning flag to use with make tool
   if(GET_ENVIRONMENT_INFO_JOBS)
-    if(DEFINED ENV{PID_MAX_JOBS_NUMBER})
-      set(${GET_ENVIRONMENT_INFO_JOBS} "-j$ENV{PID_MAX_JOBS_NUMBER}" PARENT_SCOPE)
+    compute_Default_Parallel_Job_Count(NUMBER_OF_JOBS)
+    if(NUMBER_OF_JOBS GREATER 0)
+      set(${GET_ENVIRONMENT_INFO_JOBS} "-j${NUMBER_OF_JOBS}" PARENT_SCOPE)
     else()
-      include(ProcessorCount)
-      ProcessorCount(NUMBER_OF_JOBS)
-      math(EXPR NUMBER_OF_JOBS "${NUMBER_OF_JOBS}+1")
-      if(${NUMBER_OF_JOBS} GREATER 1)
-        set(${GET_ENVIRONMENT_INFO_JOBS} "-j${NUMBER_OF_JOBS}" PARENT_SCOPE)
-      else()
-        set(${GET_ENVIRONMENT_INFO_JOBS} "" PARENT_SCOPE)
-      endif()
+      set(${GET_ENVIRONMENT_INFO_JOBS} "" PARENT_SCOPE)
     endif()
   endif()
 
   if(GET_ENVIRONMENT_INFO_JOBS_NUMBER)
-    if(DEFINED ENV{PID_MAX_JOBS_NUMBER})
-      set(${GET_ENVIRONMENT_INFO_JOBS_NUMBER} $ENV{PID_MAX_JOBS_NUMBER} PARENT_SCOPE)
-    else()
-      include(ProcessorCount)
-      ProcessorCount(NUMBER_OF_JOBS)
-      math(EXPR NUMBER_OF_JOBS "${NUMBER_OF_JOBS}+1")
-      if(${NUMBER_OF_JOBS} GREATER 1)
-        set(${GET_ENVIRONMENT_INFO_JOBS_NUMBER} ${NUMBER_OF_JOBS} PARENT_SCOPE)
-      endif()
+    compute_Default_Parallel_Job_Count(NUMBER_OF_JOBS)
+    if(NUMBER_OF_JOBS GREATER 0)
+      set(${GET_ENVIRONMENT_INFO_JOBS} "${NUMBER_OF_JOBS}" PARENT_SCOPE)
     endif()
   endif()
 
@@ -2768,17 +2756,10 @@ function(build_Waf_External_Project)
   set(ENV{LD} "${ld_tool}")
 
   # Use user-defined number of jobs if defined
-
-  set(jnumber 1)
-  if(ENABLE_PARALLEL_BUILD)#parallel build is allowed from CMake configuration
-    list(FIND LIMITED_JOBS_PACKAGES ${BUILD_WAF_EXTERNAL_PROJECT_PROJECT} INDEX)
-    if(INDEX EQUAL -1)#package can compile with many jobs
-      if(BUILD_WAF_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
-        set(jnumber ${BUILD_WAF_EXTERNAL_PROJECT_USER_JOBS})
-      else()
-        get_Environment_Info(JOBS_NUMBER jnumber)
-      endif()
-    endif()
+  if(ENABLE_PARALLEL_BUILD AND BUILD_WAF_EXTERNAL_PROJECT_USER_JOBS) #the user may have put a restriction
+    set(jnumber ${BUILD_WAF_EXTERNAL_PROJECT_USER_JOBS})
+  else()
+    get_Job_Count_For(${BUILD_WAF_EXTERNAL_PROJECT_PROJECT} jnumber)
   endif()
   set(jobs "-j${jnumber}")
 
@@ -2971,16 +2952,10 @@ function(build_CMake_External_Project)
   #once configure, build it
   # Use user-defined number of jobs if defined
   get_Environment_Info(MAKE make_program)#get jobs flags from environment
-  set(jnumber 1)
-  if(ENABLE_PARALLEL_BUILD)#parallel build is allowed from CMake configuration
-    list(FIND LIMITED_JOBS_PACKAGES ${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} INDEX)
-    if(INDEX EQUAL -1)#package can compile with many jobs
-      if(BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS)#the user may have put a restriction
-        set(jnumber ${BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS})
-      else()
-        get_Environment_Info(JOBS_NUMBER jnumber)
-      endif()
-    endif()
+  if(ENABLE_PARALLEL_BUILD AND BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS) #the user may have put a restriction
+    set(jnumber ${BUILD_CMAKE_EXTERNAL_PROJECT_USER_JOBS})
+  else()
+    get_Job_Count_For(${BUILD_CMAKE_EXTERNAL_PROJECT_PROJECT} jnumber)
   endif()
   set(jobs "-j${jnumber}")
 
