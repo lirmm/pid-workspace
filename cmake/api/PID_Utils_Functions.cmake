@@ -6064,7 +6064,7 @@ endfunction(update_Git_Ignore_File)
 #  .. _stop_Make_To_Print_Directories:
 #
 #  stop_Make_To_Print_Directories
-#  ----------------------
+#  ------------------------------
 #
 #   .. command:: stop_Make_To_Print_Directories()
 #
@@ -6085,7 +6085,7 @@ endfunction(stop_Make_To_Print_Directories)
 #  .. _compute_Default_Parallel_Job_Count:
 #
 #  compute_Default_Parallel_Job_Count
-#  ----------------------
+#  ----------------------------------
 #
 #   .. command:: compute_Default_Parallel_Job_Count()
 #

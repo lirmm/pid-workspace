@@ -274,7 +274,7 @@ endmacro(manage_Plugins_In_Package_Before_Dependencies_Description)
 #  .. _find_Automatic_Tool_For_Current_Profile:
 #
 #  find_Automatic_Tool_Prefix_For_Current_Profile
-#  ------------------------------------------
+#  ----------------------------------------------
 #
 #   .. command:: find_Automatic_Tool_Prefix_For_Current_Profile( RES_PREFIX profile)
 #

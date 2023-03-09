@@ -2170,10 +2170,10 @@ endfunction(build_Option_For_Example)
 # .. ifmode:: internal
 #
 #  .. |project_Has_Tests_Or_Examples| replace:: ``project_Has_Tests_Or_Examples``
-#  .. project_Has_Tests_Or_Examples:
+#  .. _project_Has_Tests_Or_Examples:
 #
 #  project_Has_Tests_Or_Examples
-#  ------------------------
+#  -----------------------------
 #
 #   .. command:: project_Has_Tests_Or_Examples(HAS_TESTS HAS_EXAMPLES)
 #
