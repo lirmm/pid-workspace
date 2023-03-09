@@ -1380,11 +1380,22 @@ function(copy_Package_Install_Folder ERROR source destination working_dir)
   if(EXISTS ${source}/.rpath)#remove any symlink in this folder as they will be invalid after copy and may invalidate the copy operation
     file(REMOVE_RECURSE ${source}/.rpath)
   endif()
-  execute_process(
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${source} ${destination}
-    WORKING_DIRECTORY ${working_dir}
-  ERROR_VARIABLE error_out OUTPUT_QUIET)
-  set(${ERROR} ${error_out} PARENT_SCOPE)
+  #use the / at the end of folders name to enforce a copy of their content !!
+  file(COPY ${source}/ DESTINATION ${destination}/)
+  if(EXISTS ${destination}/lib64 AND IS_SYMLINK ${destination}/lib64)
+    file(REMOVE ${destination}/lib64)
+    create_Symlink(${destination}/lib ${destination}/lib64)
+  elseif(EXISTS ${destination}/lib32 AND IS_SYMLINK ${destination}/lib32)
+    file(REMOVE ${destination}/lib32)
+    create_Symlink(${destination}/lib ${destination}/lib32)
+  endif()
+  if(EXISTS ${destination}/bin64 AND IS_SYMLINK ${destination}/bin64)
+    file(REMOVE ${destination}/bin64)
+    create_Symlink(${destination}/bin ${destination}/bin64)
+  elseif(EXISTS ${destination}/bin32 AND IS_SYMLINK ${destination}/bin32)
+    file(REMOVE ${destination}/bin32)
+    create_Symlink(${destination}/bin ${destination}/bin32)
+  endif()
 endfunction(copy_Package_Install_Folder)
 
 #############################################################

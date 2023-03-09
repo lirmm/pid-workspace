@@ -1839,10 +1839,13 @@ if(NOT version)#deploying the latest version of the package
 				endif()
 			endforeach()
 			if(NOT MAX_CURR_VERSION STREQUAL 0.0.0)
-				if(EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${MAX_CURR_VERSION}
-					AND NOT redeploy)
-					message("[PID] INFO : external package ${package} version ${MAX_CURR_VERSION} already lies in the workspace, use force=true to force the redeployment.")
-					return()
+				if(EXISTS ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${MAX_CURR_VERSION})
+					if(NOT redeploy)
+						message("[PID] INFO : external package ${package} version ${MAX_CURR_VERSION} already lies in the workspace, use force=true to force the redeployment.")
+						return()
+					endif()
+					#remove existing install folder
+					file(REMOVE_RECURSE ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${MAX_CURR_VERSION})
 				endif()
 				deploy_Binary_External_Package_Version(BIN_DEPLOYED ${package} ${MAX_CURR_VERSION} FALSE "${release_only}")
 				if(NOT BIN_DEPLOYED)#an error occurred during deployment !! => Not a normal situation
