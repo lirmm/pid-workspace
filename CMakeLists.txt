@@ -17,7 +17,7 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-cmake_minimum_required(VERSION 3.15.7)
+cmake_minimum_required(VERSION 3.19.8)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/api)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/commands)
@@ -75,7 +75,7 @@ if(DIR_NAME STREQUAL "build")
 
 	### management of PID version ###
 	# set the current PID version to memorize when updating the workspace.
-	set(PID_SYSTEM_VERSION 5 CACHE INTERNAL "")
+	set(PID_SYSTEM_VERSION 6 CACHE INTERNAL "")
 	configure_file(${CMAKE_SOURCE_DIR}/cmake/patterns/PID_version.cmake.in ${CMAKE_BINARY_DIR}/PID_version.cmake @ONLY) #put it into a file to allow packages to easily retrieve PID version information
 
 	### management of workspace configuration ###

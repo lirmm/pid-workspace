@@ -1422,7 +1422,7 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
     message("[PID] INFO: checking target platform configuration ${config_name}")
   endif()
   #need to ensure system configuration check is installed
-  install_System_Configuration_Check(PATH_TO_CONFIG ${config_name})#TODO
+  install_System_Configuration_Check(PATH_TO_CONFIG ${config_name})
   if(NOT PATH_TO_CONFIG)
     message(WARNING "[PID] ERROR : when checking if system configuration ${config_name} is possibly usable on current platform. Please either : remove the constraint ${config_name}; check that ${config_name} is well spelled and rename it if necessary; contact developpers of wrapper ${config_name} to solve the problem, create a new wrapper called ${config_name} or configure your workspace with the contribution space referencing the wrapper of ${config_name}.")
     return()
@@ -2004,7 +2004,7 @@ macro(evaluate_Platform_Configuration config path_to_config force_reeval)
         file(REMOVE_RECURSE ${eval_build_files})
       endif()
       get_filename_component(the_path ${WORKSPACE_DIR} ABSOLUTE)
-      file(WRITE ${eval_project_file} "cmake_minimum_required(VERSION 3.15.7)\n")
+      file(WRITE ${eval_project_file} "cmake_minimum_required(VERSION 3.19.8)\n")
       file(APPEND ${eval_project_file} "set(WORKSPACE_DIR ${the_path} CACHE PATH \"root of the PID workspace\")\n")
       file(APPEND ${eval_project_file} "list(APPEND CMAKE_MODULE_PATH \${WORKSPACE_DIR}/cmake \${WORKSPACE_DIR}/cmake/api)\n")
       file(APPEND ${eval_project_file} "set(CMAKE_TOOLCHAIN_FILE ${WORKSPACE_DIR}/build/PID_Toolchain.cmake CACHE INTERNAL \"\" FORCE)\n")
@@ -2272,3 +2272,102 @@ function(check_Platform_Configuration_Arguments ARGS_TO_SET config)
   endforeach()
   set(${ARGS_TO_SET} ${list_of_args} PARENT_SCOPE)
 endfunction(check_Platform_Configuration_Arguments)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Package_Platform_Against_Current| replace:: ``check_Package_Platform_Against_Current``
+#  .. _check_Package_Platform_Against_Current:
+#
+#  check_Package_Platform_Against_Current
+#  --------------------------------------
+#
+#   .. command:: check_Package_Platform_Against_Current(CHECK_OK package platform)
+#
+#    Check whether platform configurations defined for binary packages are matching the current platform.
+#
+#      :package: The name of the package.
+#      :platform: The platform string used to filter configuation constraints. If different from current platform then configurations defined for that platorm are not checked.
+#      :version: The version of the package.
+#
+#      :CHECK_OK: the output variable that is TRUE if current platform conforms to package required configurations, FALSE otherwise.
+#
+function(check_Package_Platform_Against_Current CHECK_OK package platform version)
+  set(${CHECK_OK} TRUE PARENT_SCOPE)
+  set(checking_config FALSE)
+  # the platform may have an instance name so we need first to get the base name of the platform
+  extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${platform})
+
+  get_Platform_Variables(BASENAME platfom_str INSTANCE instance_str DISTRIBUTION distrib_str DIST_VERSION distrib_ver_str)
+  if(instance_str)#the current platform is an instance (specific target platform) => only binaries produced for this instance are eligible
+    #searching for such specific instance in available binaries
+    if(platform STREQUAL CURRENT_PLATFORM)# OK this binary version is theorically eligible with instance constraint
+      set(checking_config TRUE)
+    endif()
+  else()#current platform is a generic platform => all binaries are theoretically eligible as soon as they respect base platform constraints
+    if(RES_PLATFORM_BASE STREQUAL platfom_str)# OK this binary version is theorically eligible with base platform constraint
+      set(checking_config TRUE)
+    endif()
+  endif()
+  if(NOT checking_config)
+    set(${CHECK_OK} FALSE PARENT_SCOPE)
+  	return()
+  endif()
+  load_Binary_Package_Install_Manifest(MANIFEST_LOADED ${package} ${version} ${platform})
+  #load the install manifest to get info about the binary
+  if(NOT MANIFEST_LOADED)
+    #cannot say much more so let's say it is NOT OK
+    set(${CHECK_OK} FALSE PARENT_SCOPE)
+    return()
+  endif()
+
+  if(NOT "${distrib_str}" STREQUAL "${${package}_BUILT_FOR_DISTRIBUTION}"
+     OR NOT "${distrib_ver_str}" STREQUAL "${${package}_BUILT_FOR_DISTRIBUTION_VERSION}")
+     #if not build for the same distribution the risk of incompatible binaries is too high
+     unload_Binary_Package_Install_Manifest(${package})
+     set(${CHECK_OK} FALSE PARENT_SCOPE)
+     return()
+  endif()
+  # need to check for its platform configuration to be sure it can be used locally
+  set(LANGS_TO_CHECK)
+  if(${package}_LANGUAGE_CONFIGURATIONS)
+  	set(LANGS_TO_CHECK ${${package}_LANGUAGE_CONFIGURATIONS})
+    list(REMOVE_DUPLICATES LANGS_TO_CHECK)
+  endif()
+  foreach(lang IN LISTS LANGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
+    parse_Configuration_Expression_Arguments(args_as_list ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS)
+    is_Allowed_Language_Configuration(ALLOWED ${lang} args_as_list)
+    if(NOT ALLOWED)
+      set(${CHECK_OK} FALSE PARENT_SCOPE)
+      unload_Binary_Package_Install_Manifest(${package})
+      return()
+    endif()
+  endforeach()
+  # need to check for its platform configuration to be sure it can be used locally
+  set(CONFIGS_TO_CHECK)
+  if(${package}_PLATFORM_CONFIGURATIONS)
+  	set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS})
+    list(REMOVE_DUPLICATES CONFIGS_TO_CHECK)
+  endif()
+  foreach(config IN LISTS CONFIGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
+    parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS)
+    is_Allowed_Platform_Configuration(ALLOWED ${config} args_as_list)
+    if(NOT ALLOWED)
+      set(${CHECK_OK} FALSE PARENT_SCOPE)
+      unload_Binary_Package_Install_Manifest(${package})
+      return()
+    endif()
+  endforeach()
+  #Finally check that the ABI is compatible which is not guaranteed
+  is_Compatible_With_Current_ABI(COMPATIBLE ${package} Release)
+  if(NOT COMPATIBLE)
+    set(${CHECK_OK} FALSE PARENT_SCOPE)
+    unload_Binary_Package_Install_Manifest(${package})
+    return()
+  endif()
+
+  unload_Binary_Package_Install_Manifest(${package})
+
+endfunction(check_Package_Platform_Against_Current)

@@ -32,6 +32,7 @@ include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Meta_Information_Management_Functions NO_POLICY_SCOPE)
 include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
 include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
+include(PID_Binaries_Registry_Functions NO_POLICY_SCOPE)
 
 ##################################################################################
 ##################  declaration of a lone package static site ####################
@@ -55,9 +56,9 @@ include(PID_Platform_Management_Functions NO_POLICY_SCOPE)
 #     :SITE_URL <url>: The online url of the package or wrapper's lone static site.
 #
 macro(declare_PID_Site)
-set(oneValueArgs PACKAGE_URL SITE_URL)
+set(oneValueArgs PACKAGE_URL SITE_URL REGISTRY_URL)
 cmake_parse_arguments(DECLARE_PID_SITE "" "${oneValueArgs}" "" ${ARGN} )
-declare_Site("${DECLARE_PID_SITE_PACKAGE_URL}" "${DECLARE_PID_SITE_SITE_URL}")
+declare_Site("${DECLARE_PID_SITE_PACKAGE_URL}" "${DECLARE_PID_SITE_SITE_URL}" "${DECLARE_PID_SITE_REGISTRY_URL}")
 endmacro(declare_PID_Site)
 
 ############ function used to create the README.md file of the site  ###########
@@ -128,76 +129,6 @@ endfunction(generate_Site_Data)
 #
 # .. ifmode:: internal
 #
-#  .. |generate_Site_Binary_References| replace:: ``generate_Site_Binary_References``
-#  .. _generate_Site_Binary_References:
-#
-#  generate_Site_Binary_References
-#  -------------------------------
-#
-#   .. command:: generate_Site_Binary_References()
-#
-#    Generate the cmake script referencing known binary archives for the current lone static site project.
-#
-function(generate_Site_Binary_References)
-set(dir ${CMAKE_SOURCE_DIR}/src/_binaries)
-set(file ${dir}/binary_references.cmake)
-file(WRITE ${file} "# Contains references to binaries that are available for ${PROJECT_NAME} \n")
-#this may overwrite binary references hard coded in the reference file, or simply add new ones
-
-##################################################################
-### all available versions of the package for which there is a ###
-### reference to a downloadable binary for any platform ##########
-##################################################################
-list_Subdirectories(ALL_VERSIONS ${dir})
-set(${PROJECT_NAME}_REFERENCES)
-foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os for which there is a reference
-	set(VERSION_REGISTERED FALSE)
-
-	list_Subdirectories(ALL_PLATFORMS ${dir}/${ref_version})
-	foreach(ref_platform IN LISTS ALL_PLATFORMS)#for each platform of this version
-
-		extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${ref_platform})
-
-		# now referencing the binaries
-		list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
-		if(	ALL_BINARIES
-			AND EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)#release version must exist in any case
-
-			if(NOT VERSION_REGISTERED)  # the version is registered only if there are binaries inside (sanity check)
-				list(APPEND ${PROJECT_NAME}_REFERENCES ${ref_version})
-				set(${PROJECT_NAME}_REFERENCE_${ref_version})
-				set(VERSION_REGISTERED TRUE)
-			endif()
-			list(APPEND ${PROJECT_NAME}_REFERENCE_${ref_version} ${ref_platform})
-			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)
-			if(EXISTS ${dir}/${ref_version}/${ref_platform}/${PROJECT_NAME}-${RES_PLATFORM_BASE}-dbg-${ref_platform}.tar.gz)# binary versions for debug may exist
-				set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE_PAGE}/binaries/${ref_version}/${ref_platform}/${PROJECT_NAME}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)
-			endif()
-		endif()
-	endforeach()
-endforeach()
-if(${PROJECT_NAME}_REFERENCES)#there are registered references
-	file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} CACHE INTERNAL \"\")\n") # the version is registered
-	foreach(ref_version IN LISTS ${PROJECT_NAME}_REFERENCES)
-		list(REMOVE_DUPLICATES ${PROJECT_NAME}_REFERENCES${ref_version}) #there is at least one platform referenced so no need to test for nullity
-		file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} CACHE INTERNAL \"\")\n")
-
-		foreach(ref_platform IN LISTS ${PROJECT_NAME}_REFERENCE_${ref_version})
-			#release binary referencing
-			file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL} CACHE INTERNAL \"\")\n")#reference on the release binary
-					#debug binary referencing
-			if(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG) #always true for open source native packages, may be true for external packages, never true for close source native packages
-				file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG} CACHE INTERNAL \"\")\n")#reference on the debug binary
-			endif()
-		endforeach()
-	endforeach()
-endif()
-endfunction(generate_Site_Binary_References)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
 #  .. |declare_Site| replace:: ``declare_Site``
 #  .. _declare_Site:
 #
@@ -208,7 +139,7 @@ endfunction(generate_Site_Binary_References)
 #
 #   Define current project as a lone package or wrapper static site. Internal counterpart to declare_PID_Site.
 #
-macro(declare_Site package_url site_url)
+macro(declare_Site package_url site_url registry_url)
 	manage_Current_Platform("${CMAKE_BINARY_DIR}" "SITE") #loading the current platform configuration and perform adequate actions if any changes
 
 	configure_Git()
@@ -219,13 +150,16 @@ macro(declare_Site package_url site_url)
 
 	set(${PROJECT_NAME}_PROJECT_PAGE ${package_url} CACHE INTERNAL "")
 	set(${PROJECT_NAME}_SITE_PAGE ${site_url} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_REGISTRY ${registry_url} CACHE INTERNAL "")
+	
 	file(RELATIVE_PATH DIR_NAME ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 	if(DIR_NAME STREQUAL "build")
 
 		generate_Site_Readme_File() # generating the simple README file for the project
 		generate_Site_Data() #generating the jekyll source folder in build tree
-		generate_Site_Binary_References() #generating the cmake script that references available binaries
-
+		if(${PROJECT_NAME}_REGISTRY)
+			update_Binary_References(${PROJECT_NAME} FALSE "" "${${PROJECT_NAME}_REGISTRY}")
+		endif()
 		#searching for jekyll (static site generator)
 		if(JEKYLL_EXECUTABLE)
 			get_Jekyll_URLs(${${PROJECT_NAME}_SITE_PAGE} PUBLIC_URL BASE_URL)
@@ -299,8 +233,9 @@ endmacro(declare_Site)
 #      :welcome: path relative to src/pages folder, that targets a welcome page in markdown or html format.
 #      :contrib_space: name of the default contribution space for the package.
 #      :api_doc: path to the api_doc welcome page relative to share folder.
+#      :registry: path to the registry containing binaries
 #
-macro(declare_Framework author institution mail year site license git_address public_address repo_site description welcome contrib_space api_doc)
+macro(declare_Framework author institution mail year site license git_address public_address repo_site description welcome contrib_space api_doc registry)
 manage_Current_Platform("${CMAKE_BINARY_DIR}" "FRAMEWORK") #loading the current platform configuration and perform adequate actions if any changes
 
 configure_Git()
@@ -315,11 +250,11 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}(-framework|-site)?/build$")
 	set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake ${CMAKE_MODULE_PATH}) # adding the cmake scripts files from the framework
 
 	init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}) # getting the workspace version used to generate the code
-	init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${git_address}" "${public_address}" "" "${site}" "${repo_site}" "${welcome}" "${api_doc}")
+	init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${git_address}" "${public_address}" "" "${site}" "${repo_site}" "${welcome}" "${api_doc}" "${registry}")
+	
 	set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
 	declare_Framework_Global_Cache_Options()
 	check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")#configuring git remotes
-
 	#searching for jekyll (static site generator)
 	if(JEKYLL_EXECUTABLE)
 
@@ -819,6 +754,7 @@ file(APPEND ${file} "set(${PROJECT_NAME}_DESCRIPTION ${${PROJECT_NAME}_DESCRIPTI
 file(APPEND ${file} "set(${PROJECT_NAME}_LICENSE ${${PROJECT_NAME}_LICENSE} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_ADDRESS ${${PROJECT_NAME}_ADDRESS} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_PUBLIC_ADDRESS ${${PROJECT_NAME}_PUBLIC_ADDRESS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_REGISTRY ${${PROJECT_NAME}_REGISTRY} CACHE INTERNAL \"\")\n")
 
 # writing concise author information
 set(res_string "")
@@ -938,104 +874,12 @@ endfunction(generate_Package_Page_Binaries_In_Framework)
 #
 function(generate_External_Page_Binaries_In_Framework package)
 set(PACKAGE_NAME ${package})
-# 2 alternatives: the external package has been put "by hand" into the framework OR
-# the external package doc has been generated from a wrapper
-if(EXISTS ${CMAKE_SOURCE_DIR}/src/_external/${package}/pages/introduction.md
-AND EXISTS ${CMAKE_SOURCE_DIR}/src/_external/${package}/index.html)
-	#first alternative, the package has been generated from a wrapper (these pages are caracteristic of such a generation)
-	#simply add a page explaining the available binaries, like for native packages
-	if(EXISTS ${CMAKE_SOURCE_DIR}/src/_external/${package}/index.md)
-		#there is a automatically generated file that still lies in the folder => need to remove it
-		file(REMOVE ${CMAKE_SOURCE_DIR}/src/_external/${package}/index.md)
-	endif()
-	configure_file(${WORKSPACE_DIR}/cmake/patterns/static_sites/binaries_wrapper.md.in ${CMAKE_SOURCE_DIR}/src/_external/${package}/pages/binaries.md @ONLY)
-else()
-	#second almternative, binaries have been put into the folder by hand
-	#need to generate a simple index page that directly contains description of binaries
-	set(PATH_TO_PAGE ${CMAKE_SOURCE_DIR}/src/_external/${package}/index.md)
-	include_External_Reference_File(PATH_TO_REFERENCE_FILE ${package})
-	if(NOT PATH_TO_REFERENCE_FILE)
-		message("[PID] WARNING : reference file to package ${package} does not exists !")
-		return()
-	endif()
-	if(EXISTS ${PATH_TO_PAGE}) #remove the file to be sure
-		file(REMOVE ${PATH_TO_PAGE})
-	endif()
-
-	set(EXTERNAL_PACKAGE_NAME ${package})
-
-	fill_String_From_List(DESCRIPTION_STRING ${package}_DESCRIPTION " ")
-	set(EXTERNAL_PACKAGE_DESCRIPTION ${DESCRIPTION_STRING})
-
-	fill_String_From_List(EXTERNAL_PACKAGE_AUTHORS ${package}_ORIGINAL_PROJECT_AUTHORS " ")
-	fill_String_From_List(EXTERNAL_PACKAGE_LICENSE ${package}_ORIGINAL_PROJECT_LICENSES " ")
-
-	# managing categories
-	if(NOT ${package}_CATEGORIES)
-		set(EXTERNAL_PACKAGE_CATEGORIES)
-	else()
-		list(LENGTH ${package}_CATEGORIES SIZE)
-		if(SIZE EQUAL 1)
-			set(EXTERNAL_PACKAGE_CATEGORIES ${${package}_CATEGORIES})
-		else()
-			set(EXTERNAL_PACKAGE_CATEGORIES "[")
-			set(idx 0)
-			foreach(cat IN LISTS ${package}_CATEGORIES)
-				set(EXTERNAL_PACKAGE_CATEGORIES "${EXTERNAL_PACKAGE_CATEGORIES}${cat}")
-				math(EXPR idx "${idx}+1")
-				if(NOT idx EQUAL SIZE)
-					set(EXTERNAL_PACKAGE_CATEGORIES "${EXTERNAL_PACKAGE_CATEGORIES},")
-				endif()
-			endforeach()
-			set(EXTERNAL_PACKAGE_CATEGORIES "${EXTERNAL_PACKAGE_CATEGORIES}]")
-		endif()
-	endif()
-	# managing binaries
-	set(binary_dir ${CMAKE_SOURCE_DIR}/src/_external/${package}/binaries)
-	list_Version_Subdirectories(ALL_VERSIONS ${binary_dir})
-	set(PRINTED_VERSIONS)
-	foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os for which there is a reference
-		set(${ref_version}_PRINTED_PLATFORM)
-		# binaries may be referenced with subdirectories (basic case)
-		list_Platform_Subdirectories(ALL_PLATFORMS ${binary_dir}/${ref_version})
-		foreach(ref_platform IN LISTS ALL_PLATFORMS)#for each platform of this version
-			# now referencing the binaries
-			list_Regular_Files(ALL_BINARIES ${binary_dir}/${ref_version}/${ref_platform})
-			if(ALL_BINARIES AND EXISTS ${binary_dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${ref_platform}.tar.gz) # check to avoid problem if the binaries have been badly published
-				list(APPEND PRINTED_VERSIONS ${ref_version})
-				list(APPEND ${ref_version}_PRINTED_PLATFORM ${ref_platform})
-			endif()
-		endforeach()
-
-		# binaries may also be referenced with symlinks (case when different platform can share the same binary package, typical with header only libraries)
-		list_Platform_Symlinks(ALL_PLATFORMS ${binary_dir}/${ref_version})
-		foreach(ref_platform IN LISTS ALL_PLATFORMS)#for each platform of this version
-			# now referencing the binaries
-			list_Regular_Files(ALL_BINARIES ${binary_dir}/${ref_version}/${ref_platform})
-			if(ALL_BINARIES) #do not check for binary archive name since it may differ from standard regarding platform (king of generic platform name may be used)
-				list(APPEND PRINTED_VERSIONS ${ref_version})
-				list(APPEND ${ref_version}_PRINTED_PLATFORM ${ref_platform})
-			endif()
-		endforeach()
-	endforeach()
-
-	if(PRINTED_VERSIONS)
-		list(REMOVE_DUPLICATES PRINTED_VERSIONS)
-		list(SORT PRINTED_VERSIONS)
-		foreach(version IN LISTS PRINTED_VERSIONS)
-			set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES}\n### ${version}\n\n")
-			list(SORT ${version}_PRINTED_PLATFORM)
-			foreach(platform IN LISTS ${version}_PRINTED_PLATFORM)
-				set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES} + ${platform}\n")
-			endforeach()
-		endforeach()
-		set(EXTERNAL_PACKAGE_BINARIES "${EXTERNAL_PACKAGE_BINARIES}\n")
-	else()
-		set(EXTERNAL_PACKAGE_BINARIES "There is no binary provided for this package !")
-	endif()
-	#generate another index file
-	configure_file(${WORKSPACE_DIR}/cmake/patterns/frameworks/external_index.md.in ${PATH_TO_PAGE} @ONLY)
+#simply add a page explaining the available binaries, like for native packages
+if(EXISTS ${CMAKE_SOURCE_DIR}/src/_external/${package}/index.md)
+	#there is a automatically generated file that still lies in the folder => need to remove it
+	file(REMOVE ${CMAKE_SOURCE_DIR}/src/_external/${package}/index.md)
 endif()
+configure_file(${WORKSPACE_DIR}/cmake/patterns/static_sites/binaries_wrapper.md.in ${CMAKE_SOURCE_DIR}/src/_external/${package}/pages/binaries.md @ONLY)
 endfunction(generate_External_Page_Binaries_In_Framework)
 
 #.rst:
@@ -1059,80 +903,11 @@ endfunction(generate_External_Page_Binaries_In_Framework)
 function(generate_Framework_Binary_Reference_For_Package package native)
 if(native)
 	generate_Package_Page_Binaries_In_Framework(${package}) # create markdown page listing available binaries
-	set(dir ${CMAKE_SOURCE_DIR}/src/_packages/${package}/binaries)
 else() # external packages have different deployment
 	generate_External_Page_Binaries_In_Framework(${package})
-	set(dir ${CMAKE_SOURCE_DIR}/src/_external/${package}/binaries)
 endif()
-
-set(${package}_FRAMEWORK_REFERENCES)
-set(file ${dir}/binary_references.cmake)
-file(WRITE ${file} "# Contains references to binaries that are available for ${package} \n")
-#this may overwrite binary references hard coded in the reference file, or simply add new ones
-
-##################################################################
-### all available versions of the package for which there is a ###
-### reference to a downloadable binary for any platform ##########
-##################################################################
-list_Version_Subdirectories(ALL_VERSIONS ${dir})
-
-foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os for which there is a reference
-
-	list_Platform_Subdirectories(ALL_PLATFORMS ${dir}/${ref_version})
-	foreach(ref_platform IN LISTS ALL_PLATFORMS)#for each platform of this version
-		# now referencing the binaries
-		list_Regular_Files(ALL_BINARIES ${dir}/${ref_version}/${ref_platform})
-
-		if(ALL_BINARIES) # check to avoid problem is the binaries have been badly released
-			extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${ref_platform})
-
-			# the version is registered only if there are binaries inside (sanity check)
-			if(native AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)
-				set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version})
-				set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform})
-				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)# release version must exist for native packages
-
-				if(EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)# debug version may no exist for native packages
-					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE}/packages/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)
-				endif()
-			elseif(NOT native AND EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz) #at least a release version is required for external packages
-
-				set(${package}_FRAMEWORK_REFERENCES ${${package}_FRAMEWORK_REFERENCES} ${ref_version})
-				set(${package}_FRAMEWORK_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} ${ref_platform})
-				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_SITE}/external/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-${RES_PLATFORM_BASE}.tar.gz)
-				set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER ${package}-${ref_version}-${ref_platform})
-				if(EXISTS ${dir}/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)
-					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_SITE}/external/${package}/binaries/${ref_version}/${ref_platform}/${package}-${ref_version}-dbg-${RES_PLATFORM_BASE}.tar.gz)
-					set(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG ${package}-${ref_version}-dbg-${ref_platform})
-				endif()
-			endif()
-		endif()
-	endforeach()
-endforeach()
-
-if(${package}_FRAMEWORK_REFERENCES)#there are registered references
-	list(REMOVE_DUPLICATES ${package}_FRAMEWORK_REFERENCES)
-	file(APPEND ${file} "set(${package}_REFERENCES ${${package}_FRAMEWORK_REFERENCES} CACHE INTERNAL \"\")\n") # the version is registered
-	foreach(ref_version IN LISTS ${package}_FRAMEWORK_REFERENCES)
-		list(REMOVE_DUPLICATES ${package}_FRAMEWORK_REFERENCE_${ref_version}) #there is at least one platform referenced so no need to test for nullity
-		file(APPEND ${file} "set(${package}_REFERENCE_${ref_version} ${${package}_FRAMEWORK_REFERENCE_${ref_version}} CACHE INTERNAL \"\")\n")
-
-		foreach(ref_platform IN LISTS ${package}_FRAMEWORK_REFERENCE_${ref_version})
-			#release binary referencing
-			file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL ${${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL} CACHE INTERNAL \"\")\n")#reference on the release binary
-			if(NOT native)
-				file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_FOLDER ${${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER} CACHE INTERNAL \"\")\n")# name of the folder contained in the archive
-			endif()
-
-			#debug binary referencing
-			if(${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG) #always true for open source native packages, may be true for external packages, never true for close source native packages
-				file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG} CACHE INTERNAL \"\")\n")#reference on the debug binary
-				if(NOT native)
-					file(APPEND ${file} "set(${package}_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG ${${package}_FRAMEWORK_REFERENCE_${ref_version}_${ref_platform}_FOLDER_DEBUG} CACHE INTERNAL \"\")\n")#name of the folder contained in the archive
-				endif()
-			endif()
-		endforeach()
-	endforeach()
+if(${PROJECT_NAME}_REGISTRY)
+	update_Binary_References(${package} "${native}" "${PROJECT_NAME}" "${${PROJECT_NAME}_REGISTRY}")
 endif()
 endfunction(generate_Framework_Binary_Reference_For_Package)
 
@@ -1151,7 +926,6 @@ endfunction(generate_Framework_Binary_Reference_For_Package)
 #  Finalize the configuration of the current framework project build process.
 #
 macro(build_Framework)
-
 ####################################################
 ############ CONFIGURING the BUILD #################
 ####################################################

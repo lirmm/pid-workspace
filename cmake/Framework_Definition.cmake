@@ -26,7 +26,7 @@ endif()
 set(FRAMEWORK_DEFINITION_INCLUDED TRUE)
 ##########################################################################################
 
-cmake_minimum_required(VERSION 3.15.7)
+cmake_minimum_required(VERSION 3.19.8)
 
 # prevent CMake automatic detection messages from appearing
 set(CMAKE_MESSAGE_LOG_LEVEL NOTICE CACHE INTERNAL "")
@@ -76,6 +76,7 @@ stop_Make_To_Print_Directories()
 #     :WELCOME <path to markdown file>: The path to the mardown use for the welcome. This path is relative to framework src/pages folder.
 #     :API_DOC <path to markdown file>: The path to the mardown use for documenting the main page of API_DOC. This path is relative to framework share folder.
 #     :CONTRIBUTION_SPACE <name>: the name of the default contribution space used by the framework to publish its references.
+#     :REGISTRY url: the URL of binary package registry used to store packages of this framework
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -108,12 +109,13 @@ stop_Make_To_Print_Directories()
 #               API_DOC         pid_main_api.md
 #       	)
 #
-macro(PID_Framework)
-  declare_PID_Framework(${ARGN})
-endmacro(PID_Framework)
-
 macro(declare_PID_Framework)
-set(oneValueArgs GIT_ADDRESS ADDRESS PUBLIC_ADDRESS MAIL EMAIL SITE PROJECT LICENSE LOGO BANNER WELCOME CONTRIBUTION_SPACE API_DOC)
+	message(WARNING "[PID] WARNING: declare_PID_Framework is deprecated and will be removed in a future version of PID. Use PID_Framework instead.")
+	PID_Framework(${ARGN})
+endmacro(declare_PID_Framework)
+
+macro(PID_Framework)
+set(oneValueArgs REGISTRY GIT_ADDRESS ADDRESS PUBLIC_ADDRESS MAIL EMAIL SITE PROJECT LICENSE LOGO BANNER WELCOME CONTRIBUTION_SPACE API_DOC)
 set(multiValueArgs AUTHOR INSTITUTION YEAR DESCRIPTION CATEGORIES)
 cmake_parse_arguments(DECLARE_PID_FRAMEWORK "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 if(NOT DECLARE_PID_FRAMEWORK_AUTHOR)
@@ -152,7 +154,8 @@ endif()
 declare_Framework(	"${DECLARE_PID_FRAMEWORK_AUTHOR}" "${DECLARE_PID_FRAMEWORK_INSTITUTION}" "${email}"
 			"${DECLARE_PID_FRAMEWORK_YEAR}" "${DECLARE_PID_FRAMEWORK_SITE}" "${DECLARE_PID_FRAMEWORK_LICENSE}"
 			"${address}" "${DECLARE_PID_FRAMEWORK_PUBLIC_ADDRESS}" "${DECLARE_PID_FRAMEWORK_PROJECT}" "${DECLARE_PID_FRAMEWORK_DESCRIPTION}"
-    "${DECLARE_PID_FRAMEWORK_WELCOME}" "${DECLARE_PID_FRAMEWORK_CONTRIBUTION_SPACE}" "${DECLARE_PID_FRAMEWORK_API_DOC}")
+    "${DECLARE_PID_FRAMEWORK_WELCOME}" "${DECLARE_PID_FRAMEWORK_CONTRIBUTION_SPACE}" "${DECLARE_PID_FRAMEWORK_API_DOC}"
+	"${DECLARE_PID_FRAMEWORK_REGISTRY}")
 unset(email)
 if(DECLARE_PID_FRAMEWORK_LOGO)
 	declare_Framework_Image(${DECLARE_PID_FRAMEWORK_LOGO} FALSE)
@@ -165,7 +168,7 @@ if(DECLARE_PID_FRAMEWORK_CATEGORIES)
     add_PID_Framework_Category(${cat})
   endforeach()
 endif()
-endmacro(declare_PID_Framework)
+endmacro(PID_Framework)
 
 #.rst:
 #

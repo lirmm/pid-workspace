@@ -43,7 +43,7 @@ include(PID_Git_Functions NO_POLICY_SCOPE)
 #  create_Local_Static_Site_Project
 #  --------------------------------
 #
-#   .. command:: create_Local_Static_Site_Project(SUCCESS package repo_addr push_site package_url site_url)
+#   .. command:: create_Local_Static_Site_Project(SUCCESS package repo_addr push_site package_url site_url registry_url)
 #
 #     Create a local repository for the package's lone static site.
 #
@@ -51,11 +51,12 @@ include(PID_Git_Functions NO_POLICY_SCOPE)
 #      :repo_addr: the address of the git repository for package static site.
 #      :push_site: if TRUE the committed content after creation will be pushed to remote.
 #      :package_url: the URL of the package project page (referenced in static site).
-#      :site_url: the URL of the package statis site.
+#      :site_url: the URL of the package static site.
+#      :registry_url: the URL of the package binary registry.
 #
 #      :SUCCESS: the output variable that is TRUE if creation succeed, FALSE otherwise.
 #
-function(create_Local_Static_Site_Project SUCCESS package repo_addr push_site package_url site_url)
+function(create_Local_Static_Site_Project SUCCESS package repo_addr push_site package_url site_url registry_url)
 set(PATH_TO_STATIC_SITE_FOLDER ${WORKSPACE_DIR}/sites/packages)
 clone_Static_Site_Repository(IS_INITIALIZED BAD_URL ${package} ${repo_addr})
 set(CONNECTED FALSE)
@@ -68,9 +69,13 @@ if(NOT IS_INITIALIZED)#repository must be initialized first
 	execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${WORKSPACE_DIR}/cmake/patterns/static_sites/package ${WORKSPACE_DIR}/sites/packages/${package}
                   WORKING_DIRECTORY ${WORKSPACE_DIR}/build)#create the folder containing the site from the pattern folder
 
-  set(PACKAGE_NAME ${package})
+  	set(PACKAGE_NAME ${package})
 	set(PACKAGE_PROJECT_URL ${package_url})
 	set(PACKAGE_SITE_URL ${site_url})
+	set(PACKAGE_REGISTRY)
+	if(registry_url)
+		set(PACKAGE_REGISTRY "REGISTRY ${registry_url}")
+	endif()
 	configure_file(${WORKSPACE_DIR}/cmake/patterns/static_sites/CMakeLists.txt.in ${WORKSPACE_DIR}/sites/packages/${package}/CMakeLists.txt @ONLY)#adding the cmake project file to the static site project
 
 	init_Static_Site_Repository(CONNECTED ${package} ${repo_addr} ${push_site})#configuring the folder as a git repository
@@ -94,20 +99,25 @@ endfunction(create_Local_Static_Site_Project)
 #  update_Local_Static_Site_Project
 #  --------------------------------
 #
-#   .. command:: update_Local_Static_Site_Project(package package_url site_url)
+#   .. command:: update_Local_Static_Site_Project(package package_url site_url registry_url)
 #
 #     Update the local repository for the package's lone static site.
 #
 #      :package: the name of target package.
 #      :package_url: the URL of the package project page (referenced in static site).
 #      :site_url: the URL of the package statis site.
+#      :registry_url: the URL of the package binary registry.
 #
-function(update_Local_Static_Site_Project package package_url site_url)
+function(update_Local_Static_Site_Project package package_url site_url registry_url)
 update_Static_Site_Repository(${package}) # updating the repository from git
 #reconfigure the root CMakeLists and README to automatically manage evolution in PID
 set(PACKAGE_NAME ${package})
 set(PACKAGE_PROJECT_URL ${package_url})
 set(PACKAGE_SITE_URL ${site_url})
+set(PACKAGE_REGISTRY)
+if(registry_url)
+	set(PACKAGE_REGISTRY "REGISTRY ${registry_url}")
+endif()
 configure_file(${WORKSPACE_DIR}/cmake/patterns/static_sites/CMakeLists.txt.in ${WORKSPACE_DIR}/sites/packages/${package}/CMakeLists.txt @ONLY)#modifying the cmake project file to the static site project
 endfunction(update_Local_Static_Site_Project)
 
@@ -307,7 +317,7 @@ endfunction(check_Framework_Exists)
 function(load_Framework LOADED framework)
 	set(${LOADED} FALSE PARENT_SCOPE)
 	set(FOLDER_EXISTS FALSE)
-  include_Framework_Reference_File(REF_EXIST ${framework})
+  	include_Framework_Reference_File(REF_EXIST ${framework})
 
 	framework_Project_Exists(FOLDER_EXISTS PATH_TO_SITE ${framework})
 	if(FOLDER_EXISTS)
@@ -316,7 +326,7 @@ function(load_Framework LOADED framework)
 		if(NOT REF_EXIST) #if reference file does not exist we use the project present in the workspace. This way we may force it to generate references
 			execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} referencing
                       WORKING_DIRECTORY ${WORKSPACE_DIR}/sites/frameworks/${framework}/build)
-      include_Framework_Reference_File(REF_EXIST ${framework})
+      		include_Framework_Reference_File(REF_EXIST ${framework})
 			if(REF_EXIST)
 				set(${LOADED} TRUE PARENT_SCOPE)
 			endif()

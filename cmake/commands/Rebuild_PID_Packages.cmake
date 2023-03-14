@@ -72,7 +72,6 @@ foreach(package IN LISTS LIST_OF_TARGETS)
 		SET(ENV{force} true)
 		execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build RESULT_VARIABLE RES)
 	else()
-		#TODO pass the force option as an environment variable to be compatible with any Make program
 		execute_process(COMMAND ${CMAKE_MAKE_PROGRAM} build force=true WORKING_DIRECTORY ${WORKSPACE_DIR}/packages/${package}/build RESULT_VARIABLE RES)
 	endif()
 	if(NOT RES STREQUAL 0)

@@ -115,35 +115,66 @@ if(TARGET_FRAMEWORK) # the package site is put into a more global site that refe
 		message("[PID] ERROR: cannot build package site because the required framework ${TARGET_FRAMEWORK} cannot be found locally or online. This may be due to a lack of a reference file for this framework in the workspace, ask the author of the framework to provide one and update your workspace before launching again this command.")
 		return()
 	endif()
-
+	set(TARGET_REGISTRY ${${TARGET_FRAMEWORK}_REGISTRY} CACHE INTERNAL "" FORCE)
+	
 elseif(SITE_GIT)# the package site is put into a dedicated static site
 
 	set(project_url "${PACKAGE_PROJECT_URL}")
 	set(site_url "${PACKAGE_SITE_URL}")
+	set(registry_url "${PACKAGE_REGISTRY}")
 	#1) find or put the package static site in the workspace
 	static_Site_Project_Exists(SITE_EXISTS PATH_TO_SITE ${TARGET_PACKAGE})
 	if(NOT SITE_EXISTS)
 		#install the static site if necessary or create it if it does not exists
-		create_Local_Static_Site_Project(SUCCEEDED ${TARGET_PACKAGE} ${SITE_GIT} ${push_site} ${project_url} ${site_url})
+		create_Local_Static_Site_Project(SUCCEEDED ${TARGET_PACKAGE} ${SITE_GIT} ${push_site} ${project_url} ${site_url} "${registry_url}")
 		if(NOT SUCCEEDED)
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to connect to the static site repository. You are probably not a developer of the package ${TARGET_PACKAGE} which explains why you cannot publish the static site.")
 		endif()
 	else()
-		update_Local_Static_Site_Project(${TARGET_PACKAGE} ${project_url} ${site_url}) # update static site repository, to ensure its synchronization
+		update_Local_Static_Site_Project(${TARGET_PACKAGE} ${project_url} ${site_url} "${registry_url}") # update static site repository, to ensure its synchronization
 	endif()
 else()
 	message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot build package site due to bad arguments. This situation should never appear so you may face a BUG in PID. Please contact PID developers.")
 endif()
 
 #2) clean generate and copy files according to project documentation
+
+#TODO manage lock (add a temporary lock file to the package registry to avoid problems with framework looking at registry
+set(bin_versions_to_document ${KNOWN_VERSIONS})
+if(include_installer)
+	if(NOT TARGET_REGISTRY)
+		message(WARNING "[PID] ERROR: cannot publish binaries for ${TARGET_PACKAGE}. Maybe this is due to th fact that the framework you are using does not define a registry for binaries")
+		set(include_installer FALSE)
+	else()
+		#get all info from registry
+		if(is_native)
+			upload_Binary_Version(UPLOADED ${TARGET_PACKAGE} "${TARGET_VERSION}" TRUE "${TARGET_REGISTRY}")
+			if(NOT UPLOADED)
+				message("[PID] ERROR : cannot upload package binaries into registry. Aborting to avoid inconsistency between package register and web site description")
+				set(include_installer FALSE)
+			endif()
+		else()
+			set(bin_versions_to_document)
+			foreach(version IN LISTS KNOWN_VERSIONS)
+				upload_Binary_Version(UPLOADED ${TARGET_PACKAGE} ${version} FALSE "${TARGET_REGISTRY}")
+				if(NOT UPLOADED)
+					message("[PID] ERROR : cannot upload package ${TARGET_PACKAGE} binaries into registry. Aborting to avoid inconsistency between package register and web site description")
+				endif()
+				list(APPEND bin_versions_to_document ${version})
+			endforeach()
+			if(NOT bin_versions_to_document)
+				set(include_installer FALSE)
+			endif()
+		endif()
+	endif()
+endif()
+
 if(is_native)
 	produce_Package_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${TARGET_VERSION}" ${include_api_doc}  ${include_coverage} ${include_staticchecks} ${include_installer} ${forced_update}) # copy everything needed
 else()
-	produce_Wrapper_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${KNOWN_VERSIONS}" ${include_installer} ${forced_update}) # copy everything needed
+	produce_Wrapper_Static_Site_Content(${TARGET_PACKAGE} "${generate_only_binaries}" "${TARGET_FRAMEWORK}" "${bin_versions_to_document}" ${include_installer} ${forced_update}) # copy everything needed
 endif()
 
-
-	
 
 # if required push to static site official repository
 if(push_site)

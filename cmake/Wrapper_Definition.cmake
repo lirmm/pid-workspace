@@ -27,7 +27,7 @@ endif()
 set(WRAPPER_DEFINITION_INCLUDED TRUE)
 ##########################################################################################
 
-cmake_minimum_required(VERSION 3.15.7)
+cmake_minimum_required(VERSION 3.19.8)
 
 # prevent CMake automatic detection messages from appearing
 set(CMAKE_MESSAGE_LOG_LEVEL NOTICE CACHE INTERNAL "")
@@ -452,7 +452,7 @@ endmacro(define_PID_Wrapper_User_Option)
 #          FRAMEWORK pid
 #          DESCRIPTION boost is a PID wrapper for external project called Boost. Boost provides many libraries and templates to ease development in C++.
 #          PUBLISH_BINARIES
-#          ALLOWED_PLATFORMS x86_64_linux_stdc++11)
+#          ALLOWED_PLATFORMS x86_64_linux_stdc++11__ub20_gcc9__)
 #
 
 macro(PID_Wrapper_Publishing)
@@ -461,7 +461,7 @@ endmacro(PID_Wrapper_Publishing)
 
 macro(declare_PID_Wrapper_Publishing)
 set(optionArgs PUBLISH_BINARIES)
-set(oneValueArgs PROJECT FRAMEWORK GIT PAGE)
+set(oneValueArgs PROJECT FRAMEWORK GIT PAGE REGISTRY)
 set(multiValueArgs DESCRIPTION ALLOWED_PLATFORMS CATEGORIES)
 cmake_parse_arguments(DECLARE_PID_WRAPPER_PUBLISHING "${optionArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -526,18 +526,31 @@ endif()#otherwise there is no site contribution
 
 #manage publication of binaries
 if(DECLARE_PID_WRAPPER_PUBLISHING_PUBLISH_BINARIES)
-	if(NOT PUBLISH_DOC)
+  if(NOT PUBLISH_DOC)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : you cannot publish binaries of the project (using PUBLISH_BINARIES) if you do not publish package ${PROJECT_NAME} using a static site (either use FRAMEWORK or SITE keywords).")
-	endif()
-	if(NOT DO_CI)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Publishing, you cannot publish binaries of the project (using PUBLISH_BINARIES) if you do not publish package ${PROJECT_NAME} using a static site (either use FRAMEWORK or SITE keywords).")
+  elseif(NOT ${PROJECT_NAME}_FRAMEWORK)
+    #not published in a framework -> need to ensure a registry is defined
+    if(NOT DECLARE_PID_WRAPPER_PUBLISHING_REGISTRY)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Publishing, you cannot publish binaries of the project (using PUBLISH_BINARIES) outside of a framework if you do not define a registry for binaries (use REGISTRY keyword).")
+    endif()
+  else()#defined into a framework
+    if(DECLARE_PID_WRAPPER_PUBLISHING_REGISTRY)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Publishing, you cannot publish binaries of the project (using PUBLISH_BINARIES) into a framework if you define a package specific registry for ${PROJECT_NAME} binaries (do not use REGISTRY keyword).")
+    endif()
+  endif()
+  if(NOT DO_CI)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : you cannot publish binaries of the project (using PUBLISH_BINARIES) if you do not allow any CI process for package ${PROJECT_NAME} (use ALLOWED_PLATFORMS to defines which platforms will be used in CI process).")
-	endif()
-	publish_Binaries(TRUE)
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Publishing, you cannot publish binaries of the project (using PUBLISH_BINARIES) if you do not allow any CI process for package ${PROJECT_NAME} (use ALLOWED_PLATFORMS to defines which platforms will be used in CI process).")
+  endif()
+  
+  publish_Binaries(TRUE "${DECLARE_PID_PUBLISHING_REGISTRY}")
 else()
-	publish_Binaries(FALSE)
+  publish_Binaries(FALSE "")
 endif()
+
 endmacro(declare_PID_Wrapper_Publishing)
 
 #.rst:

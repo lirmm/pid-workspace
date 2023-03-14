@@ -17,7 +17,7 @@
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
 
-cmake_minimum_required(VERSION 3.15.7)
+cmake_minimum_required(VERSION 3.19.8)
 
 ########################################################################
 ############ inclusion of required macros and functions ################
@@ -3197,7 +3197,7 @@ extract_Version_NUMBERS(
 	${${package}_VERSION_STRING}
 )
 set(file_name ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/pid_cmake/Find${package}.cmake)
-file(WRITE ${file_name} "cmake_minimum_required(VERSION 3.15.7)\n")#reset file content and start writing find procedure
+file(WRITE ${file_name} "cmake_minimum_required(VERSION 3.19.8)\n")#reset file content and start writing find procedure
 #CMake 3.8 is minimum required to get the target compile features available
 file(APPEND ${file_name} "if(${package}_FOUND)\n")
 file(APPEND ${file_name} "  set(${package}_VERSION_STRING_GENERATED ${${package}_VERSION_STRING})\n")

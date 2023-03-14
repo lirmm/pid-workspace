@@ -190,7 +190,7 @@ macro(declare_Environment author institution mail year license address public_ad
   endif()
 
   #reset environment description
-  init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "" "" "" "" "")
+  init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "" "" "" "" "" "")
 	declare_Environment_Global_Cache_Options()
   set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
   set(action_info ${info})

@@ -26,7 +26,7 @@ endif()
 set(PACKAGE_DEFINITION_INCLUDED TRUE)
 ##########################################################################################
 
-cmake_minimum_required(VERSION 3.15.7)
+cmake_minimum_required(VERSION 3.19.8)
 
 # prevent CMake automatic detection messages from appearing
 set(CMAKE_MESSAGE_LOG_LEVEL NOTICE CACHE INTERNAL "")
@@ -279,102 +279,6 @@ endmacro(add_PID_Package_Author)
 #.rst:
 # .. ifmode:: user
 #
-#  .. |PID_Reference| replace:: ``PID_Reference``
-#  .. _PID_Reference:
-#
-#  PID_Reference
-#  -------------
-#
-#  .. command:: PID_Reference(VERSION ... PLATFORM ... URL ...)
-#
-#  .. command:: add_PID_Package_Reference(VERSION ... PLATFORM ... URL ...)
-#
-#   Declare a reference to a known binary version of the package. This is useful to register various released version of the package.
-#
-#   .. rubric:: Required parameters
-#
-#   :VERSION <major>.<minor>[.<patch>]: The full version number of the referenced binary package. See |set_PID_Package_Version|_.
-#
-#   :PLATFORM <name>: The name of the target plaftorm for which the binary package has been built.
-#
-#   :URL <url-rel> <url-dbg>:
-#     - ``<url-rel>`` is the url of the package binary release build
-#     - ``<url-dbg>`` is the url of the package binary debug build.
-#
-#   .. admonition:: Constraints
-#      :class: warning
-#
-#      - This function must be called in the root ``CMakeLists.txt`` file of the package, after |PID_Package|_ but before |build_PID_Package|_.
-#
-#   .. admonition:: Effects
-#     :class: important
-#
-#     Declare a reference that defines where to find an installable binary for a given platform.
-#
-#     PID uses this information to generate a CMake configuration file that will be used to retrieve this package version. This is the only way to define direct references to binary packages.
-#
-#   .. rubric:: Example
-#
-#   .. code-block:: cmake
-#
-#    PID_Reference(VERSION 1.0.0 PLATFORM x86_linux_64_stdc++11
-#      URL https://gite.lirmm.fr/pid/pid-binaries/wikis/pid-rpath/1.0.0/linux64/pid-rpath-1.0.0-linux64.tar.gz
-#          https://gite.lirmm.fr/pid/pid-binaries/wikis/pid-rpath/1.0.0/linux64/pid-rpath-1.0.0-dbg-linux64.tar.gz
-#    )
-#
-
-macro(PID_Reference)
-  add_PID_Package_Reference(${ARGN})
-endmacro(PID_Reference)
-
-macro(add_PID_Package_Reference)
-set(oneValueArgs VERSION PLATFORM)
-set(multiValueArgs  URL)
-cmake_parse_arguments(ADD_PID_PACKAGE_REFERENCE "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-
-if(NOT ADD_PID_PACKAGE_REFERENCE_URL)
-  finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Reference, you need to set the urls where to find binary packages for release and debug modes, using URL <release addr> <debug addr>.")
-else()
-	list(LENGTH ADD_PID_PACKAGE_REFERENCE_URL SIZE)
-	if(NOT SIZE EQUAL 2)
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Reference, you need to set the urls where to find binary packages for release and debug modes using URL <release addr> <debug addr>.")
-	endif()
-endif()
-list(GET ADD_PID_PACKAGE_REFERENCE_URL 0 URL_REL)
-list(GET ADD_PID_PACKAGE_REFERENCE_URL 1 URL_DBG)
-
-if(NOT ADD_PID_PACKAGE_REFERENCE_PLATFORM)
-  finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Reference, you need to set the target platform name using PLATFORM keyword.")
-endif()
-
-if(NOT ADD_PID_PACKAGE_REFERENCE_VERSION)
-  finish_Progress(${GLOBAL_PROGRESS_VAR})
-	message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Reference, you need to input a target version number (with major and minor values, optionnaly you can also set a patch value which is considered as 0 if not set) using VERSION keyword.")
-else()
-	get_Version_String_Numbers(${ADD_PID_PACKAGE_REFERENCE_VERSION} MAJOR MINOR PATCH)
-  if(NOT DEFINED MAJOR)
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-  	message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Reference, the version number is corrupted (should follow the pattern major.minor[.patch]).")
-  endif()
-  #manage PID v1 API way of doing
-	set(TARGET_PLATFORM_FOR_REFERENCE ${ADD_PID_PACKAGE_REFERENCE_PLATFORM})
-
-	if(TARGET_PLATFORM_FOR_REFERENCE)#target platform cannot be determined
-		if(NOT PATCH)
-			add_Reference("${MAJOR}.${MINOR}.0" "${TARGET_PLATFORM_FOR_REFERENCE}" "${URL_REL}" "${URL_DBG}")
-		else()
-			add_Reference("${MAJOR}.${MINOR}.${PATCH}" "${TARGET_PLATFORM_FOR_REFERENCE}" "${URL_REL}" "${URL_DBG}")
-		endif()
-	endif()#otherwise simply do not add the reference, cannot resolve with new platform naming standard
-endif()
-endmacro(add_PID_Package_Reference)
-
-#.rst:
-# .. ifmode:: user
-#
 #  .. |PID_Category| replace:: ``PID_Category``
 #  .. _PID_Category:
 #
@@ -412,16 +316,13 @@ macro(PID_Category)
 endmacro(PID_Category)
 
 macro(add_PID_Package_Category)
+message(WARNING "[PID] WARNING: PID_Category is now deprecated and will be removed in a future version of PID. Please use the CATEGORIES field of PID_Publishing function instead.")
 if(NOT ${ARGC} EQUAL 1)
   finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Category, command requires one string argument of the form <category>[/subcategory]*.")
 endif()
 add_Category("${ARGV0}")
 endmacro(add_PID_Package_Category)
-
-macro(declare_PID_Documentation)
-	message("[PID] WARNING : in package ${PROJECT_NAME} declare_PID_Documentation is deprecated and is no more used in PID version 2. To define a documentation site please use PID_Publishing function. Skipping documentation generation phase.")
-endmacro(declare_PID_Documentation)
 
 #.rst:
 # .. ifmode:: user
@@ -512,7 +413,7 @@ endmacro(PID_Publishing)
 
 macro(declare_PID_Publishing)
 set(optionArgs PUBLISH_BINARIES PUBLISH_DEVELOPMENT_INFO)
-set(oneValueArgs PROJECT FRAMEWORK GIT PAGE ADVANCED TUTORIAL LOGO)
+set(oneValueArgs PROJECT FRAMEWORK GIT PAGE ADVANCED TUTORIAL LOGO REGISTRY)
 set(multiValueArgs DESCRIPTION ALLOWED_PLATFORMS CATEGORIES)
 cmake_parse_arguments(DECLARE_PID_PUBLISHING "${optionArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -546,7 +447,7 @@ if(DECLARE_PID_PUBLISHING_FRAMEWORK)
   init_Documentation_Info_Cache_Variables("${DECLARE_PID_PUBLISHING_FRAMEWORK}" "${DECLARE_PID_PUBLISHING_PROJECT}" "" "" "${DECLARE_PID_PUBLISHING_DESCRIPTION}")
   if(DECLARE_PID_PUBLISHING_CATEGORIES)
     foreach(category IN LISTS DECLARE_PID_PUBLISHING_CATEGORIES)
-      PID_Category(${category})
+      add_Category(${category})
     endforeach()
   endif()
 elseif(DECLARE_PID_PUBLISHING_GIT)
@@ -578,14 +479,26 @@ if(DECLARE_PID_PUBLISHING_PUBLISH_BINARIES)
 	if(NOT PUBLISH_DOC)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Publishing, you cannot publish binaries of the project (using PUBLISH_BINARIES) if you do not publish package ${PROJECT_NAME} using a static site (either use FRAMEWORK or SITE keywords).")
-	endif()
+	elseif(NOT ${PROJECT_NAME}_FRAMEWORK)
+    #not published in a framework -> need to ensure a registry is defined
+    if(NOT DECLARE_PID_PUBLISHING_REGISTRY)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+		  message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Publishing, you cannot publish binaries of the project (using PUBLISH_BINARIES) outside of a framework if you do not define a registry for binaries (use REGISTRY keyword).")
+	  endif()
+  else()#defined into a framework
+    if(DECLARE_PID_PUBLISHING_REGISTRY)
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+		  message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Publishing, you cannot publish binaries of the project (using PUBLISH_BINARIES) into a framework if you define a package specific registry for ${PROJECT_NAME} binaries (do not use REGISTRY keyword).")
+	  endif()
+  endif()
 	if(NOT DO_CI)
     finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} bad arguments when calling PID_Publishing, you cannot publish binaries of the project (using PUBLISH_BINARIES) if you do not allow any CI process for package ${PROJECT_NAME} (use ALLOWED_PLATFORMS to defines which platforms will be used in CI process).")
 	endif()
-	publish_Binaries(TRUE)
+  
+	publish_Binaries(TRUE "${DECLARE_PID_PUBLISHING_REGISTRY}")
 else()
-	publish_Binaries(FALSE)
+	publish_Binaries(FALSE "")
 endif()
 
 #manage publication of information for developpers

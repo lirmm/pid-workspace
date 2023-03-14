@@ -30,6 +30,7 @@ set(PID_DEPLOYMENT_FUNCTIONS_INCLUDED TRUE)
 include(PID_Utils_Functions NO_POLICY_SCOPE)
 include(PID_Git_Functions NO_POLICY_SCOPE)
 include(PID_Contribution_Space_Functions NO_POLICY_SCOPE)
+include(PID_Binaries_Registry_Functions NO_POLICY_SCOPE)
 
 #############################################################################################
 ############### API functions for managing references on dependent packages #################
@@ -74,24 +75,12 @@ file(APPEND ${file} "set(${PROJECT_NAME}_YEARS ${${PROJECT_NAME}_YEARS} CACHE IN
 file(APPEND ${file} "set(${PROJECT_NAME}_LICENSE ${${PROJECT_NAME}_LICENSE} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_ADDRESS ${${PROJECT_NAME}_ADDRESS} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_PUBLIC_ADDRESS ${${PROJECT_NAME}_PUBLIC_ADDRESS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_REGISTRY \"${${PROJECT_NAME}_REGISTRY}\" CACHE INTERNAL \"\")\n")
 if(${PROJECT_NAME}_CATEGORIES)
 file(APPEND ${file} "set(${PROJECT_NAME}_CATEGORIES \"${${PROJECT_NAME}_CATEGORIES}\" CACHE INTERNAL \"\")\n")
 else()
 file(APPEND ${file} "set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL \"\")\n")
 endif()
-
-############################################################################
-###### all available versions of the package for which there is a ##########
-###### direct reference to a downloadable binary for a given platform ######
-############################################################################
-file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} CACHE INTERNAL \"\")\n")
-foreach(ref_version IN LISTS ${PROJECT_NAME}_REFERENCES) #for each available version, all os for which there is a reference
-	file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} CACHE INTERNAL \"\")\n")
-	foreach(ref_platform IN LISTS ${PROJECT_NAME}_REFERENCE_${ref_version})#for each version & os, all arch for which there is a reference
-		file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG} CACHE INTERNAL \"\")\n")
-	endforeach()
-endforeach()
 endfunction(generate_Package_Reference_File)
 
 #.rst:
@@ -132,6 +121,7 @@ file(APPEND ${file} "set(${PROJECT_NAME}_YEARS ${${PROJECT_NAME}_YEARS} CACHE IN
 file(APPEND ${file} "set(${PROJECT_NAME}_LICENSE ${${PROJECT_NAME}_LICENSE} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_ADDRESS ${${PROJECT_NAME}_ADDRESS} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_PUBLIC_ADDRESS ${${PROJECT_NAME}_PUBLIC_ADDRESS} CACHE INTERNAL \"\")\n")
+file(APPEND ${file} "set(${PROJECT_NAME}_REGISTRY \"${${PROJECT_NAME}_REGISTRY}\" CACHE INTERNAL \"\")\n")
 
 #2) write information shared between wrapper and its external packages
 file(APPEND ${file} "set(${PROJECT_NAME}_DESCRIPTION \"${${PROJECT_NAME}_DESCRIPTION}\" CACHE INTERNAL \"\")\n")
@@ -146,20 +136,6 @@ endif()
 file(APPEND ${file} "set(${PROJECT_NAME}_ORIGINAL_PROJECT_AUTHORS \"${${PROJECT_NAME}_ORIGINAL_PROJECT_AUTHORS}\" CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_ORIGINAL_PROJECT_SITE ${${PROJECT_NAME}_ORIGINAL_PROJECT_SITE} CACHE INTERNAL \"\")\n")
 file(APPEND ${file} "set(${PROJECT_NAME}_ORIGINAL_PROJECT_LICENSES ${${PROJECT_NAME}_ORIGINAL_PROJECT_LICENSES} CACHE INTERNAL \"\")\n")
-
-
-############################################################################
-###### all available versions of the package for which there is a ##########
-###### direct reference to a downloadable binary for a given platform ######
-############################################################################
-file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCES ${${PROJECT_NAME}_REFERENCES} CACHE INTERNAL \"\")\n")
-foreach(ref_version IN LISTS ${PROJECT_NAME}_REFERENCES) #for each available version, all os for which there is a reference
-	file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version} ${${PROJECT_NAME}_REFERENCE_${ref_version}} CACHE INTERNAL \"\")\n")
-	foreach(ref_platform IN LISTS ${PROJECT_NAME}_REFERENCE_${ref_version})#for each version & os, all arch for which there is a reference
-		file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL} CACHE INTERNAL \"\")\n")
-		file(APPEND ${file} "set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG ${${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG} CACHE INTERNAL \"\")\n")
-	endforeach()
-endforeach()
 endfunction(generate_Wrapper_Reference_File)
 
 
@@ -229,7 +205,6 @@ if(list_of_unresolved_configs)
         set(exact_str "")
       endif()
       find_package_resolved(${package} ${${package}_VERSION_STRING} ${exact_str} REQUIRED)#find again the package but this time we impose as constraint the specific version searched
-      #TODO maybe use the ${package}_FIND_VERSION_EXACT variable instead of directly EXACT ?
       if(NOT ${package}_FOUND${VAR_SUFFIX})
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         if(${package}_REQUIRED_VERSION_SYSTEM)
@@ -394,7 +369,6 @@ if(list_of_conflicting_dependencies)#the package has conflicts in its dependenci
         set(exact_str "")
       endif()
       find_package_resolved(${package} ${${package}_VERSION_STRING} ${exact_str} REQUIRED)#find again the package but this time we impose as constraint the specific version searched
-      #TODO maybe use the ${package}_FIND_VERSION_EXACT variable instead of directly EXACT ?
       if(NOT ${package}_FOUND${VAR_SUFFIX})
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         if(${package}_REQUIRED_VERSION_SYSTEM)
@@ -817,234 +791,6 @@ else()#using references
 	endif()
 endif()
 endfunction(install_Native_Package)
-
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |unload_Binary_Package_Install_Manifest| replace:: ``unload_Binary_Package_Install_Manifest``
-#  .. _unload_Binary_Package_Install_Manifest:
-#
-#  unload_Binary_Package_Install_Manifest
-#  --------------------------------------
-#
-#   .. command:: unload_Binary_Package_Install_Manifest(package version platform)
-#
-#    Unload info coming from an install manifest (use file) provided by a binary package.
-#
-#      :package: The name of the package.
-#      :version: The version of the package.
-#      :platform: platform for which the binary has been built for.
-#
-function(unload_Binary_Package_Install_Manifest package)
-  get_Package_Type(${package} PACK_TYPE)
-  if(PACK_TYPE STREQUAL "NATIVE")
-    reset_Native_Package_Dependency_Cached_Variables_From_Use(${package} Release FALSE)
-    reset_Native_Package_Dependency_Cached_Variables_From_Use(${package} Debug FALSE)
-  elseif(PACK_TYPE STREQUAL "EXTERNAL")
-    reset_External_Package_Dependency_Cached_Variables_From_Use(${package} Release FALSE)
-    reset_External_Package_Dependency_Cached_Variables_From_Use(${package} Debug FALSE)
-  endif()
-endfunction(unload_Binary_Package_Install_Manifest)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |load_Binary_Package_Install_Manifest| replace:: ``load_Binary_Package_Install_Manifest``
-#  .. _load_Binary_Package_Install_Manifest:
-#
-#  load_Binary_Package_Install_Manifest
-#  ------------------------------------
-#
-#   .. command:: load_Binary_Package_Install_Manifest(MANIFEST_FOUND package version platform)
-#
-#    Get the manifest file provided with a package binary reference.
-#
-#      :package: The name of the package.
-#      :version: The version of the package.
-#      :platform: platform for which the binary has been built for.
-#
-#      :MANIFEST_FOUND: the output variable that is TRUE is manifest file has been found, FALSE otherwise.
-#
-#     .. admonition:: Constraints
-#        :class: warning
-#
-#        The binaries referencing file must be loaded before this call. No automatic automatic (re)load id performed to improve performance.
-#
-function(load_Binary_Package_Install_Manifest MANIFEST_FOUND package version platform)
-set(${MANIFEST_FOUND} FALSE PARENT_SCOPE)
-set(ws_download_folder ${WORKSPACE_DIR}/build/downloaded)
-set(manifest_name Use${package}-${version}.cmake)
-if(NOT EXISTS ${ws_download_folder})
-  file(MAKE_DIRECTORY ${ws_download_folder})
-endif()
-if(EXISTS ${ws_download_folder}/${manifest_name})
-  file(REMOVE ${ws_download_folder}/${manifest_name})
-endif()
-unload_Binary_Package_Install_Manifest(${package})
-set(to_include)
-if(${package}_FRAMEWORK) #references are deployed in a framework
-	set(FRAMEWORK_ADDRESS ${${${package}_FRAMEWORK}_SITE})#get the address of the framework static site
-  get_Package_Type(${package} PACK_TYPE)
-  set(manifest_address)
-  if(PACK_TYPE STREQUAL "NATIVE")
-    set(manifest_address ${FRAMEWORK_ADDRESS}/packages/${package}/binaries/${version}/${platform}/${manifest_name})
-    set(line_pattern  "^(#.+|set\(.+\))")
-  elseif(PACK_TYPE STREQUAL "EXTERNAL")
-    set(manifest_address ${FRAMEWORK_ADDRESS}/external/${package}/binaries/${version}/${platform}/${manifest_name})
-    set(line_pattern  "^(#.+|set\(.+\)|.+_PID_External_.+)")
-  endif()
-  if(manifest_address)
-    file(DOWNLOAD ${manifest_address} ${ws_download_folder}/${manifest_name} STATUS res TLS_VERIFY OFF)
-		list(GET res 0 numeric_error)
-		if(numeric_error EQUAL 0 #framework site is online & reference available.
-		  AND EXISTS ${ws_download_folder}/${manifest_name})
-      set(to_include ${ws_download_folder}/${manifest_name})
-		else() #it may be an external package, try this
-      if(ADDITIONAL_DEBUG_INFO)
-        message("[PID] INFO: no manifest found for ${package} version ${version} for platform ${platform}. Binary is possibly incompatible.")
-      endif()
-    endif()
-  else()
-    if(ADDITIONAL_DEBUG_INFO)
-      message("[PID] WARNING: cannot download install manifest for unknown package ${package}")
-    endif()
-  endif()
-elseif(${package}_SITE_GIT_ADDRESS)  #references are deployed in a lone static site
-	#when package has a lone static site, the reference file can be directly downloaded
-	file(DOWNLOAD ${${package}_SITE_ROOT_PAGE}/binaries/${version}/${platform}/${manifest_name}
-                ${ws_download_folder}/${manifest_name} STATUS res TLS_VERIFY OFF)
-	list(GET res 0 numeric_error)
-	if(numeric_error EQUAL 0 #static site online & reference available.
-    AND EXISTS ${ws_download_folder}/${manifest_name})
-		set(to_include ${ws_download_folder}/${manifest_name})
-  else() #it may be an external package, try this
-    if(ADDITIONAL_DEBUG_INFO)
-      message("[PID] INFO: no manifest found for ${package} version ${version} for platform ${platform}. Binary is possibly incompatible.")
-    endif()
-	endif()
-endif()
-if(to_include)#there is a file to include but if static site is private it may have returned an invalid file (HTML connection ERROR response)
-  file(STRINGS ${to_include} LINES)
-  set(erroneous_file FALSE)
-  foreach(line IN LISTS LINES)
-    if(NOT line MATCHES "${line_pattern}")
-      set(erroneous_file TRUE)
-      break()
-    endif()
-  endforeach()
-  if(NOT erroneous_file)
-    if(PACK_TYPE STREQUAL "EXTERNAL")
-      #need to set the the build type if not executed in the context of a package or wrapper
-      if(NOT CMAKE_BUILD_TYPE)
-        set(CMAKE_BUILD_TYPE Release)
-        include(${to_include})
-        set(CMAKE_BUILD_TYPE)#then reset
-      else()
-        include(${to_include})
-      endif()
-    else()
-      include(${to_include})
-    endif()
-    set(${MANIFEST_FOUND} TRUE PARENT_SCOPE)
-  endif()
-endif()
-endfunction(load_Binary_Package_Install_Manifest)
-
-
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |load_Package_Binary_References| replace:: ``load_Package_Binary_References``
-#  .. _load_Package_Binary_References:
-#
-#  load_Package_Binary_References
-#  ------------------------------
-#
-#   .. command:: load_Package_Binary_References(REFERENCES_FOUND package)
-#
-#    Get the references to binary archives containing versions of a given package.
-#
-#      :package: The name of the package.
-#
-#      :REFERENCES_FOUND: the output variable that is TRUE is package binary references has been found, FALSE otherwise.
-#
-#     .. admonition:: Constraints
-#        :class: warning
-#
-#        The reference file of the given package must be loaded before this call. No automatic automatic (re)load id performed to improve performance.
-#
-function(load_Package_Binary_References REFERENCES_FOUND package)
-set(${REFERENCES_FOUND} FALSE PARENT_SCOPE)
-set(to_include)
-if(${package}_FRAMEWORK) #references are deployed in a framework
-  include_Framework_Reference_File(PATH_TO_REF ${${package}_FRAMEWORK})
-	if(PATH_TO_REF)
-		#when package is in a framework there is one more indirection to get references (we need to get information about this framework before downloading the reference file)
-		set(FRAMEWORK_ADDRESS ${${${package}_FRAMEWORK}_SITE})#get the address of the framework static site
-    get_Package_Type(${package} PACK_TYPE)
-    set(binaries_address)
-    if(PACK_TYPE STREQUAL "NATIVE")
-      set(binaries_address ${FRAMEWORK_ADDRESS}/packages/${package}/binaries/binary_references.cmake)
-    elseif(PACK_TYPE STREQUAL "EXTERNAL")
-      set(binaries_address ${FRAMEWORK_ADDRESS}/external/${package}/binaries/binary_references.cmake)
-    endif()
-    if(binaries_address)
-      file(DOWNLOAD ${binaries_address} ${WORKSPACE_DIR}/build/${package}_binary_references.cmake STATUS res TLS_VERIFY OFF)
-  		list(GET res 0 numeric_error)
-  		if(numeric_error EQUAL 0 #framework site is online & reference available.
-  		AND EXISTS ${WORKSPACE_DIR}/build/${package}_binary_references.cmake)
-        set(to_include ${WORKSPACE_DIR}/build/${package}_binary_references.cmake)
-  		else() #it may be an external package, try this
-        if(ADDITIONAL_DEBUG_INFO)
-          message("[PID] INFO: no binary reference found for ${package}")
-        endif()
-      endif()
-    else()
-      if(ADDITIONAL_DEBUG_INFO)
-        message("[PID] WARNING: cannot load binary references for unknown package ${package}")
-      endif()
-    endif()
-  else()
-    if(ADDITIONAL_DEBUG_INFO)
-      message("[PID] WARNING: no reference for framework ${${package}_FRAMEWORK}")
-    endif()
-	endif()
-elseif(${package}_SITE_GIT_ADDRESS)  #references are deployed in a lone static site
-	#when package has a lone static site, the reference file can be directly downloaded
-	file(DOWNLOAD ${${package}_SITE_ROOT_PAGE}/binaries/binary_references.cmake ${WORKSPACE_DIR}/build/${package}_binary_references.cmake STATUS res TLS_VERIFY OFF)
-	list(GET res 0 numeric_error)
-	if(numeric_error EQUAL 0 #static site online & reference available.
-	AND EXISTS ${WORKSPACE_DIR}/build/${package}_binary_references.cmake)
-		set(to_include ${WORKSPACE_DIR}/build/${package}_binary_references.cmake)
-  else() #it may be an external package, try this
-    if(ADDITIONAL_DEBUG_INFO)
-      message("[PID] INFO: no binary reference found for ${package}")
-    endif()
-	endif()
-endif()
-
-if(to_include)#there is a file to include but if static site is private it may have returned an invalid file (HTML connection ERROR response)
-  file(STRINGS ${to_include} LINES)
-  set(erroneous_file FALSE)
-  foreach(line IN LISTS LINES)
-    if(NOT line MATCHES "^(#.+|set\(.+\))")
-      set(erroneous_file TRUE)
-      break()
-    endif()
-  endforeach()
-  if(NOT erroneous_file)
-    include(${to_include})
-  endif()
-endif()
-if(${package}_REFERENCES) #if there are direct reference (simpler case), no need to do more becase binary references are already included
-	set(${REFERENCES_FOUND} TRUE PARENT_SCOPE)
-endif()
-endfunction(load_Package_Binary_References)
 
 ##################################################################################################
 ############################### functions for native source Packages #############################
@@ -1610,189 +1356,6 @@ endfunction(build_And_Install_Package)
 #
 # .. ifmode:: internal
 #
-#  .. |check_Package_Platform_Against_Current| replace:: ``check_Package_Platform_Against_Current``
-#  .. _check_Package_Platform_Against_Current:
-#
-#  check_Package_Platform_Against_Current
-#  --------------------------------------
-#
-#   .. command:: check_Package_Platform_Against_Current(CHECK_OK package platform)
-#
-#    Check whether platform configurations defined for binary packages are matching the current platform.
-#
-#      :package: The name of the package.
-#      :platform: The platform string used to filter configuation constraints. If different from current platform then configurations defined for that platorm are not checked.
-#      :version: The version of the package.
-#
-#      :CHECK_OK: the output variable that is TRUE if current platform conforms to package required configurations, FALSE otherwise.
-#
-function(check_Package_Platform_Against_Current CHECK_OK package platform version)
-  set(${CHECK_OK} TRUE PARENT_SCOPE)
-  set(checking_config FALSE)
-  # the platform may have an instance name so we need first to get the base name of the platform
-  extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${platform})
-
-  get_Platform_Variables(BASENAME platfom_str INSTANCE instance_str DISTRIBUTION distrib_str DIST_VERSION distrib_ver_str)
-  if(instance_str)#the current platform is an instance (specific target platform) => only binaries produced for this instance are eligible
-    #searching for such specific instance in available binaries
-    if(platform STREQUAL CURRENT_PLATFORM)# OK this binary version is theorically eligible with instance constraint
-      set(checking_config TRUE)
-    endif()
-  else()#current platform is a generic platform => all binaries are theoretically eligible as soon as they respect base platform constraints
-    if(RES_PLATFORM_BASE STREQUAL platfom_str)# OK this binary version is theorically eligible with base platform constraint
-      set(checking_config TRUE)
-    endif()
-  endif()
-  if(NOT checking_config)
-    set(${CHECK_OK} FALSE PARENT_SCOPE)
-  	return()
-  endif()
-  load_Binary_Package_Install_Manifest(MANIFEST_LOADED ${package} ${version} ${platform})
-  #load the install manifest to get info about the binary
-  if(NOT MANIFEST_LOADED)
-    #cannot say much more so let's say it is NOT OK
-    set(${CHECK_OK} FALSE PARENT_SCOPE)
-    return()
-  endif()
-
-  if(NOT "${distrib_str}" STREQUAL "${${package}_BUILT_FOR_DISTRIBUTION}"
-     OR NOT "${distrib_ver_str}" STREQUAL "${${package}_BUILT_FOR_DISTRIBUTION_VERSION}")
-     #if not build for the same distribution the risk of incompatible binaries is too high
-     unload_Binary_Package_Install_Manifest(${package})
-     set(${CHECK_OK} FALSE PARENT_SCOPE)
-     return()
-  endif()
-  # need to check for its platform configuration to be sure it can be used locally
-  set(LANGS_TO_CHECK)
-  if(${package}_LANGUAGE_CONFIGURATIONS)
-  	set(LANGS_TO_CHECK ${${package}_LANGUAGE_CONFIGURATIONS})
-    list(REMOVE_DUPLICATES LANGS_TO_CHECK)
-  endif()
-  foreach(lang IN LISTS LANGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
-    parse_Configuration_Expression_Arguments(args_as_list ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS)
-    is_Allowed_Language_Configuration(ALLOWED ${lang} args_as_list)
-    if(NOT ALLOWED)
-      set(${CHECK_OK} FALSE PARENT_SCOPE)
-      unload_Binary_Package_Install_Manifest(${package})
-      return()
-    endif()
-  endforeach()
-  # need to check for its platform configuration to be sure it can be used locally
-  set(CONFIGS_TO_CHECK)
-  if(${package}_PLATFORM_CONFIGURATIONS)
-  	set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS})
-    list(REMOVE_DUPLICATES CONFIGS_TO_CHECK)
-  endif()
-  foreach(config IN LISTS CONFIGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
-    parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS)
-    is_Allowed_Platform_Configuration(ALLOWED ${config} args_as_list)
-    if(NOT ALLOWED)
-      set(${CHECK_OK} FALSE PARENT_SCOPE)
-      unload_Binary_Package_Install_Manifest(${package})
-      return()
-    endif()
-  endforeach()
-  #Finally check that the ABI is compatible which is not guaranteed
-  is_Compatible_With_Current_ABI(COMPATIBLE ${package} Release)
-  if(NOT COMPATIBLE)
-    set(${CHECK_OK} FALSE PARENT_SCOPE)
-    unload_Binary_Package_Install_Manifest(${package})
-    return()
-  endif()
-
-  unload_Binary_Package_Install_Manifest(${package})
-
-endfunction(check_Package_Platform_Against_Current)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |get_Available_Binary_Package_Versions| replace:: ``get_Available_Binary_Package_Versions``
-#  .. _get_Available_Binary_Package_Versions:
-#
-#  get_Available_Binary_Package_Versions
-#  --------------------------------------
-#
-#   .. command:: get_Available_Binary_Package_Versions(package LIST_OF_VERSIONS LIST_OF_VERSION_PLATFORM)
-#
-#    Get the list of versions of a given package that conforms to current platform constraints and for which a binary archive is available.
-#
-#      :package: The name of the package.
-#
-#      :LIST_OF_VERSIONS: the output variable that contains the list of versions of package that are available with a binary archive.
-#      :LIST_OF_VERSION_PLATFORM: the output variable that contains the list of versions+platform of package that are available with a binary archive.
-#
-function(get_Available_Binary_Package_Versions package LIST_OF_VERSIONS LIST_OF_VERSION_PLATFORM)
-# listing available binaries of the package and searching if there is any "good version"
-set(available_binary_package_version)
-foreach(ref_version IN LISTS ${package}_REFERENCES)
-	foreach(ref_platform IN LISTS ${package}_REFERENCE_${ref_version})
-		check_Package_Platform_Against_Current(BINARY_OK ${package} ${ref_platform} ${ref_version})#will return TRUE if the platform conforms to current one
-    if(BINARY_OK)
-			list(APPEND available_binary_package_version "${ref_version}")
-			list(APPEND available_binary_package_version_with_platform "${ref_version}/${ref_platform}")
-			# need to test for following platform because many instances may match
-		endif()
-	endforeach()
-endforeach()
-if(NOT available_binary_package_version)
-	return()#nothing to do
-endif()
-list(REMOVE_DUPLICATES available_binary_package_version)
-list(REMOVE_DUPLICATES available_binary_package_version_with_platform)
-set(${LIST_OF_VERSIONS} ${available_binary_package_version} PARENT_SCOPE)
-set(${LIST_OF_VERSION_PLATFORM} ${available_binary_package_version_with_platform} PARENT_SCOPE)
-endfunction(get_Available_Binary_Package_Versions)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |select_Platform_Binary_For_Version| replace:: ``select_Platform_Binary_For_Version``
-#  .. _select_Platform_Binary_For_Version:
-#
-#  select_Platform_Binary_For_Version
-#  ----------------------------------
-#
-#   .. command:: select_Platform_Binary_For_Version(version list_of_bin_with_platform RES_FOR_PLATFORM)
-#
-#    Select the version passed as argument in the list of binary versions of a package and get corresponding platform.
-#
-#      :version: The selected version.
-#      :list_of_bin_with_platform: list of available version+platform for a package (returned from get_Available_Binary_Package_Versions). All these archives are supposed to be binary compatible with current platform.
-#
-#      :RES_FOR_PLATFORM: the output variable that contains the platform to use.
-#
-function(select_Platform_Binary_For_Version version list_of_bin_with_platform RES_FOR_PLATFORM)
-set(chosen_platform)
-if(list_of_bin_with_platform)
-  get_Platform_Variables(INSTANCE instance_name)# detect the instance name used for current platform
-  foreach(bin IN LISTS list_of_bin_with_platform)
-    if(bin MATCHES "^${version}/(.*)$") #only select for the given version
-      set(bin_platform_name ${CMAKE_MATCH_1})
-      extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI res_instance res_base_name ${bin_platform_name})
-      if(instance_name AND res_instance STREQUAL instance_name)#the current platform is an instance so verify that binary archive is for this instance
-        # This is the best choice we can do because there is a perfect match of platform instances
-        set(${RES_FOR_PLATFORM} ${bin_platform_name} PARENT_SCOPE)
-        return()
-      else()
-        if(NOT chosen_platform)
-          set(chosen_platform ${bin_platform_name})#memorize the first in list, it will be selected by default
-        elseif((NOT instance_name) AND (NOT res_instance))# if the current workspace has no instance specified, prefer a binary archive that is agnostic of instance, if any provided
-          set(chosen_platform ${bin_platform_name})#memorize this archive because it is agnostic of platform instance
-        endif()
-      endif()
-		endif()
-	endforeach()
-endif()
-set(${RES_FOR_PLATFORM} ${chosen_platform} PARENT_SCOPE)
-endfunction(select_Platform_Binary_For_Version)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
 #  .. |deploy_Binary_Native_Package| replace:: ``deploy_Binary_Native_Package``
 #  .. _deploy_Binary_Native_Package:
 #
@@ -2039,7 +1602,7 @@ endif()
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
 generate_Binary_Package_Name(${package} ${version} Release FILE_BINARY FOLDER_BINARY)#whatever the platform is with instance or not, archive and folder are named the same way
-set(download_url ${${package}_REFERENCE_${version}_${platform}_URL})#platform in download url may contain also the instance extension
+set(download_url ${${package}_REFERENCE_${version}_${platform}_URL_RELEASE})#platform in download url may contain also the instance extension
 file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/${FILE_BINARY} STATUS res ${SHOW_DOWNLOAD_PROGRESS} TLS_VERIFY OFF)
 list(GET res 0 numeric_error)
 list(GET res 1 status)
@@ -2175,7 +1738,6 @@ if (NOT EXISTS ${target_install_folder}/${version}/share/Use${package}-${version
 	endif()
 endif()
 
-#TODO CHECK THIS
 if(release_only)
   file(READ ${target_install_folder}/${version}/share/Use${package}-${version}.cmake USE_FILE_CONTENT)
   string(FIND "${USE_FILE_CONTENT}" "set(${package}_BUILT_RELEASE_ONLY" INDEX)
@@ -3109,8 +2671,8 @@ endif()
 set(FILE_BINARY "")
 set(FOLDER_BINARY "")
 generate_Binary_Package_Name(${package} ${version} Release FILE_BINARY FOLDER_BINARY)
-set(download_url ${${package}_REFERENCE_${version}_${platform}_URL})#mechanism: "platform" in the name of download url variable contains the instance extension, if any
-set(FOLDER_BINARY ${${package}_REFERENCE_${version}_${platform}_FOLDER})#mechanism: "platform" in the name of archive folder variable contains the instance extension, if any
+set(download_url ${${package}_REFERENCE_${version}_${platform}_URL_RELEASE})#mechanism: "platform" in the name of download url variable contains the instance extension, if any
+set(FOLDER_BINARY ${package}-${version}-${platform})#mechanism: "platform" in the name of archive folder variable contains the instance extension, if any
 file(MAKE_DIRECTORY  ${CMAKE_BINARY_DIR}/share/release)
 file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY} STATUS res ${SHOW_DOWNLOAD_PROGRESS} TLS_VERIFY OFF)
 list(GET res 0 numeric_error)
@@ -3127,7 +2689,7 @@ if(NOT release_only)
   	set(FOLDER_BINARY_DEBUG "")
   	generate_Binary_Package_Name(${package} ${version} Debug FILE_BINARY_DEBUG FOLDER_BINARY_DEBUG)
   	set(download_url_dbg ${${package}_REFERENCE_${version}_${platform}_URL_DEBUG})#mechanism: "platform" in the name of download url variable contains the instance extension, if any
-  	set(FOLDER_BINARY_DEBUG ${${package}_REFERENCE_${version}_${platform}_FOLDER_DEBUG})#mechanism: "platform" in the name of archive folder variable contains the instance extension, if any
+  	set(FOLDER_BINARY_DEBUG ${package}-${version}-dbg-${platform})#mechanism: "platform" in the name of archive folder variable contains the instance extension, if any
     file(MAKE_DIRECTORY  ${CMAKE_BINARY_DIR}/share/debug)
   	file(DOWNLOAD ${download_url_dbg} ${CMAKE_BINARY_DIR}/share/debug/${FILE_BINARY_DEBUG} STATUS res-dbg ${SHOW_DOWNLOAD_PROGRESS} TLS_VERIFY OFF)
   	list(GET res-dbg 0 numeric_error_dbg)

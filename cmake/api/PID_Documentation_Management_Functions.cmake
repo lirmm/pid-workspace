@@ -571,7 +571,6 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 		if(FILE_NAME)
 			set(ONLINE_DOCUMENTATION_IN_README "${ONLINE_DOCUMENTATION_IN_README} * [Advanced topics](${ADDRESS}/pages/${FILE_NAME})\n")
 		endif()
-		#TODO chec dev info
 		if(${PROJECT_NAME}_DEV_INFO_AUTOMATIC_PUBLISHING)
 			set(ONLINE_DOCUMENTATION_IN_README "${ONLINE_DOCUMENTATION_IN_README} * [API Documentation](${ADDRESS}/api_doc)\n")
 			set(ONLINE_DOCUMENTATION_IN_README "${ONLINE_DOCUMENTATION_IN_README} * [Static checks report (cppcheck)](${ADDRESS}/static_checks)\n")
@@ -2017,30 +2016,28 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
     endif()
   endif()
 
-  ######### copy the new binaries ##############
-  if(	include_installer
-  	AND EXISTS ${PATH_TO_PACKAGE_BUILD}/release/${package}-${version}-${current_platform_name}.tar.gz)#at least a release version has been generated previously
+  ######### update web site info about the new binaries published ##############
+  set(release_manifest ${PATH_TO_PACKAGE_BUILD}/release/share/Use${package}-${version}.cmake)
+  if(include_installer AND EXISTS ${release_manifest})#at least a release version has been generated previously
 
   	# update the site content only if necessary
     if(NOT EXISTS ${TARGET_BINARIES_PATH})
       file(MAKE_DIRECTORY ${TARGET_BINARIES_PATH})#create the target folder if it does not exist
     endif()
-	#copy the release binary package archive
-  	file(COPY ${PATH_TO_PACKAGE_BUILD}/release/${package}-${version}-${current_platform_name}.tar.gz #copying archive
-              ${PATH_TO_PACKAGE_BUILD}/release/share/Use${package}-${version}.cmake             #copying install manifest
-  	     DESTINATION  ${TARGET_BINARIES_PATH})
-	#copy the debug binary package archive if available
-  	if(EXISTS ${PATH_TO_PACKAGE_BUILD}/debug/${package}-${version}-dbg-${current_platform_name}.tar.gz)#copy debug archive if it exists
-  			file(COPY ${PATH_TO_PACKAGE_BUILD}/debug/${package}-${version}-dbg-${current_platform_name}.tar.gz
-  			     DESTINATION  ${TARGET_BINARIES_PATH})#copy the binaries
-  	endif()
-  	# configure the file used to reference the binary in jekyll
+
+	# copying install manifest
+	file(COPY ${release_manifest} DESTINATION ${TARGET_BINARIES_PATH})
+	# configure the file used to reference the binary in jekyll
     set(BINARY_VERSION ${version})
     set(BINARY_PACKAGE ${package})
     set(BINARY_PLATFORM ${CURRENT_PLATFORM})
-    #adding to the static site project the markdown file describing the binary package (to be used by jekyll)
+	#NOTE: enforve the modification based on generation date to be sure that next commit to static site will confain a modified information
+	#this way we ensire the triggerring of the framework CI
+	string(TIMESTAMP BINARY_DATE "%Y-%m-%d-%H" UTC)
+	
+    # adding to the static site project the markdown file describing the binary package (to be used by jekyll)
+	# a binary for same version and platform will be overrriden 
   	configure_file(${WORKSPACE_DIR}/cmake/patterns/static_sites/binary.md.in ${TARGET_BINARIES_PATH}/binary.md @ONLY)
-
   	set(NEW_POST_CONTENT_BINARY TRUE)
   endif()
 
@@ -2422,24 +2419,22 @@ function(produce_Wrapper_Static_Site_Content package only_bin framework versions
   set(NEW_POST_CONTENT_BINARY_VERSIONS)
   if(include_installer) #reinstall all the binary archives that lie in the wrapper build folder
     foreach(version IN LISTS versions)
-      set(target_archive_path ${PATH_TO_WRAPPER_BUILD}/${version}/installer/${package}-${version}-${current_platform_name}.tar.gz)
-      set(target_install_manifest ${PATH_TO_WRAPPER_BUILD}/Use${package}-${version}.cmake)
-      set(target_dbg_archive_path ${PATH_TO_WRAPPER_BUILD}/${version}/installer/${package}-${version}-dbg-${current_platform_name}.tar.gz)
-      if(EXISTS ${target_archive_path})#an archive has been generated for this package version by the wrapper
+	  set(target_install_manifest ${PATH_TO_WRAPPER_BUILD}/Use${package}-${version}.cmake)
+      if(EXISTS ${target_install_manifest})
         set(target_bin_path ${TARGET_BINARIES_PATH}/${version}/${CURRENT_PLATFORM})
         if(NOT EXISTS ${target_bin_path})
           file(MAKE_DIRECTORY ${target_bin_path})#create the target folder
         endif()
-        file(COPY ${target_archive_path} ${target_install_manifest}
-            DESTINATION ${target_bin_path})#copy the release archive and install manifest
-        if(EXISTS ${target_dbg_archive_path})#copy debug archive if it exist
-    			file(COPY ${target_dbg_archive_path} DESTINATION ${target_bin_path})#copy the debug archive
-      	endif()
+		#NOTE only copy the install manifest into the framework
+        file(COPY ${target_install_manifest} DESTINATION ${target_bin_path})
       	set(BINARY_VERSION ${version})
         set(BINARY_PACKAGE ${package})
         set(BINARY_PLATFORM ${CURRENT_PLATFORM})
+		#NOTE: enforve the modification based on generation date to be sure that next commit to static site will confain a modified information
+		#this way we ensure the triggerring of the framework/static site CI
+		string(TIMESTAMP BINARY_DATE "%Y-%m-%d-%H" UTC)
         # configure the file used to reference the binary in jekyll
-        #adding to the static site project the markdown file describing the binary package (to be used by jekyll)
+        # adding to the static site project the markdown file describing the binary package (to be used by jekyll)
         configure_file(${WORKSPACE_DIR}/cmake/patterns/static_sites/binary.md.in ${target_bin_path}/binary.md @ONLY)
         list(APPEND NEW_POST_CONTENT_BINARY_VERSIONS ${version})
       endif()

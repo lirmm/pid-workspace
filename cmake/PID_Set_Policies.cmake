@@ -41,7 +41,7 @@ set(PID_SET_POLICIES_INCLUDED TRUE)
 ########################################################################
 ##################### definition of CMake policies #####################
 ########################################################################
-cmake_policy(VERSION 3.15.7)
+cmake_policy(VERSION 3.19.8)
 #not guarded policies (they exist since versions < 3.8 which is the minimum for PID)
 set(CMAKE_WARN_DEPRECATED FALSE CACHE INTERNAL "" FORCE)
 cmake_policy(SET CMP0002 NEW) #allow multiple targets with same name

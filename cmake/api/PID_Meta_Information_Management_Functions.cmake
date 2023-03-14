@@ -83,66 +83,6 @@ endfunction(add_Category)
 #
 # .. ifmode:: internal
 #
-#  .. |add_Reference| replace:: ``add_Reference``
-#  .. _add_Reference:
-#
-#  add_Reference
-#  -------------
-#
-#   .. command:: add_Reference(version platform url url-dbg)
-#
-#     Add a direct reference to a binary archive for a given version of the current project.
-#
-#      :version: version of the binary archive content.
-#      :platform: target platform for binary archive content.
-#      :url: url where to find the binary archive for release mode content.
-#      :url-dbg: url where to find the binary archive for debug mode content.
-#
-function(add_Reference version platform url url-dbg)
-set(LIST_OF_VERSIONS ${${PROJECT_NAME}_REFERENCES} ${version})
-list(REMOVE_DUPLICATES LIST_OF_VERSIONS)
-set(${PROJECT_NAME}_REFERENCES  ${LIST_OF_VERSIONS} CACHE INTERNAL "")#to put the modification in cache
-list(FIND ${PROJECT_NAME}_REFERENCE_${version} ${platform} INDEX)
-if(INDEX EQUAL -1)#this version for tha target platform is not already registered
-	set(${PROJECT_NAME}_REFERENCE_${version} ${${PROJECT_NAME}_REFERENCE_${version}} ${platform} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_REFERENCE_${version}_${platform}_URL ${url} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_REFERENCE_${version}_${platform}_URL_DEBUG ${url-dbg} CACHE INTERNAL "")
-endif()
-endfunction(add_Reference)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |reset_References_Info| replace:: ``reset_References_Info``
-#  .. _reset_References_Info:
-#
-#  reset_References_Info
-#  ---------------------
-#
-#   .. command:: reset_References_Info()
-#
-#     Reset all direct references to binary archives in current project.
-#
-function(reset_References_Info)
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")
-	# references to package binaries version available must be reset
-	foreach(ref_version IN LISTS ${PROJECT_NAME}_REFERENCES)
-		foreach(ref_platform IN LISTS ${PROJECT_NAME}_REFERENCE_${ref_version})
-			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL CACHE INTERNAL "")
-			set(${PROJECT_NAME}_REFERENCE_${ref_version}_${ref_platform}_URL_DEBUG CACHE INTERNAL "")
-		endforeach()
-		set(${PROJECT_NAME}_REFERENCE_${ref_version} CACHE INTERNAL "")
-	endforeach()
-	set(${PROJECT_NAME}_REFERENCES CACHE INTERNAL "")
-endif()
-endfunction(reset_References_Info)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
 #  .. |init_Meta_Info_Cache_Variables| replace:: ``init_Meta_Info_Cache_Variables``
 #  .. _init_Meta_Info_Cache_Variables:
 #
@@ -162,8 +102,9 @@ endfunction(reset_References_Info)
 #      :address: private git address (used by project developpers and registered members)
 #      :public_address: public https git address (use to clone project without restriction)
 #      :readme_file: the user defined readme file for the current project.
+#      :registry: path to the registry containing binaries
 #
-function(init_Meta_Info_Cache_Variables author institution mail description year license address public_address readme_file framework_site framework_repo_site framework_welcome_page framework_api_doc_page)
+function(init_Meta_Info_Cache_Variables author institution mail description year license address public_address readme_file framework_site framework_repo_site framework_welcome_page framework_api_doc_page registry)
 set(res_string_auth "")
 foreach(string_el IN LISTS author)
 	set(res_string_auth "${res_string_auth}_${string_el}")
@@ -207,6 +148,7 @@ set(${PROJECT_NAME}_LICENSE ${license} CACHE INTERNAL "")
 set(${PROJECT_NAME}_ADDRESS ${address} CACHE INTERNAL "")
 set(${PROJECT_NAME}_PUBLIC_ADDRESS ${public_address} CACHE INTERNAL "")
 set(${PROJECT_NAME}_CATEGORIES CACHE INTERNAL "")#categories are reset
+set(${PROJECT_NAME}_REGISTRY ${registry} CACHE INTERNAL "")#categories are reset
 
 if(framework_site OR framework_repo_site OR framework_welcome_page OR framework_api_doc_page)
 	set(${PROJECT_NAME}_SITE ${framework_site} CACHE INTERNAL "")
@@ -216,7 +158,6 @@ if(framework_site OR framework_repo_site OR framework_welcome_page OR framework_
 else()#native packages and external packages wrappers
   set(${PROJECT_NAME}_USER_README_FILE ${readme_file} CACHE INTERNAL "")
 endif()
-reset_References_Info()
 endfunction(init_Meta_Info_Cache_Variables)
 
 #.rst:
@@ -320,9 +261,11 @@ endfunction(reset_Documentation_Info)
 #     Set the publication policy for current project binaries.
 #
 #      :true_or_false: if TRUE current project CI automatically publish binary archives of current project.
+#      :registry: URL of the current project registry, if any
 #
-function(publish_Binaries true_or_false)
+function(publish_Binaries true_or_false registry)
 set(${PROJECT_NAME}_BINARIES_AUTOMATIC_PUBLISHING ${true_or_false}  CACHE INTERNAL "")
+set(${PROJECT_NAME}_REGISTRY ${registry}  CACHE INTERNAL "")
 endfunction(publish_Binaries)
 
 #.rst:

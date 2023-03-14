@@ -605,7 +605,7 @@ reset_CI_Variables()
 reset_Package_Platforms_Variables()
 reset_Packages_Finding_Variables()
 init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
-init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "" "")
+init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "" "" "")
 reset_Version_Cache_Variables()
 reset_Temporary_Optimization_Variables(${CMAKE_BUILD_TYPE}) #resetting temporary variables used in optimization of configruation process
 is_First_Package_Configuration(FIRST_CONFIG)
@@ -677,6 +677,7 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done
 						-DSITE_GIT="${${PROJECT_NAME}_SITE_GIT_ADDRESS}"
 						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
 						-DPACKAGE_SITE_URL="${${PROJECT_NAME}_SITE_ROOT_PAGE}"
+						-DPACKAGE_REGISTRY="${${PROJECT_NAME}_REGISTY}"
 			 -P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Site.cmake)
 
 			 add_custom_target(serve
@@ -845,8 +846,6 @@ endfunction(configure_With_Project_Specific_Toolchain)
 #     :ERROR: the output variable that is empty if constraints are satisfied, contains the error message if any constraint cannot be satisfied.
 #
 function(check_Environment_Language_Constraints ERROR language_constraint lang_toolset bound_langs)
-	#TODO simplify to only allow ONE language
-	#TODO move the management of external tools into another function
 	set(${ERROR} PARENT_SCOPE)
 	set(automatic FALSE)
 	set(error_messages)

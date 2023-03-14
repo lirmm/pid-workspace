@@ -107,7 +107,7 @@ macro(import_PID_Workspace)
 
 	set(CMAKE_BUILD_TYPE ${mode} CACHE STRING "build mode (Release or Debug)" FORCE)
 
-	cmake_minimum_required(VERSION 3.15.7)#just to ensure that version of CMake tool used in external projects if high enough (supports language standards)
+	cmake_minimum_required(VERSION 3.19.8)#just to ensure that version of CMake tool used in external projects if high enough (supports language standards)
 
 	########################################################################
 	############ all PID system path are put into the cmake path ###########

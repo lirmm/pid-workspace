@@ -264,7 +264,7 @@ reset_CI_Variables()
 reset_Packages_Finding_Variables()
 reset_Temporary_Optimization_Variables(${CMAKE_BUILD_TYPE})
 init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
-init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "" "")
+init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "" "" "")
 check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")#configuring git remotes
 
 #############################################################
@@ -779,6 +779,7 @@ if(${PROJECT_NAME}_SITE_GIT_ADDRESS) #the publication of the static site is done
 						-DSITE_GIT="${${PROJECT_NAME}_SITE_GIT_ADDRESS}"
 						-DPACKAGE_PROJECT_URL="${${PROJECT_NAME}_PROJECT_PAGE}"
 						-DPACKAGE_SITE_URL="${${PROJECT_NAME}_SITE_ROOT_PAGE}"
+						-DPACKAGE_REGISTRY="${${PROJECT_NAME}_REGISTY}"
 			 -P ${WORKSPACE_DIR}/cmake/commands/Build_PID_Site.cmake
 		   VERBATIM
 		 )

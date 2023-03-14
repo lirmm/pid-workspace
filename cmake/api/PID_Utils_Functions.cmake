@@ -1827,7 +1827,7 @@ function(list_Platform_Subdirectories RESULT curdir)
   	foreach(child ${children})
   		if(IS_DIRECTORY ${curdir}/${child}
   			AND NOT IS_SYMLINK ${curdir}/${child}
-  			AND "${child}" MATCHES "^[^_]+_[^_]+_[^_]+_[^_]+(__.+__)?$")#platform name pattern takes into account pontential environment instance
+  			AND "${child}" MATCHES "^[^_]+_[^_]+_[^_]+_[^_]+(__.+__)?$")#platform name pattern takes into account potential environment instance
   			list(APPEND dirlist ${child})
   		endif()
   	endforeach()
@@ -3846,7 +3846,6 @@ function(get_Deployment_Unit_Reference_Info path_to_repo REF_EXISTS RES_URL RES_
       return()
     endif()
   endif()
-
   if(DU_TYPE STREQUAL "package")
     get_Path_To_Package_Reference_File(PATH_TO_FILE PATH_TO_CS ${DU_NAME})
   elseif(DU_TYPE STREQUAL "wrapper")
@@ -3904,7 +3903,8 @@ function(get_Deployment_Unit_Reference_Info path_to_repo REF_EXISTS RES_URL RES_
   set(TEMP_${DU_NAME}_ADDRESS ${${DU_NAME}_ADDRESS})
   set(TEMP_${DU_NAME}_PUBLIC_ADDRESS ${${DU_NAME}_PUBLIC_ADDRESS})
   set(TEMP_${DU_NAME}_PROJECT_PAGE ${${DU_NAME}_PROJECT_PAGE})
-  if(NOT DU_TYPE STREQUAL "environment")#common to all except environments
+  if(NOT DU_TYPE STREQUAL "environment")#common to all except environment
+    set(TEMP_${DU_NAME}_REGISTRY ${${DU_NAME}_REGISTRY})
     set(TEMP_${DU_NAME}_CATEGORIES ${${DU_NAME}_CATEGORIES})
     if(DU_TYPE STREQUAL "framework")#specific to frameworks: generated site
       set(TEMP_${DU_NAME}_SITE ${${DU_NAME}_SITE})
@@ -3913,7 +3913,6 @@ function(get_Deployment_Unit_Reference_Info path_to_repo REF_EXISTS RES_URL RES_
       set(TEMP_${DU_NAME}_SITE_ROOT_PAGE ${${DU_NAME}_SITE_ROOT_PAGE})
       set(TEMP_${DU_NAME}_SITE_GIT_ADDRESS ${${DU_NAME}_SITE_GIT_ADDRESS})
       set(TEMP_${DU_NAME}_SITE_INTRODUCTION ${${DU_NAME}_SITE_INTRODUCTION})
-      set(TEMP_${DU_NAME}_REFERENCES ${${DU_NAME}_REFERENCES})
       if(DU_TYPE STREQUAL "wrapper")#specific to wrappers: description of original project
         set(TEMP_${DU_NAME}_ORIGINAL_PROJECT_AUTHORS ${${DU_NAME}_ORIGINAL_PROJECT_AUTHORS})
         set(TEMP_${DU_NAME}_ORIGINAL_PROJECT_SITE ${${DU_NAME}_ORIGINAL_PROJECT_SITE})
@@ -3941,6 +3940,7 @@ function(get_Deployment_Unit_Reference_Info path_to_repo REF_EXISTS RES_URL RES_
   set(${DU_NAME}_PUBLIC_ADDRESS ${TEMP_${DU_NAME}_PUBLIC_ADDRESS} CACHE INTERNAL "")
   set(${DU_NAME}_PROJECT_PAGE ${TEMP_${DU_NAME}_PROJECT_PAGE} CACHE INTERNAL "")
   if(NOT DU_TYPE STREQUAL "environment")#common to all except environments
+    set(${DU_NAME}_REGISTRY ${TEMP_${DU_NAME}_REGISTRY} CACHE INTERNAL "")
     set(${DU_NAME}_CATEGORIES ${TEMP_${DU_NAME}_CATEGORIES} CACHE INTERNAL "")
     if(DU_TYPE STREQUAL "framework")#specific to frameworks: generated site
       set(${DU_NAME}_SITE ${TEMP_${DU_NAME}_SITE} CACHE INTERNAL "")
@@ -3949,7 +3949,6 @@ function(get_Deployment_Unit_Reference_Info path_to_repo REF_EXISTS RES_URL RES_
       set(${DU_NAME}_SITE_ROOT_PAGE ${TEMP_${DU_NAME}_SITE_ROOT_PAGE} CACHE INTERNAL "")
       set(${DU_NAME}_SITE_GIT_ADDRESS ${TEMP_${DU_NAME}_SITE_GIT_ADDRESS} CACHE INTERNAL "")
       set(${DU_NAME}_SITE_INTRODUCTION ${TEMP_${DU_NAME}_SITE_INTRODUCTION} CACHE INTERNAL "")
-      set(${DU_NAME}_REFERENCES ${TEMP_${DU_NAME}_REFERENCES} CACHE INTERNAL "")
       if(DU_TYPE STREQUAL "wrapper")#specific to wrappers: description of original project
         set(${DU_NAME}_ORIGINAL_PROJECT_AUTHORS ${TEMP_${DU_NAME}_ORIGINAL_PROJECT_AUTHORS} CACHE INTERNAL "")
         set(${DU_NAME}_ORIGINAL_PROJECT_SITE ${TEMP_${DU_NAME}_ORIGINAL_PROJECT_SITE} CACHE INTERNAL "")
