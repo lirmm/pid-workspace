@@ -854,9 +854,17 @@ endfunction(generate_Framework_Reference_File)
 function(update_Framework_CI_Config_File)
 	verify_Framework_CI_Content()
 	#configuring pattern file
-	set(FRAMEWORK_CI_CONTRIBUTION_SPACES ${TARGET_CONTRIBUTION_SPACE})
-	if(FRAMEWORK_CI_CONTRIBUTION_SPACES)
-		list(REMOVE_ITEM FRAMEWORK_CI_CONTRIBUTION_SPACES pid)#remove official contribution space as it is used by default
+	set(FRAMEWORK_CI_CONTRIBUTION_SPACES)
+	set(LIST_OF_CS ${TARGET_CONTRIBUTION_SPACE})
+	if(LIST_OF_CS)
+		list(REMOVE_ITEM LIST_OF_CS pid)#remove official contribution space as it is used by default
+	endif()
+	if(LIST_OF_CS)
+		foreach(cs IN LISTS LIST_OF_CS)
+			get_Update_Remote_Of_Contribution_Space(UPDATE_REMOTE ${cs})
+			list(APPEND FRAMEWORK_CI_CONTRIBUTION_SPACES ${cs} ${UPDATE_REMOTE})
+		endforeach()
+		list(REMOVE_DUPLICATES FRAMEWORK_CI_CONTRIBUTION_SPACES)
 	endif()
 	configure_file(${WORKSPACE_DIR}/cmake/patterns/frameworks/.gitlab-ci.yml.in
 		             ${CMAKE_SOURCE_DIR}/.gitlab-ci.yml @ONLY)#adding the gitlab-ci configuration file to the repository
