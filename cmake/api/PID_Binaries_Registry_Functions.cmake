@@ -701,17 +701,21 @@ endfunction(check_Remote_File)
 #  extract_Package_ID_Version_From_JSON
 #  -------------------------------------
 #
-#   .. command:: extract_Package_ID_Version_From_JSON(ERROR input index)
+#   .. command:: extract_Package_ID_Version_From_JSON(ERROR FOUND registry package input index)
 #
 #    From an array of package versions extract the version info at given index 
 #
+#      :registry: URL of th registry
+#      :package: The name of the package.
 #      :input: variable containing the string
 #      :index: Index of the package in the array
 #
 #      :ERROR: output variable that is TRUE if an error occurred
+#      :FOUND: output variable that contains the id found for a package in registry of empty if nothing found
 #
-function(extract_Package_ID_Version_From_JSON ERROR input index)
+function(extract_Package_ID_Version_From_JSON ERROR FOUND registry package input index)
   set(${ERROR} PARENT_SCOPE)
+  set(${FOUND} PARENT_SCOPE)
   string(JSON pack_info ERROR_VARIABLE err_info
        GET "${${input}}" "${index}")
   if(NOT err_info STREQUAL NOTFOUND
@@ -739,11 +743,15 @@ function(extract_Package_ID_Version_From_JSON ERROR input index)
        GET "${pack_info}" "id")
   if(NOT err_info STREQUAL NOTFOUND
     OR id_info STREQUAL NOTFOUND)
-    # problem retrieving the ID -> invalid
+    # problem retrieving the ID -> invalid json string !!!
+    message("[PID] ERROR: package ${package} in registry ${registry} has no id !")
     set(${ERROR} TRUE PARENT_SCOPE)
     return()
   endif()
 
+  # memorized ID (but it can be a invalid package in itself), we keep it in memory to be able to queries all its versions
+  set(${FOUND} ${id_info} PARENT_SCOPE)
+  
   list(FIND ALL_IDS_FOUND ${id_info} INDEX)
   if(NOT INDEX EQUAL -1)#already registered
     return()#OK redundant information
@@ -751,9 +759,11 @@ function(extract_Package_ID_Version_From_JSON ERROR input index)
 
   string(JSON version_info ERROR_VARIABLE err_info
        GET "${pack_info}" "version")
+
   if(NOT err_info STREQUAL NOTFOUND
     OR version_info STREQUAL NOTFOUND)
-    # problem retrieving the ID -> invalid
+    # problem retrieving the ID -> invalid json string !!!
+    message("[PID] ERROR: package ${package} in registry ${registry} has no version !")
     set(${ERROR} TRUE PARENT_SCOPE)
     return()
   endif()
@@ -763,14 +773,15 @@ function(extract_Package_ID_Version_From_JSON ERROR input index)
     set(tmp_plat ${CMAKE_MATCH_2})
     if(tmp_plat MATCHES "^[^_]+_[^_]+_[^_]+(_[^_]+)?(__.+__)?$")
       #second is a platform string
-      set(ALL_IDS_FOUND ${ALL_IDS_FOUND} ${id_info} CACHE INTERNAL "")
+      append_Unique_In_Cache(ALL_IDS_FOUND ${id_info})
       set(${id_info}_VERSION ${tmp_vers} CACHE INTERNAL "")
       set(${id_info}_PLATFORM ${tmp_plat} CACHE INTERNAL "")
+      return()
     endif()
-  else() #error : bad package description
-    set(${ERROR} TRUE PARENT_SCOPE)
-    return()
   endif()
+  message("[PID] ERROR: package ${package} with id ${id_info} in registry ${registry} does not have a good version and platform description: ${version_info}")
+  set(${ERROR} TRUE PARENT_SCOPE)
+  return()
 endfunction(extract_Package_ID_Version_From_JSON)
 
 
@@ -784,15 +795,17 @@ endfunction(extract_Package_ID_Version_From_JSON)
 #  extract_Package_All_Versions_From_JSON
 #  ---------------------------------------
 #
-#   .. command:: extract_Package_All_Versions_From_JSON(ERROR input)
+#   .. command:: extract_Package_All_Versions_From_JSON(ERROR registry package input)
 #
 #    From an array of package versions extract the version info of each version and store them in cache 
 #
+#      :registry: URL of th registry
+#      :package: The name of the package.
 #      :input: variable containing the string
 #
 #      :ERROR: output variable that is TRUE if an error occurred
 #
-function(extract_Package_All_Versions_From_JSON ERROR input)
+function(extract_Package_All_Versions_From_JSON ERROR registry package input)
   set(${ERROR} PARENT_SCOPE)
   string(JSON all_pack_versions ERROR_VARIABLE err_info
         GET "${${input}}" "versions")
@@ -800,6 +813,7 @@ function(extract_Package_All_Versions_From_JSON ERROR input)
   if(NOT err_info STREQUAL NOTFOUND
     OR all_pack_versions STREQUAL NOTFOUND)
     # problem retrieving the ID -> invalid
+    message("[PID] ERROR: cannot get versions for package $[package} in registry ${registry}")
     set(${ERROR} TRUE PARENT_SCOPE)
     return()
   endif()
@@ -816,9 +830,11 @@ function(extract_Package_All_Versions_From_JSON ERROR input)
   set(index 0)
   set(more_to_extract TRUE)
   while(more_to_extract)
-    extract_Package_ID_Version_From_JSON (NEXT_ERROR all_pack_versions "${index}")
+    extract_Package_ID_Version_From_JSON (NEXT_ERROR ID_FOUND ${registry} ${package} all_pack_versions "${index}")
     if(NEXT_ERROR)
-      set(more_to_extract FALSE)
+      if(NOT ID_FOUND)#means there is no more IDS to inspect in the JSON str
+        set(more_to_extract FALSE)
+      endif()
     endif()
     math(EXPR index "${index}+1")
   endwhile()
@@ -981,19 +997,22 @@ function(update_Registry_Info registry package)
     ERROR_VARIABLE json_err
   )
   #get the first element of the array -> only element
-  extract_Package_ID_Version_From_JSON(ERROR json_list "0")
+  extract_Package_ID_Version_From_JSON(ERROR ID_FOUND ${registry} ${package} json_list "0")
   if(ERROR)# No such package found
-    return()
+    if(NOT ID_FOUND)
+      message("[PID] ERROR: registry update process aborted because no ID for package ${package} has been found in registry ${registry} !")
+      return()
+    endif()
   endif()
-  
-  set(reference_id ${ALL_IDS_FOUND})#only one package ID by construction
+  #even if an error occurred but we have an ID we can continue
+  set(reference_id ${ID_FOUND})#only one package ID by construction
   # we want to get all versions of this package
   execute_process(COMMAND curl
     --request GET "${registry}/packages/${reference_id}"
     OUTPUT_VARIABLE json_list
     ERROR_VARIABLE json_err
   )
-  extract_Package_All_Versions_From_JSON(ERROR json_list)
+  extract_Package_All_Versions_From_JSON(ERROR ${registry} ${package} json_list)
   if(ERROR)
     reset_Found_Package_IDs()
   endif()
