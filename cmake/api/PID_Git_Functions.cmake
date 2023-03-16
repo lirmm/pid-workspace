@@ -3154,7 +3154,7 @@ function(publish_Framework_Repository PUBLISHED framework package)
 	execute_process(COMMAND git pull --no-rebase --no-edit -ff -s recursive -X theirs -X no-renames origin master
                   WORKING_DIRECTORY ${framework_path}
                   ERROR_VARIABLE out_pull OUTPUT_VARIABLE out_pull
-                  RESULT_VARIABLE PULL_RESULT)#pulling master branch from official to get modifications (new binaries) that would have been published at the same time (most of time a different binary for another plateform of the package)
+                  RESULT_VARIABLE PULL_RESULT)#pulling master branch from official to get modifications that would have been published at the same time (most of time a different reference for a binary for another plateform of the package)
   if(PULL_RESULT EQUAL 0)#no conflict to manage
   	#build static site -> may remove some elements (previous patch versions)
     commit_New_Static_Site_Content(COMMITED ${package} ${framework})

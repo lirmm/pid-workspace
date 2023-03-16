@@ -994,7 +994,9 @@ function(update_Registry_Info registry package)
     ERROR_VARIABLE json_err
   )
   extract_Package_All_Versions_From_JSON(ERROR json_list)
-  
+  if(ERROR)
+    reset_Found_Package_IDs()
+  endif()
 endfunction(update_Registry_Info)
 
 #.rst:
@@ -1203,7 +1205,7 @@ function(upload_Binary_Version UPLOADED package version native registry)
       endif()
     endforeach()
     if(NOT package_id)
-      message("[PID] ERROR: cannot upload package ${package} version ${version} for platform ${CURRENT_PLATFORM}. There is a problem getting information from the package registry ${registry}. This may be due t a connection problem or to an internal BUG. Please contact PID developers.")
+      message("[PID] ERROR: cannot upload package ${package} version ${version} for platform ${CURRENT_PLATFORM}. There is a problem getting information from the package registry ${registry}. This may be due to a connection problem or to an internal BUG. Please contact PID developers.")
       return()
     endif()
     #update file list for the given package
