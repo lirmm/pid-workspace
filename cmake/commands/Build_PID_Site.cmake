@@ -105,6 +105,7 @@ else()
 	set(include_installer FALSE)
 endif()
 
+extract_All_Words("${KNOWN_VERSIONS}" " " KNOWN_VERSIONS)
 
 #two different behaviors depending on what to do
 if(TARGET_FRAMEWORK) # the package site is put into a more global site that references all packages of the same framework
