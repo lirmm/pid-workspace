@@ -1170,7 +1170,6 @@ function(upload_Binary_Version UPLOADED package version native registry)
     # cannot upload the version because no archive found
     if(NOT EXISTS ${target_archive_release}
         OR NOT EXISTS ${target_manifest})
-        message("[PID] ERROR: cannot upload package ${package} version ${version} for platform ${CURRENT_PLATFORM} because no file found for upload")
         return()
     endif()
     
