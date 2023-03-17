@@ -6173,3 +6173,28 @@ function(get_Job_Count_For package jobs)
     set(${jobs} 1 PARENT_SCOPE)
   endif()
 endfunction(get_Job_Count_For)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_CURL| replace:: ``check_CURL``
+#  .. check_CURL:
+#
+#  check_CURL
+#  ----------------------------------
+#
+#   .. command:: check_CURL(IS_AVAILABLE)
+#
+#     Check if curl tool is available
+#
+#     :IS_AVAILABLE: output variable that is TRUE if the path to curl has been found
+#
+function(check_CURL IS_AVAILABLE)
+  find_program(CURL_PATH NAMES curl)
+  if(NOT CURL_PATH)
+    set(${IS_AVAILABLE} FALSE PARENT_SCOPE)
+  else()
+    set(${IS_AVAILABLE} TRUE PARENT_SCOPE)
+  endif()
+endfunction(check_CURL)
