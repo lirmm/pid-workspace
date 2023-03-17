@@ -315,6 +315,8 @@ function(load_Package_Binary_References REFERENCES_FOUND package)
 set(${REFERENCES_FOUND} FALSE PARENT_SCOPE)
 set(to_include)
 set(workspace_download_folder ${WORKSPACE_DIR}/build/downloaded)
+set(downloaded_file ${workspace_download_folder}/${package}_binary_references.cmake)
+
 if(${package}_FRAMEWORK) #references are deployed in a framework
   include_Framework_Reference_File(PATH_TO_REF ${${package}_FRAMEWORK})
 	if(PATH_TO_REF)
@@ -327,15 +329,18 @@ if(${package}_FRAMEWORK) #references are deployed in a framework
         elseif(PACK_TYPE STREQUAL "EXTERNAL")
             set(binaries_address ${FRAMEWORK_ADDRESS}/external/${package}/binaries/binary_references.cmake)
         endif()
+
         if(binaries_address)
             if(NOT EXISTS ${workspace_download_folder})
                 file(MAKE_DIRECTORY ${workspace_download_folder})
+            elseif(EXISTS ${downloaded_file})
+                file(REMOVE ${downloaded_file})
             endif()
-            file(DOWNLOAD ${binaries_address} ${workspace_download_folder}/${package}_binary_references.cmake STATUS res TLS_VERIFY OFF)
+            file(DOWNLOAD ${binaries_address} ${downloaded_file} STATUS res TLS_VERIFY OFF)
             list(GET res 0 numeric_error)
             if(numeric_error EQUAL 0 #framework site is online & reference available.
-                AND EXISTS ${WORKSPACE_DIR}/build/${package}_binary_references.cmake)
-                set(to_include ${WORKSPACE_DIR}/build/${package}_binary_references.cmake)
+                AND EXISTS ${downloaded_file})
+                set(to_include ${downloaded_file})
             else() #it may be an external package, try this
                 if(ADDITIONAL_DEBUG_INFO)
                     message("[PID] INFO: no binary reference found for ${package}")
@@ -353,11 +358,11 @@ if(${package}_FRAMEWORK) #references are deployed in a framework
     endif()
 elseif(${package}_SITE_GIT_ADDRESS)  #references are deployed in a lone static site
 	#when package has a lone static site, the reference file can be directly downloaded
-	file(DOWNLOAD ${${package}_SITE_ROOT_PAGE}/binaries/binary_references.cmake ${workspace_download_folder}/${package}_binary_references.cmake STATUS res TLS_VERIFY OFF)
+	file(DOWNLOAD ${${package}_SITE_ROOT_PAGE}/binaries/binary_references.cmake ${downloaded_file} STATUS res TLS_VERIFY OFF)
 	list(GET res 0 numeric_error)
 	if(numeric_error EQUAL 0 #static site online & reference available.
-        AND EXISTS $${workspace_download_folder}/${package}_binary_references.cmake)
-            set(to_include ${workspace_download_folder}/${package}_binary_references.cmake)
+        AND EXISTS ${downloaded_file})
+            set(to_include ${downloaded_file})
     else() #it may be an external package, try this
         if(ADDITIONAL_DEBUG_INFO)
             message("[PID] INFO: no binary reference found for ${package}")
@@ -377,6 +382,8 @@ if(to_include)#there is a file to include but if static site is private it may h
   if(NOT erroneous_file)
     include(${to_include})
   endif()
+else()
+  return()
 endif()
 if(${package}_REFERENCES) #if there are direct reference (simpler case), no need to do more becase binary references are already included
 	set(${REFERENCES_FOUND} TRUE PARENT_SCOPE)
@@ -961,11 +968,11 @@ function(update_Found_References_And_Registry package registry)
     append_Unique_In_Cache(${package}_FOUND_REFERENCES ${id_version})
     append_Unique_In_Cache(${package}_FOUND_REFERENCES_${id_version} ${id_platform})
     set(prefix ${package}_FOUND_REFERENCES_${id_version}_${id_platform})
-    append_Unique_In_Cache(${prefix}_REGISTRY_ID ${id})
-    append_Unique_In_Cache(${prefix}_URL_MANIFEST ${manifest_url})
-    append_Unique_In_Cache(${prefix}_URL_RELEASE ${release_archive_url})
+    set(${prefix}_REGISTRY_ID ${id} CACHE INTERNAL "")
+    set(${prefix}_URL_MANIFEST ${manifest_url} CACHE INTERNAL "")
+    set(${prefix}_URL_RELEASE ${release_archive_url} CACHE INTERNAL "")
     if(DEBUG_EXISTS)
-      append_Unique_In_Cache(${prefix}_URL_DEBUG ${debug_archive_url})
+      set(${prefix}_URL_DEBUG ${debug_archive_url} CACHE INTERNAL "")
     endif()
   endforeach()
 endfunction(update_Found_References_And_Registry)
@@ -1107,19 +1114,17 @@ verify_Site_Structure_For_Binaries_Referencing(${package} ${TARGET_BINARIES_PATH
 
 endfunction(update_Binary_References)
 
-
-
-
 #.rst:
 #
 # .. ifmode:: internal
 #
 #  .. |verify_Site_Structure_For_Binaries_Referencing| replace:: ``verify_Site_Structure_For_Binaries_Referencing``
-#  .. verify_Site_Structure_For_Binaries_Referencing:
-#  _verify_Site_Structure_For_Binaries_Referencing
+#  .. _verify_Site_Structure_For_Binaries_Referencing:
+#
+#  verify_Site_Structure_For_Binaries_Referencing
 #  -----------------------------------------------
 #
-#   .. command:: verify_Site_Structure_For_Binaries_Referencing( folder)
+#   .. command:: verify_Site_Structure_For_Binaries_Referencing(package folder)
 #
 #    Verify that the target binaries folder of the web site project (framework or lone static site) is correct according to existing binary references 
 #
@@ -1140,11 +1145,13 @@ foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os f
 		# now referencing the binaries
     set(target_binaries_dir ${folder}/${ref_version}/${ref_platform})
     if(NOT ${package}_FOUND_REFERENCES_${ref_version}_${ref_platform}_REGISTRY_ID)
+      message("[PID] WARNING: binary package ${package} version ${ref_version} for platform ${ref_platform} is documented BUT has not been found in registry. Supressing documentation folder...")
       file(REMOVE_RECURSE ${target_binaries_dir})
       continue()
     endif()
 		set(target_manifest_file ${target_binaries_dir}/Use${package}-${ref_version}.cmake)
     if(NOT EXISTS ${target_manifest_file}) # check to avoid problem is the binaries have been badly released
+      message("[PID] WARNING: binary package ${package} version ${ref_version} for platform ${ref_platform} is documented BUT has not been found in registry. Supressing documentation folder...")
       file(REMOVE_RECURSE ${folder}/${ref_version}/${ref_platform})
       continue()
     endif()
@@ -1152,7 +1159,7 @@ foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os f
 endforeach()
 endfunction(verify_Site_Structure_For_Binaries_Referencing)
 
-
+#.rst:
 #
 # .. ifmode:: internal
 #
