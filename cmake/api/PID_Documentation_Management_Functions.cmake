@@ -2025,8 +2025,6 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
       file(MAKE_DIRECTORY ${TARGET_BINARIES_PATH})#create the target folder if it does not exist
     endif()
 
-	# copying install manifest
-	file(COPY ${release_manifest} DESTINATION ${TARGET_BINARIES_PATH})
 	# configure the file used to reference the binary in jekyll
     set(BINARY_VERSION ${version})
     set(BINARY_PACKAGE ${package})
@@ -2426,7 +2424,6 @@ function(produce_Wrapper_Static_Site_Content package only_bin framework versions
           file(MAKE_DIRECTORY ${target_bin_path})#create the target folder
         endif()
 		#NOTE only copy the install manifest into the framework
-        file(COPY ${target_install_manifest} DESTINATION ${target_bin_path})
       	set(BINARY_VERSION ${version})
         set(BINARY_PACKAGE ${package})
         set(BINARY_PLATFORM ${CURRENT_PLATFORM})
