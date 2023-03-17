@@ -53,6 +53,7 @@ include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
 #
 function(get_Available_Binary_Package_Versions package LIST_OF_VERSIONS LIST_OF_VERSION_PLATFORM)
 # listing available binaries of the package and searching if there is any "good version"
+
 set(available_binary_package_version)
 foreach(ref_version IN LISTS ${package}_REFERENCES)
 	foreach(ref_platform IN LISTS ${package}_REFERENCE_${ref_version})
@@ -65,12 +66,12 @@ foreach(ref_version IN LISTS ${package}_REFERENCES)
 	endforeach()
 endforeach()
 if(NOT available_binary_package_version)
-	return()#nothing to do
+  set(${LIST_OF_VERSIONS} PARENT_SCOPE)
+  set(${LIST_OF_VERSION_PLATFORM} PARENT_SCOPE)
+else()
+  set(${LIST_OF_VERSIONS} ${available_binary_package_version} PARENT_SCOPE)
+  set(${LIST_OF_VERSION_PLATFORM} ${available_binary_package_version_with_platform} PARENT_SCOPE)
 endif()
-list(REMOVE_DUPLICATES available_binary_package_version)
-list(REMOVE_DUPLICATES available_binary_package_version_with_platform)
-set(${LIST_OF_VERSIONS} ${available_binary_package_version} PARENT_SCOPE)
-set(${LIST_OF_VERSION_PLATFORM} ${available_binary_package_version_with_platform} PARENT_SCOPE)
 endfunction(get_Available_Binary_Package_Versions)
 
 #.rst:
