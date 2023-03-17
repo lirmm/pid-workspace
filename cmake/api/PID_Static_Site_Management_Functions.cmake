@@ -186,45 +186,6 @@ endif()
 endfunction(gen_Package_Static_Site)
 
 
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |commit_New_Static_Site_Content| replace:: ``commit_New_Static_Site_Content``
-#  .. _commit_New_Static_Site_Content:
-#
-#  commit_New_Static_Site_Content
-#  -------------------------------
-#
-#   .. command:: commit_New_Static_Site_Content(COMMITED package framework)
-#
-#     Update package static site (framework or lone static site).
-#
-#      :package: the name of target package.
-#      :framework: the name of the framework package belongs to, or empty string for a lone static site.
-#      :COMMITED: the output variable that is TRUE if commit created, false otherwise
-#
-function(commit_New_Static_Site_Content COMMITED package framework)
-	if(framework)
-		set(the_path ${WORKSPACE_DIR}/sites/frameworks/${framework})	
-	else()
-		set(the_path ${WORKSPACE_DIR}/sites/packages/${package})
-	endif()
-	gen_Package_Static_Site(${package} "${framework}")
-	check_Something_To_Commit(NEED_PUSH ${the_path})
-	if(NOT NEED_PUSH)
-		set(${COMMITED} FALSE PARENT_SCOPE)
-		return()
-	endif()
-
-	execute_process(COMMAND git add -A
-				WORKING_DIRECTORY ${the_path} OUTPUT_QUIET ERROR_QUIET)
-	execute_process(COMMAND git commit -m "updated binary references from package ${package}"
-				WORKING_DIRECTORY ${the_path} OUTPUT_QUIET ERROR_QUIET)
-
-	set(${COMMITED} TRUE PARENT_SCOPE)
-endfunction(commit_New_Static_Site_Content)
-
 ################################################################################
 #################Management of frameworks life cycle ###########################
 ################################################################################

@@ -3157,7 +3157,6 @@ function(publish_Framework_Repository PUBLISHED framework package)
                   RESULT_VARIABLE PULL_RESULT)#pulling master branch from official to get modifications that would have been published at the same time (most of time a different reference for a binary for another plateform of the package)
   if(PULL_RESULT EQUAL 0)#no conflict to manage
   	#build static site -> may remove some elements (previous patch versions)
-    commit_New_Static_Site_Content(COMMITED ${package} ${framework})
     execute_process(COMMAND git push origin master
                     WORKING_DIRECTORY ${framework_path}
                     RESULT_VARIABLE PUSH_RESULT 
@@ -3166,13 +3165,10 @@ function(publish_Framework_Repository PUBLISHED framework package)
       set(${PUBLISHED} TRUE PARENT_SCOPE)
       return()
     else()#in case push has failed => need to pull before update
-      if(COMMITED)
-        execute_process(COMMAND git reset --hard HEAD~1 WORKING_DIRECTORY ${framework_path})#reset previous commit (will redo another one)
-      endif()
       message("[PID] WARNING: cannot push to ${framework} repository ... Reason: ${out}")
     endif()
   else()
-    message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot pull ${framework} repository because there are conflicts to manage. Reason: ${out_pull} !")
+    message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot pull ${framework} repository. Reason: ${out_pull} !")
   endif()
   set(${PUBLISHED} FALSE PARENT_SCOPE)
 endfunction(publish_Framework_Repository)
@@ -3717,7 +3713,6 @@ function(publish_Static_Site_Repository PUBLISHED package)
   endif()
 
   if(LS_REMOTE_RESULT STREQUAL "" OR PULL_RESULT EQUAL 0)#no conflict to manage or empty repo
-    commit_New_Static_Site_Content(COMMITED ${package} "")
     execute_process(COMMAND git push origin master
                     WORKING_DIRECTORY ${site_path}
                     RESULT_VARIABLE PUSH_RESULT 
@@ -3726,13 +3721,10 @@ function(publish_Static_Site_Repository PUBLISHED package)
       set(${PUBLISHED} TRUE PARENT_SCOPE)
       return()
     else()#in case push has failed => need to pull before update
-      if(COMMITED)
-        execute_process(COMMAND git reset --hard HEAD~1 WORKING_DIRECTORY ${site_path})#reset previous commit (will redo another one)
-      endif()
-      message("[PID] WARNING: cannot push to ${package} static site repository ... Reason: ${out}")
+      message("[PID] WARNING: cannot push to ${package} static site repository. Reason: ${out}")
     endif()
   else()
-    message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot pull ${package} static site repository because there are conflicts to manage. Reason: ${out_pull} !")
+    message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot pull ${package} static site repository. Reason: ${out_pull} !")
   endif()
   set(${PUBLISHED} FALSE PARENT_SCOPE)
 endfunction(publish_Static_Site_Repository)

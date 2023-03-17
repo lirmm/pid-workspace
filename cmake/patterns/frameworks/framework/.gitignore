@@ -7,3 +7,4 @@ CMakeCache.txt
 /pid
 /pid.bat
 !pid/
+binary_references.cmake
