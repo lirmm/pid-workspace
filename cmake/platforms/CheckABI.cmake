@@ -329,7 +329,7 @@ else()
 				set(CXX_STD_LIBRARY_NAME ${RES_NAME} CACHE INTERNAL "")
 				set(CXX_STD_LIBRARY_VERSION ${RES_VERSION} CACHE INTERNAL "")
 				if(RES_FLAGS)
-					set(CMAKE_CXX_FLAGS "${RES_FLAGS}" CACHE STRING "" FORCE)
+					set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${RES_FLAGS}" CACHE STRING "" FORCE)
 				endif()
 			endif()
 		endif()#otherwise simply do nothing and check with another folder
