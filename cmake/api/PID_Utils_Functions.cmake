@@ -88,9 +88,6 @@ endfunction(get_Configuration_Expression_Resulting_Constraints)
 #     :possible_constraints: the parent scope variable containing the list of possible constraints that can be valued by arguments.
 #
 function(prepare_Configuration_Expression_Arguments config arguments possible_constraints)
-  if(NOT arguments OR NOT ${arguments})#testing if the variable containing arguments is not empty
-    return()
-  endif()
   if(NOT ${possible_constraints})#if no possible constraints simply exit
     return()
   endif()
