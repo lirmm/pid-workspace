@@ -16,5 +16,5 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
-set(LANG_CUDA_OPTIONAL_CONSTRAINTS version)
+set(LANG_CUDA_OPTIONAL_CONSTRAINTS version max_version)
 set(LANG_CUDA_IN_BINARY_CONSTRAINTS soname architecture)
