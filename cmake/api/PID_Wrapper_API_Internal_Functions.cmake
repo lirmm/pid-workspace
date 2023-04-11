@@ -1250,7 +1250,28 @@ else()#there are version specified
 	fill_String_From_List(available_versions list_of_versions ", ") #get available version as a string (used to print them)
 	set(message_str "Select the version of dependency ${dep_package} to be used among versions: ${available_versions}.")
 	list(LENGTH list_of_versions SIZE)
-	list(GET list_of_versions 0 default_version) #by defaut this is the first element in the list that is taken
+
+	# If versions of the dependency are already installed, see if we can find a compatible one
+	list_Version_Subdirectories(installed_versions ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${dep_package})
+	if(installed_versions)
+		set(default_version)
+		# Versions are listed from latest to oldest so the first match would be the best one
+		foreach(possible_version IN LISTS list_of_versions)
+			foreach(installed_version IN LISTS installed_versions)
+				if(possible_version VERSION_EQUAL installed_version)
+					set(default_version ${installed_version})
+					break()
+				endif()
+			endforeach()
+			if(default_version)
+				break()
+			endif()
+		endforeach()
+	endif()
+	# No compatible version found among the installed ones (if any) so pick the latest one
+	if(NOT default_version)
+		list(GET list_of_versions 0 default_version) #by defaut this is the first element in the list that is taken
+	endif()
 endif()
 if(optional) #message for the optional dependency includes the possiiblity to input NONE
 	set(message_str "${message_str} Or use NONE to avoid using this dependency.")
