@@ -975,6 +975,7 @@ function(declare_Wrapped_Environment_Configuration NEED_EXIT languages lang_tool
 	endif()
 	foreach(lang IN LISTS languages)
 		parse_Configuration_Expression(LANG_NAME LANG_ARGS "${lang}")#need to parse the configuration strings to extract arguments (if any)
+		set(${LANG_NAME}_EVAL_RESULT FALSE PARENT_SCOPE)
 		if(NOT LANG_NAME)
 			finish_Progress(${GLOBAL_PROGRESS_VAR})
 			message(FATAL_ERROR "[PID] CRITICAL ERROR : language configuration check ${lang} is ill formed.")
@@ -982,6 +983,7 @@ function(declare_Wrapped_Environment_Configuration NEED_EXIT languages lang_tool
 		#check that the configuration applies to the current build environment
 		check_Language_Configuration(RESULT_OK LANG_NAME CONSTRAINTS PLATFORM_CONSTRAINTS "${lang}" Release)
 		list(APPEND config_constraints ${PLATFORM_CONSTRAINTS})#memorize platform configurations required by the environment
+		set(${LANG_NAME}_EVAL_RESULT ${RESULT_OK} PARENT_SCOPE)
 		if(NOT RESULT_OK)
 			if(NOT optional)
 				message("[PID] ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satisfy language configuration ${lang}!")
@@ -1014,9 +1016,11 @@ function(declare_Wrapped_Environment_Configuration NEED_EXIT languages lang_tool
 
 	if(tools)
 		foreach(tool IN LISTS tools) ## all environment constraints must be satisfied
+			set(${tool}_EVAL_RESULT FALSE PARENT_SCOPE)
 			set(${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED CACHE INTERNAL "")#reset to avoid any problem
 			set(${PROJECT_NAME}_EXTRA_TOOLS_INSTANCES_REQUIRED CACHE INTERNAL "")#reset to avoid any problem
 			check_Extra_Tool_Configuration(RESULT_OK CONFIG_CONSTRAINTS "${tool}" Release)
+			set(${tool}_EVAL_RESULT ${RESULT_OK} PARENT_SCOPE)
 			if(NOT RESULT_OK)
 				if(NOT optional)
 					message("[PID] ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satisfy environment configuration ${tool}!")

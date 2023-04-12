@@ -29,6 +29,12 @@ if(CUDA_version # a version constraint is defined (if code works only with a giv
 	return()
 endif()
 
+if(CUDA_max_version)
+  if(CUDA_VERSION VERSION_GREATER_EQUAL CUDA_max_version)
+    return()
+  endif()
+endif()
+
 if(CUDA_architecture)
   foreach(an_arch IN LISTS CUDA_architecture)
     list(FIND AVAILABLE_CUDA_ARCHS ${an_arch} INDEX)
