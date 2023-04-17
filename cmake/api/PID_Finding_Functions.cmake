@@ -346,15 +346,14 @@ endfunction(select_Best_Native_Version)
 #
 function(select_Best_External_Version RES_VERSION package minimum_version available_versions)
 foreach(version IN LISTS available_versions)
-	if(version VERSION_EQUAL minimum_version
-		OR version VERSION_GREATER minimum_version)#only greater or equal versions are feasible
+	if(version VERSION_GREATER_EQUAL minimum_version)#only greater or equal versions are feasible
 		if(DEFINED ${package}_PID_KNOWN_VERSION_${minimum_version}_GREATER_VERSIONS_COMPATIBLE_UP_TO)#if not defined the version is compatible with nothing
 			if(	highest_version )#if a compatible highest version is already found
 					if(version VERSION_GREATER highest_version #the new version must be greater to be interesting
-						AND version VERSION_LESS "${${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO}")#but it also has to be compatible
+						AND version VERSION_LESS "${${package}_PID_KNOWN_VERSION_${minimum_version}_GREATER_VERSIONS_COMPATIBLE_UP_TO}")#but it also has to be compatible
 						set(highest_version ${version})
 					endif()
-			elseif(version VERSION_LESS "${${package}_PID_KNOWN_VERSION_${version}_GREATER_VERSIONS_COMPATIBLE_UP_TO}")#if no highest compatible version found, simply check that the version is compatible
+			elseif(version VERSION_LESS "${${package}_PID_KNOWN_VERSION_${minimum_version}_GREATER_VERSIONS_COMPATIBLE_UP_TO}")#if no highest compatible version found, simply check that the version is compatible
 				set(highest_version ${version})#if highest not set, set ot for thr first time
 			endif()
 		elseif(version VERSION_EQUAL minimum_version)#no compatible version defined, only the exact version can be used
