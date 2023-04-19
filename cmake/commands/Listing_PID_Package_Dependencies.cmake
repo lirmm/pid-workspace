@@ -30,9 +30,21 @@ while(index GREATER 0)#add as many tabulations as needed to indent correctly
 	math(EXPR index "${index}-1")
 endwhile()
 
+get_Package_Type(${package} PACK_TYPE)
+if(${PACK_TYPE} STREQUAL "NATIVE")
+	check_For_Dependencies_Version(unreleased_dependencies ${package})
+else()
+	set(unreleased_dependencies)
+endif()
 #native dependencies
 foreach(dep IN LISTS CURRENT_NATIVE_DEPENDENCY_${package}_DEPENDENCIES${VAR_SUFFIX})
-	set(expr_to_write "+ ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+	set(dep_version ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}})
+	set(unreleased_text)
+	list(FIND unreleased_dependencies "${dep}#${dep_version}" dep_index)
+	if(dep_index GREATER_EQUAL 0)
+		set(unreleased_text " (in development)")
+	endif()
+	set(expr_to_write "+ ${dep}:  ${dep_version}${unreleased_text}")
 	if(NOT path_to_write STREQUAL "")
 		file(APPEND ${path_to_write} "${begin_string}${expr_to_write}\n")
 	else()
@@ -146,15 +158,32 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 		endif()
 	endif()
 
+	check_For_Dependencies_Version(unreleased_dependencies ${PROJECT_NAME})
 
 	set(DO_FLAT ${FLAT_PRESENTATION})
 	if(DO_FLAT MATCHES true) # presenting as a flat list without hierarchical dependencies
 		# CURRENT_NATIVE_DEPENDENCIES and CURRENT_EXTERNAL_DEPENDENCIES are used because these variables collect all direct and undirect dependencies
 
+		# CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX} is overriden by check_For_Dependencies_Version so we need to save it before the call
+		set(native_deps ${CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX}})
+
+		foreach(dep IN LISTS CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX})
+			check_For_Dependencies_Version(dep_unreleased_dependencies ${dep})
+			set(unreleased_dependencies ${unreleased_dependencies} ${dep_unreleased_dependencies})
+		endforeach()
+
+		set(CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX} ${native_deps})
+
 		#native dependencies
 		set(ALL_NATIVE_DEP_STRINGS)
 		foreach(dep IN LISTS CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX})
-			list(APPEND  ALL_NATIVE_DEP_STRINGS "+ ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+			set(dep_version ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}})
+			set(unreleased_text)
+			list(FIND unreleased_dependencies "${dep}#${dep_version}" dep_index)
+			if(dep_index GREATER_EQUAL 0)
+				set(unreleased_text " (in development)")
+			endif()
+			list(APPEND  ALL_NATIVE_DEP_STRINGS "+ ${dep}:  ${dep_version}${unreleased_text}")
 		endforeach()
 		if(ALL_NATIVE_DEP_STRINGS)
 			list(REMOVE_DUPLICATES  ALL_NATIVE_DEP_STRINGS)
@@ -189,7 +218,13 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 		# TARGET_NATIVE_DEPENDENCIES and TARGET_EXTERNAL_DEPENDENCIES are used because these variables only collect direct dependencies, CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION and CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION will be used to get the information at root level
 		#native dependencies
 		foreach(dep IN LISTS TARGET_NATIVE_DEPENDENCIES${VAR_SUFFIX})
-			set(expr_to_write "+ ${dep}:  ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
+			set(dep_version ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}})
+			set(unreleased_text)
+			list(FIND unreleased_dependencies "${dep}#${dep_version}" dep_index)
+			if(dep_index GREATER_EQUAL 0)
+				set(unreleased_text " (in development)")
+			endif()
+			set(expr_to_write "+ ${dep}:  ${dep_version}${unreleased_text}")
 			if(WRITE_TO_FILE STREQUAL "true" OR WRITE_TO_FILE STREQUAL "TRUE" OR WRITE_TO_FILE STREQUAL "ON")
 				file(APPEND ${file_path} "${expr_to_write}\n")
 				print_Current_Dependencies(1 ${dep} "${file_path}")
