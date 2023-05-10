@@ -32,6 +32,8 @@ pid() {
     local cmake_options=""
     local to_unexport=""
 
+    _pid_ws_unset_global_variables
+
     # Retreive current project and workspace locations
     _pid_ws_get_workspace_dir
 
@@ -209,9 +211,7 @@ pid() {
         _pid_ws_run $project_dir $target "$cmake_options"
     fi
 
-    unset project_dir
-    unset ws_dir
-    unset project_name
+    _pid_ws_unset_global_variables
     #Note: need to set zsh the correct way to interpret lists
     if [ "$ZSH_VERSION" ]; then
         setopt shwordsplit
@@ -419,6 +419,13 @@ _pid_ws_print_help() {
         echo "  pid run x86_64_linux_stdc++11 pid-rpath 2.0.0 pid-rpath_rpath-example run pid-rpath example"
         echo "  pid run_build release pid-rpath_rpath-example                         run pid-rpath example from build tree"
         echo "  pid workspace configure -DADDITIONAL_DEBUG_INFO=ON                    reconfigure the workspace"
+}
+
+_pid_ws_unset_global_variables() {
+    unset project_dir
+    unset ws_dir
+    unset project_name
+    unset abs_path
 }
 
 ### Completion helper function
