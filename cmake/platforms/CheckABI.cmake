@@ -335,6 +335,12 @@ else()
 		endif()#otherwise simply do nothing and check with another folder
 	endforeach()
 
+	if(MSVC)
+		set(CURRENT_CXX_ABI ${MSVC_TOOLSET_VERSION} CACHE INTERNAL "")#reset value of current ABI
+		set(CXX_STD_LIBRARY_NAME msvc CACHE INTERNAL "")
+		set(CXX_STD_LIBRARY_VERSION ${CMAKE_CXX_COMPILER_VERSION} CACHE INTERNAL "")
+	endif()
+
 	set(CXX_STD_SYMBOLS ${CXX_STD_ABI_SYMBOLS} CACHE INTERNAL "")
 	set(CXX_STANDARD_LIBRARIES ${CXX_STD_LIBS} CACHE INTERNAL "")
 endif()
