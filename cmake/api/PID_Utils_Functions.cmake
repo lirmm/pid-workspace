@@ -1099,6 +1099,51 @@ if(path)
 endif()
 endfunction(make_Empty_Folder)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |deduce_Existing_Symlink_Path| replace:: ``deduce_Existing_Symlink_Path``
+#  .. _deduce_Existing_Symlink_Path:
+#
+#  deduce_Existing_Symlink_Path
+#  ----------------------------
+#
+#   .. command:: deduce_Existing_Symlink_Path(path_to_existing_var path_to_created)
+#
+#    Decuce if the path to an existing resource is relative
+#
+#     :path_to_existing_var: input/output variable that contains the resolved path to the existing resource
+#     :path_to_created: the path of the symlink created
+#
+function(deduce_Existing_Symlink_Path path_to_existing_var path_to_created)
+  # NOTE: path_to_created is let unchanged anyway as it is where the symlink is created
+  # BUTE this symlink can be located in the workspace or not.
+  file(RELATIVE_PATH REL_PATH_TO_CREATED "${WORKSPACE_DIR}" ${path_to_created})
+	if(REL_PATH_TO_CREATED MATCHES "^\\.\\./.*$")#it is an path created outside of the workspace
+    # it is a system install symlink or something a like SO we let path to existing unchanged 
+    # so it is kept absolute whether it is in the workspace or not (we suppose the resolution of relative symlinks 
+    # from outside of a workspace is not feasible)
+		return()
+	endif()
+  # from here we know that the symlink is created in the workspace
+  # 2 cases : either the existing path is relative to the workspace OR NOT
+  file(RELATIVE_PATH REL_PATH_TO_EXISTING "${WORKSPACE_DIR}" ${${path_to_existing_var}})
+	if(REL_PATH_TO_EXISTING MATCHES "^\\.\\./.*$")#not relative to the workspace
+    # the existing path is kept "absolute" as it is not directly inside the workspace 
+    # (most probably a symlink pointing to a system installed lib/program)
+		return()
+	endif()
+  # from here the symlink points to a resource relative to the workspace 
+  get_filename_component(CREATED_DIR ${path_to_created} DIRECTORY)
+  get_filename_component(EXISTING_DIR ${${path_to_existing_var}} DIRECTORY)
+
+  file(RELATIVE_PATH EXISTING_IN_CREATED_DIR ${CREATED_DIR} ${${path_to_existing_var}})
+  set(${path_to_existing_var} ${EXISTING_IN_CREATED_DIR} PARENT_SCOPE)
+
+endfunction(deduce_Existing_Symlink_Path)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -1119,13 +1164,11 @@ endfunction(make_Empty_Folder)
 function(create_Symlink path_to_old path_to_new)
     set(oneValueArgs WORKING_DIR)
     cmake_parse_arguments(OPT "" "${oneValueArgs}" "" ${ARGN} )
-    if(WIN32)
-        string(REGEX REPLACE "/" "\\\\" path_to_old ${path_to_old})
-        string(REGEX REPLACE "/" "\\\\" path_to_new ${path_to_new})
-        if(OPT_WORKING_DIR)
-            string(REGEX REPLACE "/" "\\\\" OPT_WORKING_DIR ${OPT_WORKING_DIR})
-        endif()
+    if(OPT_WORKING_DIR)
+      set(path_to_new ${OPT_WORKING_DIR}/${path_to_new})
+    endif()
 
+    if(WIN32)
         # check if target is a directory or a file to pass to proper argument to mklink
         if(IS_DIRECTORY ${path_to_old})
             set(mklink_option "/J")
@@ -1134,9 +1177,9 @@ function(create_Symlink path_to_old path_to_new)
         endif()
     endif()
 
-    if(EXISTS ${OPT_WORKING_DIR}/${path_to_new} AND IS_SYMLINK ${OPT_WORKING_DIR}/${path_to_new})
+    if(EXISTS ${path_to_new} AND IS_SYMLINK ${path_to_new})
         #remove the existing symlink
-        file(REMOVE ${OPT_WORKING_DIR}/${path_to_new})
+        file(REMOVE ${path_to_new})
     endif()
 
     #1) first create the folder containing symlinks if it does not exist
@@ -1144,35 +1187,24 @@ function(create_Symlink path_to_old path_to_new)
     if(NOT EXISTS ${containing_folder})
       file(MAKE_DIRECTORY ${containing_folder})
     endif()
+    deduce_Existing_Symlink_Path(path_to_old ${path_to_new})
     #2) then generate symlinks in this folder
     if(WIN32)
-        if(OPT_WORKING_DIR)
-            execute_process(
-                COMMAND cmd.exe /c mklink ${mklink_option} ${path_to_new} ${path_to_old}
-                WORKING_DIRECTORY ${OPT_WORKING_DIR}
-                OUTPUT_QUIET
-                ERROR_QUIET
-            )
-        else()
-            execute_process(
-                COMMAND cmd.exe /c mklink ${mklink_option} ${path_to_new} ${path_to_old}
-                OUTPUT_QUIET
-                ERROR_QUIET
-            )
-        endif()
+      file(TO_NATIVE_PATH "${path_to_old}" path_to_old)
+      file(TO_NATIVE_PATH "${path_to_new}" path_to_new)
+      execute_process(
+            COMMAND cmd.exe /c mklink ${mklink_option} ${path_to_new} ${path_to_old}
+            OUTPUT_QUIET
+            ERROR_QUIET
+        )
     else()
-        if(OPT_WORKING_DIR)
-            execute_process(
-                COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_old} ${path_to_new}
-                WORKING_DIRECTORY ${OPT_WORKING_DIR}
-            )
-        else()
-            execute_process(
-                COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_old} ${path_to_new}
-            )
-        endif()
+      execute_process(
+          COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_old} ${path_to_new}
+      )
     endif()
 endfunction(create_Symlink)
+
+
 
 #.rst:
 #
@@ -1227,6 +1259,7 @@ function(install_Runtime_Symlink path_to_target path_to_rpath_folder rpath_sub_f
       string(REGEX REPLACE "/" "\\\\\\\\" W32_PATH_TARGET ${path_to_target})
   endif()
 	install(CODE "
+                    set(WORKSPACE_DIR ${WORKSPACE_DIR} CACHE INTERNAL \"\")
                     list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/api)
                     include(PID_Utils_Functions NO_POLICY_SCOPE)
                     message(\"-- Installing: ${CMAKE_INSTALL_PREFIX}/${FULL_RPATH_DIR}/${A_FILE}\")
@@ -1363,7 +1396,7 @@ endfunction(check_Required_Directories_Exist)
 #
 #    Copy content of a package install folder into the folder. Manages invalid symlinks (like those in the rpath folder)
 #
-#      :source: The folder whose content is coped.
+#      :source: The folder whose content is copied.
 #      :destination: the folder in which content is copied
 #      :working_dir: the working directory for copy operation.
 #
@@ -4462,7 +4495,7 @@ endfunction(reconfigure_Package_Build)
 #
 #   .. command:: check_For_Dependencies_Version(BAD_DEPS package)
 #
-#    Check wether version of package dependencies have been released (i.e. if their version specified in the CMakeLists.txt of the package is released).
+#    Check whether version of package dependencies have been released (i.e. if their version specified in the CMakeLists.txt of the package is released).
 #
 #     :package: the name of the target package.
 #
