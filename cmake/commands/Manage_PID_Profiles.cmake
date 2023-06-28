@@ -313,6 +313,6 @@ if(need_reconfigure)
 									WORKING_DIRECTORY ${WORKSPACE_DIR}/build
 									RESULT_VARIABLE res)
 	if(res)
-		message(FATAL_ERROR "[PID] CRITICAL ERROR : using profiles command, workspace configruation failed after action ${TARGET_COMMAND} !")
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : using profiles command, workspace configuration failed after action ${TARGET_COMMAND} !")
 	endif()
 endif()
