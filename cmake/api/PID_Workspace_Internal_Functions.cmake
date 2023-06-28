@@ -4302,7 +4302,13 @@ endfunction(manage_Platforms)
 #     with PID versions < 4
 #
 function(create_Backward_Compatibility_Symlinks)
-	file(REMOVE ${CMAKE_SOURCE_DIR}/share/cmake ${CMAKE_SOURCE_DIR}/cmake/system)
+	if(EXISTS ${CMAKE_SOURCE_DIR}/share/cmake)
+		file(REMOVE ${CMAKE_SOURCE_DIR}/share/cmake )
+	endif()
+	if(EXISTS ${CMAKE_SOURCE_DIR}/cmake/system)
+		file(REMOVE ${CMAKE_SOURCE_DIR}/cmake/system )
+	endif()
+	#generate the symlinks
 	create_Symlink(${CMAKE_SOURCE_DIR}/cmake ${CMAKE_SOURCE_DIR}/share/cmake)
 	create_Symlink(${CMAKE_SOURCE_DIR}/cmake ${CMAKE_SOURCE_DIR}/cmake/system)
 endfunction(create_Backward_Compatibility_Symlinks)

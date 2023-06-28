@@ -1137,11 +1137,14 @@ function(deduce_Existing_Symlink_Path path_to_existing_var path_to_created)
 	endif()
   # from here the symlink points to a resource relative to the workspace 
   get_filename_component(CREATED_DIR ${path_to_created} DIRECTORY)
-  get_filename_component(EXISTING_DIR ${${path_to_existing_var}} DIRECTORY)
-
   file(RELATIVE_PATH EXISTING_IN_CREATED_DIR ${CREATED_DIR} ${${path_to_existing_var}})
-  set(${path_to_existing_var} ${EXISTING_IN_CREATED_DIR} PARENT_SCOPE)
-
+  #specific case to deal with : created is a link created inside existing path that points to existing path
+  #so EXISTING_IN_CREATED_DIR is empty 
+  if(NOT EXISTING_IN_CREATED_DIR)
+    set(${path_to_existing_var} "." PARENT_SCOPE)
+  else()
+    set(${path_to_existing_var} ${EXISTING_IN_CREATED_DIR} PARENT_SCOPE)
+  endif()
 endfunction(deduce_Existing_Symlink_Path)
 
 #.rst:
