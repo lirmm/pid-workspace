@@ -16,4 +16,5 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
+set(LANG_Python_OPTIONAL_CONSTRAINTS interpreter_min)
 set(LANG_Python_IN_BINARY_CONSTRAINTS soname)

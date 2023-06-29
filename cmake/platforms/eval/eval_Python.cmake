@@ -18,9 +18,17 @@
 #########################################################################################
 
 set(LANG_Python_PLATFORM_CONSTRAINTS)
+set(Python_EVAL_RESULT FALSE)
+
 if(CURRENT_PYTHON_EXECUTABLE)
+ if(Python_interpreter_min)
+    if(constraint MATCHES "^([0-9]+\\.[0-9]+$")
+      if(CMAKE_MATCH_1 VERSION_LESS CURRENT_PYTHON)
+          set(Python_EVAL_RESULT FALSE)
+          message(FATAL_ERROR "[PID] CRITICAL ERROR: ${CURRENT_PYTHON_EXECUTABLE} Python interpreter version ${CURRENT_PYTHON} < ${CMAKE_MATCH_1}, constraint violated")
+      endif()
+    endif()
+  endif()
   set(Python_EVAL_RESULT TRUE)
   set(Python_soname ${Python_STANDARD_LIBRARIES})
-else()
-  set(Python_EVAL_RESULT FALSE)
 endif()
