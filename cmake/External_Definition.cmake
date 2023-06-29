@@ -113,7 +113,7 @@ macro(declare_PID_External_Package)
 		foreach(comp IN LISTS ${package}_COMPONENTS)
 			#resetting variables of the component
 			set(${package}_${comp}_INC_DIRS${VAR_SUFFIX} CACHE INTERNAL "")
-      set(${package}_${comp}_LIB_DIRS${VAR_SUFFIX} CACHE INTERNAL "")
+      		set(${package}_${comp}_LIB_DIRS${VAR_SUFFIX} CACHE INTERNAL "")
 			set(${package}_${comp}_OPTS${VAR_SUFFIX} CACHE INTERNAL "")
 			set(${package}_${comp}_DEFS${VAR_SUFFIX} CACHE INTERNAL "")
 			set(${package}_${comp}_STATIC_LINKS${VAR_SUFFIX} CACHE INTERNAL "")
@@ -535,7 +535,6 @@ macro(declare_PID_External_Component)
 		list(REMOVE_DUPLICATES python_packs)
 		set(${curr_ext_package}_${curr_ext_comp}_PYTHON_PACKAGES${VAR_SUFFIX} ${python_packs} CACHE INTERNAL "")
 	endif()
-
 endmacro(declare_PID_External_Component)
 
 #.rst:
@@ -856,7 +855,6 @@ macro(declare_PID_External_Component_Dependency)
 	if(NEW_CXX_MAX_STD)
 		set(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_CXX_MAX_STANDARD${VAR_SUFFIX} ${NEW_CXX_MAX_STD} CACHE INTERNAL "")
 	endif()
-
 	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_INC_DIRS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_INCLUDES}")
 	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_DEFS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_DEFINITIONS}")
 	append_Unique_In_Cache(${LOCAL_PACKAGE}_${LOCAL_COMPONENT}_STATIC_LINKS${VAR_SUFFIX} "${DECLARE_PID_EXTERNAL_COMPONENT_DEPENDENCY_STATIC_LINKS}")

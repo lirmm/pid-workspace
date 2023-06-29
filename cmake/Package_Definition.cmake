@@ -1344,7 +1344,7 @@ if(DECLARE_PID_COMPONENT_EXPORT)#exported dependencies
       else()
         set(PACKAGE_ARG "PACKAGE;${RES_PACK}")
       endif()
-    else()#no package defined
+    else()#no package defined => using a configuration or using an internal component or using a component that is contained in another package but withtou the name of the package
       set(PACKAGE_ARG)
       if(${COMPONENT_NAME}_AVAILABLE)#there is a configuration with same name that is available
         set(COMPONENT_ARG CONFIGURATION ${COMPONENT_NAME})#transform component name into a configuration name
@@ -1371,7 +1371,7 @@ if(DECLARE_PID_COMPONENT_DEPEND)#non exported dependencies
       else()
         set(PACKAGE_ARG "PACKAGE;${RES_PACK}")
       endif()
-    else()
+    else()#no package defined => using a configuration or using an internal component or using a component that is contained in another package but withtou the name of the package
       set(PACKAGE_ARG)
       if(${COMPONENT_NAME}_AVAILABLE)#there is a configuration with same name that is available
         set(COMPONENT_ARG CONFIGURATION ${COMPONENT_NAME})#transform component name into a configuration name
@@ -1846,7 +1846,6 @@ if(NOT ${PROJECT_NAME}_${component_name}_FOR_DOC_ONLY)
   else()
     set(export FALSE)
   endif()
-
   set(package_type)
   set(target_component)
   set(target_package)
@@ -1892,7 +1891,7 @@ if(NOT ${PROJECT_NAME}_${component_name}_FOR_DOC_ONLY)
         set(target_component ${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL})#EXTERNAL keyword is used to target a component
       else()#the name used is the name of an EXTERNAL package
         set(target_component)#in this situation the name of the component is empty since no component is explicitly targetted
-        set(target_package ${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL})#the EXTERNAL keyword refers to an exetrnal package
+        set(target_package ${DECLARE_PID_COMPONENT_DEPENDENCY_EXTERNAL})#the EXTERNAL keyword refers to an external package
       endif()
     endif()
   else()#NO keyword used to specify the kind of component => we do not know if package is native or external
@@ -1940,8 +1939,8 @@ if(NOT ${PROJECT_NAME}_${component_name}_FOR_DOC_ONLY)
 
   #now try to resolve the package in use if not explicitly specified while a component is used
   if(NOT target_package AND target_component)
-    find_Packages_Containing_Component(CONTAINERS ${PROJECT_NAME} ${target_component})
-    list(LENGTH CONTAINERS SIZE)
+  find_Packages_Containing_Component(CONTAINERS ${PROJECT_NAME} ${target_component})
+  list(LENGTH CONTAINERS SIZE)
     if(SIZE EQUAL 0)
       finish_Progress(${GLOBAL_PROGRESS_VAR})
       message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, component ${target_component} cannot be found in ${PROJECT_NAME} or its dependencies.")
@@ -1994,7 +1993,10 @@ if(NOT ${PROJECT_NAME}_${component_name}_FOR_DOC_ONLY)
           message(FATAL_ERROR "[PID] CRITICAL ERROR : in package ${PROJECT_NAME} when declaring dependency for component ${component_name}, only package that belongs to framework ${DECLARE_PID_COMPONENT_DEPENDENCY_FRAMEWORK} is ${CONTAINERS} but this later does not contain component ${target_component}.")
         endif()
       else()
-      set(target_package ${CONTAINERS})#Note: CONTAINERS is the current project if found nowhere else
+        set(target_package ${CONTAINERS})#Note: CONTAINERS is the current project is found nowhere else
+        if(NOT target_package STREQUAL  PROJECT_NAME)
+          message(WARNING "[PID] WARNING: component ${target_component} is used as a dependency but is specified without its containing package ${CONTAINERS}, which is deprecated. Please consider using notation ${CONTAINERS}/${target_component} to avoid further deprecation warnings.")
+        endif()
       endif()
     endif()
   endif()

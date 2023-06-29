@@ -993,6 +993,7 @@ function(reset_Package_Platforms_Variables)
 	unset(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} CACHE)
   #also reset cplatform configruation constraints coming from langauge in use
   unset(${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${USE_MODE_SUFFIX} CACHE)
+  reset_Available_Configs(${PROJECT_NAME})
 endfunction(reset_Package_Platforms_Variables)
 
 
@@ -1384,6 +1385,33 @@ function(check_Platform_Configuration RESULT NAME CONSTRAINTS package config mod
   set(${CONSTRAINTS} ${LIST_OF_CONSTRAINTS} PARENT_SCOPE)
 endfunction(check_Platform_Configuration)
 
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Available_Configs| replace:: ``reset_Available_Configs``
+#  .. _reset_Available_Configs:
+#
+#  reset_Available_Configs
+#  -------------------------------------------
+#
+#   .. command:: reset_Available_Configs(package)
+#
+#    Reset cache variables used to know if a configuration is available
+#
+#     :package: package that uses the configurations.
+#
+function(reset_Available_Configs package)
+  foreach(conf IN LISTS ${package}_CHECKED_CONFIGURATIONS)
+    unset(${conf}_AVAILABLE CACHE)
+    unset(${conf}_INSTALLED CACHE)
+  endforeach()
+  unset(${package}_CHECKED_CONFIGURATIONS CACHE)
+endfunction(reset_Available_Configs package)
+
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -1409,7 +1437,6 @@ endfunction(check_Platform_Configuration)
 function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS package config_name config_args_var mode)
   set(${BINARY_CONTRAINTS} PARENT_SCOPE)
   set(${CHECK_OK} FALSE PARENT_SCOPE)
-
   #check if the configuration has already been checked
   check_Configuration_Temporary_Optimization_Variables(CHECK_ALREADY_MADE CHECK_SUCCESS BIN_CONSTRAINTS ${config_name} ${config_args_var} ${mode})
   if(CHECK_ALREADY_MADE)#same check has already been made, we want to avoid redoing them unecessarily
@@ -1443,6 +1470,7 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
     return()
   endif()
   #evaluate the platform configuration expression
+  append_Unique_In_Cache(${package}_CHECKED_CONFIGURATIONS ${config_name} CACHE INTERNAL "")
   evaluate_Platform_Configuration(${config_name} ${PATH_TO_CONFIG} FALSE)
   set(${config_name}_AVAILABLE TRUE CACHE INTERNAL "")
   if(NOT ${config_name}_CONFIG_FOUND)
