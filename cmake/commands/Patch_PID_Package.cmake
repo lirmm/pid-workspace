@@ -68,7 +68,7 @@ endif()
 # check for modifications
 has_Modifications(HAS_MODIFS ${TARGET_PACKAGE} FALSE)
 if(HAS_MODIFS)
-	message("[PID] ERROR : package ${TARGET_PACKAGE} has modification to commit or stash, patch aborted.")
+	message(FATAL_ERROR "[PID] ERROR : package ${TARGET_PACKAGE} has modification to commit or stash, patch aborted.")
 	return()
 endif()
 # from here we can navigate between branches freely
@@ -77,8 +77,8 @@ list_Ignored_Files(IGNORED_ON_INITIAL_COMMIT ${WORKSPACE_DIR}/packages/${TARGET_
 # udpate the master branch from official remote repository
 update_Package_Repository_Versions(UPDATE_OK ${TARGET_PACKAGE})
 if(NOT UPDATE_OK)
-	message("[PID] ERROR : ${TARGET_PACKAGE} cannot be updated from official one. Patch command cannot ensure you will not try to patch a non existing version. Maybe you have no clone rights from official or local master branch of package ${package} is not synchronizable with official master branch.")
 	go_To_Commit(${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} ${CURRENT_COMMIT_OR_BRANCH})
+	message(FATAL_ERROR "[PID] ERROR : ${TARGET_PACKAGE} cannot be updated from official one. Patch command cannot ensure you will not try to patch a non existing version. Maybe you have no clone rights from official or local master branch of package ${package} is not synchronizable with official master branch.")
 	return()
 endif() #from here graph of commits and version tags are OK
 
@@ -89,7 +89,7 @@ checkout_From_Master_To_Commit(${WORKSPACE_DIR}/packages/${TARGET_PACKAGE} ${CUR
 # check that version is not already released on official/master branch
 get_Repository_Version_Tags(VERSION_NUMBERS ${TARGET_PACKAGE})
 if(NOT VERSION_NUMBERS)
-	message("[PID] ERROR : malformed package ${TARGET_PACKAGE}, no version tag detected in ${TARGET_PACKAGE} repository ! This denote a bad state of your repository. Maybe this repository has been cloned by hand wthout pulling its version tags.\n
+	message(FATAL_ERROR "[PID] ERROR : malformed package ${TARGET_PACKAGE}, no version tag detected in ${TARGET_PACKAGE} repository ! This denote a bad state of your repository. Maybe this repository has been cloned by hand wthout pulling its version tags.\n
 	1) you can try doing the command `update` into ${TARGET_PACKAGE} project, then try patching again.\n
   2) you can try solving the problem by yourself. Please go into ${TARGET_PACKAGE} repository and enter command `git fetch official --tags`. If no tag exists that probably means you did not create the package using the create command but by copy/pasting code of an existing one. Then create a tag v0.0.0 on your first commit and push it to your official repository: `git checkout <first commit> && git tag -a v0.0.0 -m \"first commit\" && git push official v0.0.0 && git checkout inegration`. Then try again to release your package.")
 	return()
@@ -126,7 +126,7 @@ if(NEW_BRANCH)
 	get_Version_Number_And_Repo_From_Package(${TARGET_PACKAGE} DIGITS STRING FORMAT METHOD ADDRESS)
 	# performing basic checks
 	if(NOT DIGITS)#version number is not well defined
-		message("[PID] ERROR : problem patching package ${TARGET_PACKAGE}, bad version format in its root CMakeLists.txt.")
+		message(FATAL_ERROR "[PID] ERROR : problem patching package ${TARGET_PACKAGE}, bad version format in its root CMakeLists.txt.")
 		return()
 	endif()
 	set_Version_Number_To_Package(RESULT_OK ${TARGET_PACKAGE} "DOTTED_STRING" "${METHOD}" ${TARGET_MAJOR} ${TARGET_MINOR} ${new_patch_number})
