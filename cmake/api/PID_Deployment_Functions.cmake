@@ -518,7 +518,7 @@ foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE
     if(compared_patch)
       set(CUR_PATCH_RESOLVED ${compared_patch})
     else()
-      set(CUR_PATCH_RESOLVED 0)
+      unset(CUR_PATCH_RESOLVED)
     endif()
 		if(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX})
 			set(CURR_EXACT TRUE)
@@ -533,7 +533,7 @@ foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE
 		return()
 	elseif(NOT CURR_EXACT AND (compare_minor GREATER CUR_MINOR_RESOLVED))
 		set(CUR_MINOR_RESOLVED ${compare_minor})
-    set(CUR_PATCH_RESOLVED 0) #reset the patch version as we changed the minor version number
+    unset(CUR_PATCH_RESOLVED) #reset the patch version as we changed the minor version number
 		if(${PROJECT_NAME}_TOINSTALL_${package}_${version}_EXACT${USE_MODE_SUFFIX})
 			set(CURR_EXACT TRUE)
 		else()
@@ -541,7 +541,12 @@ foreach(version IN LISTS ${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE
 		endif()
 	endif()
 endforeach()
-set(USE_VERSION_CONSTRAINT "${MAJOR_RESOLVED}.${CUR_MINOR_RESOLVED}.${CUR_PATCH_RESOLVED}")
+
+if(DEFINED CUR_PATCH_RESOLVED)
+  set(USE_VERSION_CONSTRAINT "${MAJOR_RESOLVED}.${CUR_MINOR_RESOLVED}.${CUR_PATCH_RESOLVED}")
+else()
+  set(USE_VERSION_CONSTRAINT "${MAJOR_RESOLVED}.${CUR_MINOR_RESOLVED}")
+endif()
 if(NOT ${package}_VERSION_STRING)#no version already used because package not already found
   set(${MINIMUM_VERSION} ${USE_VERSION_CONSTRAINT} PARENT_SCOPE)#use the minimum version specified
 else()# a version of the package is already used == package already found, probably due to a previously managed dependency)
