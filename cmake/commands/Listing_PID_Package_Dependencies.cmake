@@ -159,20 +159,21 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 	endif()
 
 	check_For_Dependencies_Version(unreleased_dependencies ${PROJECT_NAME})
-
 	set(DO_FLAT ${FLAT_PRESENTATION})
 	if(DO_FLAT MATCHES true) # presenting as a flat list without hierarchical dependencies
 		# CURRENT_NATIVE_DEPENDENCIES and CURRENT_EXTERNAL_DEPENDENCIES are used because these variables collect all direct and undirect dependencies
 
-		# CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX} is overriden by check_For_Dependencies_Version so we need to save it before the call
+		# CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX} and CURRENT_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} are overriden by check_For_Dependencies_Version so we need to save it before the call
 		set(native_deps ${CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX}})
-
+		set(ext_deps ${CURRENT_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+		
 		foreach(dep IN LISTS CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX})
 			check_For_Dependencies_Version(dep_unreleased_dependencies ${dep})
-			set(unreleased_dependencies ${unreleased_dependencies} ${dep_unreleased_dependencies})
+			list(APPEND unreleased_dependencies ${dep_unreleased_dependencies})
 		endforeach()
 
 		set(CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX} ${native_deps})
+		set(CURRENT_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${ext_deps})
 
 		#native dependencies
 		set(ALL_NATIVE_DEP_STRINGS)
@@ -197,6 +198,7 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 		endif()
 		#external dependencies
 		set(ALL_EXTERNAL_DEP_STRINGS)
+		
 		foreach(dep IN LISTS CURRENT_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 			if(CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION_SYSTEM${VAR_SUFFIX})
 				list(APPEND  ALL_EXTERNAL_DEP_STRINGS "- ${dep}:  ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}} (system)")
