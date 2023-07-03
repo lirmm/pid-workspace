@@ -36,6 +36,7 @@ if(${PACK_TYPE} STREQUAL "NATIVE")
 else()
 	set(unreleased_dependencies)
 endif()
+
 #native dependencies
 foreach(dep IN LISTS CURRENT_NATIVE_DEPENDENCY_${package}_DEPENDENCIES${VAR_SUFFIX})
 	set(dep_version ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}})
@@ -166,8 +167,8 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 		# CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX} and CURRENT_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} are overriden by check_For_Dependencies_Version so we need to save it before the call
 		set(native_deps ${CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX}})
 		set(ext_deps ${CURRENT_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
-		
-		foreach(dep IN LISTS CURRENT_NATIVE_DEPENDENCIES${VAR_SUFFIX})
+
+		foreach(dep IN LISTS ${native_deps})
 			check_For_Dependencies_Version(dep_unreleased_dependencies ${dep})
 			list(APPEND unreleased_dependencies ${dep_unreleased_dependencies})
 		endforeach()
@@ -198,7 +199,7 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 		endif()
 		#external dependencies
 		set(ALL_EXTERNAL_DEP_STRINGS)
-		
+
 		foreach(dep IN LISTS CURRENT_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 			if(CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION_SYSTEM${VAR_SUFFIX})
 				list(APPEND  ALL_EXTERNAL_DEP_STRINGS "- ${dep}:  ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}} (system)")
@@ -219,7 +220,11 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 	else()
 		# TARGET_NATIVE_DEPENDENCIES and TARGET_EXTERNAL_DEPENDENCIES are used because these variables only collect direct dependencies, CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION and CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION will be used to get the information at root level
 		#native dependencies
-		foreach(dep IN LISTS TARGET_NATIVE_DEPENDENCIES${VAR_SUFFIX})
+		# These variables will be overwritten inside print_Current_Dependencies by calls to check_For_Dependencies_Version so we need to save them
+		set(native_deps ${TARGET_NATIVE_DEPENDENCIES${VAR_SUFFIX}})
+		set(ext_deps ${TARGET_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
+
+		foreach(dep IN LISTS native_deps)
 			set(dep_version ${CURRENT_NATIVE_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}})
 			set(unreleased_text)
 			list(FIND unreleased_dependencies "${dep}#${dep_version}" dep_index)
@@ -236,8 +241,11 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 			endif()
 		endforeach()
 
+		set(TARGET_NATIVE_DEPENDENCIES${VAR_SUFFIX} ${native_deps})
+		set(TARGET_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${ext_deps})
+
 		#external dependencies
-		foreach(dep IN LISTS TARGET_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
+		foreach(dep IN LISTS ext_deps)
 			set(expr_to_write "- ${dep}:  ${CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
 			if(CURRENT_EXTERNAL_DEPENDENCY_${dep}_VERSION_SYSTEM${VAR_SUFFIX})
 				set(expr_to_write "${expr_to_write} (system)")
