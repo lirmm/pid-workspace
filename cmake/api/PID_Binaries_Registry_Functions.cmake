@@ -1120,7 +1120,7 @@ foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os f
     endif()
 		set(target_manifest_file ${target_binaries_dir}/Use${package}-${ref_version}.cmake)
     if(NOT EXISTS ${target_manifest_file}) # check to avoid problem is the binaries have been badly released
-      message("[PID] WARNING: binary package ${package} version ${ref_version} for platform ${ref_platform} is documented BUT has not been found in registry. Supressing documentation folder...")
+      message("[PID] WARNING: binary package ${package} version ${ref_version} for platform ${ref_platform} is documented BUT has no install manifest. Supressing documentation folder...")
       file(REMOVE_RECURSE ${folder}/${ref_version}/${ref_platform})
       continue()
     endif()
