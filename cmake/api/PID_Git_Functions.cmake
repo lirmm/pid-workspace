@@ -2503,6 +2503,8 @@ function(change_Origin_Repository package url)
   set(package_path ${WORKSPACE_DIR}/packages/${package})
   execute_process(COMMAND git remote set-url origin ${url}
                   WORKING_DIRECTORY ${package_path} OUTPUT_QUIET ERROR_QUIET)
+  execute_process(COMMAND git remote set-url --push origin ${url}
+                  WORKING_DIRECTORY ${package_path} OUTPUT_QUIET ERROR_QUIET)
   go_To_Integration(${package})
   execute_process(COMMAND git pull --no-rebase --no-edit -ff origin integration
                   WORKING_DIRECTORY ${package_path} OUTPUT_QUIET ERROR_QUIET)
