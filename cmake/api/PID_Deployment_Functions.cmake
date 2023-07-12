@@ -1271,7 +1271,6 @@ else()
 endif()
 if(NOT RES_VERSION)#no adequate version found, this may be due to the use of a non released version
   try_In_Development_Version(RES_VERSION ${package} ${min_version} ${is_exact} "${run_tests}" "${release_only}")#mainly usefull in CI process to build unreleased dependencies
-  message("after try ${package} ${min_version} RES_VERSION=${RES_VERSION}")
   if(RES_VERSION)
     message("[PID] INFO : deployed version ${RES_VERSION} of source package ${package} is in development (found on integration branch).")
     set(${DEPLOYED} TRUE PARENT_SCOPE)

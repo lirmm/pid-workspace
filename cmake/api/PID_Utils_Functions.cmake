@@ -1730,7 +1730,7 @@ endfunction(parse_Package_Dependency_All_Version_Arguments)
 #     :PATCH: the output variable set to the value of version patch number.
 #
 function(get_Version_String_Numbers version_string MAJOR MINOR PATCH)
-if(version_string MATCHES "^([0-9]+)(\\.([0-9]+))?(\\.([0-9]+))?\\.?(.*)$") # version string is well formed with major.minor.patch (at least) format
+if(version_string MATCHES "^([0-9]+)(\\.([0-9]+))?(\\.([0-9]+))?\\.?(.*)$") # version string is well formed with major[.minor[.patch]] (at least) format
 	set(${MAJOR} ${CMAKE_MATCH_1} PARENT_SCOPE)
 	set(${MINOR} ${CMAKE_MATCH_3} PARENT_SCOPE)
 	set(${PATCH} ${CMAKE_MATCH_5} PARENT_SCOPE)
