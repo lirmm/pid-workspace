@@ -819,7 +819,11 @@ function(configure_With_Project_Specific_Toolchain)
 		#NOTE: since content of env is placed AFTER global it will overwrite it
 		message("[PID] INFO: reconfigure from scratch with new toolchain ...")
 		hard_Clean_Build_Folder(${CMAKE_SOURCE_DIR}/build)
-		execute_process(COMMAND ${CMAKE_COMMAND} -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_SOURCE_DIR}/build -G "${CMAKE_GENERATOR}"
+		execute_process(COMMAND ${CMAKE_COMMAND}
+							-S ${CMAKE_SOURCE_DIR}
+							-B ${CMAKE_SOURCE_DIR}/build
+							-G "${CMAKE_GENERATOR}"
+							-DWORKSPACE_DIR=${WORKSPACE_DIR}
 						WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/build)
 		message(FATAL_ERROR "[PID] INFO: stopping initial configuration ...")
 	endif()
@@ -2332,7 +2336,7 @@ else()#classical build => perform only corrective actions if cache variable is n
 					endif()
 					if(need_reset)
 						#reset all information about the system variant to enforce a good resolution
-						reset_Platform_Configuration_Cache_Variables(${dep_package}) 
+						reset_Platform_Configuration_Cache_Variables(${dep_package})
 						set(${dep_package}_VERSION CACHE INTERNAL "")
 						set(${dep_package}_VERSION_STRING CACHE INTERNAL "")
 						set(${dep_package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
