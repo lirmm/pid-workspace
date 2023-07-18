@@ -4411,12 +4411,7 @@ endfunction(is_Binary_Package_Version_In_Development)
 #     :path_to_folder: the path to the build folder to reset.
 #
 function(hard_Clean_Build_Folder path_to_folder)
-  file(GLOB thefiles RELATIVE ${path_to_folder} ${path_to_folder}/*)
-  foreach(a_file IN LISTS thefiles)
-    if(NOT a_file STREQUAL ".gitignore")
-      file(REMOVE_RECURSE ${path_to_folder}/${a_file})
-    endif()
-  endforeach()
+  execute_process(COMMAND ${CMAKE_COMMAND} "-E" "rm" "-rf" "${path_to_folder}/*")
 endfunction(hard_Clean_Build_Folder)
 
 #.rst:
