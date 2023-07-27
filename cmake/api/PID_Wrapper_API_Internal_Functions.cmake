@@ -59,7 +59,7 @@ include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 #      :deploy_file_name: the path to the deployment script used to build/install the given version, relative to this version folder.
 #      :post_install_script: the path to the post install script that must be executed anytime the given version is deployed, relative to this version folder in source tree.
 #      :pre_use_script: the path to the pre use script that is executed anytime the given version is used by another package to perform additional configuration, relative to this version folder in source tree.
-#      :cmake folder: the path to the installed cmake module scripts.
+#      :cmake_folder: the path to the installed cmake module scripts.
 #      :pkgconfig_folder: the path to the installed pkg-config scripts.
 #
 function(reset_Wrapper_Version_Info version buidable soname compatibility deploy_file_name post_install_script pre_use_script cmake_folder pkgconfig_folder)

@@ -749,9 +749,9 @@ endmacro(add_PID_Wrapper_Known_Version)
 #  PID_Wrapper_Environment
 #  -----------------------
 #
-#   .. command:: PID_Wrapper_Environment(CONFIGURATION ...)
+#   .. command:: PID_Wrapper_Environment(...)
 #
-#   .. command:: declare_PID_Wrapper_Environment(CONFIGURATION ... )
+#   .. command:: declare_PID_Wrapper_Environment(... )
 #
 #      Declare a configuration constraint on the build environment for the current version of the external project being described.
 #
@@ -2639,6 +2639,50 @@ endmacro(return_External_Project_Error)
 #     .. code-block:: cmake
 #
 #         build_Autotools_External_Project(PROJECT aproject FOLDER a_project_v12 MODE Release)
+#
+
+
+#.rst:
+#
+# .. ifmode:: script
+#
+#  .. |build_Colcon_Workspace| replace:: ``build_Colcon_Workspace``
+#  .. build_Colcon_Workspace:
+#
+#  build_Colcon_Workspace
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: build_Colcon_Workspace(PROJECT ... WORKSPACE ...)
+#
+#     Build a colcon workspace that contains a set of projects.
+#
+#     .. rubric:: Required parameters
+#
+#     :PROJECT <string>: The global name of the external project defined as a workspace.
+#     :WORKSPACE <string>: The path to the colcon workspace, relative to root build folder.
+#
+#     .. rubric:: Optional parameters
+#
+#     :MODE <Rlease|Debug>: The global name of the external project defined as a workspace.
+#     :COMMENT <string>: comment printed during execution.
+#     :RPATH <list of strings>: additionnal rpath to set (for plugins).
+#     :DEFINITIONS <list of defs>: additionnal cmake definitions for colcon packages.
+#     
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - Must be used in deploy scripts defined in a wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         -  build all porjects in the workspace .
+#
+#     .. rubric:: Example
+#
+#     .. code-block:: cmake
+#
+#         build_Colcon_Workspace(PROJECT gazebo WORKSPACE workspace Mode Release)
 #
 
 #.rst:
