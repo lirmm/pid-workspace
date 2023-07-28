@@ -4411,7 +4411,10 @@ endfunction(is_Binary_Package_Version_In_Development)
 #     :path_to_folder: the path to the build folder to reset.
 #
 function(hard_Clean_Build_Folder path_to_folder)
-  execute_process(COMMAND ${CMAKE_COMMAND} "-E" "rm" "-rf" "${path_to_folder}/*")
+  file(GLOB build_content ${path_to_folder}/*)
+  foreach(entry IN LISTS build_content)
+    execute_process(COMMAND ${CMAKE_COMMAND} "-E" "rm" "-rf" "${entry}")
+  endforeach()
 endfunction(hard_Clean_Build_Folder)
 
 #.rst:
