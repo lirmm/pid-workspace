@@ -1189,6 +1189,7 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 	foreach(dep_pack IN LISTS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 		resolve_Package_Runtime_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
 	endforeach()
+	clear_Managed_Packages_For_Runtime_Dependencies(${CMAKE_BUILD_TYPE})
 endif()
 
 #################################################

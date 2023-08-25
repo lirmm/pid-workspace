@@ -1642,12 +1642,14 @@ function(bind_Installed_Package BOUND platform package version release_only)
 		set(${package}_FOUND_DEBUG TRUE CACHE INTERNAL "")
 		resolve_Package_Dependencies(${package} Debug TRUE FALSE) # finding all package dependencies
 		resolve_Package_Runtime_Dependencies(${package} Debug) # then resolving runtime resources to symlink
+		clear_Managed_Packages_For_Runtime_Dependencies(${CMAKE_BUILD_TYPE})
 	endif()
 	set(CMAKE_BUILD_TYPE Release)#to adequately interpret external packages description
 	set(${package}_FOUND TRUE CACHE INTERNAL "")
 	resolve_Package_Dependencies(${package} Release TRUE "${release_only}") # finding all package dependencies
 	resolve_Package_Runtime_Dependencies(${package} Release) # then resolving runtime resources to symlink
 
+	clear_Managed_Packages_For_Runtime_Dependencies(${CMAKE_BUILD_TYPE})
 	set(${BOUND} TRUE PARENT_SCOPE)
 endfunction(bind_Installed_Package)
 

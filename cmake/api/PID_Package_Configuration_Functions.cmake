@@ -1147,6 +1147,30 @@ endfunction(get_Source_Component_Runtime_Links)
 #
 # .. ifmode:: internal
 #
+#  .. |clear_Managed_Packages_For_Runtime_Dependencies| replace:: ``clear_Managed_Packages_For_Runtime_Dependencies``
+#  .. _clear_Managed_Packages_For_Runtime_Dependencies:
+#
+#  clear_Managed_Packages_For_Runtime_Dependencies
+#  -----------------------------------------------
+#
+#   .. command:: clear_Managed_Packages_For_Runtime_Dependencies(mode)
+#
+#   Clear memorized packaged for wihch runtime dependencies have been managed.
+#
+#     :mode: the build mode (Release or Debug) for the package.
+#
+function(clear_Managed_Packages_For_Runtime_Dependencies mode)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+foreach(pack IN LISTS MANAGED_PACKAGES_DURING_RUNTIME_DEPENDENCIES)
+  unset(${pack}_PREPARE_RUNTIME${VAR_SUFFIX} CACHE)
+endforeach()
+unset(MANAGED_PACKAGES_DURING_RUNTIME_DEPENDENCIES CACHE)
+endfunction(clear_Managed_Packages_For_Runtime_Dependencies)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |resolve_Package_Runtime_Dependencies| replace:: ``resolve_Package_Runtime_Dependencies``
 #  .. _resolve_Package_Runtime_Dependencies:
 #
@@ -1163,7 +1187,10 @@ endfunction(get_Source_Component_Runtime_Links)
 function(resolve_Package_Runtime_Dependencies package mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(${package}_PREPARE_RUNTIME${VAR_SUFFIX})#this is a guard to limit recursion -> the runtime has already been prepared
-	return()
+	#WARNING: following line is just to avoid blocking the resolution process is something went wrong
+  # during last call and MANAGED_PACKAGES_DURING_RUNTIME_DEPENDENCIES has not been cleaned
+  append_Unique_In_Cache(MANAGED_PACKAGES_DURING_RUNTIME_DEPENDENCIES ${package})
+  return()
 endif()
 if(${package}_DURING_PREPARE_RUNTIME${VAR_SUFFIX})
   finish_Progress(${GLOBAL_PROGRESS_VAR})
@@ -1171,7 +1198,6 @@ if(${package}_DURING_PREPARE_RUNTIME${VAR_SUFFIX})
 	return()
 endif()
 set(${package}_DURING_PREPARE_RUNTIME${VAR_SUFFIX} TRUE)
-
 # 1) resolving runtime dependencies by recursion (resolving dependancy packages' components first)
 foreach(dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
   resolve_Package_Runtime_Dependencies(${dep} ${mode})
@@ -1195,7 +1221,8 @@ else()
   endforeach()
 endif()
 set(${package}_DURING_PREPARE_RUNTIME${VAR_SUFFIX} FALSE)
-set(${package}_PREPARE_RUNTIME${VAR_SUFFIX} TRUE)
+set(${package}_PREPARE_RUNTIME${VAR_SUFFIX} TRUE CACHE INTERNAL "")
+append_Unique_In_Cache(MANAGED_PACKAGES_DURING_RUNTIME_DEPENDENCIES ${package})
 endfunction(resolve_Package_Runtime_Dependencies)
 
 
