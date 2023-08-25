@@ -73,6 +73,7 @@ include(Environment_Definition NO_POLICY_SCOPE) #to be able to interpret descrip
 #     :contrib_space: determines the default contribution space of the package.
 #
 macro(declare_Package author institution mail year license address public_address description readme_file code_style contrib_space)
+
 manage_Current_Platform("${CMAKE_BINARY_DIR}" "NATIVE") #loading the current platform configuration and perform adequate actions if any changes
 set(PACKAGE_SPECIFIC_BUILD_INFO_FILE ${CMAKE_BINARY_DIR}/Package_Build_Info.cmake)
 file(WRITE "${PACKAGE_SPECIFIC_BUILD_INFO_FILE}" "")#create the file (only useful in build mode specific folders)
@@ -608,13 +609,14 @@ init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
 init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "" "" "")
 reset_Version_Cache_Variables()
 reset_Temporary_Optimization_Variables(${CMAKE_BUILD_TYPE}) #resetting temporary variables used in optimization of configruation process
-is_First_Package_Configuration(FIRST_CONFIG)
-if(FIRST_CONFIG)#adjust or alert if there is a potential problem in repositories adresses
+
+if(CHECK_GIT_REMOTES)
 	check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")
 	check_For_Branches("${ADDITIONAL_DEBUG_INFO}")
 endif()
-unset(FIRST_CONFIG)
+
 begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
+
 endmacro(declare_Package)
 
 #.rst:

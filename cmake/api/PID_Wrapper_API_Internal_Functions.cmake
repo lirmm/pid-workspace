@@ -265,8 +265,9 @@ reset_Packages_Finding_Variables()
 reset_Temporary_Optimization_Variables(${CMAKE_BUILD_TYPE})
 init_PID_Version_Variable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
 init_Meta_Info_Cache_Variables("${author}" "${institution}" "${mail}" "${description}" "${year}" "${license}" "${address}" "${public_address}" "${readme_file}" "" "" "" "" "")
-check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")#configuring git remotes
-
+if(CHECK_GIT_REMOTES)
+	check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")#configuring git remotes
+endif()
 #############################################################
 ############ Managing build process #########################
 #############################################################
@@ -394,6 +395,7 @@ option(BUILD_RELEASE_ONLY "Package is built in release mode" ON)
 if(FORCE_DUAL_MODE)#if dual mode forced
   set(BUILD_RELEASE_ONLY OFF CACHE BOOL "Package is built in release mode" FORCE)
 endif()
+option(CHECK_GIT_REMOTES "Wrapper checks validity of remotes when configured (can increase build time)" OFF)
 endmacro(declare_Wrapper_Global_Cache_Options)
 
 #.rst:

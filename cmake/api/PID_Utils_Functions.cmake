@@ -5720,6 +5720,35 @@ endfunction(resolve_Imported_Standards)
 ################################### pure CMake utilities ########################################
 #################################################################################################
 
+function(execution_time_since_last_call_of_this REF_TIME EXEC_TIME)
+string(TIMESTAMP CURRENT_TIME "%H;%M;%S;%f")
+list(GET CURRENT_TIME 0 curr_hour)
+list(GET CURRENT_TIME 1 curr_minute)
+list(GET CURRENT_TIME 2 curr_second)
+list(GET CURRENT_TIME 3 curr_mic)
+math(EXPR TOTAL_CURR_MICS "${curr_hour}*3600000000+${curr_minute}*60000000+${curr_second}*1000000+${curr_mic}")
+
+if(NOT ${REF_TIME})
+  set(${EXEC_TIME} 0 PARENT_SCOPE)
+  set(${REF_TIME} ${TOTAL_CURR_MICS} PARENT_SCOPE)
+  return()
+endif()
+
+math(EXPR DIFF "${TOTAL_CURR_MICS}-${${REF_TIME}}")
+set(${EXEC_TIME} ${DIFF} PARENT_SCOPE)
+
+endfunction(execution_time_since_last_call_of_this)
+
+function(message_with_exec_time REF_TIME mess)
+execution_time_since_last_call_of_this(${REF_TIME} EXEC_TIME)
+set(${REF_TIME} ${${REF_TIME}} PARENT_SCOPE)
+if(EXEC_TIME EQUAL 0)
+  message("${mess}")
+  return()
+endif()
+message("[${EXEC_TIME}] ${mess}")
+endfunction(message_with_exec_time) 
+
 #.rst:
 #
 # .. ifmode:: internal

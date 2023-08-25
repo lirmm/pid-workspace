@@ -258,7 +258,10 @@ if(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}(-framework|-site)?/build$")
 	
 	set_Cache_Entry_For_Default_Contribution_Space("${contrib_space}")
 	declare_Framework_Global_Cache_Options()
-	check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")#configuring git remotes
+
+	if(CHECK_GIT_REMOTES)
+		check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")#configuring git remotes
+	endif()
 	#searching for jekyll (static site generator)
 	if(JEKYLL_EXECUTABLE)
 
@@ -329,6 +332,7 @@ endmacro(declare_Framework)
 #
 macro(declare_Framework_Global_Cache_Options)
 option(ADDITIONAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
+option(CHECK_GIT_REMOTES "Framework checks validity of remotes when configured (can increase build time)" OFF)
 endmacro(declare_Framework_Global_Cache_Options)
 
 

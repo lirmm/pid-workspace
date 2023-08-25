@@ -196,7 +196,9 @@ macro(declare_Environment author institution mail year license address public_ad
   set(action_info ${info})
   fill_String_From_List(RES_INFO action_info " ")
   set(${PROJECT_NAME}_ACTION_INFO "${RES_INFO}" CACHE INTERNAL "")
-  check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")#configuring git remotes
+  if(CHECK_GIT_REMOTES)
+    check_For_Remote_Respositories("${ADDITIONAL_DEBUG_INFO}")#configuring git remotes
+  endif()
 endmacro(declare_Environment)
 
 #.rst:
@@ -215,6 +217,7 @@ endmacro(declare_Environment)
 #
 macro(declare_Environment_Global_Cache_Options)
 option(ADDITIONAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
+option(CHECK_GIT_REMOTES "Environment checks validity of remotes when configured (can increase build time)" OFF)
 endmacro(declare_Environment_Global_Cache_Options)
 
 #.rst:

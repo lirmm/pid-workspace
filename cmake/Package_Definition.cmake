@@ -145,6 +145,7 @@ macro(declare_PID_Package)
   			"${DECLARE_PID_PACKAGE_YEAR}" "${DECLARE_PID_PACKAGE_LICENSE}"
   			"${DECLARE_PID_PACKAGE_ADDRESS}" "${DECLARE_PID_PACKAGE_PUBLIC_ADDRESS}"
   		  "${DECLARE_PID_PACKAGE_DESCRIPTION}" "${DECLARE_PID_PACKAGE_README}" "${DECLARE_PID_PACKAGE_CODE_STYLE}" "${DECLARE_PID_PACKAGE_CONTRIBUTION_SPACE}")
+  
   unset(email)
   if(DECLARE_PID_PACKAGE_VERSION) #version directly declared in the declaration (NEW WAY to specify version)
     set_PID_Package_Version(${DECLARE_PID_PACKAGE_VERSION})#simply pass the list to the "final" function

@@ -66,6 +66,7 @@ option(BUILD_STATIC_CODE_CHECKING_REPORT "running static checks on libraries and
 option(ENABLE_SANITIZERS "Enable the sanitizers on the package's components" OFF)
 option(WARNINGS_AS_ERRORS "Generating errors when warnings are notified" OFF)
 option(REQUIRED_PACKAGES_AUTOMATIC_UPDATE "Package will try to install new version when configuring" OFF)
+option(CHECK_GIT_REMOTES "Package checks validity of remotes when configured (can increase build time)" OFF)
 
 # dependent options
 include(CMakeDependentOption)

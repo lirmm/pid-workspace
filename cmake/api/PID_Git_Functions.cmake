@@ -2597,6 +2597,7 @@ else()#there is a connected remote after adjustment
   	execute_process(COMMAND git fetch origin
                     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
   else()
+
     test_Remote_Connection(CONNECTED ${CMAKE_SOURCE_DIR} origin)
     if(NOT CONNECTED)#the origin is no mroe pointing to a valid repository
       message("[PID] WARNING: your origin remote is no more valid (it has probably been removed online). Setting it to ${${PROJECT_NAME}_ADDRESS}.")
