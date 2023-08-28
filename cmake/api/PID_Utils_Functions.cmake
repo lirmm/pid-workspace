@@ -1201,9 +1201,7 @@ function(create_Symlink path_to_old path_to_new)
             ERROR_QUIET
         )
     else()
-      execute_process(
-          COMMAND ${CMAKE_COMMAND} -E create_symlink ${path_to_old} ${path_to_new}
-      )
+      file(CREATE_LINK ${path_to_old} ${path_to_new} SYMBOLIC)
     endif()
 endfunction(create_Symlink)
 
