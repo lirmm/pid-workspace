@@ -5736,7 +5736,7 @@ endif()
 
 math(EXPR DIFF "${TOTAL_CURR_MICS}-${${REF_TIME}}")
 set(${EXEC_TIME} ${DIFF} PARENT_SCOPE)
-
+set(${REF_TIME} ${TOTAL_CURR_MICS} PARENT_SCOPE)
 endfunction(execution_time_since_last_call_of_this)
 
 function(message_with_exec_time REF_TIME mess)

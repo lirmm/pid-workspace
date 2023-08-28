@@ -1180,20 +1180,18 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 			resolve_Package_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE} TRUE "${BUILD_RELEASE_ONLY}")
 		endif()
  	endforeach()
-
-	#here every package dependency should have been resolved OR ERROR
-
-	# 2) when done resolving runtime dependencies for all used package (direct or undirect)
-	foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
-		resolve_Package_Runtime_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
-		resolve_preuse(${PROJECT_NAME} ${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)
-	endforeach()
-	foreach(dep_pack IN LISTS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
-		resolve_Package_Runtime_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
-	endforeach()
-	clear_Managed_Packages_For_Runtime_Dependencies(${CMAKE_BUILD_TYPE})
 endif()
+#here every package dependency should have been resolved OR ERROR
 
+# 2) when done resolving runtime dependencies for all used package (direct or undirect)
+foreach(dep_pack IN LISTS ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+	resolve_Package_Runtime_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
+	resolve_preuse(${PROJECT_NAME} ${dep_pack} ${CMAKE_BUILD_TYPE} TRUE)
+endforeach()
+foreach(dep_pack IN LISTS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
+	resolve_Package_Runtime_Dependencies(${dep_pack} ${CMAKE_BUILD_TYPE})
+endforeach()
+clear_Managed_Packages_For_Runtime_Dependencies(${CMAKE_BUILD_TYPE})
 #################################################
 ############ MANAGING the BUILD #################
 #################################################
@@ -1225,7 +1223,6 @@ list(LENGTH ${PROJECT_NAME}_PREDECLARED_COMPS NUM_PREDECLARED_COMPS)
 if(NUM_PREDECLARED_COMPS GREATER 0)
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : These predeclared components have not been declared in the package: ${${PROJECT_NAME}_PREDECLARED_COMPS}")
 endif()
-
 
 ##########################################################
 ############ MANAGING non source files ###################
@@ -1295,7 +1292,6 @@ foreach(component IN LISTS ${PROJECT_NAME}_COMPONENTS)
 		resolve_Source_Component_Runtime_Dependencies_Build_Tree(${component} ${CMAKE_BUILD_TYPE})
 	endif()
 endforeach()
-
 
 #################################################
 ##### MANAGING the SYSTEM PACKAGING #############

@@ -3093,6 +3093,9 @@ endfunction(generate_Loggable_File)
 ############### management of temporary variables used to optimize the build process ########
 #############################################################################################
 
+
+
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -3111,6 +3114,14 @@ endfunction(generate_Loggable_File)
 #
 function(reset_Temporary_Optimization_Variables mode)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  foreach(pack IN LISTS TEMP_DEPS${VAR_SUFFIX})
+    foreach(version IN LISTS TEMP_DEPS_${pack}_VERSIONS${VAR_SUFFIX})
+      unset(TEMP_DEPS_${pack}_VERSION_${version}_SYSTEM${VAR_SUFFIX} CACHE)
+    endforeach()
+    unset(TEMP_DEPS_${pack}_VERSIONS${VAR_SUFFIX} CACHE)
+  endforeach()
+  unset(TEMP_DEPS${VAR_SUFFIX} CACHE)
+
   foreach(comp IN LISTS TEMP_VARS${VAR_SUFFIX})
   	unset(TEMP_${comp}_LOCAL_RUNTIME_LINKS${VAR_SUFFIX} CACHE)
   	unset(TEMP_${comp}_USING_RUNTIME_LINKS${VAR_SUFFIX} CACHE)
@@ -3131,6 +3142,72 @@ function(reset_Temporary_Optimization_Variables mode)
   endforeach()
   unset(TEMP_CONFIGS${VAR_SUFFIX} CACHE)
 endfunction(reset_Temporary_Optimization_Variables)
+
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Dependency_Temporary_Optimization_Variables| replace:: ``set_Dependency_Temporary_Optimization_Variables``
+#  .. _set_Dependency_Temporary_Optimization_Variables:
+#
+#  set_Dependency_Temporary_Optimization_Variables
+#  --------------------------------------------------
+#
+#   .. command:: set_Dependency_Temporary_Optimization_Variables(package version is_system mode)
+#
+#   set optimization variables used to check dependencies of a package.
+#
+#     :package: the name of the package.
+#     :version: the version of the package.
+#     :is_system: specifies if the version is an os variant.
+#     :mode: the build mode.
+#
+function(set_Dependency_Temporary_Optimization_Variables package version is_system mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  append_Unique_In_Cache(TEMP_DEPS${VAR_SUFFIX} ${package})
+  append_Unique_In_Cache(TEMP_DEPS_${package}_VERSIONS${VAR_SUFFIX} ${version})
+  set(TEMP_DEPS_${package}_VERSION_${version}_SYSTEM${VAR_SUFFIX} ${is_system} CACHE INTERNAL "")
+endfunction(set_Dependency_Temporary_Optimization_Variables)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Dependency_Temporary_Optimization_Variables| replace:: ``check_Dependency_Temporary_Optimization_Variables``
+#  .. _check_Dependency_Temporary_Optimization_Variables:
+#
+#  check_Dependency_Temporary_Optimization_Variables
+#  ----------------------------------------------------
+#
+#   .. command:: check_Dependency_Temporary_Optimization_Variables(VERSION_CHECKED package version is_system mode)
+#
+#   check whether a version of a package have already been computed.
+#
+#     :package: the name of the package.
+#     :version: the version to check.
+#     :is_system: specifies if the version must be the os variant.
+#     :mode: the build mode.
+#
+#     :VERSION_CHECKED: the output variable that is true if version already checked, false otherwise
+#
+function(check_Dependency_Temporary_Optimization_Variables VERSION_CHECKED package version is_system mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  list(FIND TEMP_DEPS_${package}_VERSIONS${VAR_SUFFIX} ${version} INDEX)
+  if(NOT INDEX EQUAL -1)
+    if(TEMP_DEPS_${package}_VERSION_${version}_SYSTEM${VAR_SUFFIX})
+      if(is_system)
+        set(${VERSION_CHECKED} TRUE PARENT_SCOPE)
+      endif()
+    elseif(NOT is_system)
+      set(${VERSION_CHECKED} TRUE PARENT_SCOPE)
+    endif()
+    return()
+  endif()
+  set(${VERSION_CHECKED} FALSE PARENT_SCOPE)
+endfunction(check_Dependency_Temporary_Optimization_Variables)
 
 
 

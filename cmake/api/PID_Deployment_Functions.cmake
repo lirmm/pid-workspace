@@ -160,12 +160,19 @@ endfunction(generate_Wrapper_Reference_File)
 #
 #      :package: The name of given package for which dependencies are resolved.
 #      :mode: The build mode (Debug or Release) of the package.
-#      :first_time: the boolean indicating (if true) that the resolution process has been launch for firt time in build process, FALSE otherwise.
+#      :first_time: the boolean indicating (if true) that the resolution process has been launch for first time in build process, FALSE otherwise.
 #      :release_only: if TRUE the resolution process will consider only release binaries in install tree.
 #
 function(resolve_Package_Dependencies package mode first_time release_only)
-list(APPEND RESOLVE_PACKAGE_DEPENDENCIES_REQUIRED_BY ${package})
+
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+if(first_time)#otherwise means a reinstall is forced so reevaluate everything
+  check_Dependency_Temporary_Optimization_Variables(ALREADY_CHECKED ${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
+  if(ALREADY_CHECKED)#no need to redo the same
+    return()
+  endif()
+endif()
+list(APPEND RESOLVE_PACKAGE_DEPENDENCIES_REQUIRED_BY ${package})
 ################## management of configuration : for both external and native packages ##################
 set(list_of_unresolved_configs)
 foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX}) ## all configuration constraints must be satisfied
@@ -251,6 +258,7 @@ foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
       message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent external package ${dep_ext_pack} with an ABI compatible with current platform. This may mean there is no wrapper for ${package} and no available binary package is compliant with current platform ABI.")
     else()#OK resolution took place !!
       add_Chosen_Package_Version_In_Current_Process(${dep_ext_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
+      set_Dependency_Temporary_Optimization_Variables(${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
       if(${dep_ext_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
         resolve_Package_Dependencies(${dep_ext_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
       endif()
@@ -259,6 +267,7 @@ foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
     list(APPEND list_of_conflicting_dependencies ${dep_ext_pack})#try to reinstall it from sources if possible, simply add it to the list of packages to install
   else()#OK resolution took place and is OK
     add_Chosen_Package_Version_In_Current_Process(${dep_ext_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
+    set_Dependency_Temporary_Optimization_Variables(${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
     if(${dep_ext_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})#the external package has external dependencies !!
       resolve_Package_Dependencies(${dep_ext_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
     endif()
@@ -290,6 +299,7 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
       message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent native package ${dep_pack} with an ABI compatible with current platform. This may mean you have no access to ${package} repository and no available binary package is compliant with current platform ABI.")
     else()#OK resolution took place !!
       add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
+      set_Dependency_Temporary_Optimization_Variables(${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
       if(${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} OR ${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (external only) for this external package
         resolve_Package_Dependencies(${dep_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
       endif()
@@ -306,6 +316,7 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
     list(APPEND list_of_conflicting_dependencies ${dep_pack})
 	else()# resolution took place and is OK
     add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
+    set_Dependency_Temporary_Optimization_Variables(${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
     if(${dep_pack}_DEPENDENCIES${VAR_SUFFIX} OR ${dep_pack}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #are there any dependency (native or external) for this package
 			resolve_Package_Dependencies(${dep_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each package dependency
 		endif()
