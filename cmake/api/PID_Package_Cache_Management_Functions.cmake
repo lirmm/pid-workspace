@@ -2350,6 +2350,12 @@ endfunction(is_Component_Exporting_Other_Components)
 #     :CONTAINER_PACKAGES: the output variable that contains the list of packages that define a component with same name.
 #
 function(find_Packages_Containing_Component CONTAINER_PACKAGES package component)
+check_Component_Containment_Temporary_Optimization_Variables(CHECK_DONE CONTAINERS ${package} ${component} ${CMAKE_BUILD_TYPE})
+if(CHECK_DONE)
+  set(${CONTAINER_PACKAGES} ${CONTAINERS} PARENT_SCOPE)
+  return()
+endif()
+
 set(result)
 #searching into component of the current package
 list(FIND ${package}_COMPONENTS ${component} INDEX)
@@ -2381,6 +2387,7 @@ endif()
 if(result)
   list(REMOVE_DUPLICATES result)
 endif()
+set_Component_Containment_Temporary_Optimization_Variables(${package} ${component} result ${CMAKE_BUILD_TYPE})
 set(${CONTAINER_PACKAGES} ${result} PARENT_SCOPE)
 endfunction(find_Packages_Containing_Component)
 
@@ -3093,9 +3100,6 @@ endfunction(generate_Loggable_File)
 ############### management of temporary variables used to optimize the build process ########
 #############################################################################################
 
-
-
-
 #.rst:
 #
 # .. ifmode:: internal
@@ -3122,6 +3126,14 @@ function(reset_Temporary_Optimization_Variables mode)
   endforeach()
   unset(TEMP_DEPS${VAR_SUFFIX} CACHE)
 
+  foreach(comp IN LISTS TEMP_COMP_CONTAINERS${VAR_SUFFIX})
+    foreach(container IN LISTS TEMP_COMP_CONTAINERS_${comp}_PACKAGES${VAR_SUFFIX})
+      unset(TEMP_COMP_CONTAINERS_${comp}_PACKAGE_${container}_RESULT${VAR_SUFFIX} CACHE)
+    endforeach()
+    unset(TEMP_COMP_CONTAINERS_${comp}_PACKAGES${VAR_SUFFIX} CACHE)
+  endforeach()
+  unset(TEMP_COMP_CONTAINERS${VAR_SUFFIX} CACHE)
+
   foreach(comp IN LISTS TEMP_VARS${VAR_SUFFIX})
   	unset(TEMP_${comp}_LOCAL_RUNTIME_LINKS${VAR_SUFFIX} CACHE)
   	unset(TEMP_${comp}_USING_RUNTIME_LINKS${VAR_SUFFIX} CACHE)
@@ -3144,6 +3156,68 @@ function(reset_Temporary_Optimization_Variables mode)
 endfunction(reset_Temporary_Optimization_Variables)
 
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |set_Component_Containment_Temporary_Optimization_Variables| replace:: ``set_Component_Containment_Temporary_Optimization_Variables``
+#  .. _set_Component_Containment_Temporary_Optimization_Variables:
+#
+#  set_Component_Containment_Temporary_Optimization_Variables
+#  ----------------------------------------------------------
+#
+#   .. command:: set_Component_Containment_Temporary_Optimization_Variables(package component mode)
+#
+#   set optimization variables used to check dependencies of a package.
+#
+#     :package: the name of the package.
+#     :component: the version of the package.
+#     :containers_list: variable containing all packages that contain the component among the target package and its dependencies.
+#     :mode: the build mode.
+#
+function(set_Component_Containment_Temporary_Optimization_Variables package component containers_list mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  append_Unique_In_Cache(TEMP_COMP_CONTAINERS${VAR_SUFFIX} ${component})
+  append_Unique_In_Cache(TEMP_COMP_CONTAINERS_${component}_PACKAGES${VAR_SUFFIX} ${package})
+  set(TEMP_COMP_CONTAINERS_${component}_PACKAGE_${package}_RESULT${VAR_SUFFIX} ${${containers_list}} CACHE INTERNAL "")
+endfunction(set_Component_Containment_Temporary_Optimization_Variables)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Component_Containment_Temporary_Optimization_Variables| replace:: ``check_Component_Containment_Temporary_Optimization_Variables``
+#  .. check_Component_Containment_Temporary_Optimization_Variables:
+#
+#  check_Component_Containment_Temporary_Optimization_Variables
+#  ------------------------------------------------------------
+#
+#   .. command:: check_Component_Containment_Temporary_Optimization_Variables(ALREADY_CHECKED CONTAINERS package component mode)
+#
+#   check whether a component belongs to a package.
+#
+#     :package: the name of the package.
+#     :component: the name (or alias) of the component.
+#     :mode: the build mode.
+#
+#     :ALREADY_CHECKED: the output variable that is true if this check has already been made during currrnt configuration, false otherwise
+#     :CONTAINERS: the output variable that contains container packages
+#
+function(check_Component_Containment_Temporary_Optimization_Variables ALREADY_CHECKED CONTAINERS package component mode)
+  get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+  set(${ALREADY_CHECKED} FALSE PARENT_SCOPE)
+  set(${CONTAINERS} PARENT_SCOPE)
+  list(FIND TEMP_COMP_CONTAINERS${VAR_SUFFIX} ${component} COMP_INDEX)
+  if(COMP_INDEX EQUAL -1)#never checked
+    return()
+  endif()
+  list(FIND TEMP_COMP_CONTAINERS_${component}_PACKAGES${VAR_SUFFIX} ${package} PKG_INDEX)
+  if(PKG_INDEX EQUAL -1)#never checked
+    return()
+  endif()
+  set(${ALREADY_CHECKED} TRUE PARENT_SCOPE)
+  set(${CONTAINERS} ${TEMP_COMP_CONTAINERS_${component}_PACKAGE_${package}_RESULT${VAR_SUFFIX}} PARENT_SCOPE)
+endfunction(check_Component_Containment_Temporary_Optimization_Variables)
 
 
 #.rst:
