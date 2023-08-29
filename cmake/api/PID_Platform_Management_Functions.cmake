@@ -1485,8 +1485,8 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
   endif()
 
   # checking dependencies
-  set(dep_configurations)
-  foreach(check IN LISTS ${config_name}_CONFIGURATION_DEPENDENCIES)
+  interpret_System_Configuration_List(dep_configurations ${config_name}_CONFIGURATION_DEPENDENCIES)
+  foreach(check IN LISTS dep_configurations)
     check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${package} ${check} ${mode})#check that dependencies are OK
     if(NOT RESULT_OK)
       message("[PID] WARNING : when checking configuration of current platform, configuration ${check}, used by ${config_name} cannot be satisfied.")
@@ -1583,7 +1583,9 @@ function(get_All_Configuration_Visible_Build_Variables LINK_OPTS COMPILE_OPTS IN
 		set(rpath ${config}_RPATH)
 	endif()
   #then getting the variables of the dependencies
-  foreach(dep IN LISTS ${config}_CONFIGURATION_DEPENDENCIES)
+  interpret_System_Configuration_List(dep_configurations ${config}_CONFIGURATION_DEPENDENCIES)
+
+  foreach(dep IN LISTS dep_configurations)
     #recursion
     get_All_Configuration_Visible_Build_Variables(DEP_LINK_OPTS DEP_COMPILE_OPTS DEP_INC_DIRS DEP_LIB_DIRS DEP_DEFS DEP_RPATH ${dep})
     list(APPEND links ${DEP_LINK_OPTS})
@@ -1689,7 +1691,9 @@ function(is_Allowed_Platform_Configuration ALLOWED config_name config_args)
   endif()
 
   # checking dependencies first
-  foreach(check IN LISTS ${config_name}_CONFIGURATION_DEPENDENCIES)
+  interpret_System_Configuration_List(dep_configurations ${config_name}_CONFIGURATION_DEPENDENCIES)
+
+  foreach(check IN LISTS dep_configurations)
     parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${check}")
     if(NOT CONFIG_NAME)
       return()
@@ -2399,3 +2403,39 @@ function(check_Package_Platform_Against_Current CHECK_OK package platform versio
   unload_Binary_Package_Install_Manifest(${package})
 
 endfunction(check_Package_Platform_Against_Current)
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |interpret_System_Configuration_List| replace:: ``interpret_System_Configuration_List``
+#  .. _interpret_System_Configuration_List:
+#
+#  interpret_System_Configuration_List
+#  --------------------------------------
+#
+#   .. command:: interpret_System_Configuration_List(OUTPUT var)
+#
+#    Interpret a variable as a container of configuration check expressions
+#
+#      :var: The input variable containing the list of configuration check either as direct expressions or as variables 
+#
+#      :OUTPUT: the output variable that contains the interpretation of all variables
+#
+function(interpret_System_Configuration_List OUTPUT var)
+  set(res)
+  foreach(config_or_var IN LISTS ${var})
+    if(DEFINED ${config_or_var})
+      #the passed argument is a variable
+      foreach(config_or_var_in_var IN LISTS ${config_or_var})
+        interpret_System_Configuration_List(INPUT config_or_var_in_var)
+        list(APPEND res ${INPUT})
+      endforeach()
+    else()#it is an expression
+      list(APPEND res ${config_or_var})
+    endif()
+  endforeach()
+  set(${OUTPUT} ${res} PARENT_SCOPE)
+endfunction(interpret_System_Configuration_List)

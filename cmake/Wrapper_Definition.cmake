@@ -1674,9 +1674,7 @@ macro(PID_Wrapper_System_Configuration_Dependencies)
 endmacro(PID_Wrapper_System_Configuration_Dependencies)
 
 function(declare_PID_Wrapper_System_Configuration_Dependencies)
-  foreach(dep IN LISTS ARGN)
-    append_Unique_In_cache(${PROJECT_NAME}_CONFIGURATION_DEPENDENCIES "${ARGN}")
-  endforeach()
+  append_Unique_In_cache(${PROJECT_NAME}_CONFIGURATION_DEPENDENCIES "${ARGN}")
 endfunction(declare_PID_Wrapper_System_Configuration_Dependencies)
 
 #########################################################################################
