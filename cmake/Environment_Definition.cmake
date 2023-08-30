@@ -790,7 +790,7 @@ endfunction(get_Configured_Environment_Tool)
 #     :INCLUDE_DIRS ...: list of path to include dirs (for LANGUAGE and SYSTEM).
 #     :LIBRARY_DIRS ...: list of path to library dirs (for SYSTEM).
 #     :CONFIGURATION ...: list of required platform configurations (for EXTRA).
-#     :PLUGIN [ BEFORE_DEPS ...] [BEFORE_COMPS ...] [DURING_COMPS ...] [AFTER_COMPS ...]: plugin script to call at specific package configuration times.
+#     :PLUGIN [ON_DEMAND] [ BEFORE_DEPS ...] [BEFORE_COMPS ...] [DURING_COMPS ...] [AFTER_COMPS ...]: plugin script to call at specific package configuration times. ON_DEMAND specifies that the plugin will execute only if the environment is explicitely required by the package.
 #
 #     .. admonition:: Constraints
 #        :class: warning
