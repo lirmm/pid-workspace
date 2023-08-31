@@ -106,6 +106,36 @@ macro(manage_Plugins_In_Wrapper_After_Components_Description package version)
 endmacro(manage_Plugins_In_Wrapper_After_Components_Description)
 
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |manage_Plugin_In_Package| replace:: ``manage_Plugin_In_Package``
+#  .. _manage_Plugin_In_Package:
+#
+#  manage_Plugin_In_Package
+#  -------------------------
+#
+#   .. command:: manage_Plugin_In_Package(filename)
+#
+#    Manage actions of a specific plugin in currently built package before dependencies resolution.
+#    Used to provide plugin that provide macros/functions in their script
+#
+#    :environment_expr : environment constraint to evaluate.
+#
+macro(manage_Plugin_Before_Deps_In_Package environment_expr)
+  set(plugins_path ${WORKSPACE_DIR}/build/${CURRENT_PROFILE}/plugins)
+  #0)minimal check to ensur econsistency of the call
+  hashcode_From_Expression(env_name env_hash "${environment_expr}")
+  list(FIND ${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED ${env_name} index)
+  list(GET ${PROJECT_NAME}_EXTRA_TOOLS_INSTANCES_REQUIRED ${index} instance)
+  set(${env_name}_TOOL_INSTANCE ${instance})
+  if(${instance}_EXTRA_${env_name}_PLUGIN_BEFORE_DEPENDENCIES)
+    include(${plugins_path}/${env_name}/before_deps.cmake)
+  endif()
+endmacro(manage_Plugin_Before_Deps_In_Package)
+
 #.rst:
 #
 # .. ifmode:: internal
