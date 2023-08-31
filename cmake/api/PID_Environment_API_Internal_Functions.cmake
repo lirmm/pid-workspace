@@ -524,7 +524,7 @@ macro(build_Environment_Project)
   deduce_Platform_Variables()
   compute_Resulting_Environment_Contraints()
   adjust_Environment_Binary_Variables()#need to set the previously computed expression where it is required
-  string(SHA1 hashcode "${IN_CONSTRAINTS}")
+  hashcode_From_Expression(UNUSED_NAME hashcode "${PROJECT_NAME}[${IN_CONSTRAINTS}]")
   generate_Environment_Solution_File("${hashcode}")#generate the global solution file
   generate_Environment_Toolchain_File()#from global solution generate the toolchain file
   set(EVALUATION_RUN FALSE CACHE INTERNAL "" FORCE)#reset so that new cmake run will not be an evaluation run
@@ -1396,7 +1396,6 @@ endfunction(evaluate_Generator)
 function(evaluate_Environment_Platform CURRENT_HOST_MATCHES_TARGET)
   set(${PROJECT_NAME}_CROSSCOMPILATION FALSE CACHE INTERNAL "")
   set(result TRUE)
-
   #determine if host is target and if we need to crosscompile
   if(${PROJECT_NAME}_TYPE_CONSTRAINT
   AND NOT CURRENT_PLATFORM_TYPE STREQUAL ${PROJECT_NAME}_TYPE_CONSTRAINT)
@@ -1488,7 +1487,7 @@ function(is_Environment_Solution_Eligible RESULT index)
     endif()
   endif()
   if(${PROJECT_NAME}_SOLUTION_${index}_ABI)# a constraint on processor architecture type
-    if(NOT ${PROJECT_NAME}_SOLUTION_${index}_ABI STREQUALCURRENT_PLATFORM_ABI )#not the current one
+    if(NOT ${PROJECT_NAME}_SOLUTION_${index}_ABI STREQUAL CURRENT_PLATFORM_ABI )#not the current one
       return()
     endif()
   endif()

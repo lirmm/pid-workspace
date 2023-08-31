@@ -1842,7 +1842,7 @@ endfunction(check_Extra_Tool_Configuration_With_Arguments)
 #
 function(check_Tool_Expression COMPATIBLE tool_expression env_expression)
   set(${COMPATIBLE} FALSE PARENT_SCOPE)
-
+  
   parse_Configuration_Expression(TOOL_NAME TOOL_ARGS "${tool_expression}")
   parse_Configuration_Expression(IN_ENV_NAME IN_ENV_ARGS "${env_expression}")
   if(TOOL_NAME STREQUAL IN_ENV_NAME)
@@ -1879,24 +1879,34 @@ endfunction(check_Tool_Expression)
 #    Evaluate a specific extra tool if it is provided by a given environment.
 #
 #     :tool: the name of the extra tool
-#     :environment: the name of the environment providing the tool.
+#     :environment: the name of the environment (possibly) providing the tool.
 #
 #     :CHECK_OK: the output variable that is TRUE if language toolset constraints are satisfied by current build environment.
 #     :CONFIGS_TO_CHECK: the output variable that contains the list of configuration constraints to check when using this tool.
 #
 function(evaluate_Extra_Tool_In_Environment RESULT CONFIGS_TO_CHECK tool environment)
-  set(${RESULT} FALSE PARENT_SCOPE)
+  set(${RESULT} FALSE PARENT_SCOPE) 
   set(${CONFIGS_TO_CHECK} PARENT_SCOPE)
-  hashcode_From_Expression(name hash ${environment})
-  set(prefix ${name}_${hash})
+  hashcode_From_Expression(env_name env_hash ${environment})
+  hashcode_From_Expression(tool_name tool_hash ${tool})
+  #check if target environment contains the same tool expression (based on hash)
+  set(prefix ${env_name}_${env_hash})
+  set(EXPRESSION_MATCH_REQUIRED FALSE)
   foreach(extra IN LISTS ${prefix}_EXTRA_TOOLS)
-    if(tool STREQUAL extra)
-      check_Tool_Expression(EXPRESSION_MATCH_REQUIRED ${tool} ${${prefix}_EXTRA_${tool}_CONSTRAINT_EXPRESSION})
-      if(EXPRESSION_MATCH_REQUIRED)
-        set(${CONFIGS_TO_CHECK} ${${prefix}_EXTRA_${tool}_PLATFORM_CONFIGURATIONS} PARENT_SCOPE)
-        set(${RESULT} TRUE PARENT_SCOPE)
-        return()
+    if(tool_name STREQUAL extra)
+      hashcode_From_Expression(extra_name extra_hash ${${prefix}_EXTRA_${extra}_CONSTRAINT_EXPRESSION})
+      if(tool_hash STREQUAL extra_hash)
+        #same name and same hash : everything tool already evaluated -> reuse this evaluation
+        set(EXPRESSION_MATCH_REQUIRED TRUE)
+      else()
+        #checking extra tools with standard version and architecture arguments
+        check_Tool_Expression(EXPRESSION_MATCH_REQUIRED ${tool} ${${prefix}_EXTRA_${extra}_CONSTRAINT_EXPRESSION})
       endif()
+    endif()
+    if(EXPRESSION_MATCH_REQUIRED)
+      set(${CONFIGS_TO_CHECK} ${${prefix}_EXTRA_${extra}_PLATFORM_CONFIGURATIONS} PARENT_SCOPE)
+      set(${RESULT} TRUE PARENT_SCOPE)
+      return()
     endif()
   endforeach()
 endfunction(evaluate_Extra_Tool_In_Environment)
@@ -1916,11 +1926,12 @@ endfunction(evaluate_Extra_Tool_In_Environment)
 #    Evaluate an extra tool, if it is provided in current profile.
 #
 #     :tool: the contraint expression
+#     :environment: the environment providing the tool
 #
 #     :RESULT_OK: the output variable that is TRUE if extra tool constraints are satisfied by current profile.
 #     :CONFIGS: the output variable that contains the list of configuration constraints to check when using this tool.
 #
-function(evaluate_Extra_Tool_Configuration RESULT_OK CONFIGS tool_expr tool)
+function(evaluate_Extra_Tool_Configuration RESULT_OK CONFIGS tool environment)
   set(${RESULT_OK} FALSE PARENT_SCOPE)
   set(${CONFIGS} PARENT_SCOPE)
   if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
@@ -1940,14 +1951,16 @@ function(evaluate_Extra_Tool_Configuration RESULT_OK CONFIGS tool_expr tool)
     endif()
   endforeach()
   # from here there is no known solution due to constraint (probably version)
-  # need to generate another solution for same toolset in current profile
+  # need to generate another solution for same tool in current profile
   # => simply evaluate it, it will overwrite global profiles info if required
-  evaluate_Environment_From_Package(EVAL_OK ${tool})
+  evaluate_Environment_From_Package(EVAL_OK ${environment})
   if(NOT EVAL_OK)
     return()
   endif()
-  evaluate_Extra_Tool_In_Environment(RESULT_FROM_ENV CONFIGS_TO_CHECK ${tool} ${tool_expr})
-  update_Current_Profile_Environments(${tool_expr} ${tool})
+  #note: the envionment will have same name and hash so next call is just used to check that 
+  #new environment has correctly been registered to the envionments list
+  evaluate_Extra_Tool_In_Environment(RESULT_FROM_ENV CONFIGS_TO_CHECK ${tool} ${tool})
+  update_Current_Profile_Environments(${tool} ${environment})
   set(${RESULT_OK} ${RESULT_FROM_ENV} PARENT_SCOPE)
   set(${CONFIGS} ${CONFIGS_TO_CHECK} PARENT_SCOPE)
 endfunction(evaluate_Extra_Tool_Configuration)
