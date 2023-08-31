@@ -951,7 +951,7 @@ function(configure_Environment_Tool)
       set(plugin_after_comps ${CONF_PLUGIN_AFTER_COMPS})
       set(plugin_ondemand ${CONF_PLUGIN_ON_DEMAND})
     endif()
-    # Note: no expression provided since it will be computable when envronment is fully configured
+    # Note: no expression provided since it will be computable when environment is fully configured
     # Note same for check script that is automatically added when generating solution description
     add_Extra_Tool(${CONF_ENV_TOOL_EXTRA} "" "" TRUE
                   "${CONF_ENV_TOOL_PROGRAM}" "${CONF_ENV_TOOL_CONFIGURATION}" "${CONF_ENV_TOOL_PROGRAM_DIRS}"

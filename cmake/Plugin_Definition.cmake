@@ -1504,3 +1504,29 @@ function(create_In_Source_Symlink source_dir file_to_symlink_from_build_tree)
               ${source_dir}/${FILENAME})
  dereference_Residual_Files(${THEPATH}/${FILENAME})
 endfunction(create_In_Source_Symlink)
+
+
+#.rst:
+#
+# .. ifmode:: plugin
+#
+#  .. |set_Environment_Variables_During_Build| replace:: ``set_Environment_Variables_During_Build``
+#  .. _set_Environment_Variables_During_Build:
+#
+#  set_Environment_Variables_During_Build
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: set_Environment_Variables_During_Build(env_vars)
+#
+#    Set a list of environment variables to use during the build process
+#
+#      :env_vars: list of environment variable names to set. Their current value during the configuration step will be used
+#
+function(set_Environment_Variables_During_Build env_vars)
+set(env_expr)
+foreach(var IN LISTS env_vars)
+  list(APPEND env_expr "${var}=${${var}}")
+endforeach()
+set(${PROJECT_NAME}_ENVIRONMENT_VARIABLES ${env_expr} CACHE INTERNAL "")
+endfunction(set_Environment_Variables_During_Build)
+

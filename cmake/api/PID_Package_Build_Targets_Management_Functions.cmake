@@ -51,6 +51,7 @@ set(PID_PACKAGE_BUILD_TARGETS_MANAGEMENT_FUNCTIONS_INCLUDED TRUE)
 #     :gen_test_or_cover: if value is "coverage" the build command generates coverage report after launching tests, if value is "test" the build command launch tests.
 #
 function(create_Global_Build_Command privileges gen_install gen_build gen_package gen_doc gen_test_or_cover)
+set(set_en_vars_cmd ${CMAKE_COMMAND} -E env ${${PROJECT_NAME}_ENVIRONMENT_VARIABLES})
 if(gen_install)
 	if(gen_build) #build package
 		if(gen_package) #generate and install a binary package
@@ -58,27 +59,27 @@ if(gen_install)
 				#this is the complete scenario
 				if(NOT gen_test_or_cover)
 					add_custom_target(build
-						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
 						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 					)
 				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
 						add_custom_target(build
-						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
 						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 					)
 				else()# basic test
 					add_custom_target(build
-						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
 						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 					)
@@ -87,24 +88,24 @@ if(gen_install)
 				#this is the complete scenario without documentation
 				if(NOT gen_test_or_cover)
 					add_custom_target(build
-						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
 						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 					)
 				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
 					add_custom_target(build
-						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
 						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 					)
 				else()# basic test
 					add_custom_target(build
-						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
 						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 					)
@@ -114,42 +115,42 @@ if(gen_install)
 			if(gen_doc) # documentation generated
 				if(NOT gen_test_or_cover)#no test
 					add_custom_target(build
-						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 					)
 				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
 					add_custom_target(build
-						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 					)
 				else()# basic test
 					add_custom_target(build
-						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 					)
 				endif()
 			else() # no documentation generated
 				if(NOT gen_test_or_cover)
 					add_custom_target(build
-						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 					)
 				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
 					add_custom_target(build
-						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 					)
 				else()# basic test
 					add_custom_target(build
-						COMMAND ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 					)
 				endif()
 			endif()
@@ -160,7 +161,7 @@ if(gen_install)
 				if(NOT gen_test_or_cover) # no test
 					add_custom_target(build
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
 						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 					)
@@ -168,7 +169,7 @@ if(gen_install)
 					add_custom_target(build
 						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
 						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 					)
@@ -176,7 +177,7 @@ if(gen_install)
 					add_custom_target(build
 						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
 						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 					)
@@ -184,21 +185,21 @@ if(gen_install)
 			else()#no documentation generated
 				if(NOT gen_test_or_cover)
 					add_custom_target(build
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
 						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 					)
 				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
 					add_custom_target(build
 						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
 						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 					)
 				else()# basic test
 					add_custom_target(build
 						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 						COMMAND ${CMAKE_MAKE_PROGRAM} package
 						COMMAND ${CMAKE_MAKE_PROGRAM} package_install
 					)
@@ -209,35 +210,35 @@ if(gen_install)
 				if(NOT gen_test_or_cover) #without test
 					add_custom_target(build
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 					)
 				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
 					add_custom_target(build
 						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 					)
 				else()# basic test
 					add_custom_target(build
 						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
 						COMMAND ${CMAKE_MAKE_PROGRAM} doc
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 					)
 				endif()
 			else()#no doc
 				if(NOT gen_test_or_cover) #without test
 					add_custom_target(build
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 					)
 				elseif(gen_test_or_cover STREQUAL "coverage")#coverage test
 					add_custom_target(build
 						COMMAND ${privileges} ${CMAKE_MAKE_PROGRAM} coverage ${PARALLEL_JOBS_FLAG}
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 					)
 				else()# basic test
 					add_custom_target(build
 						COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${privileges} ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG}
-						COMMAND ${CMAKE_MAKE_PROGRAM} install
+						COMMAND ${set_en_vars_cmd} ${CMAKE_MAKE_PROGRAM} install
 					)
 				endif()
 			endif()

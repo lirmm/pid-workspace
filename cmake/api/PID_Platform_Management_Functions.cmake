@@ -994,6 +994,8 @@ function(reset_Package_Platforms_Variables)
   #also reset cplatform configruation constraints coming from langauge in use
   unset(${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${USE_MODE_SUFFIX} CACHE)
   reset_Available_Configs(${PROJECT_NAME})
+
+  unset(${PROJECT_NAME}_ENVIRONMENT_VARIABLES CACHE)
 endfunction(reset_Package_Platforms_Variables)
 
 

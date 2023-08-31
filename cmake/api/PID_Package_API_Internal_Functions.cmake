@@ -1423,6 +1423,29 @@ add_custom_target(list_dependencies
 					-P ${WORKSPACE_DIR}/cmake/commands/Listing_PID_Package_Dependencies.cmake
 )
 
+#########################################################################################################################
+######### writing the global reference file for the package with all global info contained in the CMakeFile.txt #########
+#########################################################################################################################
+if(${PROJECT_NAME}_ADDRESS)
+	generate_Package_Reference_File(${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake)
+endif()
+
+if(${CMAKE_BUILD_TYPE} MATCHES Release)
+	if(GLOBAL_PROGRESS_VAR)
+		some_Packages_Managed_Last_Time(DEPLOYED)
+		if(DEPLOYED)
+			message("------------------------------------------------------------------")
+			message("Packages updated or installed during ${PROJECT_NAME} configuration :")
+			print_Managed_Packages()
+			message("------------------------------------------------------------------")
+		endif()
+	endif()
+endif()
+
+# dealing with plugins at the end of the configuration process
+manage_Plugins_In_Package_After_Components_Description()
+reset_Removed_Examples_Build_Option()
+
 ###############################################################################
 ######### creating build target for easy sequencing all make commands #########
 ###############################################################################
@@ -1435,7 +1458,6 @@ if(RUN_TESTS_WITH_PRIVILEGES)
 endif()
 
 #creating a global build command
-
 package_Has_Nothing_To_Install(NOTHING_INSTALLED)
 if(NOTHING_INSTALLED) #if nothing to install, it means that there is nothing to generate... so do nothing
 	create_Global_Build_Command("${SUDOER_PRIVILEGES}" FALSE FALSE FALSE FALSE FALSE)
@@ -1499,32 +1521,11 @@ else()
 	set(DEPENDENT_SOURCE_PACKAGES)
 endif()
 
+
+################################################################################
+########################### END CONFIGURATION PROCESS ##########################
+################################################################################
 clean_Install_Dir() #cleaning the install directory (include/lib/bin folders) if there are files that are removed (do this only in release mode)
-
-#########################################################################################################################
-######### writing the global reference file for the package with all global info contained in the CMakeFile.txt #########
-#########################################################################################################################
-if(${PROJECT_NAME}_ADDRESS)
-	generate_Package_Reference_File(${CMAKE_BINARY_DIR}/share/Refer${PROJECT_NAME}.cmake)
-endif()
-
-if(${CMAKE_BUILD_TYPE} MATCHES Release)
-	if(GLOBAL_PROGRESS_VAR)
-		some_Packages_Managed_Last_Time(DEPLOYED)
-		if(DEPLOYED)
-			message("------------------------------------------------------------------")
-			message("Packages updated or installed during ${PROJECT_NAME} configuration :")
-			print_Managed_Packages()
-			message("------------------------------------------------------------------")
-		endif()
-	endif()
-endif()
-#print_Component_Variables()
-
-# dealing with plugins at the end of the configuration process
-manage_Plugins_In_Package_After_Components_Description()
-reset_Removed_Examples_Build_Option()
-
 finish_Progress(${GLOBAL_PROGRESS_VAR})
 endmacro(build_Package)
 
