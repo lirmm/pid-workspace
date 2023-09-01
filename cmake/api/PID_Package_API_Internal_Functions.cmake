@@ -741,8 +741,6 @@ function(set_Current_Version major minor patch)
 	set_Install_Cache_Variables()
 endfunction(set_Current_Version)
 
-
-
 #.rst:
 #
 # .. ifmode:: internal

@@ -1252,9 +1252,9 @@ endfunction(create_Runtime_Symlink)
 #
 #    Install symlink for a runtime resource of a component.
 #
-#     :path_to_target: the target runtime resource to symlink.
-#     :path_to_rpath_folder: the path to the package .rpath folder.
-#     :rpath_sub_folder: the path to relative to the .rpath folder of the component that use the symlink to access its runtime resources.
+#     :path_to_target: the absolute path to the target runtime resource to symlink.
+#     :path_to_rpath_folder: the path to the package .rpath folder, relative to CMAKE_INSTALL_PREFIX.
+#     :rpath_sub_folder: the path to the subfolder that contains symlinks used by a component relative to the package .rpath folder.
 #
 function(install_Runtime_Symlink path_to_target path_to_rpath_folder rpath_sub_folder)
   get_filename_component(A_FILE "${path_to_target}" NAME)

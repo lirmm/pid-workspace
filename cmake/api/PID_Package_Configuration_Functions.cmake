@@ -1643,7 +1643,7 @@ endfunction(create_Python_Install_Symlinks)
 function(create_Source_Component_Python_Symlinks component mode resources)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 foreach(resource IN LISTS resources)
-	install_Runtime_Symlink(${resource} "${${PROJECT_NAME}_DEPLOY_PATH}/share/script" ${component})#installing Debug and Release modes links in the same script folder
+	install_Runtime_Symlink(${resource} "share/script" ${component})#installing Debug and Release modes links in the same script folder
 endforeach()
 endfunction(create_Source_Component_Python_Symlinks)
 
@@ -1668,7 +1668,7 @@ endfunction(create_Source_Component_Python_Symlinks)
 function(create_Source_Component_Symlinks component mode resources_var)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 foreach(resource IN LISTS ${resources_var})
-	install_Runtime_Symlink(${resource} "${${PROJECT_NAME}_DEPLOY_PATH}/.rpath" ${PROJECT_NAME}_${component}${TARGET_SUFFIX})
+	install_Runtime_Symlink(${resource} ".rpath" ${PROJECT_NAME}_${component}${TARGET_SUFFIX})
 endforeach()
 endfunction(create_Source_Component_Symlinks)
 

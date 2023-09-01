@@ -460,7 +460,7 @@ endfunction(configure_Local_Target_With_Local_Component)
 #
 #   .. command:: generate_Local_Component_Runtime_Resources_Symlinks(local_target_folder_name local_dependency mode)
 #
-#    Generate symlinks for runtime resources in the install tree of a non PID defined component dependning on a given PID component.
+#    Generate symlinks for runtime resources in the install tree of a non PID defined component depending on a given PID component.
 #
 #     :local_target_folder_name: the name of the local component's folder containing its runtime resources
 #     :package: the name of package containg dependency component.

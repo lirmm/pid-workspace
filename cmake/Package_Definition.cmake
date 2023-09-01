@@ -2406,12 +2406,12 @@ if(NOT CREATE_INSTALL_SYMLINK_NAME OR NOT CREATE_INSTALL_SYMLINK_PATH OR NOT CRE
   finish_Progress(${GLOBAL_PROGRESS_VAR})
 	message(FATAL_ERROR "[PID] CRITICAL ERROR : bad arguments, a name for the new symlink created must be provided with NAME keyword, the path relative to its install location must be provided with PATH keyword and the target of the symlink must be provided with TARGET keyword.")
 endif()
-set(FULL_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_DEPLOY_PATH}/${CREATE_INSTALL_SYMLINK_PATH})
+set(FULL_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/${CREATE_INSTALL_SYMLINK_PATH})
 set( link   ${CREATE_INSTALL_SYMLINK_NAME})
 set( target ${CREATE_INSTALL_SYMLINK_TARGET})
 
 add_custom_target(install_symlink_${link} ALL
-        COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_INSTALL_PATH}/${link}
+  COMMAND ${CMAKE_COMMAND} -E remove -f ${FULL_INSTALL_PATH}/${link}
 	COMMAND ${CMAKE_COMMAND} -E chdir ${FULL_INSTALL_PATH} ${CMAKE_COMMAND} -E  create_symlink ${target} ${link})
 
 endmacro(create_PID_Install_Symlink)
