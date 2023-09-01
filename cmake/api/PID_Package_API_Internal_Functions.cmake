@@ -2337,10 +2337,10 @@ else()#classical build => perform only corrective actions if cache variable is n
 					if(need_reset)
 						#reset all information about the system variant to enforce a good resolution
 						reset_Platform_Configuration_Cache_Variables(${dep_package})
-						set(${dep_package}_VERSION CACHE INTERNAL "")
-						set(${dep_package}_VERSION_STRING CACHE INTERNAL "")
-						set(${dep_package}_REQUIRED_VERSION_EXACT CACHE INTERNAL "")
-						set(${dep_package}_REQUIRED_VERSION_SYSTEM CACHE INTERNAL "")
+						unset(${dep_package}_VERSION CACHE)
+						unset(${dep_package}_VERSION_STRING CACHE)
+						unset(${dep_package}_REQUIRED_VERSION_EXACT CACHE)
+						unset(${dep_package}_REQUIRED_VERSION_SYSTEM CACHE)
 						remove_Chosen_Package_Version_In_Current_Process(${dep_package} ${PROJECT_NAME})#this is necessary as check_Platform_Configuration may have generated a coice that is finally invalid
 						message("[PID] WARNING: SYSTEM version constraint given by user for dependency ${dep_package} is not possible ... fixing to default version (${default_version}).")
 						#simply reset the description to first found

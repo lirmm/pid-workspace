@@ -2231,26 +2231,32 @@ endmacro(install_Platform_Configuration)
 #
 #   .. command:: reset_Platform_Configuration_Cache_Variables(config)
 #
-#   Reset all cache variables relatied to the given configuration
+#   Reset all cache variables related to the given configuration
 #
 #     :config: the name of the configuration to be reset.
 #
 function(reset_Platform_Configuration_Cache_Variables config)
-  set(${config}_EVAL_FILE CACHE INTERNAL "")
-  set(${config}_INSTALL_PACKAGES CACHE INTERNAL "")
-  set(${config}_INSTALL_PROCEDURE CACHE INTERNAL "")
-  set(${config}_REQUIRED_CONSTRAINTS CACHE INTERNAL "")
-  set(${config}_OPTIONAL_CONSTRAINTS CACHE INTERNAL "")
+  unset(${config}_EVAL_FILE CACHE)
+  unset(${config}_INSTALL_PACKAGES CACHE)
+  unset(${config}_INSTALL_PROCEDURE CACHE)
+  unset(${config}_REQUIRED_CONSTRAINTS CACHE)
+  unset(${config}_OPTIONAL_CONSTRAINTS CACHE)
   foreach(constraint IN LISTS ${config}_IN_BINARY_CONSTRAINTS)
-    set(${config}_${constraint}_BINARY_VALUE CACHE INTERNAL "")
+    unset(${config}_${constraint}_BINARY_VALUE CACHE)
   endforeach()
-  set(${config}_IN_BINARY_CONSTRAINTS CACHE INTERNAL "")
-  set(${config}_CONFIGURATION_DEPENDENCIES CACHE INTERNAL "")
+  unset(${config}_IN_BINARY_CONSTRAINTS CACHE)
+
+  unset(${config}_CONFIGURATION_DEPENDENCIES CACHE)
   foreach(dep_config IN LISTS ${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY)
     reset_Platform_Configuration_Cache_Variables(${dep_config})
   endforeach()
-  set(${config}_CONSTRAINTS_IN_BINARY CACHE INTERNAL "")
-  set(${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY CACHE INTERNAL "")
+  unset(${config}_CONSTRAINTS_IN_BINARY CACHE)
+  unset(${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY CACHE)
+  foreach(var IN LISTS ${config}_RETURNED_VARIABLES)
+    #the content of ${config}_${var}_RETURNED_VARIABLE is the name of a variable
+    unset(${config}_${var} CACHE)
+    unset(${config}_${var}_RETURNED_VARIABLE CACHE)
+  endforeach()
 endfunction(reset_Platform_Configuration_Cache_Variables)
 
 
