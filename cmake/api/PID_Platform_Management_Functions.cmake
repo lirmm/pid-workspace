@@ -2253,8 +2253,6 @@ function(reset_Platform_Configuration_Cache_Variables config)
   unset(${config}_CONSTRAINTS_IN_BINARY CACHE)
   unset(${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY CACHE)
   foreach(var IN LISTS ${config}_RETURNED_VARIABLES)
-    #the content of ${config}_${var}_RETURNED_VARIABLE is the name of a variable
-    unset(${config}_${var} CACHE)
     unset(${config}_${var}_RETURNED_VARIABLE CACHE)
   endforeach()
 endfunction(reset_Platform_Configuration_Cache_Variables)

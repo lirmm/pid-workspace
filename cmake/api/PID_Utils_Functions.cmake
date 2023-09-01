@@ -1126,7 +1126,7 @@ function(deduce_Existing_Symlink_Path path_to_existing_var path_to_created)
   # NOTE: path_to_created is let unchanged anyway as it is where the symlink is created
   # BUTE this symlink can be located in the workspace or not.
   file(RELATIVE_PATH REL_PATH_TO_CREATED "${WORKSPACE_DIR}" ${path_to_created})
-	if(REL_PATH_TO_CREATED MATCHES "^\\.\\./.*$")#it is an path created outside of the workspace
+	if(REL_PATH_TO_CREATED MATCHES "^\\.\\./.*$")#it is a path created outside of the workspace
     # it is a system install symlink or something a like SO we let path to existing unchanged 
     # so it is kept absolute whether it is in the workspace or not (we suppose the resolution of relative symlinks 
     # from outside of a workspace is not feasible)
