@@ -766,10 +766,10 @@ function(install_Plugin_Script plugin_install_file plugin_file)
   get_filename_component(TOOL_PATH ${plugin_install_file} DIRECTORY)
   if(NOT EXISTS ${TOOL_PATH})#not already installed during this configuration step
     file(MAKE_DIRECTORY ${TOOL_PATH})
-    get_filename_component(PLUGIN_NAME ${plugin_file} NAME)
-    file(COPY ${plugin_file} DESTINATION ${TOOL_PATH})
-    file(RENAME ${TOOL_PATH}/${PLUGIN_NAME} ${plugin_install_file})
   endif()
+  get_filename_component(PLUGIN_NAME ${plugin_file} NAME)
+  file(COPY ${plugin_file} DESTINATION ${TOOL_PATH})
+  file(RENAME ${TOOL_PATH}/${PLUGIN_NAME} ${plugin_install_file})
 endfunction(install_Plugin_Script)
 
 #.rst:
@@ -828,7 +828,7 @@ function(install_Environment_Scripts BEFORE_DEPS BEFORE_COMPS DURING_COMPS AFTER
         list(APPEND res_during_comps ${tool_name})
       endif()
     endif()
-    if(${prefix}_EXTRA_${tool_name}_PLUGIN_AFTER_COMPONENTS)
+  if(${prefix}_EXTRA_${tool_name}_PLUGIN_AFTER_COMPONENTS)
       set(path_to_plug_after_comps ${path_to_profile}/plugins/${tool_name}/after_comps.cmake)
       install_Plugin_Script(${path_to_plug_after_comps} ${${prefix}_EXTRA_${tool_name}_PLUGIN_AFTER_COMPONENTS})
       if(NOT ${prefix}_EXTRA_${tool_name}_PLUGIN_ON_DEMAND)
