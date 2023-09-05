@@ -1371,9 +1371,8 @@ function(create_Imported_Header_Library_Target package component mode) #header l
 	add_library(${package}_${component}${TARGET_SUFFIX} INTERFACE IMPORTED GLOBAL)#suffix used only for target name
 	list_Public_Includes(INCLUDES ${package} ${component} ${mode} TRUE)
 	list_Public_Links(LINKS SYSTEM_STATIC LIB_DIRS ${package} ${component} ${mode})
-  list_Public_Lib_Dirs(LIBDIRS ${package} ${component} ${mode})
+  	list_Public_Lib_Dirs(LIBDIRS ${package} ${component} ${mode})
 	list_Public_Definitions(DEFS ${package} ${component} ${mode})
-
   adjust_Languages_Standard_For_Imported_Component(FILTERED_OPTS ${package} ${component} ${mode})
   manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${FILTERED_OPTS}" "${LINKS}" "" "${SYSTEM_STATIC}" "${LIBDIRS}")
 endfunction(create_Imported_Header_Library_Target)
@@ -1840,7 +1839,6 @@ export_Component_Resolving_Alias(IS_EXPORTING ${package} ${comp_name_to_use} ${c
 is_HeaderFree_Component(DEP_IS_HF ${dep_package} ${dep_name_to_use})
 if(NOT DEP_IS_HF)#the required package component is a library with header it defins symbols so it can be exported
 	if(IS_EXPORTING)
-
 		set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
 			INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${dep_package}_${dep_name_to_use}${TARGET_SUFFIX},INTERFACE_INCLUDE_DIRECTORIES>
 		)
@@ -1855,11 +1853,11 @@ if(NOT DEP_IS_HF)#the required package component is a library with header it def
 		)
 	else()
 		if(${package}_${comp_name_to_use}_TYPE STREQUAL "SHARED")
-      set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+      		set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
 				IMPORTED_LINK_DEPENDENT_LIBRARIES ${dep_package}_${dep_name_to_use}${TARGET_SUFFIX}
 			)
-    else()#static OR header lib always export links
-    	set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
+    	else()#static OR header lib always export links
+    		set_property(TARGET ${package}_${comp_name_to_use}${TARGET_SUFFIX} APPEND PROPERTY
 				INTERFACE_LINK_LIBRARIES ${dep_package}_${dep_name_to_use}${TARGET_SUFFIX}
 			)
 		endif()

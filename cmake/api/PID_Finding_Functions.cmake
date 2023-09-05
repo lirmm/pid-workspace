@@ -724,7 +724,7 @@ if(idx EQUAL -1)#the component is NOT an application
 		#now checking for binaries if necessary
 		if(	${${package}_${component}_TYPE} STREQUAL "STATIC"
 			OR ${${package}_${component}_TYPE} STREQUAL "SHARED"
-    OR ${${package}_${component}_TYPE} STREQUAL "MODULE")
+    		OR ${${package}_${component}_TYPE} STREQUAL "MODULE")
 			#checking release and debug binaries (at least one is required)
 			find_library(	PATH_TO_LIB
 					NAMES ${${package}_${component}_BINARY_NAME} ${${package}_${component}_BINARY_NAME_DEBUG}
@@ -732,9 +732,8 @@ if(idx EQUAL -1)#the component is NOT an application
 			if(PATH_TO_LIB-NOTFOUND)
 				set(PATH_TO_LIB CACHE INTERNAL "")
 				return()
-			else()
-				set(PATH_TO_LIB CACHE INTERNAL "")
 			endif()
+			set(PATH_TO_LIB CACHE INTERNAL "")
 		endif()
 		set(${COMPONENT_ELEMENT_NOTFOUND} FALSE PARENT_SCOPE)
 	endif()
@@ -748,9 +747,8 @@ else()#the component is an application
 		if(PATH_TO_EXE-NOTFOUND)
 			set(PATH_TO_EXE CACHE INTERNAL "")
 			return()
-		else()
-			set(PATH_TO_EXE CACHE INTERNAL "")
 		endif()
+		set(PATH_TO_EXE CACHE INTERNAL "")
 		set(${COMPONENT_ELEMENT_NOTFOUND} FALSE  PARENT_SCOPE)
 	else()
 		return()
