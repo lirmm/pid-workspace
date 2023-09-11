@@ -1150,7 +1150,6 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 			if(NOT INSTALL_OK)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install native package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace contributions and try to find Refer${dep_pack}.cmake file.")
-				return()
 			endif()
 		endif()
 		if(MUST_BE_FOUND)
@@ -1158,15 +1157,12 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
 			if(NOT ${dep_pack}_FOUND${USE_MODE_SUFFIX})#this time the package must be found since installed => internal BUG in PID
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed native package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_pack}.")
-				return()
 			elseif(NOT IS_VERSION_COMPATIBLE)#this time there is really nothing to do since package has been installed so it theoretically already has all its dependencies compatible (otherwise there is simply no solution)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent native package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${dep_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}.")
-				return()
 			elseif(NOT IS_ABI_COMPATIBLE)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent native package ${dep_pack} with an ABI compatible with current platform. This may mean that you have no access to ${dep_pack} repository and no binary package for ${dep_pack} matches current platform ABI")
-				return()
 			else()#OK resolution took place !!
 				add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${PROJECT_NAME})#memorize chosen version in progress file to share this information with dependent packages
 				if(${dep_pack}_DEPENDENCIES${USE_MODE_SUFFIX}

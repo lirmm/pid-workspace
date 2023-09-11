@@ -685,9 +685,9 @@ endfunction(package_Reference_Exists_In_Workspace)
 #      :INSTALL_OK: the output variable that is TRUE is package is installed, FALSE otherwise.
 #
 function(install_Native_Package INSTALL_OK package reinstall release_only)
-
 # 0) test if either reference or source of the package exist in the workspace
 set(PATH_TO_SOURCE "")
+set(${INSTALL_OK} FALSE PARENT_SCOPE)
 package_Source_Exists_In_Workspace(IS_EXISTING PATH_TO_SOURCE ${package})
 if(IS_EXISTING)
   set(USE_SOURCES TRUE)
@@ -698,7 +698,6 @@ elseif(NOT reinstall)#no need to check for binaries, if reinstall is required th
 	if(IS_EXISTING)
 		set(USE_SOURCES FALSE)#by default do not use sources if repository does not lie in workspace
 	else()
-		set(${INSTALL_OK} FALSE PARENT_SCOPE)
 		message("[PID] ERROR : unknown package ${package}, cannot find any source or reference of this package in the workspace.")
 		return()
 	endif()
@@ -715,7 +714,6 @@ if(reinstall)#the same version must be reinstalled from sources
     deploy_Package_Repository(DEPLOYED ${package})
     if(NOT DEPLOYED) # doing the same as for the USE_SOURCES step
       message("[PID] ERROR : When rebuilding package ${package} from source, impossible to clone its repository.")
-      set(${INSTALL_OK} FALSE PARENT_SCOPE)
       return()
     endif()
   endif()
@@ -727,7 +725,6 @@ elseif(${PROJECT_NAME}_TOINSTALL_${package}_VERSIONS${USE_MODE_SUFFIX})
 	resolve_Required_Native_Package_Version(POSSIBLE VERSION_MIN IS_EXACT ${package})
   if(NOT POSSIBLE)
 		message("[PID] ERROR : When deploying package ${package}, impossible to find an adequate version for package ${package}.")
-		set(${INSTALL_OK} FALSE PARENT_SCOPE)
 		return()
 	else()
     if(NOT VERSION_MIN)
@@ -801,7 +798,6 @@ else()#using references
     	endif()
     	set(${INSTALL_OK} TRUE PARENT_SCOPE)
     else()
-    	set(${INSTALL_OK} FALSE PARENT_SCOPE)
     	message("[PID] ERROR : impossible to locate source repository of package ${package} or to find a compatible binary version starting from ${VERSION_MIN}.")
 		endif()
 	endif()
@@ -1281,6 +1277,11 @@ else()
 	select_Best_Native_Version(RES_VERSION ${min_version} "${VERSION_NUMBERS}")
 endif()
 if(NOT RES_VERSION)#no adequate version found, this may be due to the use of a non released version
+  check_Package_Version_State_In_Current_Process(${package} ${min_version} RES)
+  if(RES STREQUAL "FAIL") # this package unreleased version has already FAILED TO be built during current process
+    restore_Repository_Context(${package} FALSE ${CURRENT_COMMIT} ${SAVED_CONTENT})
+    return()
+  endif()
   try_In_Development_Version(RES_VERSION ${package} ${min_version} ${is_exact} "${run_tests}" "${release_only}")#mainly usefull in CI process to build unreleased dependencies
   if(RES_VERSION)
     message("[PID] INFO : deployed version ${RES_VERSION} of source package ${package} is in development (found on integration branch).")
@@ -1309,12 +1310,10 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 			message("[PID]  ERROR : automatic build and install of package ${package} (version ${RES_VERSION}) FAILED !!")
 			add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" FALSE)
 		endif()
-	else()#in other situations no need to register the package as managed as it is already
-		if(RES STREQUAL "FAIL") # this package version has FAILED TO be built during current process
-			set(${DEPLOYED} FALSE PARENT_SCOPE)
-		else() #SUCCESS because last correct version already built
+	else()#in other situations no need to register the package because it has already been managed
+		if(NOT RES STREQUAL "FAIL") # this package version has NOT FAILED TO be built during current process
 			if(ADDITIONAL_DEBUG_INFO)
-				message("[PID] INFO : package ${package} version ${RES_VERSION} is deployed ...")
+				message("[PID] INFO : package ${package} version ${RES_VERSION} is already deployed ...")
 			endif()
 			set(${DEPLOYED} TRUE PARENT_SCOPE)
 		endif()
