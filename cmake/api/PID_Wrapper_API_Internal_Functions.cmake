@@ -1815,7 +1815,8 @@ function(install_External_Rpath_Symlinks package version platform)
 	#Note: need to add local runtime resources, even if not necessarily meaningful
 	set(list_of_symlinks)
 	foreach(link IN LISTS all_symlinks)
-		if(NOT link MATCHES "^-.+")#do not use linker scripts
+		if(NOT link MATCHES "^-.+" #do not use linker scripts (e.g. link for system library)
+			AND NOT link MATCHES "^lib.+\\.(a|la)$")#do not use system static library linking
 			list(APPEND list_of_symlinks ${link})
 		endif()
 	endforeach()
