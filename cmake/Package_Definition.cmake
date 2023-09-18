@@ -676,7 +676,7 @@ macro(check_PID_Environment)
       message(FATAL_ERROR "[PID] CRITICAL ERROR: in package ${PROJECT_NAME} when calling check_PID_Environment, ${ERROR}")
     elseif(target_env)
       #plugin call point before any dependency (platform constraint or PID dependency)
-      #only spcifically used to automatically configure stuff needed for dependencies and more generally for the remaining of the build process
+      #specifically used to automatically configure stuff needed for dependencies and more generally for the remaining of the build process
       manage_Plugin_Before_Deps_In_Package(${target_env})
     endif()
   else()
@@ -688,7 +688,7 @@ macro(check_PID_Environment)
     else()
       if(target_env)
         #plugin call point before any dependency (platform constraint or PID dependency)
-        #only spcifically used to automatically configure stuff needed for dependencies and more generally for the remaining of the build process
+        #specifically used to automatically configure stuff needed for dependencies and more generally for the remaining of the build process
         manage_Plugin_Before_Deps_In_Package(${target_env})
       endif()
       set(${CHECK_PID_ENV_OPTIONAL} TRUE)

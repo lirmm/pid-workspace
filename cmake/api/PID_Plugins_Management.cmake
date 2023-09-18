@@ -126,13 +126,15 @@ endmacro(manage_Plugins_In_Wrapper_After_Components_Description)
 #
 macro(manage_Plugin_Before_Deps_In_Package environment_expr)
   set(plugins_path ${WORKSPACE_DIR}/build/${CURRENT_PROFILE}/plugins)
-  #0)minimal check to ensur econsistency of the call
+  #0)minimal check to ensure consistency of the call
   hashcode_From_Expression(env_name env_hash "${environment_expr}")
   list(FIND ${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED ${env_name} index)
-  list(GET ${PROJECT_NAME}_EXTRA_TOOLS_INSTANCES_REQUIRED ${index} instance)
-  set(${env_name}_TOOL_INSTANCE ${instance})
-  if(${instance}_EXTRA_${env_name}_PLUGIN_BEFORE_DEPENDENCIES)
-    include(${plugins_path}/${env_name}/before_deps.cmake)
+  if(NOT index EQUAL -1)
+    list(GET ${PROJECT_NAME}_EXTRA_TOOLS_INSTANCES_REQUIRED "${index}" instance)
+    set(${env_name}_TOOL_INSTANCE ${instance})
+    if(${instance}_EXTRA_${env_name}_PLUGIN_BEFORE_DEPENDENCIES)
+      include(${plugins_path}/${env_name}/before_deps.cmake)
+    endif()
   endif()
 endmacro(manage_Plugin_Before_Deps_In_Package)
 
@@ -163,7 +165,7 @@ macro(manage_Plugins_In_Package filename)
     set(PLUGINS_TO_EXECUTE CACHE INTERNAL "")#reset variable provided by the file
   endif()
   #also manage on demand plugins
-  #Note: if they are part of _EXTRA_TOOLS_REQUIRED variable this means they have been required
+  #Note: if they are part of ${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED variable this means they have been required
   foreach(tool IN LISTS ${PROJECT_NAME}_EXTRA_TOOLS_REQUIRED)
     if(EXISTS ${plugins_path}/${tool}/${filename}.cmake)
       #get the corresponding instance in current profile description

@@ -3330,7 +3330,8 @@ endfunction(set_Configuration_Temporary_Optimization_Variables)
 #  check_Configuration_Temporary_Optimization_Variables
 #  ----------------------------------------------------
 #
-#   .. command:: check_Configuration_Temporary_Optimization_Variables(RES_CHECK_MADE config mode)
+#   .. command:: check_Configuration_Temporary_Optimization_Variables(RES_CHECK_MADE RES_CHECK RES_CONSTRAINTS 
+#                    config_name config_args_var mode)
 #
 #   check whether a configuration has already been checked.
 #

@@ -1661,11 +1661,11 @@ function(get_Extra_Tools_With_On_Demand_Plugins_For_Environment TOOLS TOOLS_INST
   set(${TOOLS} PARENT_SCOPE) #reset in case the variable is not empty
   set(${TOOLS_INSTANCES} PARENT_SCOPE) #reset in case the variable is not empty
   #Note : by construction we know that environment already belongs to more
+  #because host does not define plugins
   if(PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
     set(list_of_env ${PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS})
   else()
     set(list_of_env ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT} ${PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS})
-
   endif()
   foreach(env IN LISTS list_of_env)
     hashcode_From_Expression(env_name env_hash ${env})
@@ -1711,28 +1711,30 @@ endfunction(get_Extra_Tools_With_On_Demand_Plugins_For_Environment)
 #  check_Extra_Tool_Configuration
 #  -------------------------------
 #
-#   .. command:: check_Extra_Tool_Configuration(RESULT CONFIG_CONSTRAINTS tool mode)
+#   .. command:: check_Extra_Tool_Configuration(RESULT_EXPR CONFIG_CONSTRAINTS tool mode)
 #
 #    Check whether the current build profile provides the corresponding tool.
 #
 #     :tool: the environment extra tool check expression (may contain arguments).
 #     :mode: the current build mode.
 #
-#     :RESULT: the output variable that is TRUE environment constraints is satisfied by current build environment.
+#     :RESULT_EXPR: the output variable that containsthe resulting environment expression if environment constraints is satisfied by current profile, empty otherwise.
 #     :CONFIG_CONSTRAINTS: the output variable that contains the platform configuration constraints that may be required by the environment. This is a list of check expressions.
 #
-function(check_Extra_Tool_Configuration RESULT CONFIG_CONSTRAINTS tool mode)
+function(check_Extra_Tool_Configuration RESULT_EXPR CONFIG_CONSTRAINTS tool mode)
   # find_Mathing_Tool_In_Current_Profile(TOOL_PREFIX ${tool})
   parse_Configuration_Expression(TOOL_NAME TOOL_ARGS "${tool}")
   if(NOT TOOL_NAME)
-    set(${RESULT} FALSE PARENT_SCOPE)
+    set(${RESULT_EXPR} PARENT_SCOPE)
     set(${CONFIG_CONSTRAINTS} PARENT_SCOPE)
     message("[PID] CRITICAL ERROR : extra toolset check ${tool} is ill formed.")
     return()
   endif()
   check_Extra_Tool_Configuration_With_Arguments(RESULT_WITH_ARGS CONSTRAINTS ${tool} ${TOOL_NAME} TOOL_ARGS ${mode})
-  add_Required_Extra_Tools(${tool})#the extra tool is explicitly required
-  set(${RESULT} ${RESULT_WITH_ARGS} PARENT_SCOPE)
+  if(RESULT_WITH_ARGS)
+    add_Required_Extra_Tools(${RESULT_WITH_ARGS})#the extra tool is explicitly required
+  endif()
+  set(${RESULT_EXPR} ${RESULT_WITH_ARGS} PARENT_SCOPE)
   set(${CONFIG_CONSTRAINTS} ${CONSTRAINTS} PARENT_SCOPE)
 endfunction(check_Extra_Tool_Configuration)
 
@@ -1747,7 +1749,7 @@ endfunction(check_Extra_Tool_Configuration)
 #  check_Extra_Tool_Configuration_With_Arguments
 #  ---------------------------------------------
 #
-#   .. command:: check_Extra_Tool_Configuration_With_Arguments(CHECK_OK lang_name lang_args mode)
+#   .. command:: check_Extra_Tool_Configuration_With_Arguments(ENV_EXPR CONFIGS lang_name lang_args mode)
 #
 #    Check whether the given build environment provide the target language toolset.
 #
@@ -1756,16 +1758,16 @@ endfunction(check_Extra_Tool_Configuration)
 #     :tool_args_var: the input variable containing constraints passed as arguments by the user of the tool (typically version).
 #     :mode: the current build mode.
 #
-#     :CHECK_OK: the output variable that is TRUE if language toolset constraints are satisfied by current build environment.
-#     :CONFIGS: the output variable that contains the list of configruation constraints to check when using this tool.
+#     :ENV_EXPR: the output variable that contains the environment expression defining the extra tool in current profile, or empty if environment cannot be satisfied.
+#     :CONFIGS: the output variable that contains the list of configuration constraints to check when using this tool.
 #
-function(check_Extra_Tool_Configuration_With_Arguments CHECK_OK CONFIGS tool_expr tool tool_args_var mode)
-  set(${CHECK_OK} FALSE PARENT_SCOPE)
+function(check_Extra_Tool_Configuration_With_Arguments ENV_EXPR CONFIGS tool_expr tool tool_args_var mode)
+  set(${ENV_EXPR} PARENT_SCOPE)
   set(${CONFIGS} PARENT_SCOPE)
 
   check_Configuration_Temporary_Optimization_Variables(CHECK_ALREADY_MADE CHECK_SUCCESS RES_CONSTRAINTS ${tool} ${tool_args_var} ${mode})
   if(CHECK_ALREADY_MADE)#same check has already been made, we want to avoid redoing them unecessarily
-    set(${CHECK_OK} ${CHECK_SUCCESS} PARENT_SCOPE)
+    set(${ENV_EXPR} ${tool_expr} PARENT_SCOPE)
     set(${CONFIGS} ${RES_CONSTRAINTS} PARENT_SCOPE)
     return()
   endif()
@@ -1778,7 +1780,8 @@ function(check_Extra_Tool_Configuration_With_Arguments CHECK_OK CONFIGS tool_exp
     include_Environment_Reference_File(REF_EXIST ${tool})
     if(NOT REF_EXIST)
       set_Configuration_Temporary_Optimization_Variables(${tool} ${mode} FALSE "${${tool_args_var}}" "")#remember that test failed with those constraints
-      message(FATAL_ERROR "[PID] CRITICAL ERROR: the environment ${tool} is unknown in workspace. Maybe it belongs to a contribution space your are not currently using OR it simply does not exist (check spelling).")
+      message(WARNING "[PID] ERROR: the environment ${tool} is unknown in workspace. Maybe it belongs to a contribution space your are not currently using OR it simply does not exist (check spelling).")
+      return()
     endif()
     # Note : if environment does not exists it means:
     # 1) there is no chance for it to have been used in current profile
@@ -1808,14 +1811,13 @@ function(check_Extra_Tool_Configuration_With_Arguments CHECK_OK CONFIGS tool_exp
   include(${WORKSPACE_DIR}/environments/${tool}/build/PID_Inputs.cmake)
   prepare_Configuration_Expression_Arguments(${tool} ${tool_args_var} ${tool}_INPUTS)
 
-  evaluate_Extra_Tool_Configuration(EVAL_OK RES_CONFIGS ${tool_expr} ${tool})
-  if(NOT EVAL_OK)#language configuration cannot be satisfied
+  evaluate_Extra_Tool_Configuration(RES_EXPR RES_CONFIGS ${tool_expr} ${tool})
+  if(NOT RES_EXPR)#tool configuration cannot be satisfied
     set_Configuration_Temporary_Optimization_Variables(${tool} ${mode} FALSE "${${tool_args_var}}" "")#remember that test failed with those constraints
     return()
   endif()
-
   #return the complete set of binary contraints
-  set(${CHECK_OK} TRUE PARENT_SCOPE)
+  set(${ENV_EXPR} ${RES_EXPR} PARENT_SCOPE)
   set(${CONFIGS} ${RES_CONFIGS} PARENT_SCOPE)
   set_Configuration_Temporary_Optimization_Variables(${tool} ${mode} TRUE "${${tool_args_var}}" "${RES_CONFIGS}")#remember that test succeeded with those constraints
 endfunction(check_Extra_Tool_Configuration_With_Arguments)
@@ -1876,16 +1878,16 @@ endfunction(check_Tool_Expression)
 #
 #   .. command:: evaluate_Extra_Tool_In_Environment(RESULT CONFIGS_TO_CHECK tool environment)
 #
-#    Evaluate a specific extra tool if it is provided by a given environment.
+#    Evaluate if an extra tool is provided by a given environment.
 #
 #     :tool: the name of the extra tool
 #     :environment: the name of the environment (possibly) providing the tool.
 #
-#     :CHECK_OK: the output variable that is TRUE if language toolset constraints are satisfied by current build environment.
+#     :RESULT: the output variable that contains the complete environment constraint expression if tool already provided by the given environment.
 #     :CONFIGS_TO_CHECK: the output variable that contains the list of configuration constraints to check when using this tool.
 #
 function(evaluate_Extra_Tool_In_Environment RESULT CONFIGS_TO_CHECK tool environment)
-  set(${RESULT} FALSE PARENT_SCOPE) 
+  set(${RESULT} PARENT_SCOPE) 
   set(${CONFIGS_TO_CHECK} PARENT_SCOPE)
   hashcode_From_Expression(env_name env_hash ${environment})
   hashcode_From_Expression(tool_name tool_hash ${tool})
@@ -1905,7 +1907,7 @@ function(evaluate_Extra_Tool_In_Environment RESULT CONFIGS_TO_CHECK tool environ
     endif()
     if(EXPRESSION_MATCH_REQUIRED)
       set(${CONFIGS_TO_CHECK} ${${prefix}_EXTRA_${extra}_PLATFORM_CONFIGURATIONS} PARENT_SCOPE)
-      set(${RESULT} TRUE PARENT_SCOPE)
+      set(${RESULT} ${${prefix}_EXTRA_${extra}_CONSTRAINT_EXPRESSION} PARENT_SCOPE)
       return()
     endif()
   endforeach()
@@ -1921,31 +1923,32 @@ endfunction(evaluate_Extra_Tool_In_Environment)
 #  evaluate_Extra_Tool_Configuration
 #  ----------------------------------
 #
-#   .. command:: evaluate_Extra_Tool_Configuration(RESULT_OK CONFIGS tool)
+#   .. command:: evaluate_Extra_Tool_Configuration(RESULT_CONSTRAINTS CONFIGS tool)
 #
 #    Evaluate an extra tool, if it is provided in current profile.
 #
 #     :tool: the contraint expression
 #     :environment: the environment providing the tool
 #
-#     :RESULT_OK: the output variable that is TRUE if extra tool constraints are satisfied by current profile.
+#     :RESULT_CONSTRAINTS: the output variable that contains the environment expression defined in current profile that provide the extra tool.
 #     :CONFIGS: the output variable that contains the list of configuration constraints to check when using this tool.
 #
-function(evaluate_Extra_Tool_Configuration RESULT_OK CONFIGS tool environment)
-  set(${RESULT_OK} FALSE PARENT_SCOPE)
+function(evaluate_Extra_Tool_Configuration RESULT_CONSTRAINTS CONFIGS tool environment)
+  set(${RESULT_CONSTRAINTS} PARENT_SCOPE)
   set(${CONFIGS} PARENT_SCOPE)
+  set(RES_CONSTRAINTS)
   if(NOT PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT STREQUAL "host")
-    evaluate_Extra_Tool_In_Environment(IS_OK RES_CONFIGS ${tool} ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
-    if(IS_OK)
-      set(${RESULT_OK} TRUE PARENT_SCOPE)
+    evaluate_Extra_Tool_In_Environment(RES_CONSTRAINTS RES_CONFIGS ${tool} ${PROFILE_${CURRENT_PROFILE}_DEFAULT_ENVIRONMENT})
+    if(RES_CONSTRAINTS)
+      set(${RESULT_CONSTRAINTS} ${RES_CONSTRAINTS} PARENT_SCOPE)
       set(${CONFIGS} ${RES_CONFIGS} PARENT_SCOPE)
       return()
     endif()
   endif()
   foreach(env IN LISTS PROFILE_${CURRENT_PROFILE}_MORE_ENVIRONMENTS)
-    evaluate_Extra_Tool_In_Environment(IS_OK RES_CONFIGS ${tool} ${env})
-    if(IS_OK)
-      set(${RESULT_OK} TRUE PARENT_SCOPE)
+    evaluate_Extra_Tool_In_Environment(RES_CONSTRAINTS RES_CONFIGS ${tool} ${env})
+    if(RES_CONSTRAINTS)
+      set(${RESULT_CONSTRAINTS} ${RES_CONSTRAINTS} PARENT_SCOPE)
       set(${CONFIGS} ${RES_CONFIGS} PARENT_SCOPE)
       return()
     endif()
@@ -1959,9 +1962,9 @@ function(evaluate_Extra_Tool_Configuration RESULT_OK CONFIGS tool environment)
   endif()
   #note: the envionment will have same name and hash so next call is just used to check that 
   #new environment has correctly been registered to the envionments list
-  evaluate_Extra_Tool_In_Environment(RESULT_FROM_ENV CONFIGS_TO_CHECK ${tool} ${tool})
+  evaluate_Extra_Tool_In_Environment(RES_CONSTRAINTS CONFIGS_TO_CHECK ${tool} ${tool})
   update_Current_Profile_Environments(${tool} ${environment})
-  set(${RESULT_OK} ${RESULT_FROM_ENV} PARENT_SCOPE)
+  set(${RESULT_CONSTRAINTS} ${RES_CONSTRAINTS} PARENT_SCOPE)
   set(${CONFIGS} ${CONFIGS_TO_CHECK} PARENT_SCOPE)
 endfunction(evaluate_Extra_Tool_Configuration)
 
