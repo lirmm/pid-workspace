@@ -191,7 +191,6 @@ else()#by default build the given package version using external project specifi
 
 	#callback for plugins execution
 	manage_Plugins_In_Wrapper_Before_Dependencies_Description(${TARGET_EXTERNAL_PACKAGE} ${version})
-
 	#checking for platform configurations
 	resolve_Wrapper_Platform_Configuration(IS_OK ${TARGET_EXTERNAL_PACKAGE} ${version})
 	if(NOT IS_OK)
@@ -201,7 +200,6 @@ else()#by default build the given package version using external project specifi
 	else()
 		message("[PID] INFO : all required platform configurations for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
 	endif()
-
 	# checking for dependencies
 	message("[PID] INFO : deploying dependencies of ${TARGET_EXTERNAL_PACKAGE} version ${version}...")
 	resolve_Wrapper_Dependencies(${TARGET_EXTERNAL_PACKAGE} ${version} FALSE)
@@ -209,7 +207,9 @@ else()#by default build the given package version using external project specifi
 
 	#prepare deployment script execution by caching build variable that may be used inside
 	configure_Wrapper_Build_Variables(${TARGET_EXTERNAL_PACKAGE} ${version} ${CURRENT_PLATFORM})
-
+	
+	#feed general configuration variables so that they can be used into wrapper build script
+	feed_Configuration_Resulting_Variables_For_Package(${TARGET_EXTERNAL_PACKAGE})
 	if(NOT DO_NOT_EXECUTE_SCRIPT OR NOT DO_NOT_EXECUTE_SCRIPT STREQUAL true)
 
 	  message("[PID] INFO : Executing deployment script ${package_version_src_dir}/${deploy_script_file}...")

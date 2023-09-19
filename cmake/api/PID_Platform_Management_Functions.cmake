@@ -1237,7 +1237,6 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
     #get SONAME and SYMBOLS coming from language configuration
     #WARNING Note: use same arguments as binary (soname and symbol are not used to directly check validity of the configuration) !!
     check_Language_Configuration_With_Arguments(SYSCHECK_RESULT LANG_SPECS TARGET_PLATFORM_SPECS ${lang} PACKAGE_SPECS ${mode})
-
     #get SONAME and SYMBOLS coming from package configuration
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS LANG_SPECS)
     get_Soname_Symbols_Values(PACKAGE_SONAME PACKAGE_SYMBOLS PACKAGE_SPECS)
@@ -1268,12 +1267,11 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
   foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
     parse_Configuration_Expression_Arguments(PACKAGE_SPECS ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
     #get SONAME and SYMBOLS coming from platform configuration
-    #WARNING Note: use same arguments as binary !!
+    #WARNING Note: use same arguments as binary package !!
     check_Platform_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${package} ${config} PACKAGE_SPECS ${mode})
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS PLATFORM_SPECS)
     #get SONAME and SYMBOLS coming from package configuration
     get_Soname_Symbols_Values(PACKAGE_SONAME PACKAGE_SYMBOLS PACKAGE_SPECS)
-
     #from here we have the value to compare with
     if(PACKAGE_SONAME)#package defines constraints on SONAMES
       test_Soname_Compatibility(SONAME_COMPATIBLE PACKAGE_SONAME PLATFORM_SONAME)
@@ -1440,10 +1438,23 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
   set(${BINARY_CONTRAINTS} PARENT_SCOPE)
   set(${CHECK_OK} FALSE PARENT_SCOPE)
   #check if the configuration has already been checked
-  check_Configuration_Temporary_Optimization_Variables(CHECK_ALREADY_MADE CHECK_SUCCESS BIN_CONSTRAINTS ${config_name} ${config_args_var} ${mode})
+  check_Configuration_Temporary_Optimization_Variables(CHECK_ALREADY_MADE CHECK_SUCCESS BIN_CONSTRAINTS RES_INDEX ${config_name} ${config_args_var} ${mode})
   if(CHECK_ALREADY_MADE)#same check has already been made, we want to avoid redoing them unecessarily
     set(${CHECK_OK} ${CHECK_SUCCESS} PARENT_SCOPE)
     set(${BINARY_CONTRAINTS} ${BIN_CONSTRAINTS} PARENT_SCOPE)
+    # if the package is evaluated for the first time it means its own result variables are not set yet
+    # this causes a BUG because it needs its own variables to adequately create its variables (wrappers) or targets (packages)
+    install_System_Configuration_Check(PATH_TO_CONFIG ${config_name})#just to get the install path to the system configuration
+    load_platform_Configuration_Result(${config_name} ${PATH_TO_CONFIG} "${RES_INDEX}")#load the adequate result file
+    #extracting variables to make them usable in calling context
+    extract_Platform_Configuration_Resulting_Variables(${package} ${config_name})
+    #WARNING unfortunately this is also true for dependencies -> need to recurse
+    reset_Platform_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
+    include(${PATH_TO_CONFIG}/check_${config_name}.cmake)#get the description of the configuration check
+    interpret_System_Configuration_List(dep_configurations ${config_name}_CONFIGURATION_DEPENDENCIES)
+    foreach(check IN LISTS dep_configurations)
+      check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${package} ${check} ${mode})
+    endforeach()
     return()
   endif()
 
@@ -1482,7 +1493,7 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
     endif()
   endif()
   if(NOT ${config_name}_AVAILABLE)#configuration is not available so we cannot generate output variables
-    set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} FALSE "${${config_args_var}}" "")
+    set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} FALSE "${${config_args_var}}" "" "")
     return()
   endif()
 
@@ -1492,7 +1503,7 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
     check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${package} ${check} ${mode})#check that dependencies are OK
     if(NOT RESULT_OK)
       message("[PID] WARNING : when checking configuration of current platform, configuration ${check}, used by ${config_name} cannot be satisfied.")
-      set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} FALSE "${${config_args_var}}" "")
+      set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} FALSE "${${config_args_var}}" "" "")
       return()
     endif()
     #here need to manage resulting binary contraints
@@ -1501,7 +1512,7 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
   endforeach()
 
   #extracting variables to make them usable in calling context
-  extract_Platform_Configuration_Resulting_Variables(${config_name})
+  extract_Platform_Configuration_Resulting_Variables(${package} ${config_name})
 
   if(${config_name}_FOUND OR ${config_name}_FOUND_DEBUG)
     #corresponding external package version has already been found
@@ -1512,7 +1523,7 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
       #ERROR: this configuration simply cannot be used
       message("[PID] WARNING: configuration ${config_name} cannot be used since it matches an external dependency whose version (${${config_name}_VERSION_STRING}) is not compliant with system version required (${${config_name}_VERSION}). If versions are equal it means that the package has been built with a NON OS variant version of ${config_name}.")
       set(${CHECK_OK} FALSE PARENT_SCOPE)
-      set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} FALSE "${${config_args_var}}" "")
+      set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} FALSE "${${config_args_var}}" "" "")
       return()
     endif()
   endif()
@@ -1529,7 +1540,7 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
   get_Configuration_Expression_Resulting_Constraints(ALL_CONSTRAINTS ${config_name} bin_constraints)
   set(${BINARY_CONTRAINTS} ${ALL_CONSTRAINTS} PARENT_SCOPE)#automatic appending constraints generated by the configuration itself for the given binary package generated
   set(${CHECK_OK} TRUE PARENT_SCOPE)
-  set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} TRUE "${${config_args_var}}" "${ALL_CONSTRAINTS}")
+  set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} TRUE "${${config_args_var}}" "${ALL_CONSTRAINTS}" "${${config_name}_RESULT_INDEX}")
 endfunction(check_Platform_Configuration_With_Arguments)
 
 
@@ -1560,29 +1571,29 @@ endfunction(check_Platform_Configuration_With_Arguments)
 function(get_All_Configuration_Visible_Build_Variables LINK_OPTS COMPILE_OPTS INC_DIRS LIB_DIRS DEFS RPATH config)
   #first getting local variables for the given configuration
   set(links)#preprocessor definition that apply to the interface of the configuration's components come from : 1) the configuration definition itself and 2) can be set directly by the user component
-  if(DEFINED ${config}_LINK_OPTIONS)
-    set(links ${config}_LINK_OPTIONS)
+  if(DEFINED ${PROJECT_NAME}_${config}_LINK_OPTIONS)
+    set(links ${PROJECT_NAME}_${config}_LINK_OPTIONS)
   endif()
   set(defs)#preprocessor definition that apply to the interface of the configuration's components come from : 1) the configuration definition itself and 2) can be set directly by the user component
-  if(DEFINED ${config}_DEFINITIONS)
-		set(defs ${config}_DEFINITIONS)
+  if(DEFINED ${PROJECT_NAME}_${config}_DEFINITIONS)
+		set(defs ${PROJECT_NAME}_${config}_DEFINITIONS)
 	endif()
 	#only transmit configuration variable if the configuration defines those variables (even if standard they are not all always defined)
 	set(includes)
-	if(DEFINED ${config}_INCLUDE_DIRS)
-		set(includes ${config}_INCLUDE_DIRS)
+	if(DEFINED ${PROJECT_NAME}_${config}_INCLUDE_DIRS)
+		set(includes ${PROJECT_NAME}_${config}_INCLUDE_DIRS)
 	endif()
 	set(lib_dirs)
-	if(DEFINED ${config}_LIBRARY_DIRS)
-		set(lib_dirs ${config}_LIBRARY_DIRS)
+	if(DEFINED ${PROJECT_NAME}_${config}_LIBRARY_DIRS)
+		set(lib_dirs ${PROJECT_NAME}_${config}_LIBRARY_DIRS)
 	endif()
 	set(opts)
-	if(DEFINED ${config}_COMPILER_OPTIONS)
-		set(opts ${config}_COMPILER_OPTIONS)
+	if(DEFINED ${PROJECT_NAME}_${config}_COMPILER_OPTIONS)
+		set(opts ${PROJECT_NAME}_${config}_COMPILER_OPTIONS)
 	endif()
 	set(rpath)
-	if(DEFINED ${config}_RPATH)
-		set(rpath ${config}_RPATH)
+	if(DEFINED ${PROJECT_NAME}_${config}_RPATH)
+		set(rpath ${PROJECT_NAME}_${config}_RPATH)
 	endif()
   #then getting the variables of the dependencies
   interpret_System_Configuration_List(dep_configurations ${config}_CONFIGURATION_DEPENDENCIES)
@@ -1946,6 +1957,37 @@ function(get_Next_Index_For_Checked_Platform_Configuration_Arguments NEXT_INDEX 
   endif()
 endfunction(get_Next_Index_For_Checked_Platform_Configuration_Arguments)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |load_platform_Configuration_Result| replace:: ``load_platform_Configuration_Result``
+#  .. _load_platform_Configuration_Result:
+#
+#  load_platform_Configuration_Result
+#  -------------------------------------
+#
+#   .. command:: load_platform_Configuration_Result(config path_to_config result_index)
+#
+#   Load the result file of a specific evaluation of the configuration
+#
+#     :config: the name of the configuration.
+#     :path_to_config: the path to configuration folder.
+#     :result_index: index of the previosu evaluation call.
+#
+macro(load_platform_Configuration_Result config path_to_config result_index)
+set(eval_result_file ${path_to_config}/build/output_vars_${result_index}.cmake)
+if(EXISTS ${eval_result_file})
+  include(${eval_result_file})#may set ${config}_CONFIG_FOUND to TRUE AND load returned variables
+  if(${config}_CONFIG_FOUND)
+    foreach(file IN LISTS ${config}_USE_FILES)
+      include(${path_to_config}/${file})#directly provide use files to user (so they can use provided function/macro definitions)
+    endforeach()
+  endif()
+endif()
+endmacro(load_platform_Configuration_Result)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -2116,15 +2158,8 @@ macro(evaluate_Platform_Configuration config path_to_config force_reeval)
   endif()
 
   #3) get the result anytime
-  set(eval_result_file ${path_to_config}/build/output_vars_${result_index}.cmake)
-  if(EXISTS ${eval_result_file})
-    include(${eval_result_file})#may set ${config}_CONFIG_FOUND to TRUE AND load returned variables
-    if(${config}_CONFIG_FOUND)
-      foreach(file IN LISTS ${config}_USE_FILES)
-        include(${path_to_config}/${file})#directly provide use files to user (so they can use provided function/macro definitions)
-      endforeach()
-    endif()
-  endif()
+  set(${config}_RESULT_INDEX "${result_index}")#to memorize the result in optim functions
+  load_platform_Configuration_Result(${config} ${path_to_config} ${result_index})
 endmacro(evaluate_Platform_Configuration)
 
 #.rst:
@@ -2245,7 +2280,9 @@ function(reset_Platform_Configuration_Cache_Variables config)
     unset(${config}_${constraint}_BINARY_VALUE CACHE)
   endforeach()
   unset(${config}_IN_BINARY_CONSTRAINTS CACHE)
-
+  foreach(dep_config IN LISTS ${config}_CONFIGURATION_DEPENDENCIES)
+    reset_Platform_Configuration_Cache_Variables(${dep_config})
+  endforeach()
   unset(${config}_CONFIGURATION_DEPENDENCIES CACHE)
   foreach(dep_config IN LISTS ${config}_CONFIGURATION_DEPENDENCIES_IN_BINARY)
     reset_Platform_Configuration_Cache_Variables(${dep_config})
@@ -2268,20 +2305,140 @@ endfunction(reset_Platform_Configuration_Cache_Variables)
 #  extract_Platform_Configuration_Resulting_Variables
 #  --------------------------------------------------
 #
-#   .. command:: extract_Platform_Configuration_Resulting_Variables(config)
+#   .. command:: extract_Platform_Configuration_Resulting_Variables(package config)
 #
-#     Get the list of constraints that should apply to a given configuration when used in a binary.
+#     Get the cache variable that result from the evaluation of a configuration by a given package.
 #
+#     :package: the name of the package asking for configuration evaluation
 #     :config: the name of the configuration to be checked.
 #
-function(extract_Platform_Configuration_Resulting_Variables config)
+function(extract_Platform_Configuration_Resulting_Variables package config)
   #updating output variables from teh value of variable s specified by PID_Configuration_Variables
   foreach(var IN LISTS ${config}_RETURNED_VARIABLES)
-    #the content of ${config}_${var}_RETURNED_VARIABLE is the name of a variable so need to get its value using ${}
-    set(${config}_${var} ${${${config}_${var}_RETURNED_VARIABLE}} CACHE INTERNAL "")
+     #the content of ${config}_${var}_RETURNED_VARIABLE is the name of a variable so need to get its value using ${}
+     #set the package specific variable
+     if(NOT DEFINED ${package}_${config}_${var})
+      set(${package}_${config}_${var} "${${${config}_${var}_RETURNED_VARIABLE}}" CACHE INTERNAL "")
+     endif()
+     #FOR COMPATIBLITY WITH OLD CODE: set the global variable (only define it, it will be set when needed by the feed_* functions)
+     set(${config}_${var} "" CACHE INTERNAL "")
   endforeach()
 endfunction(extract_Platform_Configuration_Resulting_Variables)
 
+
+function(reset_Resulting_Variables package config)
+  foreach(var IN LISTS ${config}_RETURNED_VARIABLES)
+    unset(${package}_${config}_${var} CACHE) #unset the package specific variable
+    #FOR COMPATIBLITY WITH OLD CODE
+    unset(${config}_${var} CACHE)#unset the global variable
+  endforeach()
+endfunction(reset_Resulting_Variables)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |feed_Configuration_Resulting_Variables| replace:: ``feed_Configuration_Resulting_Variables``
+#  .. _feed_Configuration_Resulting_Variables:
+#
+#  feed_Configuration_Resulting_Variables
+#  --------------------------------------------------
+#
+#   .. command:: feed_Configuration_Resulting_Variables(package config)
+#
+#    Set the value of the global Configuration result variable the value of this variable evaluated in the context of a given package.
+#    FOR COMPATIBILITY WITH binary packages generated with previous PID version 
+#     :package: the name of the package that asked for configuration evaluation
+#     :config: the name of the configuration
+#
+function(feed_Configuration_Resulting_Variables package config)
+  #FOR COMPATIBLITY WITH OLD CODE: set the global variable
+  #necessary to manage old binary packages
+  foreach(var IN LISTS ${config}_RETURNED_VARIABLES)
+    set(${config}_${var} ${${package}_${config}_${var}} CACHE INTERNAL "")#unset the global variable
+  endforeach()
+  foreach(dep IN LISTS ${config}_CONFIGURATION_DEPENDENCIES)
+    feed_Configuration_Resulting_Variables(${package} ${dep})
+  endforeach()
+endfunction(feed_Configuration_Resulting_Variables)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |feed_Configuration_Resulting_Variables_For_Package| replace:: ``feed_Configuration_Resulting_Variables_For_Package``
+#  .. _feed_Configuration_Resulting_Variables_For_Package:
+#
+#  feed_Configuration_Resulting_Variables_For_Package
+#  --------------------------------------------------
+#
+#   .. command:: feed_Configuration_Resulting_Variables_For_Package(package)
+#
+#    Set the value of global Configuration result variables to the value of corresponding variables evaluated in the context of a given package.
+#
+#     :package: the name of the package that asked for configuration evaluation
+#
+function(feed_Configuration_Resulting_Variables_For_Package package)
+  foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX})
+    feed_Configuration_Resulting_Variables(${package} ${config})
+  endforeach()
+endfunction(feed_Configuration_Resulting_Variables_For_Package)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |feed_Configuration_Resulting_Variables_For_Wrapper| replace:: ``feed_Configuration_Resulting_Variables_For_Wrapper``
+#  .. _feed_Configuration_Resulting_Variables_For_Wrapper:
+#
+#  feed_Configuration_Resulting_Variables_For_Wrapper
+#  --------------------------------------------------
+#
+#   .. command:: feed_Configuration_Resulting_Variables_For_Wrapper(package)
+#
+#    Set the value of global Configuration result variables to the value of corresponding variables evaluated in the context of a given package.
+#
+#     :package: the name of the package that asked for configuration evaluation
+#     :version: the version of the wrapped package being configured
+#
+function(feed_Configuration_Resulting_Variables_For_Wrapper package version)
+  foreach(config IN LISTS ${package}_KNOWN_VERSION_${version}_CONFIGURATIONS)
+    feed_Configuration_Resulting_Variables(${package} ${config})
+  endforeach()
+endfunction(feed_Configuration_Resulting_Variables_For_Wrapper)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |reset_Platform_Configuration_Resulting_Variables| replace:: ``reset_Platform_Configuration_Resulting_Variables``
+#  .. _reset_Platform_Configuration_Resulting_Variables:
+#
+#  reset_Platform_Configuration_Resulting_Variables
+#  --------------------------------------------------
+#
+#   .. command:: reset_Platform_Configuration_Resulting_Variables(package config)
+#
+#     Reset cache variables that result from the evaluation of a configuration by a given package.
+#
+#     :package: the name of the package that asked for configuration evaluation
+#
+function(reset_Platform_Configuration_Resulting_Variables package)
+  foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX})
+    reset_Resulting_Variables(${package} ${config})
+    foreach(dep IN LISTS ${config}_CONFIGURATION_DEPENDENCIES)
+      reset_Resulting_Variables(${package} ${dep})
+    endforeach()
+  endforeach()
+  foreach(pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})
+    reset_Platform_Configuration_Resulting_Variables(${pack})
+  endforeach()
+  foreach(pack IN LISTS ${package}_DEPENDENCIES${USE_MODE_SUFFIX})
+    reset_Platform_Configuration_Resulting_Variables(${pack})
+  endforeach()
+endfunction(reset_Platform_Configuration_Resulting_Variables)
 
 #.rst:
 #

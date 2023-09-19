@@ -38,6 +38,15 @@ include(PID_Continuous_Integration_Functions NO_POLICY_SCOPE)
 ############ description of functions implementing the wrapper API #############
 ################################################################################
 
+function(reset_Platform_Configuration_Resulting_Variables_For_Wrapper prefix)
+foreach(config IN LISTS ${prefix}_CONFIGURATIONS)
+	reset_Resulting_Variables(${PROJECT_NAME} ${config})
+	foreach(dep IN LISTS ${config}_CONFIGURATION_DEPENDENCIES)
+		reset_Resulting_Variables(${PROJECT_NAME} ${dep})
+	endforeach()
+endforeach()
+endfunction(reset_Platform_Configuration_Resulting_Variables_For_Wrapper)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -75,6 +84,7 @@ function(reset_Wrapper_Version_Info version buidable soname compatibility deploy
 	#reset platform configurations
 	foreach(config IN LISTS ${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS)
 		unset(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATION_${config}_ARGS CACHE)
+		reset_Platform_Configuration_Resulting_Variables_For_Wrapper(${PROJECT_NAME}_KNOWN_VERSION_${version})
 	endforeach()
 	unset(${PROJECT_NAME}_KNOWN_VERSION_${version}_CONFIGURATIONS CACHE)
 	#reset package dependencies
@@ -1185,6 +1195,9 @@ function(declare_Wrapped_Platform_Configuration NEED_EXIT platform configuration
 			endif()
 		endforeach()
 	endif()
+	#this fix is to provide global configuration variables that match the last check (in current wrapper context)
+	#of the configuration.
+	feed_Configuration_Resulting_Variables_For_Wrapper(${PROJECT_NAME} ${CURRENT_MANAGED_VERSION})
 endfunction(declare_Wrapped_Platform_Configuration)
 
 #.rst:
@@ -2863,8 +2876,8 @@ endfunction(agregate_All_Build_Info_For_Component)
 #      :version: the given version.
 #
 function(set_Build_Info_For_Dependency prefix dep_package component)
+	feed_Configuration_Resulting_Variables_For_Package(${dep_package})
 	########## manage per dependency build variables ############
-
 	# get current value of dependency variables
 	set(links ${${prefix}_DEPENDENCY_${dep_package}_BUILD_LINKS})
 	set(includes ${${prefix}_DEPENDENCY_${dep_package}_BUILD_INCLUDES})
@@ -3141,7 +3154,7 @@ endfunction(set_Build_Info_For_Dependency)
 #
 function(set_Build_Info_For_Component package component version platform)
 	set(prefix ${package}_KNOWN_VERSION_${version})
-
+	
 	#initialization : giving the value of system dependencies related variables (they may be useful to build the component)
 	set(runtime_links)
 	set(links ${${prefix}_COMPONENT_${component}_SYSTEM_LINKS})
@@ -3149,13 +3162,30 @@ function(set_Build_Info_For_Component package component version platform)
 	set(lib_dirs ${${prefix}_COMPONENT_${component}_SYSTEM_LIB_DIRS})
 	set(defs ${${prefix}_COMPONENT_${component}_SYSTEM_DEFINITIONS})
 	set(opts ${${prefix}_COMPONENT_${component}_SYSTEM_OPTIONS})
-	#build info may be specified on component they are required to enfore tha use of adequate build option
+	#build info may be specified on component they are required to enforce the use of adequate build option
 	set(c_std ${${prefix}_COMPONENT_${component}_C_STANDARD})
 	set(c_max_std ${${prefix}_COMPONENT_${component}_C_MAX_STANDARD})
 	set(cxx_std ${${prefix}_COMPONENT_${component}_CXX_STANDARD})
 	set(cxx_max_std ${${prefix}_COMPONENT_${component}_CXX_MAX_STANDARD})
 	set(res ${${prefix}_COMPONENT_${component}_SYSTEM_RUNTIME_RESOURCES})
 	set(all_local_deps)
+
+
+	#first evaluate element of the list => if there are (configuration) variables they are evaluated
+	# as regard of the local variable
+	feed_Configuration_Resulting_Variables_For_Package(${package})
+	evaluate_Variables_In_List(runtime_links runtime_links)
+	evaluate_Variables_In_List(links links)
+	evaluate_Variables_In_List(includes includes)
+	evaluate_Variables_In_List(lib_dirs lib_dirs)
+	evaluate_Variables_In_List(defs defs)
+	evaluate_Variables_In_List(opts opts)
+	evaluate_Variables_In_List(res res)
+	evaluate_Variables_In_List(c_std c_std)
+	evaluate_Variables_In_List(c_max_std c_max_std)
+	evaluate_Variables_In_List(cxx_std cxx_std)
+	evaluate_Variables_In_List(cxx_max_std cxx_max_std)
+
 	#standards need to be resolve for the component (including its own standard constraints) to get a finally usable language standard resolved
 	if(${prefix}_COMPONENT_${component}_SYSTEM_C_STANDARD
 		OR ${prefix}_COMPONENT_${component}_SYSTEM_CXX_STANDARD)
@@ -3187,7 +3217,7 @@ function(set_Build_Info_For_Component package component version platform)
 			set(cxx_max_std ${NEW_CXX_MAX_STD})
 		endif()
 	endif()
-
+	
 
 	#local recursion first and caching result to avoid doing many time the same operation
 	# getting all build options from internal dependencies
@@ -3323,15 +3353,8 @@ function(set_Build_Info_For_Component package component version platform)
 			endif()
 		endforeach()
 	endforeach()
-	#first evaluate element of the list => if they are variables they are evaluated
-	evaluate_Variables_In_List(EVAL_SHARED_LNKS runtime_links)
-	evaluate_Variables_In_List(EVAL_LNKS links)
-	evaluate_Variables_In_List(EVAL_INCS includes)
-	evaluate_Variables_In_List(EVAL_LDIRS lib_dirs)
-	evaluate_Variables_In_List(EVAL_DEFS defs)
-	evaluate_Variables_In_List(EVAL_OPTS opts)
-	evaluate_Variables_In_List(EVAL_RRES res)
 
+	######################## Now information has been grabed memorize it ###################
 	#now resolve compiler options (to avoid them to contain defs and incs) and ensure uniqueness
 	resolve_External_Compiler_Options(EVAL_OPTS EVAL_DEFS EVAL_INCS)
 	#clean a bit the result, to avoid unecessary repetitions
@@ -3771,8 +3794,8 @@ function(resolve_Wrapper_Dependencies package version os_variant)
 	set(PROJECT_NAME ${package}) #to be sure that all functions will work properly
 	set(prefix ${package}_KNOWN_VERSION_${version})
 
-	#1) from wrapper description we generate the internal variables used to manage each dependency
-	# and we try to find these dependencies in workspace
+	#1) from wrapper description we generated the internal variables used to manage each dependency
+	# and we now try to find these dependencies in workspace
 	foreach(dep_package IN LISTS ${prefix}_DEPENDENCIES)#among all dependencies that have been specified
 		resolve_Wrapper_Dependency(${package} ${version} ${dep_package} ${os_variant})
 	endforeach()

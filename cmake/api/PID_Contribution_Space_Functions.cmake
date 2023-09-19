@@ -1228,7 +1228,7 @@ endfunction(get_System_Configuration_All_Non_Official_Contribution_Spaces_In_Use
 function(get_Package_All_Non_Official_Contribtion_Spaces_In_Use LIST_OF_CS package type default_cs mode)
   set(res_list)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-  foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATION${VAR_SUFFIX})
+  foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})
     #need to recurse to manage depenencies
     get_System_Configuration_All_Non_Official_Contribution_Spaces_In_Use(DEP_LIST_OF_CS ${config} "${default_cs}")
     list(APPEND res_list ${DEP_LIST_OF_CS})

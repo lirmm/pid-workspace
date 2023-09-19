@@ -949,14 +949,14 @@ get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 #collect only the package dependencies, not the internal ones
 foreach(a_dep_component IN LISTS ${package}_${component}_INTERNAL_DEPENDENCIES${VAR_SUFFIX})
   #for all direct internal dependencies
-	create_External_Component_Dependency_Target(${package} ${a_dep_component} ${mode})
+  create_External_Component_Dependency_Target(${package} ${a_dep_component} ${mode})
   bind_Imported_External_Component_Target(${package} ${component} ${package} ${a_dep_component} ${mode})
 endforeach()
 
 foreach(a_dep_package IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
 	foreach(a_dep_component IN LISTS ${package}_${component}_EXTERNAL_DEPENDENCY_${a_dep_package}_COMPONENTS${VAR_SUFFIX})
     #for all direct package dependencies
-		create_External_Component_Dependency_Target(${a_dep_package} ${a_dep_component} ${mode})
+	create_External_Component_Dependency_Target(${a_dep_package} ${a_dep_component} ${mode})
     bind_Imported_External_Component_Target(${package} ${component} ${a_dep_package} ${a_dep_component} ${mode})
   endforeach()
 endforeach()
@@ -1153,10 +1153,12 @@ endfunction(create_External_Dependency_Target)
 function (create_Dependency_Target dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
+feed_Configuration_Resulting_Variables_For_Package(${dep_package})
+
 rename_If_Alias(comp_name_to_use ${dep_package} ${dep_component})
 
 if(NOT TARGET ${dep_package}_${comp_name_to_use}${TARGET_SUFFIX})#check that this target does not exist, otherwise naming conflict
-#create the dependent target (#may produce recursion to build undirect dependencies of targets
+	#create the dependent target (#may produce recursion to build undirect dependencies of targets
 	if(${dep_package}_${comp_name_to_use}_TYPE STREQUAL "APP"
 		OR ${dep_package}_${comp_name_to_use}_TYPE STREQUAL "EXAMPLE")
 		create_Imported_Executable_Target(${dep_package} ${comp_name_to_use} ${mode})
@@ -1193,6 +1195,8 @@ endfunction(create_Dependency_Target)
 #
 function(create_External_Component_Dependency_Target dep_package dep_component mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+feed_Configuration_Resulting_Variables_For_Package(${dep_package})
+
 set(EXT_SH_LINKS_OPTIONS)
 set(EXT_ST_LINKS_OPTIONS)
 rename_If_Alias(comp_name_to_use ${dep_package} ${dep_component})
@@ -1408,7 +1412,7 @@ function(create_Imported_Static_Library_Target package component mode)
 
 	list_Public_Includes(INCLUDES ${package} ${component} ${MODE_TO_IMPORT} TRUE)
 	list_Public_Links(LINKS SYSTEM_STATIC ${package} ${component} ${MODE_TO_IMPORT})
-  list_Public_Lib_Dirs(LIBDIRS ${package} ${component} ${MODE_TO_IMPORT})
+  	list_Public_Lib_Dirs(LIBDIRS ${package} ${component} ${MODE_TO_IMPORT})
 	list_Private_Links(PRIVATE_LINKS ${package} ${component} ${MODE_TO_IMPORT})
 	list_Public_Definitions(DEFS ${package} ${component} ${MODE_TO_IMPORT})
 
@@ -1442,21 +1446,20 @@ function(create_Imported_Shared_Library_Target package component mode)
 	if(NOT MODE_TO_IMPORT MATCHES mode)
 		get_Binary_Location(LOCATION_RES ${package} ${component} ${MODE_TO_IMPORT})#find the adequate release binary
 	endif()
-  if(WIN32)#in windows a shared librairy is specific because it has two parts : a dll and an interface static library
-    #we need to link againts the statis library while the "real" component is the dll
-    #so we transform the name of the dll object into a .lib object
-	   get_Windows_Link_Interface(STATIC_LOCATION_RES ${LOCATION_RES})
-    set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}" IMPORTED_IMPLIB "${STATIC_LOCATION_RES}")
-  else()#for UNIX system everything is automatic
-    set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
-  endif()
+	if(WIN32)#in windows a shared librairy is specific because it has two parts : a dll and an interface static library
+		#we need to link againts the statis library while the "real" component is the dll
+		#so we transform the name of the dll object into a .lib object
+		get_Windows_Link_Interface(STATIC_LOCATION_RES ${LOCATION_RES})
+		set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}" IMPORTED_IMPLIB "${STATIC_LOCATION_RES}")
+	else()#for UNIX system everything is automatic
+		set_target_properties(${package}_${component}${TARGET_SUFFIX} PROPERTIES IMPORTED_LOCATION "${LOCATION_RES}")#Debug mode: we keep the suffix as-if we werre building using dependent debug binary even if not existing
+	endif()
 
 	list_Public_Includes(INCLUDES ${package} ${component} ${MODE_TO_IMPORT} TRUE)
 	list_Public_Links(LINKS SYSTEM_STATIC ${package} ${component} ${MODE_TO_IMPORT})
-  list_Public_Lib_Dirs(LIBDIRS ${package} ${component} ${MODE_TO_IMPORT})
+  	list_Public_Lib_Dirs(LIBDIRS ${package} ${component} ${MODE_TO_IMPORT})
 	list_Private_Links(PRIVATE_LINKS ${package} ${component} ${MODE_TO_IMPORT})
 	list_Public_Definitions(DEFS ${package} ${component} ${MODE_TO_IMPORT})
-
   adjust_Languages_Standard_For_Imported_Component(FILTERED_OPTS ${package} ${component} ${MODE_TO_IMPORT})
   manage_Additional_Imported_Component_Flags(${package} ${component} ${mode} "${INCLUDES}" "${DEFS}" "${FILTERED_OPTS}" "${LINKS}" "${PRIVATE_LINKS}" "${SYSTEM_STATIC}" "${LIBDIRS}")
 endfunction(create_Imported_Shared_Library_Target)

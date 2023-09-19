@@ -1411,6 +1411,7 @@ endfunction(add_Required_Extra_Tools)
 #
 function(reset_Package_Description_Cached_Variables)
   reset_Extra_Tool_Cache_Variables()#reset info on plugins used
+  reset_Platform_Configuration_Resulting_Variables(${PROJECT_NAME})
 	# package dependencies declaration must be reinitialized otherwise some problem (uncoherent dependancy versions) would appear
 	foreach(dep_package IN LISTS ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})
     reset_Version_Strings_Recursive(${dep_package})#reset resolved version
@@ -3149,6 +3150,7 @@ function(reset_Temporary_Optimization_Variables mode)
       unset(TEMP_CONFIG_${config}_CHECK_${check}${VAR_SUFFIX} CACHE)
       unset(TEMP_CONFIG_${config}_CALL_CONSTRAINTS_${check}${VAR_SUFFIX} CACHE)
       unset(TEMP_CONFIG_${config}_BINARY_CONSTRAINTS_${check}${VAR_SUFFIX} CACHE)
+      unset(TEMP_CONFIG_${config}_RESULT_INDEX_${check}${VAR_SUFFIX} CACHE)
     endforeach()
   	unset(TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX} CACHE)
   endforeach()
@@ -3304,8 +3306,9 @@ endfunction(check_Dependency_Temporary_Optimization_Variables)
 #     :test_ok: set to TRUE or FALSE the result of the check.
 #     :call_constraints: the list of call constraints to memorize.
 #     :binary_constraints: the list of binary constraints to memorize.
+#     :result_index: the index of the file memorizing the result of the previous call.
 #
-function(set_Configuration_Temporary_Optimization_Variables config mode test_ok call_constraints binary_constraints)
+function(set_Configuration_Temporary_Optimization_Variables config mode test_ok call_constraints binary_constraints result_index)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   if(NOT DEFINED TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX})
     set(next_index 0)
@@ -3315,6 +3318,7 @@ function(set_Configuration_Temporary_Optimization_Variables config mode test_ok 
   set(TEMP_CONFIG_${config}_CHECK_${next_index}${VAR_SUFFIX} ${test_ok} CACHE INTERNAL "")
   set(TEMP_CONFIG_${config}_CALL_CONSTRAINTS_${next_index}${VAR_SUFFIX} ${call_constraints} CACHE INTERNAL "")
   set(TEMP_CONFIG_${config}_BINARY_CONSTRAINTS_${next_index}${VAR_SUFFIX} ${binary_constraints} CACHE INTERNAL "")
+  set(TEMP_CONFIG_${config}_RESULT_INDEX_${next_index}${VAR_SUFFIX} ${result_index} CACHE INTERNAL "")
   math(EXPR new_size "${next_index}+1")
   set(TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX} ${new_size} CACHE INTERNAL "")
   append_Unique_In_Cache(TEMP_CONFIGS${VAR_SUFFIX} ${config})
@@ -3330,7 +3334,7 @@ endfunction(set_Configuration_Temporary_Optimization_Variables)
 #  check_Configuration_Temporary_Optimization_Variables
 #  ----------------------------------------------------
 #
-#   .. command:: check_Configuration_Temporary_Optimization_Variables(RES_CHECK_MADE RES_CHECK RES_CONSTRAINTS 
+#   .. command:: check_Configuration_Temporary_Optimization_Variables(RES_CHECK_MADE RES_CHECK RES_CONSTRAINTS RES_INDEX 
 #                    config_name config_args_var mode)
 #
 #   check whether a configuration has already been checked.
@@ -3342,11 +3346,13 @@ endfunction(set_Configuration_Temporary_Optimization_Variables)
 #     :RES_CHECK_MADE: the output variable that is TRUE if equivalent check has already been made, false otherwise.
 #     :RES_CHECK: the output variable that contains the result of the previous check.
 #     :RES_CONSTRAINTS: the output variable that contains the constraints of the previous check.
+#     :RES_INDEX: the output variable that contains the index of result file for the same previous call .
 #
-function(check_Configuration_Temporary_Optimization_Variables RES_CHECK_MADE RES_CHECK RES_CONSTRAINTS config config_args_var mode)
+function(check_Configuration_Temporary_Optimization_Variables RES_CHECK_MADE RES_CHECK RES_CONSTRAINTS RES_INDEX config config_args_var mode)
   set(${RES_CHECK_MADE} FALSE PARENT_SCOPE)
   set(${RES_CHECK} PARENT_SCOPE)
   set(${RES_CONSTRAINTS} PARENT_SCOPE)
+  set(${RES_INDEX} PARENT_SCOPE)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   if(DEFINED TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX})
     math(EXPR total "${TEMP_CONFIG_${config}_CHECKS${VAR_SUFFIX}}-1")
@@ -3356,6 +3362,7 @@ function(check_Configuration_Temporary_Optimization_Variables RES_CHECK_MADE RES
         set(${RES_CHECK_MADE} TRUE PARENT_SCOPE)
         set(${RES_CHECK} ${TEMP_CONFIG_${config}_CHECK_${iter}${VAR_SUFFIX}} PARENT_SCOPE)
         set(${RES_CONSTRAINTS} ${TEMP_CONFIG_${config}_BINARY_CONSTRAINTS_${iter}${VAR_SUFFIX}} PARENT_SCOPE)#returning the binary constraints not the call constraints
+        set(${RES_INDEX} "${TEMP_CONFIG_${config}_RESULT_INDEX_${iter}${VAR_SUFFIX}}" PARENT_SCOPE)
         return()
       endif()
     endforeach()

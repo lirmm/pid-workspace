@@ -164,7 +164,6 @@ endfunction(generate_Wrapper_Reference_File)
 #      :release_only: if TRUE the resolution process will consider only release binaries in install tree.
 #
 function(resolve_Package_Dependencies package mode first_time release_only)
-
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(first_time)#otherwise means a reinstall is forced so reevaluate everything
   check_Dependency_Temporary_Optimization_Variables(ALREADY_CHECKED ${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
@@ -226,7 +225,6 @@ if(list_of_unresolved_configs)
     endif()
   endif()
 endif()
-
 ################## management of external packages : for both external and native packages ##################
 set(list_of_conflicting_dependencies)
 
