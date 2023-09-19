@@ -1740,9 +1740,13 @@ else()#the dependency has not been already found
 	endif()
 endif()
 #last step : check STD C++ AND CONFIGURATION ABI compatibilities
-if(${dependency}_FOUND${VAR_SUFFIX})
-  is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${dependency} ${mode})
-  set(${ABI_COMPATIBLE} ${IS_ABI_COMPATIBLE} PARENT_SCOPE)#warning => the binary package may have been built with an incompatible C++ ABI
+if(${dependency}_FOUND${VAR_SUFFIX} AND CHECKING_BINARY_COMPATIBILITY)
+  if(CHECKING_BINARY_COMPATIBILITY)
+	is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${dependency} ${mode})
+	set(${ABI_COMPATIBLE} ${IS_ABI_COMPATIBLE} PARENT_SCOPE)#warning => the binary package may have been built with an incompatible C++ ABI
+   else()
+	set(${ABI_COMPATIBLE} TRUE PARENT_SCOPE)
+   endif()
 endif()
 endfunction(resolve_Native_Package_Dependency)
 

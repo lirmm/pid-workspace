@@ -67,7 +67,7 @@ option(ENABLE_SANITIZERS "Enable the sanitizers on the package's components" OFF
 option(WARNINGS_AS_ERRORS "Generating errors when warnings are notified" OFF)
 option(REQUIRED_PACKAGES_AUTOMATIC_UPDATE "Package will try to install new version when configuring" OFF)
 option(CHECK_GIT_REMOTES "Package checks validity of remotes when configured (can increase build time)" OFF)
-
+option(CHECKING_BINARY_COMPATIBILITY "Package automatically checks validity of binary packages it depends on (can increase build time)" OFF)
 # dependent options
 include(CMakeDependentOption)
 CMAKE_DEPENDENT_OPTION(BUILD_LATEX_API_DOC "Package generates the LATEX api documentation" OFF "BUILD_API_DOC" OFF)
