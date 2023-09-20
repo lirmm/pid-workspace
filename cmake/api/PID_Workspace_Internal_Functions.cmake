@@ -1938,7 +1938,7 @@ else()#deploying a specific version of the external package
 				return()
 			endif()
 			set(USE_SYSTEM TRUE)
-			set(version ${${package}_VERSION})#use the OS version detected (${package}_VERSION is a standardized variable for configuration) !!
+			set(version ${workspace_${package}_VERSION})#use the OS version detected (${package}_VERSION is a standardized variable for configuration) !!
 		else()
 			set(USE_SYSTEM FALSE)
 		endif()

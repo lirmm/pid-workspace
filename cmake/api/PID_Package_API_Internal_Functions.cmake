@@ -2320,10 +2320,10 @@ else()#classical build => perform only corrective actions if cache variable is n
 				else()#system dependency
 					set(need_reset FALSE)
 					check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${PROJECT_NAME} "${dep_package}" ${CMAKE_BUILD_TYPE})
-					if(NOT RESULT_OK OR NOT ${dep_package}_VERSION)
+					if(NOT RESULT_OK OR NOT ${PROJECT_NAME}_${dep_package}_VERSION)
 						set(need_reset TRUE)
 					else()
-						list(FIND list_of_possible_versions ${${dep_package}_VERSION} INDEX)
+						list(FIND list_of_possible_versions ${${PROJECT_NAME}_${dep_package}_VERSION} INDEX)
 						if(INDEX EQUAL -1)#no possible version found -> bad input of the user or dependent build
 							set(need_reset TRUE)
 						endif()
@@ -2331,7 +2331,8 @@ else()#classical build => perform only corrective actions if cache variable is n
 					if(need_reset)
 						#reset all information about the system variant to enforce a good resolution
 						reset_Platform_Configuration_Cache_Variables(${dep_package})
-						unset(${dep_package}_VERSION CACHE)
+						unset(${PROJECT_NAME}_${dep_package}_VERSION CACHE)
+						unset(${dep_package}_VERSION CACHE)#FOR COMPATIBILITY
 						unset(${dep_package}_VERSION_STRING CACHE)
 						unset(${dep_package}_REQUIRED_VERSION_EXACT CACHE)
 						unset(${dep_package}_REQUIRED_VERSION_SYSTEM CACHE)
@@ -2367,12 +2368,12 @@ if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
 elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")#the system version has been selected => need to perform specific actions
 	#need to check the equivalent OS configuration to get the OS installed version
 	check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${PROJECT_NAME} "${dep_package}" ${CMAKE_BUILD_TYPE})
-	if(NOT RESULT_OK OR NOT ${dep_package}_VERSION)
+	if(NOT RESULT_OK OR NOT ${PROJECT_NAME}_${dep_package}_VERSION)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
 		return()
 	endif()
-	add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_VERSION}" TRUE TRUE "${list_of_components}") #set the dependency
+	add_External_Package_Dependency_To_Cache(${dep_package} "${${PROJECT_NAME}_${dep_package}_VERSION}" TRUE TRUE "${list_of_components}") #set the dependency
 elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")# any version can be used so for now no contraint
 	add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE FALSE "${list_of_components}")
 else()#a version is specified by the user OR the dependent build process has automatically set it

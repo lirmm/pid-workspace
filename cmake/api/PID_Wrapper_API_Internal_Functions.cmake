@@ -3719,12 +3719,12 @@ elseif(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SY
 			OR os_variant)#the wrapper is generating an os variant so all its dependencies are os variant too
 	#need to check the equivalent OS configuration to get the OS installed version
 	check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${package} "${dep_package}" Release)
-	if(NOT RESULT_OK OR NOT ${dep_package}_VERSION)
+	if(NOT RESULT_OK OR NOT ${package}_${dep_package}_VERSION)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
 	endif()
 	#need to detect the version in order to pas it to add_External_Package_Dependency_To_Cache
-	add_External_Package_Dependency_To_Cache(${dep_package} "${${dep_package}_VERSION}" TRUE TRUE "${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS}") #set the dependency
+	add_External_Package_Dependency_To_Cache(${dep_package} "${${package}_${dep_package}_VERSION}" TRUE TRUE "${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS}") #set the dependency
 elseif(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")# any version can be used so for now no contraint
 	add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE FALSE "${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS}")
 else()#a version is specified by the user OR the dependent build process has automatically set it
