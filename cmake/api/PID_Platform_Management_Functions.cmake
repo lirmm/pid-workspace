@@ -1832,9 +1832,9 @@ function(platform_Configuration_Arguments_Already_Checked RES_INDEX config path_
       set(args_list ${CMAKE_MATCH_2})
       set(tmp_args)
       foreach(arg IN LISTS args_list)
-        if(arg MATCHES "^([^=]+)=(.+)$")
+        if(arg MATCHES "^([^=]+)=(.*)$")#.* instead of .+ to allow empty value
           extract_All_Words("${CMAKE_MATCH_2}" "," ARGS_LIST)
-          set(tmp_${CMAKE_MATCH_1} ${ARGS_LIST})#create the variable
+          set(tmp_${CMAKE_MATCH_1} "${ARGS_LIST}")#create the variable (use guillemet to ensure it is defined even if empty)
           list(APPEND tmp_args tmp_${CMAKE_MATCH_1})#memorize the variable
         endif()
       endforeach()
@@ -1844,7 +1844,7 @@ function(platform_Configuration_Arguments_Already_Checked RES_INDEX config path_
         if(NOT tmp_args)#bot are empty so OK
           set(match_ok TRUE)
         endif()
-      elseif(tmp_args) #OTHERWISE: if previous args are empty then not the previosu call is not adequate
+      elseif(tmp_args) #OTHERWISE: if previous args are empty then not the previous call is not adequate
         #both list are
         list(LENGTH tmp_args size_args_prev)
         if(size_args_prev EQUAL size_args_curr)#OTHERWISE: not same set of arguments
