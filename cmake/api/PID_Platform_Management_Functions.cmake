@@ -1530,8 +1530,8 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
   # now enforce constraint of using the OS variant of an external package
   # predefine the use of the external package version with its os variant
   # no other choice to ensure compatibility with any package using this external package
-  set(${config_name}_VERSION_STRING ${${config_name}_VERSION} CACHE INTERNAL "")
-  set(${config_name}_REQUIRED_VERSION_EXACT ${${config_name}_VERSION} CACHE INTERNAL "")
+  set(${config_name}_VERSION_STRING ${${package}_${config_name}_VERSION} CACHE INTERNAL "")
+  set(${config_name}_REQUIRED_VERSION_EXACT ${${package}_${config_name}_VERSION} CACHE INTERNAL "")
   set(${config_name}_REQUIRED_VERSION_SYSTEM TRUE CACHE INTERNAL "")
   add_Chosen_Package_Version_In_Current_Process(${config_name} ${package})#force the use of an os variant
 
