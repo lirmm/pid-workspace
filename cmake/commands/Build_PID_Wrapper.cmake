@@ -165,6 +165,9 @@ if(use_os_variant)#instead of building the project using its variant coming from
 	resolve_Wrapper_Dependencies(${TARGET_EXTERNAL_PACKAGE} ${version} TRUE)
 	message("[PID] INFO : all required dependencies for external package ${TARGET_EXTERNAL_PACKAGE} version ${version} are satisfied !")
 
+	#feed general configuration variables so that they can be used into wrapper os symlink generation
+	#here the 
+	feed_Configuration_Resulting_Variables(${TARGET_EXTERNAL_PACKAGE} ${TARGET_EXTERNAL_PACKAGE})
 	# After external package own configuration check is OK, we have access to various configuration variables
 	# => produce symlinks to the adequate target OS artefacts with adequate names
 	generate_OS_Variant_Symlinks(${TARGET_EXTERNAL_PACKAGE} ${CURRENT_PLATFORM} ${version} ${TARGET_INSTALL_DIR})
