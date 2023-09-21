@@ -1444,13 +1444,14 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
     set(${BINARY_CONTRAINTS} ${BIN_CONSTRAINTS} PARENT_SCOPE)
     # if the package is evaluated for the first time it means its own result variables are not set yet
     # this causes a BUG because it needs its own variables to adequately create its variables (wrappers) or targets (packages)
+    reset_Platform_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
     install_System_Configuration_Check(PATH_TO_CONFIG ${config_name})#just to get the install path to the system configuration
+    include(${PATH_TO_CONFIG}/check_${config_name}.cmake)#get the description of the configuration check
     load_platform_Configuration_Result(${config_name} ${PATH_TO_CONFIG} "${RES_INDEX}")#load the adequate result file
+    
     #extracting variables to make them usable in calling context
     extract_Platform_Configuration_Resulting_Variables(${package} ${config_name})
     #WARNING unfortunately this is also true for dependencies -> need to recurse
-    reset_Platform_Configuration_Cache_Variables(${config_name}) #reset the output variables to ensure a good result
-    include(${PATH_TO_CONFIG}/check_${config_name}.cmake)#get the description of the configuration check
     interpret_System_Configuration_List(dep_configurations ${config_name}_CONFIGURATION_DEPENDENCIES)
     foreach(check IN LISTS dep_configurations)
       check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${package} ${check} ${mode})
@@ -1518,10 +1519,18 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
     #corresponding external package version has already been found
     #Note: use both modes signatures to allow the test to work in any situation (if its is undirectly called from a script)
     #WARNING: the corresponding external package version has already been chosen in local process
-    if(NOT ${config_name}_VERSION_STRING VERSION_EQUAL ${config_name}_VERSION
+    if(NOT ${config_name}_VERSION_STRING VERSION_EQUAL ${package}_${config_name}_VERSION
       OR NOT ${config_name}_REQUIRED_VERSION_SYSTEM)#version in use must be same system version
       #ERROR: this configuration simply cannot be used
-      message("[PID] WARNING: configuration ${config_name} cannot be used since it matches an external dependency whose version (${${config_name}_VERSION_STRING}) is not compliant with system version required (${${config_name}_VERSION}). If versions are equal it means that the package has been built with a NON OS variant version of ${config_name}.")
+      message("[PID] WARNING: configuration ${config_name} cannot be used since the corresponding external package is already used with mismatching version.")
+      message("- configuration ${config_name} (version ${${package}_${config_name}_VERSION}) is required by ${package}.")
+      get_Chosen_Version_In_Current_Process(VERSION REQUESTORS IS_EXACT IS_SYSTEM ${config_name})
+      string(REPLACE ";" ", " REQUESTORS "${REQUESTORS}")
+      if(${config_name}_REQUIRED_VERSION_SYSTEM)
+        message("- external package (OS version ${${config_name}_VERSION_STRING}) is already required by: ${REQUESTORS}.")
+      else()
+        message("- external package (NON OS version ${${config_name}_VERSION_STRING}) is already required by: ${REQUESTORS}.")
+      endif()
       set(${CHECK_OK} FALSE PARENT_SCOPE)
       set_Configuration_Temporary_Optimization_Variables(${config_name} ${mode} FALSE "${${config_args_var}}" "" "")
       return()
@@ -2317,11 +2326,9 @@ function(extract_Platform_Configuration_Resulting_Variables package config)
   foreach(var IN LISTS ${config}_RETURNED_VARIABLES)
      #the content of ${config}_${var}_RETURNED_VARIABLE is the name of a variable so need to get its value using ${}
      #set the package specific variable
-     if(NOT DEFINED ${package}_${config}_${var})
-      set(${package}_${config}_${var} "${${${config}_${var}_RETURNED_VARIABLE}}" CACHE INTERNAL "")
-     endif()
+    set(${package}_${config}_${var} "${${${config}_${var}_RETURNED_VARIABLE}}" CACHE INTERNAL "")
      #FOR COMPATIBLITY WITH OLD CODE: set the global variable (only define it, it will be set when needed by the feed_* functions)
-     set(${config}_${var} "" CACHE INTERNAL "")
+     set(${config}_${var} ${${package}_${config}_${var}} CACHE INTERNAL "")
   endforeach()
 endfunction(extract_Platform_Configuration_Resulting_Variables)
 
