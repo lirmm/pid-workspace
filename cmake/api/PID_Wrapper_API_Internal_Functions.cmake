@@ -3832,9 +3832,7 @@ function(resolve_Wrapper_Dependencies package version os_variant)
 				set(${prefix}_DEPENDENCY_${dep_pack}_VERSION_USED_FOR_BUILD ${${dep_pack}_VERSION_STRING} CACHE INTERNAL "")
 				set(${prefix}_DEPENDENCY_${dep_pack}_VERSION_USED_FOR_BUILD_IS_SYSTEM ${${dep_pack}_REQUIRED_VERSION_SYSTEM} CACHE INTERNAL "")
 				add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
-				if(${dep_pack}_EXTERNAL_DEPENDENCIES) #are there any dependency (external only) for this external package
-					resolve_Package_Dependencies(${dep_pack} Release TRUE "${BUILD_RELEASE_ONLY}")#recursion : resolving dependencies for each external package dependency
-				endif()
+				resolve_Package_Dependencies(${dep_pack} Release TRUE "${BUILD_RELEASE_ONLY}")#recursion : resolving dependencies for each external package dependency
 			endif()
 		else()#no need to be installed -> already found
 			resolve_Package_Dependencies(${dep_pack} Release TRUE "${BUILD_RELEASE_ONLY}")

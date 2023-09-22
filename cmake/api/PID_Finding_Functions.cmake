@@ -1403,34 +1403,34 @@ endfunction(reset_To_Install_Packages)
 #  need_Install_Native_Package
 #  ---------------------------
 #
-#   .. command:: need_Install_Native_Package(NEED FIND package)
+#   .. command:: need_Install_Native_Package(INSTALL FIND package)
 #
 #    Tell whether a native package must be installed in current process.
 #
 #     :package: the name of the given native package.
 #
-#     :NEED: the output variable that is TRUE if given native package must be installed.
+#     :INSTALL: the output variable that is TRUE if given native package must be installed.
 #     :FIND: the output variable that is TRUE if given external package must be found.
 #
-function(need_Install_Native_Package NEED FIND package)
+function(need_Install_Native_Package INSTALL FIND package)
   list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
   if(INDEX EQUAL -1)#package not found in list of packages to install
-  	set(${NEED} FALSE PARENT_SCOPE)
+  	set(${INSTALL} FALSE PARENT_SCOPE)
   	set(${FIND} FALSE PARENT_SCOPE)
   else()
 	if(${package}_FOUND${USE_MODE_SUFFIX})
-		set(${NEED} FALSE PARENT_SCOPE)
+		set(${INSTALL} FALSE PARENT_SCOPE)
 
 		resolve_Required_Native_Package_Version(RESOLUTION_OK MINIMUM_VERSION IS_EXACT ${package})
 		# MINIMUM_VERSION will be empty if the version already selected is compatible
 		if(MINIMUM_VERSION AND MINIMUM_VERSION VERSION_GREATER ${package}_VERSION_STRING)
-			set(${NEED} TRUE PARENT_SCOPE)
+			set(${INSTALL} TRUE PARENT_SCOPE)
 		endif()
 
 		set(${FIND} TRUE PARENT_SCOPE)
 		return()
 	endif()
-  	set(${NEED} TRUE PARENT_SCOPE)
+  	set(${INSTALL} TRUE PARENT_SCOPE)
 	set(${FIND} TRUE PARENT_SCOPE)
   endif()
 endfunction(need_Install_Native_Package)
