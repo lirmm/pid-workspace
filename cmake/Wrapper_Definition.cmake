@@ -2484,6 +2484,11 @@ function(install_External_Project)
       COMMAND git checkout ${INSTALL_EXTERNAL_PROJECT_GIT_CLONE_COMMIT}
       WORKING_DIRECTORY ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER}
     )
+    # If the repo has submodules we need to bring them back to their version corresponding to the checked out commit
+    execute_process(
+      COMMAND git submodule update --recursive
+      WORKING_DIRECTORY ${TARGET_BUILD_DIR}/${INSTALL_EXTERNAL_PROJECT_FOLDER}
+    )
   endif()
 
   #check that the extract went well
