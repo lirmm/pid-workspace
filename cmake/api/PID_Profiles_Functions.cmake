@@ -602,7 +602,7 @@ function(evaluate_Environment_From_Profile RESULT profile environment is_default
       else()
         set(VAL_LIST)
       endif()
-      set(ENV{${name}} ${VAL_LIST})#create the corresponding environment variable
+      set(ENV{${name}} "${VAL_LIST}")#create the corresponding environment variable
       list(APPEND env_vars_to_reset ${name})
     endwhile()
   endif()
