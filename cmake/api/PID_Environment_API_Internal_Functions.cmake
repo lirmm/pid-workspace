@@ -1838,10 +1838,11 @@ function(generate_Environment_Toolchain_File)
       if(${prefix}_LIBRARY)
         file(APPEND ${description_file} "set(PYTHON_LIBRARY ${${prefix}_LIBRARY} CACHE INTERNAL \"\" FORCE)\n")
       endif()
-    elseif(${prefix}_COMPILER) #other languages are compiled by default so to be managed a compiler must be defined
-      #add the default command for setting compiler anytime
-      file(APPEND ${description_file} "set(CMAKE_${lang}_COMPILER ${${prefix}_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
-
+    else()#it is a compiled language
+      if(${prefix}_COMPILER) #other languages are compiled by default so to be managed a compiler must be defined
+        #add the default command for setting compiler anytime
+        file(APPEND ${description_file} "set(CMAKE_${lang}_COMPILER ${${prefix}_COMPILER} CACHE INTERNAL \"\" FORCE)\n")
+      endif()
       if(${prefix}_COMPILER_FLAGS)
         fill_String_From_List(LANG_FLAGS ${prefix}_COMPILER_FLAGS " ")
         file(APPEND ${description_file} "set(CMAKE_${lang}_FLAGS  \"${LANG_FLAGS}\" CACHE INTERNAL \"\" FORCE)\n")
