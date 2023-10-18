@@ -501,8 +501,8 @@ macro(build_Environment_Project)
     message(FATAL_ERROR "[PID] CRITICAL ERROR: cannot configure host with environment ${PROJECT_NAME} because there is no valid solution for its dependencies.")
   endif()
   #now evaluate current environment regarding available solutions
-  set(valid_solution FALSE)
   if(${PROJECT_NAME}_SOLUTIONS GREATER 0)
+    set(valid_solution FALSE)
     math(EXPR max "${${PROJECT_NAME}_SOLUTIONS}-1")
     foreach(index RANGE ${max})
       is_Environment_Solution_Eligible(SOL_POSSIBLE ${index})
@@ -1029,6 +1029,102 @@ set(${EVAL_OK} TRUE PARENT_SCOPE)
 endfunction(evaluate_Environment_From_Package)
 
 
+function(compare_prefixed_variables DIFFERENT_VALUE var_name prefix1 prefix2)
+set(${DIFFERENT_VALUE} FALSE PARENT_SCOPE)
+if(DEFINED ${prefix1}_${var_name} AND DEFINED ${prefix2}_${var_name})
+  if(NOT ${prefix1}_${var_name} STREQUAL ${prefix2}_${var_name})
+    set(${DIFFERENT_VALUE} TRUE PARENT_SCOPE)
+  endif()
+endif()
+endfunction(compare_prefixed_variables)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Toolset_Conflict_And_Merge| replace:: ``check_Toolset_Conflict_And_Merge``
+#  .. _check_Toolset_Conflict_And_Merge:
+#
+#  check_Toolset_Conflict_And_Merge
+#  ---------------------------------
+#
+#   .. command:: check_Toolset_Conflict_And_Merge(CONFLICT_FOUND local_toolset_prefix dep_toolset_prefix)
+#
+#     Check that the language toolset can be merged into current solution
+#
+#
+function(check_Toolset_Conflict_And_Merge CONFLICT_FOUND local_toolset_prefix dep_toolset_prefix)
+set(${CONFLICT_FOUND} TRUE PARENT_SCOPE)
+compare_prefixed_variables(DIFF "COMPILER" ${local_toolset_prefix} ${dep_toolset_prefix})
+if(DIFF)
+  return()
+endif()
+compare_prefixed_variables(DIFF "COMPILER_ID" ${local_toolset_prefix} ${dep_toolset_prefix})
+if(DIFF)
+  return()
+endif()
+compare_prefixed_variables(DIFF "COMPILER_AR" ${local_toolset_prefix} ${dep_toolset_prefix})
+if(DIFF)
+  return()
+endif()
+#NOTE: we do not do that with compiler flags as they can be "augmented" by successive dependencies
+compare_prefixed_variables(DIFF "COMPILER_RANLIB" ${local_toolset_prefix} ${dep_toolset_prefix})
+if(DIFF)
+  return()
+endif()
+compare_prefixed_variables(DIFF "INTERPRETER" ${local_toolset_prefix} ${dep_toolset_prefix})
+if(DIFF)
+  return()
+endif()
+compare_prefixed_variables(DIFF "INCLUDE_DIRS" ${local_toolset_prefix} ${dep_toolset_prefix})
+if(DIFF)
+  return()
+endif()
+compare_prefixed_variables(DIFF "LIBRARY" ${local_toolset_prefix} ${dep_toolset_prefix})
+if(DIFF)
+  return()
+endif()
+compare_prefixed_variables(DIFF "COVERAGE" ${local_toolset_prefix} ${dep_toolset_prefix})
+if(DIFF)
+  return()
+endif()
+compare_prefixed_variables(DIFF "HOST_COMPILER" ${local_toolset_prefix} ${dep_toolset_prefix})
+if(DIFF)
+  return()
+endif()
+#from here no conflict => MERGING  
+set(${CONFLICT_FOUND} FALSE PARENT_SCOPE)
+if(DEFINED ${dep_toolset_prefix}_COMPILER)
+  set(${local_toolset_prefix}_COMPILER ${${dep_toolset_prefix}_COMPILER} CACHE INTERNAL "")
+endif()
+if(DEFINED ${dep_toolset_prefix}_COMPILER_ID)
+  set(${local_toolset_prefix}_COMPILER_ID ${${dep_toolset_prefix}_COMPILER_ID} CACHE INTERNAL "")
+endif()
+if(DEFINED ${dep_toolset_prefix}_COMPILER_AR)
+  set(${local_toolset_prefix}_COMPILER_AR ${${dep_toolset_prefix}_COMPILER_AR} CACHE INTERNAL "")
+endif()
+if(DEFINED ${dep_toolset_prefix}_COMPILER_RANLIB)
+  set(${local_toolset_prefix}_COMPILER_RANLIB ${${dep_toolset_prefix}_COMPILER_RANLIB} CACHE INTERNAL "")
+endif()
+if(DEFINED ${dep_toolset_prefix}_COMPILER_FLAGS)
+  set(${local_toolset_prefix}_COMPILER_FLAGS ${${dep_toolset_prefix}_COMPILER_FLAGS} CACHE INTERNAL "")
+endif()
+if(DEFINED ${dep_toolset_prefix}_INTERPRETER)
+  set(${local_toolset_prefix}_INTERPRETER ${${dep_toolset_prefix}_INTERPRETER} CACHE INTERNAL "")
+endif()
+if(DEFINED ${dep_toolset_prefix}_INCLUDE_DIRS)
+  set(${local_toolset_prefix}_INCLUDE_DIRS ${${dep_toolset_prefix}_INCLUDE_DIRS} CACHE INTERNAL "")
+endif()
+if(DEFINED ${dep_toolset_prefix}_LIBRARY)
+  set(${local_toolset_prefix}_LIBRARY ${${dep_toolset_prefix}_LIBRARY} CACHE INTERNAL "")
+endif()
+if(DEFINED ${dep_toolset_prefix}_COVERAGE)
+  set(${local_toolset_prefix}_COVERAGE ${${dep_toolset_prefix}_COVERAGE} CACHE INTERNAL "")
+endif()
+if(DEFINED ${dep_toolset_prefix}_HOST_COMPILER)
+  set(${local_toolset_prefix}_HOST_COMPILER ${${dep_toolset_prefix}_HOST_COMPILER} CACHE INTERNAL "")
+endif()
+endfunction(check_Toolset_Conflict_And_Merge)
 
 #.rst:
 #
@@ -1042,7 +1138,7 @@ endfunction(evaluate_Environment_From_Package)
 #
 #   .. command:: import_Solution_From_Dependency(environment)
 #
-#     Impport locally the solution provided by a dependency.
+#     Import locally the solution provided by a dependency.
 #
 #      :environment: the name of the dependency.
 #
@@ -1062,23 +1158,39 @@ set(prefix ${environment}_${LAST_RUN_HASHCODE})
   endif()
 
   foreach(lang IN LISTS ${prefix}_LANGUAGES)
-    math(EXPR max_toolsets "${${prefix}_${lang}_TOOLSETS}-1")
-    foreach(toolset RANGE ${max_toolsets})
-      add_Language_Toolset(${lang} FALSE
-                          "${${prefix}_${lang}_TOOLSET_${toolset}_CONSTRAINT_EXPRESSION}"
-                          "${${prefix}_${lang}_TOOLSET_${toolset}_CHECK_SCRIPT}"
-                          "${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER}"
-                          "${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_ID}"
-                          "${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_AR}"
-                          "${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB}"
-                          "${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS}"
-                          "${${prefix}_${lang}_TOOLSET_${toolset}_INTERPRETER}"
-                          "${${prefix}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS}"
-                          "${${prefix}_${lang}_TOOLSET_${toolset}_LIBRARY}"
-                          "${${prefix}_${lang}_TOOLSET_${toolset}_COVERAGE}"
-                          "${${prefix}_${lang}_TOOLSET_${toolset}_HOST_COMPILER}"
-      )
-    endforeach()
+    if(${prefix}_${lang}_TOOLSETS)#at least one toolset is defined for this language
+      math(EXPR max_toolsets "${${prefix}_${lang}_TOOLSETS}-1")
+      set(start_toolset 0)
+      check_Toolset_Conflict_And_Merge(CONFLICT_FOUND ${PROJECT_NAME}_${lang}_TOOLSET_0 ${prefix}_${lang}_TOOLSET_0)
+      if(NOT CONFLICT_FOUND)
+        append_Unique_In_Cache(${PROJECT_NAME}_LANGUAGES ${lang})
+        if(NOT DEFINED ${PROJECT_NAME}_${lang}_TOOLSETS)
+          set(${PROJECT_NAME}_${lang}_TOOLSETS 1 CACHE INTERNAL "")
+        endif()
+        if(max_toolsets EQUAL start_toolset)
+          continue()#only one toolset and already merged so manage next language
+        endif()
+        set(start_toolset 1) #first toolset has been merged
+        #otherwise if conflict found, then solution has not been merged => need to be added as an adittional toolset  
+      endif()
+      #adding additional toolsets
+      foreach(toolset RANGE ${start_toolset} ${max_toolsets})
+        add_Language_Toolset(${lang} FALSE
+                            "${${prefix}_${lang}_TOOLSET_${toolset}_CONSTRAINT_EXPRESSION}"
+                            "${${prefix}_${lang}_TOOLSET_${toolset}_CHECK_SCRIPT}"
+                            "${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER}"
+                            "${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_ID}"
+                            "${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_AR}"
+                            "${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_RANLIB}"
+                            "${${prefix}_${lang}_TOOLSET_${toolset}_COMPILER_FLAGS}"
+                            "${${prefix}_${lang}_TOOLSET_${toolset}_INTERPRETER}"
+                            "${${prefix}_${lang}_TOOLSET_${toolset}_INCLUDE_DIRS}"
+                            "${${prefix}_${lang}_TOOLSET_${toolset}_LIBRARY}"
+                            "${${prefix}_${lang}_TOOLSET_${toolset}_COVERAGE}"
+                            "${${prefix}_${lang}_TOOLSET_${toolset}_HOST_COMPILER}"
+        )
+      endforeach()
+    endif()
   endforeach()
 
   foreach(tool IN LISTS ${prefix}_EXTRA_TOOLS)
@@ -1156,24 +1268,31 @@ set(prefix ${environment}_${LAST_RUN_HASHCODE})
 
   if(${prefix}_INCLUDE_DIRS)
     append_Unique_In_Cache(${PROJECT_NAME}_INCLUDE_DIRS "${${prefix}_INCLUDE_DIRS}")
+    set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
   endif()
   if(${prefix}_LIBRARY_DIRS)
     append_Unique_In_Cache(${PROJECT_NAME}_LIBRARY_DIRS "${${prefix}_LIBRARY_DIRS}")
+    set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
   endif()
   if(${prefix}_PROGRAM_DIRS)
     append_Unique_In_Cache(${PROJECT_NAME}_PROGRAM_DIRS "${${prefix}_PROGRAM_DIRS}")
+    set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
   endif()
   if(${prefix}_EXE_LINKER_FLAGS)
     append_Unique_In_Cache(${PROJECT_NAME}_EXE_LINKER_FLAGS "${${prefix}_EXE_LINKER_FLAGS}")
+    set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
   endif()
   if(${prefix}_MODULE_LINKER_FLAGS)
     append_Unique_In_Cache(${PROJECT_NAME}_MODULE_LINKER_FLAGS "${${prefix}_MODULE_LINKER_FLAGS}")
+    set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
   endif()
   if(${prefix}_SHARED_LINKER_FLAGS)
     append_Unique_In_Cache(${PROJECT_NAME}_SHARED_LINKER_FLAGS "${${prefix}_SHARED_LINKER_FLAGS}")
+    set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
   endif()
   if(${prefix}_STATIC_LINKER_FLAGS)
     append_Unique_In_Cache(${PROJECT_NAME}_STATIC_LINKER_FLAGS "${${prefix}_STATIC_LINKER_FLAGS}")
+    set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
   endif()
 
   if(${prefix}_GENERATOR_TOOLSET)#may overwrite user choice

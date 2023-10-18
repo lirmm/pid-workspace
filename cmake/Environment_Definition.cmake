@@ -863,6 +863,10 @@ function(configure_Environment_Tool)
     endif()
     if(CONF_ENV_TOOL_FLAGS)
       set(use_compiler_flags ${CONF_ENV_TOOL_FLAGS})
+      if(NOT CONF_ENV_TOOL_CURRENT)
+        #adding previously detected flags
+        list(APPEND use_compiler_flags ${CMAKE_${CONF_ENV_TOOL_LANGUAGE}_FLAGS})
+      endif()
     endif()
 
     add_Language_Toolset(${CONF_ENV_TOOL_LANGUAGE} TRUE
