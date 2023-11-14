@@ -290,7 +290,7 @@ function(hashcode_From_Expression NAME HASHCODE expr)
     set(pars "")
     set(${NAME} "${expr}" PARENT_SCOPE)
   endif()
-  #2) reorder parameters to always get the same sequence for same parameters (whatever the constraint sequence is) 
+  #2) reorder parameters to always get the same sequence for same parameters (whatever the constraint sequence is)
   string(REPLACE ":" ";" params_as_list "${pars}")
   list(SORT params_as_list)
   string(REPLACE ";" ";" pars "${params_as_list}")
@@ -1127,8 +1127,8 @@ function(deduce_Existing_Symlink_Path path_to_existing_var path_to_created)
   # BUTE this symlink can be located in the workspace or not.
   file(RELATIVE_PATH REL_PATH_TO_CREATED "${WORKSPACE_DIR}" ${path_to_created})
 	if(REL_PATH_TO_CREATED MATCHES "^\\.\\./.*$")#it is a path created outside of the workspace
-    # it is a system install symlink or something a like SO we let path to existing unchanged 
-    # so it is kept absolute whether it is in the workspace or not (we suppose the resolution of relative symlinks 
+    # it is a system install symlink or something a like SO we let path to existing unchanged
+    # so it is kept absolute whether it is in the workspace or not (we suppose the resolution of relative symlinks
     # from outside of a workspace is not feasible)
 		return()
 	endif()
@@ -1136,15 +1136,15 @@ function(deduce_Existing_Symlink_Path path_to_existing_var path_to_created)
   # 2 cases : either the existing path is relative to the workspace OR NOT
   file(RELATIVE_PATH REL_PATH_TO_EXISTING "${WORKSPACE_DIR}" ${${path_to_existing_var}})
 	if(REL_PATH_TO_EXISTING MATCHES "^\\.\\./.*$")#not relative to the workspace
-    # the existing path is kept "absolute" as it is not directly inside the workspace 
+    # the existing path is kept "absolute" as it is not directly inside the workspace
     # (most probably a symlink pointing to a system installed lib/program)
 		return()
 	endif()
-  # from here the symlink points to a resource relative to the workspace 
+  # from here the symlink points to a resource relative to the workspace
   get_filename_component(CREATED_DIR ${path_to_created} DIRECTORY)
   file(RELATIVE_PATH EXISTING_IN_CREATED_DIR ${CREATED_DIR} ${${path_to_existing_var}})
   #specific case to deal with : created is a link created inside existing path that points to existing path
-  #so EXISTING_IN_CREATED_DIR is empty 
+  #so EXISTING_IN_CREATED_DIR is empty
   if(NOT EXISTING_IN_CREATED_DIR)
     set(${path_to_existing_var} "." PARENT_SCOPE)
   else()
@@ -4101,7 +4101,9 @@ function(package_Already_Built ANSWER package version reference_package)
   set(build_file ${WORKSPACE_DIR}/packages/${reference_package}/build/build_process)
   if(NOT EXISTS ${use_file_dep})#no use file installed so package is not already considered as built
     return()
-  elseif(NOT EXISTS ${build_file} OR ${use_file_dep} IS_NEWER_THAN ${build_file})
+  elseif(NOT EXISTS ${build_file})#no local build file => rebuild everything to get a known state
+    return()
+  elseif(${use_file_dep} IS_NEWER_THAN ${build_file})
     set(${ANSWER} TRUE PARENT_SCOPE)#no need to rebuild since we know that dependency package has been built since last build of reference_package
     return()#not built after cleaning => not already built
   endif()
@@ -4140,7 +4142,10 @@ function(package_Dependency_Needs_To_Be_Rebuilt ANSWER package version reference
       # rebuild since last build of reference package and did not generate the use file !)
       set(build_file ${WORKSPACE_DIR}/packages/${reference_package}/build/build_process)
       set(build_file_dep ${WORKSPACE_DIR}/packages/${package}/build/build_process)
-      if(${build_file_dep} IS_NEWER_THAN ${build_file})
+      if(NOT EXISTS ${build_file})
+        set(${ANSWER} TRUE PARENT_SCOPE)
+        return()
+      elseif(${build_file_dep} IS_NEWER_THAN ${build_file})
         return()
       endif()
       # 2) check if the version used is not already released, in this case it is not an in development version by definition
@@ -5750,7 +5755,7 @@ if(EXEC_TIME EQUAL 0)
   return()
 endif()
 message("[${EXEC_TIME}] ${mess}")
-endfunction(message_with_exec_time) 
+endfunction(message_with_exec_time)
 
 #.rst:
 #
