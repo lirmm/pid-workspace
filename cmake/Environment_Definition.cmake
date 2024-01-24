@@ -1140,7 +1140,7 @@ endfunction(host_Match_Target_Platform)
 #       get_Environment_Target_Platform(DISTRIBUTION distrib TYPE proc ARCH bits OS os)
 #
 function(get_Environment_Target_Platform)
-  set(monoValueArgs DISTRIBUTION DISTRIB_VERSION TYPE ARCH OS ABI)
+  set(monoValueArgs DISTRIBUTION DISTRIB_VERSION TYPE ARCH OS ABI INSTANCE PLATFORM FULL_NAME)
   cmake_parse_arguments(GET_ENV_TARGET_PLATFORM "" "${monoValueArgs}" "" ${ARGN})
 
   if(GET_ENV_TARGET_PLATFORM_DISTRIBUTION)
@@ -1184,6 +1184,33 @@ function(get_Environment_Target_Platform)
       set(${GET_ENV_TARGET_PLATFORM_ABI} ${${PROJECT_NAME}_ABI_CONSTRAINT} PARENT_SCOPE)
     else()#no constraint so same as host
       set(${GET_ENV_TARGET_PLATFORM_ABI} ${CURRENT_CXX_ABI} PARENT_SCOPE)
+    endif()
+  endif()
+
+  if(GET_ENV_TARGET_PLATFORM_PLATFORM)
+    if(PID_CROSSCOMPILATION OR (${PROJECT_NAME}_OS_CONSTRAINT OR ${PROJECT_NAME}_ABI_CONSTRAINT OR ${PROJECT_NAME}_ARCH_CONSTRAINT OR ${PROJECT_NAME}_TYPE_CONSTRAINT))
+      if(${PROJECT_NAME}_OS_CONSTRAINT)
+        set(${GET_ENV_TARGET_PLATFORM_PLATFORM} ${${PROJECT_NAME}_TYPE_CONSTRAINT}_${${PROJECT_NAME}_ARCH_CONSTRAINT}_${${PROJECT_NAME}_OS_CONSTRAINT}_${${PROJECT_NAME}_ABI_CONSTRAINT} PARENT_SCOPE)
+      else() 
+        set(${GET_ENV_TARGET_PLATFORM_PLATFORM} ${${PROJECT_NAME}_TYPE_CONSTRAINT}_${${PROJECT_NAME}_ARCH_CONSTRAINT}_${${PROJECT_NAME}_ABI_CONSTRAINT} PARENT_SCOPE)
+      endif()
+    else()#no constraint so same as host
+      set(${GET_ENV_TARGET_PLATFORM_PLATFORM} ${CURRENT_PLATFORM_NAME} PARENT_SCOPE)
+    endif()
+  endif()
+  if(GET_ENV_TARGET_PLATFORM_INSTANCE)
+    if(PID_CROSSCOMPILATION OR ${PROJECT_NAME}_TARGET_INSTANCE)#constraint has been explicilty specified
+      set(${GET_ENV_TARGET_PLATFORM_INSTANCE} ${${PROJECT_NAME}_TARGET_INSTANCE} PARENT_SCOPE)
+    else()#no constraint so same as host
+      set(${GET_ENV_TARGET_PLATFORM_INSTANCE} ${CURRENT_PLATFORM_INSTANCE} PARENT_SCOPE)
+    endif()
+  endif()
+   if(GET_ENV_TARGET_PLATFORM_FULL_NAME)
+    get_Environment_Target_Platform(PLATFORM platform INSTANCE instance)
+    if(instance)
+      set(${GET_ENV_TARGET_PLATFORM_FULL_NAME} ${platform}__${instance}__ PARENT_SCOPE)
+    else()
+      set(${GET_ENV_TARGET_PLATFORM_FULL_NAME} ${platform} PARENT_SCOPE)
     endif()
   endif()
 
