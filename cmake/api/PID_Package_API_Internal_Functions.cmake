@@ -236,13 +236,13 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		add_custom_target(build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-			COMMENT "[PID] Building package ${PROJECT_NAME} (Release mode only) for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+			COMMENT "[PID] Building package ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  (Release mode only) for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		add_custom_target(build_release
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-			COMMENT "[PID] Release build of package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+			COMMENT "[PID] Release build of package ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		add_dependencies(build_release reconfigure) #checking if reconfiguration is necessary before build
@@ -255,14 +255,14 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-			COMMENT "[PID] Building package ${PROJECT_NAME} (Debug and Release modes) for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+			COMMENT "[PID] Building package ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  (Debug and Release modes) for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		#mode specific build commands
 		add_custom_target(build_release
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-			COMMENT "[PID] Release build of package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+			COMMENT "[PID] Release build of package ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		add_dependencies(build_release reconfigure) #checking if reconfiguration is necessary before build
@@ -273,7 +273,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		add_custom_target(build_debug
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-			COMMENT "[PID] Debug build of package ${PROJECT_NAME} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+			COMMENT "[PID] Debug build of package ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		add_dependencies(build_debug reconfigure) #checking if reconfiguration is necessary before build
@@ -292,14 +292,14 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	if(BUILD_RELEASE_ONLY)
 		add_custom_target(global_main ALL
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-			COMMENT "[PID] Compiling and linking package (Release mode only) ..."
+			COMMENT "[PID] Compiling and linking package ${PROJECT_NAME} (Release mode only) version ${${PROJECT_NAME}_VERSION}  ..."
 			VERBATIM
 		)
 	else()
 		add_custom_target(global_main ALL
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} ${PARALLEL_JOBS_FLAG}
-			COMMENT "[PID] Compiling and linking package ${PROJECT_NAME} (Debug and Release modes) ..."
+			COMMENT "[PID] Compiling and linking package ${PROJECT_NAME} (Debug and Release modes) version ${${PROJECT_NAME}_VERSION}  ..."
 			VERBATIM
 		)
 	endif()
@@ -310,7 +310,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			COMMAND ${CMAKE_COMMAND} -E  touch ${CMAKE_BINARY_DIR}/share/checksources
 			COMMAND ${CMAKE_COMMAND} -E  touch ${CMAKE_BINARY_DIR}/share/rebuilt
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} clean
-			COMMENT "[PID] Cleaning package ${PROJECT_NAME} (Release mode only) ..."
+			COMMENT "[PID] Cleaning package ${PROJECT_NAME} (Release mode only) version ${${PROJECT_NAME}_VERSION}  ..."
 			VERBATIM
 		)
 	else()
@@ -319,7 +319,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			COMMAND ${CMAKE_COMMAND} -E  touch ${CMAKE_BINARY_DIR}/share/rebuilt
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} clean
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} clean
-			COMMENT "[PID] Cleaning package ${PROJECT_NAME} (Debug and Release modes) ..."
+			COMMENT "[PID] Cleaning package ${PROJECT_NAME} (Debug and Release modes) version ${${PROJECT_NAME}_VERSION}  ..."
 			VERBATIM
 		)
 	endif()
@@ -358,7 +358,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		add_custom_target(installing
 			COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Release artefacts
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} install
-			COMMENT "[PID] Installing the package ${PROJECT_NAME} (Release artifacts only) ..."
+			COMMENT "[PID] Installing the package ${PROJECT_NAME} (Release artifacts only) version ${${PROJECT_NAME}_VERSION}   ..."
 			VERBATIM
 		)
 	else()
@@ -367,7 +367,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} install
 			COMMAND ${CMAKE_COMMAND} -E  echo Installing ${PROJECT_NAME} Release artefacts
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} install
-			COMMENT "[PID] Installing the package ${PROJECT_NAME} ..."
+			COMMENT "[PID] Installing the package ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  ..."
 			VERBATIM
 		)
 	endif()
@@ -375,7 +375,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 	# uninstall target (cleaning the install tree)
 	add_custom_target(uninstall
 		COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} uninstall
-		COMMENT "[PID] Uninstalling the package ${PROJECT_NAME} ..."
+		COMMENT "[PID] Uninstalling the package ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  ..."
 		VERBATIM
 	)
 
@@ -410,21 +410,21 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 
 				add_custom_target(testing #basic tests only in release
 					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
-					COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
+					COMMENT "[PID] Launching tests of ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  ..."
 					VERBATIM
 				)
 			else()
 				add_custom_target(testing
 					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
 					COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
-					COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
+					COMMENT "[PID] Launching tests of ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  ..."
 					VERBATIM
 				)
 			endif()
 		else()
 			add_custom_target(testing
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${SUDOER_PRIVILEGES} ${CMAKE_MAKE_PROGRAM} test
-				COMMENT "[PID] Launching tests of ${PROJECT_NAME} ..."
+				COMMENT "[PID] Launching tests of ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  ..."
 				VERBATIM
 			)
 		endif()
@@ -456,7 +456,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 			add_custom_target(packaging
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package_install
-				COMMENT "[PID] Generating and installing binary package for ${PROJECT_NAME} ..."
+				COMMENT "[PID] Generating and installing binary package for ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  ..."
 				VERBATIM
 			)
 		else()
@@ -465,7 +465,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} package_install
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package
 				COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} package_install
-				COMMENT "[PID] Generating and installing binary package for ${PROJECT_NAME} ..."
+				COMMENT "[PID] Generating and installing binary package for ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  ..."
 				VERBATIM
 			)
 		endif()
@@ -476,7 +476,7 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		# target to add licensing information to all source files
 		add_custom_target(licensing
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} licensing
-			COMMENT "[PID] Applying license to sources of package ${PROJECT_NAME} ..."
+			COMMENT "[PID] Applying license to sources of package ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  ..."
 			VERBATIM
 		)
 	endif()
@@ -484,13 +484,13 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		add_custom_target(list_dependencies
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} list_dependencies
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/debug ${CMAKE_MAKE_PROGRAM} list_dependencies
-			COMMENT "[PID] listing dependencies of the package ${PROJECT_NAME} ..."
+			COMMENT "[PID] listing dependencies of the package ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  ..."
 			VERBATIM
 		)
 	else()
 		add_custom_target(list_dependencies
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} list_dependencies
-			COMMENT "[PID] listing dependencies of the package ${PROJECT_NAME} ..."
+			COMMENT "[PID] listing dependencies of the package ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  ..."
 			VERBATIM
 		)
 	endif()
