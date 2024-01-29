@@ -236,13 +236,13 @@ elseif(CMAKE_BINARY_DIR MATCHES "${PROJECT_NAME}/build$")
 		add_custom_target(build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-			COMMENT "[PID] Building package ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  (Release mode only) for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+			COMMENT "[PID] Building package ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION} (Release mode only) for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		add_custom_target(build_release
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR}/release ${CMAKE_MAKE_PROGRAM} build
 			COMMAND ${CMAKE_COMMAND} -E  chdir ${CMAKE_BINARY_DIR} ${CMAKE_COMMAND} -E touch build_process
-			COMMENT "[PID] Release build of package ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION}  for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
+			COMMENT "[PID] Release build of package ${PROJECT_NAME} version ${${PROJECT_NAME}_VERSION} for platform ${CURRENT_PLATFORM} using environment ${CURRENT_ENVIRONMENT} ..."
 			VERBATIM
 		)
 		add_dependencies(build_release reconfigure) #checking if reconfiguration is necessary before build
