@@ -3356,31 +3356,31 @@ function(set_Build_Info_For_Component package component version platform)
 
 	######################## Now information has been grabed memorize it ###################
 	#now resolve compiler options (to avoid them to contain defs and incs) and ensure uniqueness
-	resolve_External_Compiler_Options(EVAL_OPTS EVAL_DEFS EVAL_INCS)
+	resolve_External_Compiler_Options(opts defs includes)
 	#clean a bit the result, to avoid unecessary repetitions
-	remove_Duplicates_From_List(EVAL_SHARED_LNKS)
-	remove_Duplicates_From_List(EVAL_LNKS)
-	remove_Duplicates_From_List(EVAL_INCS)
-	remove_Duplicates_From_List(EVAL_LDIRS)
-	remove_Duplicates_From_List(EVAL_DEFS)
-	remove_Duplicates_From_List(EVAL_OPTS)
-	remove_Duplicates_From_List(EVAL_RRES)
+	remove_Duplicates_From_List(runtime_links)
+	remove_Duplicates_From_List(links)
+	remove_Duplicates_From_List(includes)
+	remove_Duplicates_From_List(lib_dirs)
+	remove_Duplicates_From_List(defs)
+	remove_Duplicates_From_List(opts)
+	remove_Duplicates_From_List(res)
 	remove_Duplicates_From_List(all_local_deps)
 
 	#resolve all path into absolute path if required (path to external package content)
-	resolve_External_Libs_Path(COMPLETE_SHARED_LINKS_PATH "${EVAL_SHARED_LNKS}" Release)
-	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${EVAL_LNKS}" Release)
-	resolve_External_Libs_Path(COMPLETE_LDIRS_PATH "${EVAL_LDIRS}" Release)
-	resolve_External_Includes_Path(COMPLETE_INCS_PATH "${EVAL_INCS}" Release)
-	resolve_External_Resources_Path(COMPLETE_RESOURCE_PATH "${EVAL_RRES}" Release)
+	resolve_External_Libs_Path(COMPLETE_SHARED_LINKS_PATH "${runtime_links}" Release)
+	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${links}" Release)
+	resolve_External_Libs_Path(COMPLETE_LDIRS_PATH "${lib_dirs}" Release)
+	resolve_External_Includes_Path(COMPLETE_INCS_PATH "${includes}" Release)
+	resolve_External_Resources_Path(COMPLETE_RESOURCE_PATH "${res}" Release)
 
 
 	#finally set the cache variables that will be written
 	set(${prefix}_COMPONENT_${component}_BUILD_INFO_DONE TRUE CACHE INTERNAL "")
 	set(${prefix}_COMPONENT_${component}_BUILD_INCLUDES ${COMPLETE_INCS_PATH} CACHE INTERNAL "")
 	set(${prefix}_COMPONENT_${component}_BUILD_LIB_DIRS ${COMPLETE_LDIRS_PATH} CACHE INTERNAL "")
-	set(${prefix}_COMPONENT_${component}_BUILD_DEFINITIONS "${EVAL_DEFS}" CACHE INTERNAL "")#guillemets are required for this
-	set(${prefix}_COMPONENT_${component}_BUILD_COMPILER_OPTIONS ${EVAL_OPTS} CACHE INTERNAL "")
+	set(${prefix}_COMPONENT_${component}_BUILD_DEFINITIONS "${defs}" CACHE INTERNAL "")#guillemets are required for this
+	set(${prefix}_COMPONENT_${component}_BUILD_COMPILER_OPTIONS "${opts}" CACHE INTERNAL "")
 	set(${prefix}_COMPONENT_${component}_BUILD_C_STANDARD ${c_std} CACHE INTERNAL "")
 	set(${prefix}_COMPONENT_${component}_BUILD_C_MAX_STANDARD ${c_max_std} CACHE INTERNAL "")
 	set(${prefix}_COMPONENT_${component}_BUILD_CXX_STANDARD ${cxx_std} CACHE INTERNAL "")
