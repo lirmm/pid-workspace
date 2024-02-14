@@ -2363,7 +2363,7 @@ function(feed_Configuration_Resulting_Variables package config)
   #FOR COMPATIBLITY WITH OLD CODE: set the global variable
   #necessary to manage old binary packages
   foreach(var IN LISTS ${config}_RETURNED_VARIABLES)
-    set(${config}_${var} ${${package}_${config}_${var}} CACHE INTERNAL "")#unset the global variable
+    set(${config}_${var} ${${package}_${config}_${var}} CACHE INTERNAL "")
   endforeach()
   foreach(dep IN LISTS ${config}_CONFIGURATION_DEPENDENCIES)
     feed_Configuration_Resulting_Variables(${package} ${dep})

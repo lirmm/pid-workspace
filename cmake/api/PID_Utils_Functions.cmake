@@ -3467,7 +3467,8 @@ endfunction(resolve_External_Libs_Path)
 #
 #   .. command:: convert_To_Forced_Shared_Linker_Option(RES_OPTIONS list_of_links)
 #
-#    Convert the links passed onto a linker option that enforces the
+#    Convert the links passed into a linker option that enforces the --no-as-needed option. 
+#    Doing so, even if no symbol of target library is directly used it will be linked.
 #
 #     :list_of_links: the list of shared libraries links to force linking with
 #
