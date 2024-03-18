@@ -1019,7 +1019,9 @@ endfunction(is_Compatible_External_Version)
 #  get_Compatible_Version
 #  ----------------------
 #
-#   .. command:: get_Compatible_Version(RES_VERSION_TO_USE external package version_in_use version_in_use_is_exact version_in_use_is_system version_to_test version_to_test_is_exact version_to_test_is_system)
+#   .. command:: get_Compatible_Version(RES_VERSION_TO_USE external package version_in_use version_in_use_is_exact 
+#											version_in_use_is_system version_to_test version_to_test_is_exact
+#                                           version_to_test_is_system version_requestors new_version_requestor)
 #
 #    From a version constraint of a given package already used in the build process, test if another version constraint is compatible with this one.
 #
@@ -1031,20 +1033,34 @@ endfunction(is_Compatible_External_Version)
 #     :version_to_test: the version constraint of package, that may be used instead of current version.
 #     :version_to_test_is_exact: if TRUE the version constraint that may be used is EXACT.
 #     :version_to_test_is_system: if TRUE the version constraint is the OS installed version (only for external packages)
+#     :version_requestors: the list of packages already requiring the version_in_use
+#     :new_version_requestor: the package that just require the version_to_test
 #
 #     :RES_VERSION_TO_USE: the output variable that contains the new version to use if both constraints are applied (may be same as previously). May be empty if no version compatibility is possible between between both constraints
 #
-function(get_Compatible_Version RES_VERSION_TO_USE external package version_in_use version_in_use_is_exact version_in_use_is_system version_to_test version_to_test_is_exact version_to_test_is_system)
+function(get_Compatible_Version RES_VERSION_TO_USE external package version_in_use version_in_use_is_exact version_in_use_is_system version_to_test version_to_test_is_exact version_to_test_is_system version_requestors new_version_requestor)
 set(${RES_VERSION_TO_USE} PARENT_SCOPE)
 if(external)#management of external packages
   if(version_to_test_is_system)# an OS installed version is required
-    if(NOT version_in_use_is_system)#NOT compatible if the version already used is NOT the OS installed version
-      return()
-    endif()
     set(version_to_test_is_exact TRUE)# => the version is exact (same test)
     set(version_in_use_is_exact TRUE)
+  	if(NOT version_in_use_is_system)#NOT compatible if the version already used is NOT the OS installed version
+	  	list(FIND version_requestors ${new_version_requestor} INDEX)
+		#check special case when te package just requires the system configuration AND a version of the external dependency
+		#not an error if both differ at that time
+		if(INDEX EQUAL -1)#new_version_requestor is not already a requestor
+			return()
+		endif()
+    endif()
   elseif(version_in_use_is_system)
-    return()
+	list(FIND version_requestors  ${new_version_requestor} INDEX)
+	#check special case when te package just requires the system configuration AND a version of the external dependency
+	#not an error if both differ at that time
+	if(INDEX EQUAL -1)#new_version_requestor is not already a requestor
+		return()
+	endif()
+	set(version_to_test_is_exact TRUE)# => the version is exact (same test)
+    set(version_in_use_is_exact TRUE)
   endif()
   if(version_to_test_is_exact) #the version to test is EXACT, so impossible to change it after build of current project
     if(version_to_test VERSION_EQUAL version_in_use)#they simply need to be the same in any case
@@ -1169,7 +1185,7 @@ function(find_Best_Compatible_Version BEST_VERSION_IN_LIST external package vers
       else()
         set(version_to_test_is_exact TRUE)
       endif()
-      get_Compatible_Version(COMPATIBLE_VERSION "${external}" ${package} "${version_in_use}" "${version_in_use_exact}" "${version_in_use_is_system}" "${version}" "${version_to_test_is_exact}" FALSE)
+      get_Compatible_Version(COMPATIBLE_VERSION "${external}" ${package} "${version_in_use}" "${version_in_use_exact}" "${version_in_use_is_system}" "${version}" "${version_to_test_is_exact}" FALSE "" "")
       if(COMPATIBLE_VERSION)
         if(version_to_test_is_exact)
           list(APPEND list_of_compatible_exact_versions ${COMPATIBLE_VERSION})

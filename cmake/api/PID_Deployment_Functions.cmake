@@ -2864,7 +2864,8 @@ endfunction(uninstall_Binary_Package)
 #
 #   .. command:: configure_Binary_Package(RESULT package external version platform mode)
 #
-#    Configure the external package after it has been installed in workspace. It can lead to the install of OS packages depending of its system configuration.
+#    Configure the external package after it has been installed in workspace. It can lead to the install 
+#    of OS packages depending of its system configuration.
 #
 #      :package: The name of the external package.
 #      :external: if true teh target package is an external package, otherwise it is a native package.
@@ -2924,7 +2925,7 @@ foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #check 
   if(${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX})#there is a specific version to target (should be most common case)
     get_Chosen_Version_In_Current_Process(REQUIRED_VERSION VERSION_REQUESTORS IS_EXACT IS_SYSTEM ${dep_pack})
   	if(REQUIRED_VERSION)#if a version of the same package is already required then check their compatibility
-      get_Compatible_Version(IS_COMPATIBLE TRUE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} ${IS_SYSTEM} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}" "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_SYSTEM${VAR_SUFFIX}}")
+      get_Compatible_Version(IS_COMPATIBLE TRUE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} ${IS_SYSTEM} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}" "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_SYSTEM${VAR_SUFFIX}}" "${VERSION_REQUESTORS}" "${package}")
       if(NOT IS_COMPATIBLE)
         fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
         message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}, and this version is not compatible with version ${REQUIRED_VERSION} already used by packages: ${RES_REQ}.")
@@ -2947,7 +2948,7 @@ else()
     if(${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX})#there is a specific version to target (should be most common case)
       get_Chosen_Version_In_Current_Process(REQUIRED_VERSION VERSION_REQUESTORS IS_EXACT IS_SYSTEM ${dep_pack})
     	if(REQUIRED_VERSION)#if a version of the same native package is already required then check their compatibility
-        get_Compatible_Version(IS_COMPATIBLE FALSE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} FALSE ${${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_DEPENDENCIY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}" FALSE)
+        get_Compatible_Version(IS_COMPATIBLE FALSE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} FALSE ${${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_DEPENDENCIY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}" FALSE "${VERSION_REQUESTORS}" "${package}")
         if(NOT IS_COMPATIBLE)
           fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
           message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}, and this version is not compatible with version ${REQUIRED_VERSION} already used by packages: ${RES_REQ}.")
