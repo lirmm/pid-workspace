@@ -132,14 +132,15 @@ endmacro(installable_PID_Configuration)
 #  execute_OS_Configuration_Command
 #  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-#   .. command:: execute_OS_Configuration_Command([NOT_PRIVILEGED] ...)
+#   .. command:: execute_OS_Configuration_Command([NOT_PRIVILEGED] [OUTPUT_VARIABLE var] ...)
 #
 #      invoque a command of the operating system with adequate privileges.
 #
 #     .. rubric:: Required parameters
 #
 #     :NOT_PRIVILEGED: is used first argument passed for privileged execution is never required
-#     :...: the commands to be passed (do not use sudo !)
+#     :OUTPUT_VARIABLE var: contains the output from std output and error
+#     :...: the command to be executed (do not use sudo !)
 #
 #     .. admonition:: Effects
 #        :class: important
@@ -154,20 +155,28 @@ endmacro(installable_PID_Configuration)
 #
 macro(execute_OS_Configuration_Command)
 if(NOT DO_NOT_INSTALL)
+  set(oneValueArgs OUTPUT_VARIABLE)
+  set(options NOT_PRIVILEGED)
+  cmake_parse_arguments(EXE_OS_CMD "${options}" "${oneValueArgs}" "" ${ARGN} )
   set(exec_opts OUTPUT_VARIABLE process_output ERROR_VARIABLE process_output RESULT_VARIABLE result)
-  if("${ARGV0}" STREQUAL "NOT_PRIVILEGED")
-    set(args ${ARGN})
-    list(REMOVE_AT args 0)
-    execute_process(${exec_opts} COMMAND ${args})
-  elseif(IN_CI_PROCESS)
-    execute_process(${exec_opts} COMMAND ${ARGN})
-  else()
-    execute_process(${exec_opts} COMMAND sudo ${ARGN})#need to have super user privileges except in CI where suding sudi is forbidden
+   # fill_String_From_List(ARGS EXE_OS_CMD_UNPARSED_ARGUMENTS " ")
+  if(EXE_OS_CMD_NOT_PRIVILEGED)
+    execute_process(COMMAND ${EXE_OS_CMD_UNPARSED_ARGUMENTS} ${exec_opts})
+  elseif(IN_CI_PROCESS)#force unpriviledged run in CI
+    execute_process(COMMAND ${EXE_OS_CMD_UNPARSED_ARGUMENTS} ${exec_opts})
+  else()#do a priviledge call by default
+    #need to have super user privileges except in CI where suding sudi is forbidden
+    execute_process(COMMAND sudo ${EXE_OS_CMD_UNPARSED_ARGUMENTS} ${exec_opts})
   endif()
   if(NOT result EQUAL 0)
     message("${process_output}")
   endif()
-  set(exec_opts)
+  if(EXE_OS_CMD_OUTPUT_VARIABLE)
+    set(${EXE_OS_CMD_OUTPUT_VARIABLE} ${process_output})
+  endif()
+  unset(process_output)
+  unset(result)
+  unset(exec_opts)
 endif()
 endmacro(execute_OS_Configuration_Command)
 
