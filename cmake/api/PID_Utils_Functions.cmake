@@ -1311,7 +1311,7 @@ function(set_PID_Compatible_Rpath path_to_binary)
 									  ERROR_VARIABLE output OUTPUT_VARIABLE output
                     RESULT_VARIABLE res)
     if(NOT res EQUAL 0)
-      message("[PID] ERROR: when setting rpath of ${path_to_binary}. Reason: ${output}")
+      message(WARNING "[PID] ERROR: when setting rpath of ${path_to_binary}. Reason: ${output}")
     endif()
 	endif()
 endfunction(set_PID_Compatible_Rpath)
