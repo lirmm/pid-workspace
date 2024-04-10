@@ -188,8 +188,9 @@ function(add_Static_Check component is_library)
 			COMMAND ${CPPCHECK_EXECUTABLE} ${CPPCHECK_LANGUAGE} ${CPPCHECK_NO_WARN} ${CPPCHECK_SUPPRESSIONS} ${PARALLEL_JOBS_FLAG} ${CPP_CHECK_DEPENDENCIES_TARGETS} ${CPPCHECK_TEMPLATE_TEST} ${SOURCES_TO_CHECK}
 			COMMAND_EXPAND_LISTS
 		)
-
-  		set_tests_properties(${component}_staticcheck PROPERTIES FAIL_REGULAR_EXPRESSION "error: [^Ss][^y][^n][^t][^a][^x].*")
+		
+		set(not_internal_or_syntax "([^IisS]|([IisS][^nNyY]|([IisS][nNyY][^tTnN]|([IisS][nNyY][tTnN][^eEtT]|([IisS][nNyY][tTnN][eEtT][^rRaA]|([IisS][nNyY][tTnN][eEtT][rRaA][^nNxX]|([IisS][nNyY][tTnN][eEtT][rRaA][nNxX][^aA \t\n]|([IisS][nNyY][tTnN][eEtT][rRaA][nN][aA][^lL]|([IisS][nNyY][tTnN][eEtT][rRaA][nN][aA][lL][^ \t\n])))))))))")
+  		set_tests_properties(${component}_staticcheck PROPERTIES FAIL_REGULAR_EXPRESSION "^error:[ \t]+${not_internal_or_syntax}.*")
   	endif()#TODO also manage the language standard here (option -std=)!! necessary ?
 
   	set(CPPCHECK_TEMPLATE_GLOBAL --template="{id} in file {file} line {line}: {severity}: {message}")
