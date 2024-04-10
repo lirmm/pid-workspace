@@ -1179,9 +1179,9 @@ function(create_Symlink path_to_old path_to_new)
     if(WIN32)
         # check if target is a directory or a file to pass to proper argument to mklink
         if(IS_DIRECTORY ${path_to_old})
-            set(mklink_option "/J")
-          else()
-            set(mklink_option "/H")
+          set(mklink_option "/J")
+        else()
+          set(mklink_option "/H")
         endif()
     endif()
 
