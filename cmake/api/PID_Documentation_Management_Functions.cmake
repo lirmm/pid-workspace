@@ -328,13 +328,12 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release) # if in release mode we generate the doc
 	foreach(comp IN LISTS ${PROJECT_NAME}_DECLARED_COMPS)
 		if(NOT ${PROJECT_NAME}_${comp}_FOR_EXAMPLES AND NOT ${PROJECT_NAME}_${comp}_FOR_TESTS)
 			if(${PROJECT_NAME}_${comp}_HEADER_DIR_NAME)#if the component defines public headers
-				
-				if(EXISTS ${CMAKE_BINARY_DIR}/include/${${PROJECT_NAME}_${comp}_HEADER_DIR_NAME})#if the library is "header free" (only exporting resources or components)
+				if(EXISTS ${CMAKE_SOURCE_DIR}/include/${${PROJECT_NAME}_${comp}_HEADER_DIR_NAME})#if the library is "header free" (only exporting resources or components)
 					# copy the relevant headers to be able to provide them to the framework
 					list(APPEND comp_list ${comp})
 					list(APPEND headers_list "${CMAKE_SOURCE_DIR}/include/${${PROJECT_NAME}_${comp}_HEADER_DIR_NAME}")
 					file(COPY ${CMAKE_SOURCE_DIR}/include/${${PROJECT_NAME}_${comp}_HEADER_DIR_NAME} DESTINATION ${CMAKE_BINARY_DIR}/share/doc/include)
-				endif()
+					endif()
 				if(EXISTS ${CMAKE_BINARY_DIR}/src/include/${${PROJECT_NAME}_${comp}_HEADER_DIR_NAME})#if some headers have been generated for this component (e.g. pid-log, pid-export)
 					file(COPY ${CMAKE_BINARY_DIR}/src/include/${${PROJECT_NAME}_${comp}_HEADER_DIR_NAME} DESTINATION ${CMAKE_BINARY_DIR}/share/doc/include)
 					list(APPEND headers_list "${CMAKE_BINARY_DIR}/src/include/${${PROJECT_NAME}_${comp}_HEADER_DIR_NAME}")
