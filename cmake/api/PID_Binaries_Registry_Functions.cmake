@@ -284,7 +284,7 @@ endfunction(load_Binary_Package_Install_Manifest)
 #
 #      :package: The name of the package.
 #
-#      :REFERENCES_FOUND: the output variable that is TRUE is package binary references has been found, FALSE otherwise.
+#      :REFERENCES_FOUND: the output variable that is TRUE if package binary references has been found, FALSE otherwise.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -895,26 +895,36 @@ function(update_Found_References_And_Registry package registry)
     check_Remote_File(MANIFEST_EXISTS ${manifest_url})
     check_Remote_File(RELEASE_EXISTS ${release_archive_url})
     if(NOT MANIFEST_EXISTS OR NOT RELEASE_EXISTS)
+      #try download again to be sure it is not a temporary connection issue
       if(NOT MANIFEST_EXISTS)
-        message("[PID] WARNING: package ${package} has a corrupted binary archive for version ${id_version} and target platform ${id_platform} (no install manifest). Package is supressed.")
-      elseif(NOT RELEASE_EXISTS)
-        message("[PID] WARNING: package ${package} has a corrupted binary archive for version ${id_version} and target platform ${id_platform} (no release archive). Package is supressed.")
+        check_Remote_File(MANIFEST_EXISTS ${manifest_url})
       endif()
-      remove_Remote_Package(${registry} ${id})
-      continue()
+      if(NOT RELEASE_EXISTS)
+        check_Remote_File(RELEASE_EXISTS ${release_archive_url})
+      endif()
+      if(NOT MANIFEST_EXISTS OR NOT RELEASE_EXISTS)
+        # registration issue -> cleaning the situation
+        if(NOT MANIFEST_EXISTS)
+          message("[PID] WARNING: package ${package} has a corrupted binary archive for version ${id_version} and target platform ${id_platform} (no install manifest). Package is supressed.")
+        elseif(NOT RELEASE_EXISTS)
+          message("[PID] WARNING: package ${package} has a corrupted binary archive for version ${id_version} and target platform ${id_platform} (no release archive). Package is supressed.")
+        endif()
+        remove_Remote_Package(${registry} ${id})
+        continue()
+      endif()
     endif()
     set(target_manifest_file ${workspace_download_folder}/${manifest_file_name})
     file(DOWNLOAD ${manifest_url} ${target_manifest_file} STATUS res TLS_VERIFY OFF)
     if(NOT res EQUAL 0)
       message("[PID] WARNING: package ${package} has a corrupted binary archive for version ${id_version} and target platform ${id_platform} (cannot download install manifest). Package is supressed.")
-      remove_Remote_Package(${registry} ${id})
+      remove_Remote_Package(${registry} ${id})#if a connection problem remove will not do anything
       continue()
     endif()
     get_Info_From_Install_Manifest(RES_MANIFEST_OK ${package} ${target_manifest_file})
     if(NOT RES_MANIFEST_OK)
       unload_Binary_Package_Install_Manifest(${package})
       message("[PID] WARNING: package ${package} has a corrupted binary archive for version ${id_version} and target platform ${id_platform} (corrupted install manifest). Package is supressed.")
-      remove_Remote_Package(${registry} ${id})
+      remove_Remote_Package(${registry} ${id})#if a connection problem remove will not do anything
       continue()
     endif()
     check_Remote_File(DEBUG_EXISTS ${debug_archive_url})
@@ -992,7 +1002,7 @@ endfunction(reset_Found_References)
 #
 #    Get info about a package from the registry
 #
-#      :registry: URL of th registry
+#      :registry: URL of the registry
 #      :package: The name of the package.
 #
 #
@@ -1042,7 +1052,8 @@ endfunction(update_Registry_Info)
 #
 #   .. command:: update_Binary_References(package native framework registry)
 #
-#    Update the reference to binaries for a given package. Generates the cmake script that reflects current state of the package registry and put it into the framework repositor
+#    Update the reference to binaries for a given package. 
+#    Generates the cmake script that reflects current state of the package registry and put it into the framework repository
 #
 #      :package: The name of the package.
 #      :native: if true the package is nativbe, external otherwise
@@ -1118,12 +1129,6 @@ foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os f
     if(NOT ${package}_FOUND_REFERENCES_${ref_version}_${ref_platform}_REGISTRY_ID)
       message("[PID] WARNING: binary package ${package} version ${ref_version} for platform ${ref_platform} is documented BUT has not been found in registry. Supressing documentation folder...")
       file(REMOVE_RECURSE ${target_binaries_dir})
-      continue()
-    endif()
-		set(target_manifest_file ${target_binaries_dir}/Use${package}-${ref_version}.cmake)
-    if(NOT EXISTS ${target_manifest_file}) # check to avoid problem is the binaries have been badly released
-      message("[PID] WARNING: binary package ${package} version ${ref_version} for platform ${ref_platform} is documented BUT has no install manifest. Supressing documentation folder...")
-      file(REMOVE_RECURSE ${folder}/${ref_version}/${ref_platform})
       continue()
     endif()
 	endforeach()
@@ -1203,6 +1208,7 @@ function(upload_Binary_Version UPLOADED package version native registry)
     # cannot upload the version because no archive found
     if(NOT EXISTS ${target_archive_release}
         OR NOT EXISTS ${target_manifest})
+        message("[PID] ERROR: cannot upload package ${package} version ${version} for platform ${CURRENT_PLATFORM}. There is no binary or manifest file to upload. This is probably a bug in PID, please contact developpers.")
         return()
     endif()
     

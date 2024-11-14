@@ -196,7 +196,6 @@ macro(declare_Site package_url site_url registry_url)
 		  					-P ${WORKSPACE_DIR}/cmake/commands/Hard_Clean_PID_Package.cmake
 		  	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 		  )
-
 		else()
 			message("[PID] ERROR: the jekyll executable cannot be found in the system, please install it and put it in a standard path.")
 		endif()
