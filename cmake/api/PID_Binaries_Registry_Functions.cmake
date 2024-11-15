@@ -1062,7 +1062,9 @@ endfunction(update_Registry_Info)
 #
 #
 function(update_Binary_References package native framework registry)
-
+if(ADDITIONAL_DEBUG_INFO)
+  message("[PID] INFO: updating binary references for package {package}")
+endif()
 #### preparing the copy depending on the target: lone static site or framework, native or external ####
 if(framework)
   set(TARGET_FRAMEWORK_SOURCES ${WORKSPACE_DIR}/sites/frameworks/${framework}/src)
@@ -1115,6 +1117,7 @@ endfunction(update_Binary_References)
 #
 function(verify_Site_Structure_For_Binaries_Referencing package folder)
 list_Version_Subdirectories(ALL_VERSIONS ${folder})
+#cleaning first 
 
 foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os for which there is a reference
   if(NOT ${package}_FOUND_REFERENCES_${ref_version})
@@ -1133,6 +1136,26 @@ foreach(ref_version IN LISTS ALL_VERSIONS) #for each available version, all os f
     endif()
 	endforeach()
 endforeach()
+#then creating folders
+set(pattern_file ${WORKSPACE_DIR}/cmake/patterns/static_sites/binary.md.in)
+foreach(ref_version IN LISTS ${package}_FOUND_REFERENCES) #for each available version, all os for which there is a reference
+  foreach(ref_platform IN LISTS ${package}_FOUND_REFERENCES_${ref_version})
+    set(target_bin_folder ${folder}/${ref_version}/${ref_platform})
+    if(NOT EXISTS ${target_bin_folder})
+      file(MAKE_DIRECTORY ${target_bin_folder})
+    endif()
+    # only generate a binary referencing file if there is none already (corrective action)
+    #this will not be persisitent as it would require a git push (and so a relaunch of the process)
+    if(NOT EXISTS ${target_bin_folder}/binary.md)
+      # configure the file used to reference the binary in jekyll
+      set(BINARY_VERSION ${ref_version})
+      set(BINARY_PACKAGE ${package})
+      set(BINARY_PLATFORM ${ref_platform})
+      string(TIMESTAMP BINARY_DATE "%Y-%m-%d-%H" UTC)
+      configure_file(${pattern_file} ${target_bin_folder}/binary.md @ONLY)
+    endif()
+    endforeach()
+  endforeach()
 endfunction(verify_Site_Structure_For_Binaries_Referencing)
 
 #.rst:
