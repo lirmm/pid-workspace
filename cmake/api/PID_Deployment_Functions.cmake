@@ -182,7 +182,7 @@ if(package STREQUAL "${PROJECT_NAME}")
 endif()
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 if(first_time)#otherwise means a reinstall is forced so reevaluate everything
-  check_Dependency_Temporary_Optimization_Variables(ALREADY_CHECKED ${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
+  check_Dependency_Temporary_Optimization_Variables(ALREADY_CHECKED ${package} "${${package}_VERSION_STRING}" "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
   if(ALREADY_CHECKED)#no need to redo the same
     return()
   endif()
