@@ -11,7 +11,8 @@ fi
 #preparing the final archive to upload as artifact
 mkdir ./release/share/developper_info
 cp ./release/share/dependencies.txt ./release/share/developper_info
-cmake --build . --target staticchecks && cd release/share && cmake -E tar cvfz staticchecks.tgz static_checks_report/ && mv staticchecks.tgz developper_info && cd ../..
+
+cmake --build . --target staticchecks 
 STAT_CHK_RES=$?
 if [ $STAT_CHK_RES != 0 ]; then
   cd ..
@@ -19,6 +20,15 @@ if [ $STAT_CHK_RES != 0 ]; then
   echo "----[PID] CI : publishing package: FAIL (static checks) ------"
   echo "--------------------------------------------------------------"
   exit $STAT_CHK_RES
+fi
+
+cd release/share && cmake -E tar cvfz staticchecks.tgz static_checks_report/ && mv staticchecks.tgz developper_info
+STAT_CHK_RES=$?
+cd ../..
+if [ $STAT_CHK_RES != 0 ]; then
+  echo "--------------------------------------------------------------"
+  echo "-- [PID] CI : publishing package: NO STATIC CHECK PUBLISHED --"
+  echo "--------------------------------------------------------------"
 fi
 
 if [ "$PACKAGE_HAS_LIBRARIES" = true ] && [ "$PACKAGE_HAS_TESTS" = true ] ; then

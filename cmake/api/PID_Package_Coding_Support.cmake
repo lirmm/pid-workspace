@@ -143,10 +143,14 @@ endfunction(generate_Coverage)
 #     :component: the name of target component to check.
 #     :is_library: if TRUE the component is a library.
 #
-function(add_Static_Check component is_library)
+#     :CHECK_ADDED: output variable that is TRUE if a check has been added for the component code, FALSE otherwise
+#
+function(add_Static_Check CHECK_ADDED component is_library)
+
+	set(${CHECK_ADDED} FALSE PARENT_SCOPE)
 
 	if(NOT TARGET ${PROJECT_NAME}_${component})
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    	finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: unknown target name ${component} when trying to cppcheck !")
 	endif()
 
@@ -210,6 +214,7 @@ function(add_Static_Check component is_library)
 		COMMAND_EXPAND_LISTS
   		COMMENT "[PID] INFO: Running cppcheck on target ${component}..."
       VERBATIM)
+	  set(${CHECK_ADDED} TRUE PARENT_SCOPE)
   else()
   	#adding a dummy target since the component doesn't have C or C++ source files
   	add_custom_command(TARGET staticchecks PRE_BUILD
@@ -244,9 +249,7 @@ if(${CMAKE_BUILD_TYPE} MATCHES Release)
 	if(NOT CPPCHECK_EXECUTABLE)
 		message(STATUS "[PID] WARNING: cppcheck not available, forcing option BUILD_STATIC_CODE_CHECKING_REPORT to OFF.")
 		set(BUILD_STATIC_CODE_CHECKING_REPORT OFF CACHE INTERNAL "" FORCE)
-	endif()
-
-	if(NOT CPPCHECK_HTMLREPORT_EXECUTABLE)
+	elseif(NOT CPPCHECK_HTMLREPORT_EXECUTABLE)
 		message(STATUS "[PID] WARNING: cppcheck-htmlreport not available, forcing option BUILD_STATIC_CODE_CHECKING_REPORT to OFF.")
 		set(BUILD_STATIC_CODE_CHECKING_REPORT OFF CACHE INTERNAL "" FORCE)
 	endif()
@@ -255,33 +258,47 @@ else()
 endif()
 
 if(BUILD_STATIC_CODE_CHECKING_REPORT)
-	add_custom_target(staticchecks COMMENT "[PID] INFO : generating a static check report (look into release/share/static_checks_report folder)")
 	#now creating test target and enriching the staticchecks global target with information coming from components
+	add_custom_target(staticchecks COMMENT "[PID] INFO : generating a static check report (look into release/share/static_checks_report folder)")
+	set(AT_LEAST_ONE_ADDED FALSE)
 	if(${PROJECT_NAME}_COMPONENTS_LIBS)
 		foreach(component ${${PROJECT_NAME}_COMPONENTS_LIBS})
-			add_Static_Check(${component} TRUE)
+			add_Static_Check(ADDED ${component} TRUE)
+			if(ADDED)
+				set(AT_LEAST_ONE_ADDED TRUE)
+			endif()
 		endforeach()
 	endif()
 	if(${PROJECT_NAME}_COMPONENTS_APPS)
 		foreach(component ${${PROJECT_NAME}_COMPONENTS_APPS})
 			# adding a static check target only for applications
 			if(${PROJECT_NAME}_${component}_TYPE STREQUAL "APP")
-				add_Static_Check(${component} FALSE)
+				add_Static_Check(ADDED ${component} FALSE)
+				if(ADDED)
+					set(AT_LEAST_ONE_ADDED TRUE)
+				endif()
 			endif()
 		endforeach()
 	endif()
-  message("[PID] INFO : Allowing static code checks ...")
-  add_custom_command(TARGET staticchecks POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
-		COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml
-		COMMAND ${CMAKE_COMMAND} -DCMAKE_CURRENT_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR} -P ${WORKSPACE_DIR}/cmake/commands/PID_Utility_Concat_Staticchecks_Files_Content.cmake
-		COMMAND ${CPPCHECK_HTMLREPORT_EXECUTABLE} --title="${PROJECT_NAME}" --source-dir=${CMAKE_SOURCE_DIR} --report-dir=${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report --file=${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml
-		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-	)
-
+	if(AT_LEAST_ONE_ADDED)
+		add_custom_command(TARGET staticchecks POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
+			COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report
+			COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml
+			COMMAND ${CMAKE_COMMAND} -DCMAKE_CURRENT_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR} -P ${WORKSPACE_DIR}/cmake/commands/PID_Utility_Concat_Staticchecks_Files_Content.cmake
+			COMMAND ${CPPCHECK_HTMLREPORT_EXECUTABLE} --title="${PROJECT_NAME}" --source-dir=${CMAKE_SOURCE_DIR} --report-dir=${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_report --file=${CMAKE_CURRENT_BINARY_DIR}/share/static_checks_result.xml
+			WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+			COMMENT "[PID] INFO: generating static checks html pages for ${PROJECT_NAME}"
+		)
+	else()
+		add_custom_command(
+			TARGET staticchecks POST_BUILD 
+			COMMENT "[PID] INFO: do not generate static checks html pages for ${PROJECT_NAME} (no component provides code)"
+		)	
+	endif()
 else()
-	add_custom_target(staticchecks COMMENT "[PID] INFO : do not generate a static check report (cppcheck not found)")
+	# if no report has to be built (not required or not possible) simply report to the user 
+	add_custom_target(staticchecks COMMENT "[PID] INFO: do not generate static checks html pages for ${PROJECT_NAME} (cppcheck tools not found)")
 endif()
 
 endfunction(generate_Static_Checks)
