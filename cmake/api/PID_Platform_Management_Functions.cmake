@@ -1233,10 +1233,9 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   # testing for languages standard libraries SO versions and symbols
   foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
-    parse_Configuration_Expression_Arguments(PACKAGE_SPECS ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX})
     #get SONAME and SYMBOLS coming from language configuration
     #WARNING Note: use same arguments as binary (soname and symbol are not used to directly check validity of the configuration) !!
-    check_Language_Configuration_With_Arguments(SYSCHECK_RESULT LANG_SPECS TARGET_PLATFORM_SPECS ${lang} PACKAGE_SPECS ${mode})
+    check_Language_Configuration_With_Arguments(SYSCHECK_RESULT LANG_SPECS TARGET_PLATFORM_SPECS ${lang} ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX} ${mode})
     #get SONAME and SYMBOLS coming from package configuration
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS LANG_SPECS)
     get_Soname_Symbols_Values(PACKAGE_SONAME PACKAGE_SYMBOLS PACKAGE_SPECS)
@@ -1265,10 +1264,10 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
 
   # testing sonames and symbols of libraries coming from platform configurations used by package
   foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
-    parse_Configuration_Expression_Arguments(PACKAGE_SPECS ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
     #get SONAME and SYMBOLS coming from platform configuration
     #WARNING Note: use same arguments as binary package !!
-    check_Platform_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${package} ${config} PACKAGE_SPECS ${mode})
+    # message("PACKAGE_SPECS: ${PACKAGE_SPECS}")
+    check_Platform_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${package} ${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX} ${mode})
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS PLATFORM_SPECS)
     #get SONAME and SYMBOLS coming from package configuration
     get_Soname_Symbols_Values(PACKAGE_SONAME PACKAGE_SYMBOLS PACKAGE_SPECS)
