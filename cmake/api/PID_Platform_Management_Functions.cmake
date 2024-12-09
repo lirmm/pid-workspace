@@ -1235,6 +1235,7 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
   foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
     #get SONAME and SYMBOLS coming from language configuration
     #WARNING Note: use same arguments as binary (soname and symbol are not used to directly check validity of the configuration) !!
+    message("is_Compatible_With_Current_ABI ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX}:${${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX}}")
     check_Language_Configuration_With_Arguments(SYSCHECK_RESULT LANG_SPECS TARGET_PLATFORM_SPECS ${lang} ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX} ${mode})
     #get SONAME and SYMBOLS coming from package configuration
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS LANG_SPECS)
@@ -1266,7 +1267,7 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
   foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
     #get SONAME and SYMBOLS coming from platform configuration
     #WARNING Note: use same arguments as binary package !!
-    # message("PACKAGE_SPECS: ${PACKAGE_SPECS}")
+    message("is_Compatible_With_Current_ABI ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX}:${${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX}}")
     check_Platform_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${package} ${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX} ${mode})
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS PLATFORM_SPECS)
     #get SONAME and SYMBOLS coming from package configuration
@@ -1357,7 +1358,7 @@ endfunction(generate_Platform_Configuration_Expression_For_Dependency)
 #
 #   .. command:: check_Platform_Configuration(RESULT NAME CONSTRAINTS package config mode)
 #
-#    Check whether the given configuration constraint (= configruation name + arguments) conforms to target platform. This function is used in source scripts.
+#    Check whether the given configuration constraint (= configuration name + arguments) conforms to target platform. This function is used in source scripts.
 #
 #     :package: the pakcage that requires the the configuration.
 #     :config: the configuration expression (may contain arguments).
@@ -1682,11 +1683,11 @@ endfunction(into_Configuration_Argument_List)
 #    Test if a configuration can be used with current platform.
 #
 #     :config_name: the name of the configuration (without argument).
-#     :config_args: the constraints passed as arguments by the user of the configuration.
+#     :config_args_var: the parent scope variable containing constraints passed as arguments by the user of the configuration.
 #
 #     :ALLOWED: the output variable that is TRUE if configuration can be used.
 #
-function(is_Allowed_Platform_Configuration ALLOWED config_name config_args)
+function(is_Allowed_Platform_Configuration ALLOWED config_name config_args_var)
   set(${ALLOWED} FALSE PARENT_SCOPE)
   install_System_Configuration_Check(PATH_TO_CONFIG ${config_name})
   if(NOT PATH_TO_CONFIG)
@@ -1701,7 +1702,7 @@ function(is_Allowed_Platform_Configuration ALLOWED config_name config_args)
   set(possible_args ${${config_name}_OPTIONAL_CONSTRAINTS} ${${config_name}_REQUIRED_CONSTRAINTS} ${${config_name}_IN_BINARY_CONSTRAINTS})
   if(possible_args)
     list(REMOVE_DUPLICATES possible_args)
-    prepare_Configuration_Expression_Arguments(${config_name} ${config_args} possible_args)#setting variables that correspond to the arguments passed to the check script
+    prepare_Configuration_Expression_Arguments(${config_name} ${config_args_var} possible_args)#setting variables that correspond to the arguments passed to the check script
   endif()
 
   check_Platform_Configuration_Arguments(ARGS_TO_SET ${config_name})
@@ -2538,8 +2539,7 @@ function(check_Package_Platform_Against_Current CHECK_OK package platform versio
     list(REMOVE_DUPLICATES LANGS_TO_CHECK)
   endif()
   foreach(lang IN LISTS LANGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
-    parse_Configuration_Expression_Arguments(args_as_list ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS)
-    is_Allowed_Language_Configuration(ALLOWED ${lang} args_as_list)
+    is_Allowed_Language_Configuration(ALLOWED ${lang} ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS)
     if(NOT ALLOWED)
       set(${CHECK_OK} FALSE PARENT_SCOPE)
       unload_Binary_Package_Install_Manifest(${package})
@@ -2553,8 +2553,7 @@ function(check_Package_Platform_Against_Current CHECK_OK package platform versio
     list(REMOVE_DUPLICATES CONFIGS_TO_CHECK)
   endif()
   foreach(config IN LISTS CONFIGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
-    parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS)
-    is_Allowed_Platform_Configuration(ALLOWED ${config} args_as_list)
+    is_Allowed_Platform_Configuration(ALLOWED ${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS)
     if(NOT ALLOWED)
       set(${CHECK_OK} FALSE PARENT_SCOPE)
       unload_Binary_Package_Install_Manifest(${package})

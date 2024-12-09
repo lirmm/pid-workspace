@@ -91,6 +91,7 @@ function(prepare_Configuration_Expression_Arguments config arguments possible_co
   if(NOT ${possible_constraints})#if no possible constraints simply exit
     return()
   endif()
+  message("DEBUG prepare_Configuration_Expression_Arguments: ${config} variable ${arguments}: ${${arguments}}")
   set(all_args_set)
   set(argument_couples ${${arguments}})
   while(argument_couples)
@@ -315,7 +316,7 @@ endfunction(hashcode_From_Expression)
 #     :constraint: the string representing the constraint check.
 #
 #     :NAME: the output variable containing the base name of the expression (environment or system configuration)
-#     :ARGS: the output variable containing the list of arguments of the constraint check. Elements in the list go by pair (name or argument, value)
+#     :ARGS: the output variable containing the list of arguments of the constraint check. Elements in the list go by pair (name of argument, value)
 #
 function(parse_Configuration_Expression NAME ARGS constraint)
   string(REPLACE " " "" constraint ${constraint})#remove the spaces if any

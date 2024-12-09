@@ -191,6 +191,7 @@ list(APPEND RESOLVE_PACKAGE_DEPENDENCIES_REQUIRED_BY ${package})
 ################## management of configuration : for both external and native packages ##################
 set(list_of_unresolved_configs)
 foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX}) ## all configuration constraints must be satisfied
+  message("DEBUG call check_Platform_Configuration_With_Arguments  ${package} ${config} : ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX}: ${${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX}}")
   check_Platform_Configuration_With_Arguments(SYSCHECK_RESULT BINARY_CONTRAINTS ${package} ${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX} ${mode})
   if(NOT SYSCHECK_RESULT)
     if(NOT first_time)# we are currently trying to reinstall the same package !!
@@ -2851,6 +2852,79 @@ function(uninstall_Binary_Package package version platform)
   endif()
 endfunction(uninstall_Binary_Package)
 
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Old_Binary_Config_Args| replace:: ``check_Old_Binary_Config_Args``
+#  .. _check_Old_Binary_Config_Args:
+#
+#  check_Old_Binary_Config_Args
+#  -----------------------------
+#
+#   .. command:: check_Old_Binary_Config_Args(IS_OLD config_args_var)
+#
+#    Tell if the variable contains old expressions of arguments list
+#
+#      :config_args_var: The parent scope variable to check
+#      :IS_OLD: output variable that is TRUE is variable conrtains old style arguments, FALSE otherwise
+#
+function(check_Old_Binary_Config_Args IS_OLD config_args_var)
+set(IS_OLD FALSE PARENT_SCOPE)
+if(${config_args_var})
+  list(LENGTH ${config_args_var} SIZE)
+  math(EXPR is_odd "${SIZE}%2")
+  if(NOT is_odd EQUAL 0)#odd => not a list of pairs !!
+    set(${IS_OLD} TRUE PARENT_SCOPE)
+    return()
+  endif()
+  list(GET ${config_args_var} 0 firs_elem)
+  if(first_elem MATCHES "[^=]+=.*")
+    set(${IS_OLD} TRUE PARENT_SCOPE)
+    return()
+  endif()
+endif()
+endfunction(check_Old_Binary_Config_Args)
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |convert_Configuration_Expressions| replace:: ``convert_Configuration_Expressions``
+#  .. _convert_Configuration_Expressions:
+#
+#  convert_Configuration_Expressions
+#  ---------------------------------
+#
+#   .. command:: convert_Configuration_Expressions(package)
+#
+#    Convert the imported package description so that its arguments are correct
+#
+#      :package: The package for which a description has been imported
+#
+function(convert_Configuration_Expressions package)
+
+foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
+  check_Old_Binary_Config_Args(OLD ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX})
+  if(OLD)
+    parse_Configuration_Expression_Arguments(args_as_list ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX})
+    set(${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX} ${args_as_list} CACHE INTERNAL "")
+  endif()
+endforeach()
+
+foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})#if empty no configuration for this platform is supposed to be necessary
+  check_Old_Binary_Config_Args(OLD ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+  if(OLD)
+    parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
+    set(${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX} ${args_as_list} CACHE INTERNAL "")
+  endif()
+endforeach()
+endfunction(convert_Configuration_Expressions)
+
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -2889,28 +2963,20 @@ if(res STREQUAL NOTFOUND)#file not found
   return()# no use file in native package => problem !
 endif()
 
-# 0) checking global ABI compatibility
+# conversion of configuration expressions
+convert_Configuration_Expressions(${package})
+
+# 1) checking global ABI compatibility
 is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${package} ${mode})
 if(NOT IS_ABI_COMPATIBLE)
   message("[PID] WARNING : binaries in package ${package} version ${version} are not compatible with your current platform settings.")
   return() #problem => the binary package has been built with an incompatible C++ ABI
 endif()
 
-# 1) checking platforms constraints
-set(CONFIGS_TO_CHECK)
-if(${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})
-	set(CONFIGS_TO_CHECK ${${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX}})#there are configuration constraints in PID v2 style
-elseif(${package}_PLATFORM${VAR_SUFFIX} STREQUAL platform) # this case may be true if the package binary has been release in old PID v1 style
-	set(OLD_PLATFORM_CONFIG ${${package}_PLATFORM_${platform}_CONFIGURATION${VAR_SUFFIX}})
-	if(OLD_PLATFORM_CONFIG) #there are required configurations in old style
-		set(CONFIGS_TO_CHECK ${OLD_PLATFORM_CONFIG})#there are configuration constraints in PID v1 style
-	endif()
-endif()
 
 # 2) checking constraints on configuration
 foreach(config IN LISTS CONFIGS_TO_CHECK)#if empty no configuration for this platform is supposed to be necessary
-  parse_Configuration_Expression_Arguments(args_as_list ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
-  check_Platform_Configuration_With_Arguments(RESULT_OK BINARY_CONSTRAINTS ${package} ${config} args_as_list ${mode})
+  check_Platform_Configuration_With_Arguments(RESULT_OK BINARY_CONSTRAINTS ${package} ${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX} ${mode})
   if(RESULT_OK)
     message("[PID] INFO : platform configuration ${config} for package ${package} is satisfied.")
   else()

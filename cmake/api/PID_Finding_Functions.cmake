@@ -785,6 +785,11 @@ if(	${res} STREQUAL NOTFOUND
 	set(${FILE_NOTFOUND} TRUE PARENT_SCOPE)
 	return()
 endif()
+
+# NOTE: this is a trick to avoid any problem with old binary packages that have
+# a non consistent representation of configuration expression arguments
+convert_Configuration_Expressions(${package})
+
 foreach(a_component IN LISTS ${package}_COMPONENTS)
   set(${package}_${a_component}_FOUND TRUE CACHE INTERNAL "")
 	check_Component_Elements_Exist(COMPONENT_ELEMENT_NOTFOUND ${search_path} ${package} ${a_component})
@@ -830,6 +835,10 @@ if(NOT DEFINED ${package}_COMPONENTS)#if there is no component defined for the p
 	set(${FILE_NOTFOUND} TRUE PARENT_SCOPE)
 	return()
 endif()
+
+# NOTE: this is a trick to avoid any problem with old binary packages that have
+# a non consistent representation of configuration expression arguments
+convert_Configuration_Expressions(${package})
 
 #checking that all requested components trully exist for this version
 foreach(requested_component IN LISTS list_of_components)
@@ -2153,6 +2162,8 @@ if(EXIST)
 	if(VERSION_TO_USE)#a good version of the package has been found
 		set(${package}_ROOT_DIR ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH}/${VERSION_TO_USE} CACHE INTERNAL "")
 		reset_External_Package_Dependency_Cached_Variables_From_Use(${package} ${CMAKE_BUILD_TYPE} FALSE)
+		# NOTE: a priori no need to apply conversion here since external package use files use an API that automatically 
+		# parse the configurations arguments
 		include(${${package}_ROOT_DIR}/share/Use${package}-${VERSION_TO_USE}.cmake  OPTIONAL)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
 		if(is_system)# an OS variant is required
 			if(NOT ${package}_BUILT_OS_VARIANT)#the binary package is NOT an OS variant

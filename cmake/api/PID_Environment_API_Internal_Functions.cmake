@@ -542,7 +542,7 @@ endmacro(build_Environment_Project)
 #
 #   .. command:: manage_Environment_Dependency(MANAGE_RESULT environment)
 #
-#   Load and configure the dependent environment with current target platforl constraints, then checks that the given dependency is satisfied.
+#   Load and configure the dependent environment with current target platform constraints, then checks that the given dependency is satisfied.
 #
 #     :environment: the dependency to manage (may include constraint arguments (e.g. gcc_toolchain[version=5.4])).
 #

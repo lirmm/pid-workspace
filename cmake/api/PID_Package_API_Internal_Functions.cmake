@@ -895,7 +895,10 @@ function(check_Environment_Language_Constraints ERROR language_constraint lang_t
 
 	#then memorize language configuration
 	append_Unique_In_Cache(${PROJECT_NAME}_LANGUAGE_CONFIGURATIONS${USE_MODE_SUFFIX} ${LANG_NAME})
-	set(${PROJECT_NAME}_LANGUAGE_CONFIGURATION_${LANG_NAME}_ARGS${USE_MODE_SUFFIX} "${LANG_CONSTRAINTS}" CACHE INTERNAL "")
+	
+	# NOTE: now immediately give the parsed list of arguments
+    parse_Configuration_Expression_Arguments(args_as_list LANG_CONSTRAINTS)
+    set(${PROJECT_NAME}_LANGUAGE_CONFIGURATION_${LANG_NAME}_ARGS${USE_MODE_SUFFIX} "${args_as_list}" CACHE INTERNAL "")
 	if(config_constraints)
 		append_Unique_In_Cache(${PROJECT_NAME}_IMPLICIT_PLATFORM_CONSTRAINTS${USE_MODE_SUFFIX} ${config_constraints})
 	endif()
@@ -977,12 +980,15 @@ if(NOT SKIP AND constraints)
 		endif()
 	endforeach()
 
-	#registering all configurations wether they are satisfied or not, except non satisfied optional ones
+	#registering all configurations whether they are satisfied or not, except non satisfied optional ones
 	append_Unique_In_Cache(${PROJECT_NAME}_PLATFORM_CONFIGURATIONS${USE_MODE_SUFFIX} "${configurations_to_memorize}")
 	foreach(config IN LISTS configurations_to_memorize)
 		if(${config}_constraints_to_memorize)#there are paremeters for that configuration, they need to be registered
 			list(REMOVE_DUPLICATES ${config}_constraints_to_memorize)
-			set(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${USE_MODE_SUFFIX} "${${config}_constraints_to_memorize}" CACHE INTERNAL "")
+			#NOTE: here the serialization of arguments has changed to become homogeneous with external packages
+			#the arguments are parsed immediately
+			parse_Configuration_Expression_Arguments(res_args ${config}_constraints_to_memorize)
+			set(${PROJECT_NAME}_PLATFORM_CONFIGURATION_${config}_ARGS${USE_MODE_SUFFIX} "${res_args}" CACHE INTERNAL "")
 		endif()
 	endforeach()
 endif()
@@ -1034,7 +1040,8 @@ if(INDEX EQUAL -1)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: Support for C language requires use of platform configurations that cannot be satisfies, error is: ${error_message}")
 	endif()
 	append_Unique_In_Cache(${PROJECT_NAME}_LANGUAGE_CONFIGURATIONS${USE_MODE_SUFFIX} C)
-	set(${PROJECT_NAME}_LANGUAGE_CONFIGURATION_C_ARGS${USE_MODE_SUFFIX} ${LANG_CONSTRAINTS} CACHE INTERNAL "")
+	parse_Configuration_Expression_Arguments(args_as_list LANG_CONSTRAINTS)
+	set(${PROJECT_NAME}_LANGUAGE_CONFIGURATION_C_ARGS${USE_MODE_SUFFIX} ${args_as_list} CACHE INTERNAL "")
 endif()
 
 list(FIND ${PROJECT_NAME}_LANGUAGE_CONFIGURATIONS${USE_MODE_SUFFIX} CXX INDEX)
@@ -1065,7 +1072,8 @@ if(INDEX EQUAL -1)
 		message(FATAL_ERROR "[PID] CRITICAL ERROR: Support for C language requires use of platform configurations that cannot be satisfies, error is: ${error_message}")
 	endif()
 	append_Unique_In_Cache(${PROJECT_NAME}_LANGUAGE_CONFIGURATIONS${USE_MODE_SUFFIX} CXX)
-	set(${PROJECT_NAME}_LANGUAGE_CONFIGURATION_CXX_ARGS${USE_MODE_SUFFIX} ${LANG_CONSTRAINTS} CACHE INTERNAL "")
+	parse_Configuration_Expression_Arguments(args_as_list LANG_CONSTRAINTS)
+	set(${PROJECT_NAME}_LANGUAGE_CONFIGURATION_CXX_ARGS${USE_MODE_SUFFIX} ${args_as_list} CACHE INTERNAL "")
 endif()
 
 #now generate toolchain file and reconfigure if needed
