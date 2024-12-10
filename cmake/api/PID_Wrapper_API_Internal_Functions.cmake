@@ -1428,7 +1428,7 @@ endfunction(declare_Wrapped_External_Dependency)
 #
 #      :component: the name of the component.
 #      :shared_links: the list of path to shared objects that are part of the component, relative to external package root install folder.
-#      :soname: the soname to use for that specific component's shared objects.
+#      :soname: the soname to use for that specific component's shared objects. If you use value NONE then the component will have no soversion attached to its binary name.
 #      :static_links: the list of path to static libraries that are part of the component, relative to external package root install folder.
 #      :includes: the list of includes path that are part of the component, relative to external package root install folder or absolute.
 #      :definitions: the list preprocessor definitions that must be defined when using of the component.
@@ -2332,7 +2332,11 @@ function(create_Relative_Path_To_Shared RES_BINARY var package version component
 	set(${RES_BINARY} PARENT_SCOPE)
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME
 			OR ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME EQUAL 0)#the component SONAME has priority over package SONAME
-		set(USE_SONAME "${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME}")
+		if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME STREQUAL "NONE")
+			set(USE_SONAME)
+		else()
+			set(USE_SONAME "${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME}")
+		endif()
 	else()
 		set(USE_SONAME "${${package}_KNOWN_VERSION_${version}_SONAME}")
 	endif()
@@ -2482,8 +2486,13 @@ function(generate_OS_Variant_Symlinks package platform version install_dir)
 		if(		${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS
 			OR 	${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_FORCED_SHARED_LINKS)
 
-			if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME)#the component SONAME has priority over package SONAME
-				set(USE_SONAME "${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME}")
+			if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME 
+				OR ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME EQUAL 0)#the component SONAME has priority over package SONAME
+				if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME STREQUAL "NONE")
+					set(USE_SONAME) #enfore use of no SONAME
+				else()
+					set(USE_SONAME "${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME}")
+				endif()
 			else()
 				set(USE_SONAME "${${package}_KNOWN_VERSION_${version}_SONAME}")
 			endif()
