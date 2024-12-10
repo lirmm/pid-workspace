@@ -157,6 +157,10 @@ ubuntu22 create_and_build:
   <<: *create_and_build
   <<: *selection_ubuntu22
 
+ubuntu22 external_use:
+  <<: *external_use
+  <<: *selection_ubuntu22
+
 archlinux external_use:
   <<: *external_use
   <<: *selection_archlinux
