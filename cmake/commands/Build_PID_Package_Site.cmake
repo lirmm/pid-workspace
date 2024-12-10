@@ -52,7 +52,6 @@ endif()
 if(list_of_folders_to_copy)
   file(COPY ${list_of_folders_to_copy} DESTINATION ${PATH_TO_SITE_JEKYLL})
   #2) build site with jekyll
-  message("PLOP")
   execute_process(COMMAND ${JEKYLL_EXECUTABLE} build -d ${PATH_TO_SITE_RESULT} 
                   OUTPUT_VARIABLE out ERROR_VARIABLE out RESULT_VARIABLE res
                   WORKING_DIRECTORY ${PATH_TO_SITE_JEKYLL})

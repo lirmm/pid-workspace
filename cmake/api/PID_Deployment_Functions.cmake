@@ -191,7 +191,6 @@ list(APPEND RESOLVE_PACKAGE_DEPENDENCIES_REQUIRED_BY ${package})
 ################## management of configuration : for both external and native packages ##################
 set(list_of_unresolved_configs)
 foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX}) ## all configuration constraints must be satisfied
-  message("DEBUG call check_Platform_Configuration_With_Arguments  ${package} ${config} : ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX}: ${${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX}}")
   check_Platform_Configuration_With_Arguments(SYSCHECK_RESULT BINARY_CONTRAINTS ${package} ${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX} ${mode})
   if(NOT SYSCHECK_RESULT)
     if(NOT first_time)# we are currently trying to reinstall the same package !!

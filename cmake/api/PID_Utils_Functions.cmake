@@ -91,7 +91,6 @@ function(prepare_Configuration_Expression_Arguments config arguments possible_co
   if(NOT ${possible_constraints})#if no possible constraints simply exit
     return()
   endif()
-  message("DEBUG prepare_Configuration_Expression_Arguments: ${config} variable ${arguments}: ${${arguments}}")
   set(all_args_set)
   set(argument_couples ${${arguments}})
   while(argument_couples)

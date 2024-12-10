@@ -2438,7 +2438,6 @@ function(write_In_Binary_Configuration_Dependency_In_Use_File file package mode_
       if(INDEX EQUAL -1)#not already written !!
         list(APPEND temp_list_of_config_written ${dep_conf})
         if(${dep_conf}_CONSTRAINTS_IN_BINARY)
-          message("${dep_conf}_CONSTRAINTS_IN_BINARY: ${${dep_conf}_CONSTRAINTS_IN_BINARY}")
           #NOTE: here the serialization of arguments has changed to become homogeneous with external packages
           #the arguments are parsed immediately
           parse_Configuration_Expression_Arguments(res_args ${dep_conf}_CONSTRAINTS_IN_BINARY)

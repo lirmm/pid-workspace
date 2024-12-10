@@ -1235,7 +1235,6 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
   foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
     #get SONAME and SYMBOLS coming from language configuration
     #WARNING Note: use same arguments as binary (soname and symbol are not used to directly check validity of the configuration) !!
-    message("is_Compatible_With_Current_ABI ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX}:${${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX}}")
     check_Language_Configuration_With_Arguments(SYSCHECK_RESULT LANG_SPECS TARGET_PLATFORM_SPECS ${lang} ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX} ${mode})
     #get SONAME and SYMBOLS coming from package configuration
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS LANG_SPECS)
@@ -1267,7 +1266,6 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
   foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
     #get SONAME and SYMBOLS coming from platform configuration
     #WARNING Note: use same arguments as binary package !!
-    message("is_Compatible_With_Current_ABI ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX}:${${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX}}")
     check_Platform_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${package} ${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX} ${mode})
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS PLATFORM_SPECS)
     #get SONAME and SYMBOLS coming from package configuration
