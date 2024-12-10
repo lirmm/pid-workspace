@@ -2172,16 +2172,9 @@ if(EXIST)
 				unset(${package}_ROOT_DIR CACHE)
 				exit_And_Manage_Install_Requirement_For_External(${package} "[PID] WARNING: the required OS variant version (${VERSION_TO_USE}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
 			endif()
-		else()# when not a system install the package may be built in release only mode
-			message("${package}_BUILT_RELEASE_ONLY: ${${package}_BUILT_RELEASE_ONLY} CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
-			if(CMAKE_BUILD_TYPE MATCHES Debug)
-				if(${package}_BUILT_RELEASE_ONLY)#debug binaries are not available, so package is not found
-					unload_Binary_Package_Install_Manifest(${package}) #clean the cache with info coming from use file
-					reset_Version_Strings(${package})#clean the cache with info coming from dependency version resolution
-					exit_And_Manage_Install_Requirement_For_External(${package} "[PID] WARNING: the package ${package} with version ${${package}_FIND_VERSION} has been found but does not provide debug artifacts as required. Considered as not found." ${is_exact} ${is_system})
-				endif()
-			endif()
 		# else even if an OS variant is not required, an OS variant can be used
+		# NOTE: most of external package do not provide a debug built binary but this binary can be used in debug build of pid packages
+		# so we have no check to perform contrarily to native packages
 		endif()
 		set(${package}_FOUND${VAR_SUFFIX} TRUE CACHE INTERNAL "")
 		#add the undirectly used packages as well
