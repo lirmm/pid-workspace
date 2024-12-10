@@ -50,6 +50,7 @@ set(PID_PACKAGE_FINDING_FUNCTIONS_INCLUDED TRUE)
 #
 macro(find_package_resolved deployment_unit)
   resolve_Path_To_Find_File(PATH_KNOWN ${deployment_unit})
+  message("DEBUG: PATH_KNOWN: ${PATH_KNOWN}")
   if(PATH_KNOWN)
     find_package(${deployment_unit} ${ARGN})
   endif()
@@ -2032,8 +2033,8 @@ if(EXIST)
 		if(CMAKE_BUILD_TYPE MATCHES Debug)
 			if(${package}_BUILT_RELEASE_ONLY)#debug binaries are not available, so package is not found
 				if(${package}_FIND_VERSION)#force the version patch to be the one resolved
-				#Note: this is to ensure that the rebuild of dependency is done on adequate patch version even if this version is not released yet
-				set(${package}_FIND_VERSION_PATCH ${${package}_VERSION_PATCH})
+					#Note: this is to ensure that the rebuild of dependency is done on adequate patch version even if this version is not released yet
+					set(${package}_FIND_VERSION_PATCH ${${package}_VERSION_PATCH})
 				endif()
 				unload_Binary_Package_Install_Manifest(${package}) #clean the cache with info coming from use file
 				reset_Version_Strings(${package})#clean the cache with info coming from dependency version resolution
@@ -2159,6 +2160,7 @@ if(EXIST)
 	else() #no specific version targetted using last available version (takes the last version available)
 		check_External_Last_Version(VERSION_TO_USE ${package} ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH})
 	endif()
+	message("DEBUG: finding ${package}, version to find: ${VERSION_TO_USE}")
 	if(VERSION_TO_USE)#a good version of the package has been found
 		set(${package}_ROOT_DIR ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH}/${VERSION_TO_USE} CACHE INTERNAL "")
 		reset_External_Package_Dependency_Cached_Variables_From_Use(${package} ${CMAKE_BUILD_TYPE} FALSE)
@@ -2171,6 +2173,7 @@ if(EXIST)
 				exit_And_Manage_Install_Requirement_For_External(${package} "[PID] WARNING: the required OS variant version (${VERSION_TO_USE}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
 			endif()
 		else()# when not a system install the package may be built in release only mode
+			message("${package}_BUILT_RELEASE_ONLY: ${${package}_BUILT_RELEASE_ONLY} CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 			if(CMAKE_BUILD_TYPE MATCHES Debug)
 				if(${package}_BUILT_RELEASE_ONLY)#debug binaries are not available, so package is not found
 					unload_Binary_Package_Install_Manifest(${package}) #clean the cache with info coming from use file

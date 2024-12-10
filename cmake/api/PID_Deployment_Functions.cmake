@@ -2960,6 +2960,7 @@ if(res STREQUAL NOTFOUND)#file not found
     # we simply consider that for "raw external package" (with no description provided) there is nothing to configure
     set(${RESULT} TRUE PARENT_SCOPE)
   endif()
+  message("[PID] INTERNAL ERROR : no install manifest found for bianry ${package} version ${version}. This is an internal bug that should never appear !")
   return()# no use file in native package => problem !
 endif()
 
