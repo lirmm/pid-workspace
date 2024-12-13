@@ -621,6 +621,7 @@ endmacro(build_PID_Wrapper)
 #     .. rubric:: Optional parameters
 #
 #     :POSTINSTALL <path to install script>: This is the path, relative to the current folder, to the install script that will be run after external package version has been installed into the workspace, to perform additionnal configuration steps. Script is a cmake module file.
+#     :PREUSE <path to use script>: This is the path, relative to the current folder, to the install script that will be run anytime a package uses this version.
 #     :COMPATIBILITY <version number>: define which previous version is compatible with this current version, if any. Compatible simply means that this current version can be used instead of the previous one without any restriction.
 #     :SONAME <version number>: (useful on UNIX only) Specify which soname will be given by default to all shared libraries defined by the wrapper.
 #     :CMAKE_FOLDER <path to folder>: (useful on CMake projects only) Specify the path, relative to the package install root, where to fond CMake configuration files.
