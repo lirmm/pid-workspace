@@ -101,6 +101,7 @@ function(reset_Wrapper_Version_Info version buidable soname compatibility deploy
 		#reset information local to the component
 		unset(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_FORCED_SHARED_LINKS CACHE)
 		unset(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS CACHE)
+		unset(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEBUG_SUFFIX CACHE)
 		unset(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME CACHE)
 		unset(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS CACHE)
 		unset(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INCLUDES CACHE)
@@ -649,6 +650,7 @@ foreach(version IN LISTS ${PROJECT_NAME}_KNOWN_VERSIONS)
 		#manage information local to the component
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_FORCED_SHARED_LINKS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_FORCED_SHARED_LINKS} CACHE INTERNAL \"\")\n")
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS} CACHE INTERNAL \"\")\n")
+		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEBUG_SUFFIX ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEBUG_SUFFIX} CACHE INTERNAL \"\")\n")
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME} CACHE INTERNAL \"\")\n")
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_STATIC_LINKS} CACHE INTERNAL \"\")\n")
 		file(APPEND ${path_to_file} "set(${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INCLUDES ${${PROJECT_NAME}_KNOWN_VERSION_${version}_COMPONENT_${component}_INCLUDES} CACHE INTERNAL \"\")\n")
@@ -1440,11 +1442,13 @@ endfunction(declare_Wrapped_External_Dependency)
 #      :runtime_resources: the list of path to file and folder used at runtime by the component, relative to external package root install folder.
 #      :aliases: the list of alias of the component.
 #      :python_packages: the list of path to python packages that are defined by the component.
+#      :debug_suffix: the suffix used for binaries when compiled in debug mode.
 #
-function(declare_Wrapped_Component component forced_shared_links shared_links soname static_links includes definitions options c_standard c_max_standard cxx_standard cxx_max_standard runtime_resources aliases python_packages)
+function(declare_Wrapped_Component component forced_shared_links shared_links soname static_links includes definitions options c_standard c_max_standard cxx_standard cxx_max_standard runtime_resources aliases python_packages debug_suffix)
 append_Unique_In_Cache(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENTS ${component})
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_FORCED_SHARED_LINKS ${forced_shared_links} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SHARED_LINKS ${shared_links} CACHE INTERNAL "")
+set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_DEBUG_SUFFIX ${debug_suffix} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_SONAME ${soname} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_STATIC_LINKS ${static_links} CACHE INTERNAL "")
 set(${PROJECT_NAME}_KNOWN_VERSION_${CURRENT_MANAGED_VERSION}_COMPONENT_${component}_INCLUDES ${includes} CACHE INTERNAL "")
@@ -2316,11 +2320,12 @@ endfunction(create_Relative_Path_To_Static)
 #  create_Relative_Path_To_Shared
 #  -------------------------------
 #
-#   .. command:: create_Relative_Path_To_Shared(RES_BINARY package version component platform)
+#   .. command:: create_Relative_Path_To_Shared(RES_BINARY var suffix package version component platform)
 #
 #    Append the description of a component dependencies to a given external package use file.
 #
 #      :var: variable containing the list of shared.
+#      :suffix: suffix to use for binairies names
 #      :package: the name of target external package.
 #      :version: the target version of external package.
 #      :component: the name of the component that may have dependencies.
@@ -2328,7 +2333,7 @@ endfunction(create_Relative_Path_To_Static)
 #
 #      :RES_BINARY: the output variable containing the list of shared objects.
 #
-function(create_Relative_Path_To_Shared RES_BINARY var package version component platform)
+function(create_Relative_Path_To_Shared RES_BINARY var suffix package version component platform)
 	set(${RES_BINARY} PARENT_SCOPE)
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME
 			OR ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SONAME EQUAL 0)#the component SONAME has priority over package SONAME
@@ -2342,7 +2347,7 @@ function(create_Relative_Path_To_Shared RES_BINARY var package version component
 	endif()
 	set(final_list_of_shared)#add the adequate extension name depending on the platform
 	foreach(shared_lib_path IN LISTS ${var})
-			create_Shared_Lib_Path(RESULT_LIB_PATH ${shared_lib_path} ${platform} "${USE_SONAME}")
+			create_Shared_Lib_Path(RESULT_LIB_PATH ${shared_lib_path} ${platform} "${USE_SONAME}" "${suffix}")
 			list(APPEND final_list_of_shared "${RESULT_LIB_PATH}")
 	endforeach()
 	set(${RES_BINARY} ${final_list_of_shared} PARENT_SCOPE)
@@ -2371,13 +2376,17 @@ endfunction(create_Relative_Path_To_Shared)
 function(generate_Description_For_External_Component file_for_version package platform version component)
 	file(APPEND ${file_for_version} "#component ${component}\n")
 	set(options_str "")
+	set(use_suffix)
+	if(CMAKE_BUILD_TYPE MATCHES Debug)
+		set(use_suffix ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEBUG_SUFFIX})
+	endif()
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_FORCED_SHARED_LINKS)
-		create_Relative_Path_To_Shared(RES_BIN_SHARED ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_FORCED_SHARED_LINKS ${package} ${version} ${component} ${platform})
+		create_Relative_Path_To_Shared(RES_BIN_SHARED ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_FORCED_SHARED_LINKS "${use_suffix}" ${package} ${version} ${component} ${platform})
 		fill_String_From_List(RES_SHARED RES_BIN_SHARED " ")
 		set(options_str "${options_str} FORCED_SHARED_LINKS ${RES_SHARED}")
 	endif()
 	if(${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS)
-		create_Relative_Path_To_Shared(RES_BIN_SHARED ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS ${package} ${version} ${component} ${platform})
+		create_Relative_Path_To_Shared(RES_BIN_SHARED ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS "${use_suffix}" ${package} ${version} ${component} ${platform})
 		fill_String_From_List(RES_SHARED RES_BIN_SHARED " ")
 		set(options_str "${options_str} SHARED_LINKS ${RES_SHARED}")
 	endif()
@@ -2499,7 +2508,7 @@ function(generate_OS_Variant_Symlinks package platform version install_dir)
 			set(all_shared ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS} ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_FORCED_SHARED_LINKS})
 			foreach(sha_link IN LISTS all_shared)
 				if(USE_SONAME OR USE_SONAME EQUAL 0) # need to create the adequate link for PID component
-					create_Shared_Lib_Path(RESULT_LIB_PATH ${sha_link} ${platform} "${USE_SONAME}")
+					create_Shared_Lib_Path(RESULT_LIB_PATH ${sha_link} ${platform} "${USE_SONAME}" "")
 					if(NOT RESULT_LIB_PATH MATCHES "^-l.*$")#only generate symlinks for non OS libraries
 						generate_OS_Variant_Symlink_For_Path(${install_dir} ${RESULT_LIB_PATH} "${${package}_RPATH}")
 					endif()
@@ -2515,7 +2524,7 @@ function(generate_OS_Variant_Symlinks package platform version install_dir)
 				if(USED_EXT) # empty if the lib filename doesn't have a version included in it
 					string(SUBSTRING "${USED_EXT}" 1 -1 USED_EXT)
 					if(NOT USED_EXT STREQUAL USE_SONAME)
-						create_Shared_Lib_Path(RESULT_LIB_PATH ${sha_link} ${platform} "${USED_EXT}")
+						create_Shared_Lib_Path(RESULT_LIB_PATH ${sha_link} ${platform} "${USED_EXT}" "")
 						if(NOT RESULT_LIB_PATH MATCHES "^-l.*$")#only generate symlinks for non OS libraries
 							generate_OS_Variant_Symlink_For_Path(${install_dir} ${RESULT_LIB_PATH} "${${package}_RPATH}")
 						endif()
@@ -3407,12 +3416,16 @@ function(set_Build_Info_For_Component package component version platform)
 	set(${prefix}_COMPONENT_${component}_BUILD_PYTHON_PACKAGES ${${prefix}_COMPONENT_${component}_PYTHON_PACKAGES} CACHE INTERNAL "")
 	#dealing with local shared objects (for rpath)
 	set(local_shared)
-	create_Relative_Path_To_Shared(RELATIVE_BIN_SHARED ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS ${package} ${version} ${component} ${platform})
+	set(use_suffix)
+	if(CMAKE_BUILD_TYPE MATCHES Debug)
+		set(use_suffix ${${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_DEBUG_SUFFIX})
+	endif()
+	create_Relative_Path_To_Shared(RELATIVE_BIN_SHARED ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_SHARED_LINKS "${use_suffix}" ${package} ${version} ${component} ${platform})
 	foreach(bin IN LISTS RELATIVE_BIN_SHARED)
 		transform_External_Link_Into_Absolute_Path_Expression(RES_LINK ${package} ${bin})
 		list(APPEND local_shared ${RES_LINK})
 	endforeach()
-	create_Relative_Path_To_Shared(RELATIVE_BIN_SHARED ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_FORCED_SHARED_LINKS ${package} ${version} ${component} ${platform})
+	create_Relative_Path_To_Shared(RELATIVE_BIN_SHARED ${package}_KNOWN_VERSION_${version}_COMPONENT_${component}_FORCED_SHARED_LINKS "${use_suffix}" ${package} ${version} ${component} ${platform})
 	foreach(bin IN LISTS RELATIVE_BIN_SHARED)
 		transform_External_Link_Into_Absolute_Path_Expression(RES_LINK ${package} ${bin})
 		list(APPEND local_shared ${RES_LINK})
