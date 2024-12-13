@@ -3723,7 +3723,7 @@ endfunction(resolve_Wrapper_Platform_Configuration)
 #      :os_variant: if TRUE the os_variant of the dependency will be used.
 #
 function(resolve_Wrapper_Dependency package version dep_package os_variant)
-get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX Release)
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 set(PROJECT_NAME ${package})
 set(USE_MODE_SUFFIX ${VAR_SUFFIX})
 set(prefix ${package}_KNOWN_VERSION_${version})
@@ -3733,7 +3733,7 @@ if(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
 elseif(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM" #the system version has been selected => need to perform specific actions
 			OR os_variant)#the wrapper is generating an os variant so all its dependencies are os variant too
 	#need to check the equivalent OS configuration to get the OS installed version
-	check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${package} "${dep_package}" Release)
+	check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${package} "${dep_package}" ${CMAKE_BUILD_TYPE})
 	if(NOT RESULT_OK OR NOT ${package}_${dep_package}_VERSION)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
@@ -3752,12 +3752,11 @@ else()#a version is specified by the user OR the dependent build process has aut
 	add_External_Package_Dependency_To_Cache(${dep_package} "${${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED}" ${USE_EXACT} FALSE "${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS}") #set the dependency
 endif()
 # from here: external package description variables have been set the same as for native package => same functions can be used
-
 # resolve the package dependency according to memorized internal variables
 if(NOT unused) #if the dependency is really used (in case it were optional and unselected by user)
 	# try to find the adequate package version => it is necessarily required
 	#package has never been found by a direct call to find_package in root CMakeLists.txt
-	resolve_External_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${PROJECT_NAME} ${dep_package} Release)
+	resolve_External_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${PROJECT_NAME} ${dep_package} ${CMAKE_BUILD_TYPE})
 	if(NOT IS_VERSION_COMPATIBLE)# version compatiblity problem => no adequate solution with constraint imposed by a dependent build
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		set(message_versions "")
@@ -3772,7 +3771,7 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 		endif()
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding versions constraints. Search ended when trying to satisfy version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} coming from package ${PROJECT_NAME}. ${message_versions}. Try to put this dependency as first dependency in your CMakeLists.txt in order to force its version constraint before any other.")
 		return()
-	elseif(${dep_package}_FOUND)#dependency has been found in workspace after resolution
+	elseif(${dep_package}_FOUND${VAR_SUFFIX})#dependency has been found in workspace after resolution
 		add_Chosen_Package_Version_In_Current_Process(${dep_package} ${package})#report the choice made to global build process
 		#set the variables used at build time
 		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD ${${dep_package}_VERSION_STRING} CACHE INTERNAL "")
