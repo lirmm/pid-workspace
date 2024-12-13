@@ -2810,7 +2810,9 @@ function(create_Shared_Lib_Extension RES_EXT platform soname)
 		set(${RES_EXT} ".dll" PARENT_SCOPE)
 	else()# Linux or any other standard UNIX system
 		if(soname OR soname EQUAL 0)
-			if(soname MATCHES "^\\.[0-9].*$")#MATCH: the soname expression start with a dot
+      if(soname STREQUAL "NONE")
+        set(${RES_EXT} ".so" PARENT_SCOPE)
+			elseif(soname MATCHES "^\\.[0-9].*$")#MATCH: the soname expression start with a dot
 				set(${RES_EXT} ".so${soname}" PARENT_SCOPE)
 			else()#the expression starts with a number, simply add the dot
 				set(${RES_EXT} ".so.${soname}" PARENT_SCOPE)
@@ -2939,17 +2941,18 @@ endfunction(create_Static_Lib_Path)
 #  create_Shared_Lib_Path
 #  ----------------------
 #
-#   .. command:: create_Shared_Lib_Path(RET_PATH library_path platform soname)
+#   .. command:: create_Shared_Lib_Path(RET_PATH library_path platform soname suffix)
 #
 #    Check whether a shared library needs to have a soname extension appended to its name.
 #
 #     :library_path: the path to the library.
 #     :platform: the target platform.
 #     :soname: the soname used by the library.
+#     :suffix: the suffix attached to library name before file extension.
 #
 #     :RET_PATH: the output variable that contains the path to shared library.
 #
-function(create_Shared_Lib_Path RET_PATH library_path platform soname)
+function(create_Shared_Lib_Path RET_PATH library_path platform soname suffix)
   shared_Library_Needs_Soname(RESULT_SONAME ${library_path} ${platform})
   # if it's not a path then construct it according to the platform
   if(NOT library_path MATCHES "/" #not a path
@@ -2962,6 +2965,8 @@ function(create_Shared_Lib_Path RET_PATH library_path platform soname)
       set(library_path lib/lib${library_path})
     endif()
   endif()
+  #applying the suffix
+  set(library_path ${library_path}${suffix})
   if(RESULT_SONAME)#OK no extension defined we can apply
     create_Shared_Lib_Extension(RES_EXT ${platform} "${soname}")#create the soname extension
     set(library_path "${library_path}${RES_EXT}")
