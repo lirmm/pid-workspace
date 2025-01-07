@@ -2901,6 +2901,8 @@ endfunction(agregate_All_Build_Info_For_Component)
 #
 function(set_Build_Info_For_Dependency prefix dep_package component)
 	feed_Configuration_Resulting_Variables_For_Package(${dep_package})
+
+	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 	########## manage per dependency build variables ############
 	# get current value of dependency variables
 	set(links ${${prefix}_DEPENDENCY_${dep_package}_BUILD_LINKS})
@@ -2965,11 +2967,11 @@ function(set_Build_Info_For_Dependency prefix dep_package component)
 
 	#add info comming from dependency between explicit components
 	foreach(dep_component IN LISTS ${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package})
-		agregate_All_Build_Info_For_Component(${dep_package} ${dep_component} Release
+		agregate_All_Build_Info_For_Component(${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE}
 												RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS
 												RES_STD_C RES_STD_MAX_C RES_STD_CXX RES_STD_MAX_CXX
 												RES_LINKS RES_SHARED_LINKS RES_RESOURCES)
-
+		message("${dep_package} ${dep_component} agregate: ${RES_INCS}")
 		list(APPEND runtime_links ${RES_SHARED_LINKS})
 		list(APPEND links ${RES_LINKS})
 		list(APPEND includes ${RES_INCS})
@@ -3024,11 +3026,11 @@ function(set_Build_Info_For_Dependency prefix dep_package component)
 		remove_Duplicates_From_List(EVAL_BUILD_RRES)
 
 		# resolve all path into absolute path if required (path to external package content)
-		resolve_External_Libs_Path(BUILD_COMPLETE_LINKS_PATH "${EVAL_BUILD_LNKS}" Release)
-		resolve_External_Libs_Path(BUILD_COMPLETE_SHARED_LINKS_PATH "${EVAL_BUILD_SHARED_LNKS}" Release)
-		resolve_External_Libs_Path(BUILD_COMPLETE_LDIRS_PATH "${EVAL_BUILD_LDIRS}" Release)
-		resolve_External_Includes_Path(BUILD_COMPLETE_INCS_PATH "${EVAL_BUILD_INCS}" Release)
-		resolve_External_Resources_Path(BUILD_COMPLETE_RESOURCES_PATH "${EVAL_BUILD_RRES}" Release)
+		resolve_External_Libs_Path(BUILD_COMPLETE_LINKS_PATH "${EVAL_BUILD_LNKS}" ${CMAKE_BUILD_TYPE})
+		resolve_External_Libs_Path(BUILD_COMPLETE_SHARED_LINKS_PATH "${EVAL_BUILD_SHARED_LNKS}" ${CMAKE_BUILD_TYPE})
+		resolve_External_Libs_Path(BUILD_COMPLETE_LDIRS_PATH "${EVAL_BUILD_LDIRS}" ${CMAKE_BUILD_TYPE})
+		resolve_External_Includes_Path(BUILD_COMPLETE_INCS_PATH "${EVAL_BUILD_INCS}" ${CMAKE_BUILD_TYPE})
+		resolve_External_Resources_Path(BUILD_COMPLETE_RESOURCES_PATH "${EVAL_BUILD_RRES}" ${CMAKE_BUILD_TYPE})
 		remove_Duplicates_From_List(BUILD_COMPLETE_LINKS_PATH)
 		remove_Duplicates_From_List(BUILD_COMPLETE_LDIRS_PATH)
 		remove_Duplicates_From_List(BUILD_COMPLETE_INCS_PATH)
@@ -3058,13 +3060,13 @@ function(set_Build_Info_For_Dependency prefix dep_package component)
 		resolve_External_Compiler_Options(EVAL_LOCAL_OPTS EVAL_LOCAL_DEFS EVAL_LOCAL_INCS)
 		set(${dep_package}_${dep_component}_LOCAL_DEFINITIONS ${EVAL_LOCAL_DEFS} CACHE INTERNAL "")
 		set(${dep_package}_${dep_component}_LOCAL_COMPILER_OPTIONS ${EVAL_LOCAL_OPTS} CACHE INTERNAL "")
-		resolve_External_Includes_Path(EVAL_LOCAL_INCS "${EVAL_LOCAL_INCS}" Release)
+		resolve_External_Includes_Path(EVAL_LOCAL_INCS "${EVAL_LOCAL_INCS}" ${CMAKE_BUILD_TYPE})
 		set(${dep_package}_${dep_component}_LOCAL_INCLUDES ${EVAL_LOCAL_INCS} CACHE INTERNAL "")
 		#links
 		set(ALL_LOCAL_LINKS ${${dep_package}_${dep_component}_FORCED_SHARED_LINKS${VAR_SUFFIX}} ${${dep_package}_${dep_component}_SHARED_LINKS${VAR_SUFFIX}} ${${dep_package}_${dep_component}_STATIC_LINKS${VAR_SUFFIX}})
 		evaluate_Variables_In_List(EVAL_LOCAL_LINKS ALL_LOCAL_LINKS)
 		remove_Duplicates_From_List(EVAL_LOCAL_LINKS)
-		resolve_External_Libs_Path(EVAL_LOCAL_LINKS "${EVAL_LOCAL_LINKS}" Release)
+		resolve_External_Libs_Path(EVAL_LOCAL_LINKS "${EVAL_LOCAL_LINKS}" ${CMAKE_BUILD_TYPE})
 		set(res_links)
 		foreach(a_link IN LISTS EVAL_LOCAL_LINKS)
 			if(NOT a_link MATCHES "^(-|/)l.+$")
@@ -3079,12 +3081,12 @@ function(set_Build_Info_For_Dependency prefix dep_package component)
 		list(APPEND ALL_LOCAL_LIB_DIRS ${${dep_package}_${dep_component}_LIB_DIRS${VAR_SUFFIX}})
 		evaluate_Variables_In_List(EVAL_LOCAL_LIB_DIRS ALL_LOCAL_LIB_DIRS)
 		remove_Duplicates_From_List(EVAL_LOCAL_LIB_DIRS)
-		resolve_External_Libs_Path(EVAL_LOCAL_LIB_DIRS "${EVAL_LOCAL_LIB_DIRS}" Release)
+		resolve_External_Libs_Path(EVAL_LOCAL_LIB_DIRS "${EVAL_LOCAL_LIB_DIRS}" ${CMAKE_BUILD_TYPE})
 		set(${dep_package}_${dep_component}_LOCAL_LIB_DIRS ${EVAL_LOCAL_LIB_DIRS} CACHE INTERNAL "")
 		# runtime resources
 		evaluate_Variables_In_List(EVAL_LOCAL_RRES ${dep_package}_${dep_component}_RUNTIME_RESOURCES${VAR_SUFFIX})
 		remove_Duplicates_From_List(EVAL_LOCAL_RRES)
-		resolve_External_Resources_Path(EVAL_LOCAL_RRES "${EVAL_LOCAL_RRES}" Release)
+		resolve_External_Resources_Path(EVAL_LOCAL_RRES "${EVAL_LOCAL_RRES}" ${CMAKE_BUILD_TYPE})
 		set(${dep_package}_${dep_component}_LOCAL_RUNTIME_RESOURCES ${EVAL_LOCAL_RRES} CACHE INTERNAL "")
 		# standards
 		set(${dep_package}_${dep_component}_LOCAL_C_STANDARD ${RES_STD_C} CACHE INTERNAL "")
@@ -3116,10 +3118,10 @@ function(set_Build_Info_For_Dependency prefix dep_package component)
 	remove_Duplicates_From_List(EVAL_BUILD_RRES)
 
 	# resolve all path into absolute path if required (path to external package content)
-	resolve_External_Libs_Path(BUILD_COMPLETE_LINKS_PATH "${EVAL_BUILD_LNKS}" Release)
-	resolve_External_Libs_Path(BUILD_COMPLETE_SHARED_LINKS_PATH "${EVAL_BUILD_SHARED_LNKS}" Release)
-	resolve_External_Libs_Path(BUILD_COMPLETE_LDIRS_PATH "${EVAL_BUILD_LDIRS}" Release)
-	resolve_External_Includes_Path(BUILD_COMPLETE_INCS_PATH "${EVAL_BUILD_INCS}" Release)
+	resolve_External_Libs_Path(BUILD_COMPLETE_LINKS_PATH "${EVAL_BUILD_LNKS}" ${CMAKE_BUILD_TYPE})
+	resolve_External_Libs_Path(BUILD_COMPLETE_SHARED_LINKS_PATH "${EVAL_BUILD_SHARED_LNKS}" ${CMAKE_BUILD_TYPE})
+	resolve_External_Libs_Path(BUILD_COMPLETE_LDIRS_PATH "${EVAL_BUILD_LDIRS}" ${CMAKE_BUILD_TYPE})
+	resolve_External_Includes_Path(BUILD_COMPLETE_INCS_PATH "${EVAL_BUILD_INCS}" ${CMAKE_BUILD_TYPE})
 	remove_Duplicates_From_List(BUILD_COMPLETE_LINKS_PATH)
 	remove_Duplicates_From_List(BUILD_COMPLETE_LDIRS_PATH)
 	remove_Duplicates_From_List(BUILD_COMPLETE_INCS_PATH)
@@ -3335,7 +3337,7 @@ function(set_Build_Info_For_Component package component version platform)
 
 		#add info comming from dependency between explicit components
 		foreach(dep_component IN LISTS ${prefix}_COMPONENT_${component}_DEPENDENCY_${dep_package})
-			agregate_All_Build_Info_For_Component(${dep_package} ${dep_component} Release
+			agregate_All_Build_Info_For_Component(${dep_package} ${dep_component} ${CMAKE_BUILD_TYPE}
 			                                      	RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS
 													RES_STD_C RES_STD_MAX_C RES_STD_CXX RES_STD_MAX_CXX
 													RES_LINKS RES_SHARED_LINKS RES_RESOURCES)
@@ -3392,11 +3394,11 @@ function(set_Build_Info_For_Component package component version platform)
 	remove_Duplicates_From_List(all_local_deps)
 
 	#resolve all path into absolute path if required (path to external package content)
-	resolve_External_Libs_Path(COMPLETE_SHARED_LINKS_PATH "${runtime_links}" Release)
-	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${links}" Release)
-	resolve_External_Libs_Path(COMPLETE_LDIRS_PATH "${lib_dirs}" Release)
-	resolve_External_Includes_Path(COMPLETE_INCS_PATH "${includes}" Release)
-	resolve_External_Resources_Path(COMPLETE_RESOURCE_PATH "${res}" Release)
+	resolve_External_Libs_Path(COMPLETE_SHARED_LINKS_PATH "${runtime_links}" ${CMAKE_BUILD_TYPE})
+	resolve_External_Libs_Path(COMPLETE_LINKS_PATH "${links}" ${CMAKE_BUILD_TYPE})
+	resolve_External_Libs_Path(COMPLETE_LDIRS_PATH "${lib_dirs}" ${CMAKE_BUILD_TYPE})
+	resolve_External_Includes_Path(COMPLETE_INCS_PATH "${includes}" ${CMAKE_BUILD_TYPE})
+	resolve_External_Resources_Path(COMPLETE_RESOURCE_PATH "${res}" ${CMAKE_BUILD_TYPE})
 
 
 	#finally set the cache variables that will be written
@@ -3467,6 +3469,8 @@ function(set_Build_Info_For_Component package component version platform)
 	#trick : force the definition of the current package as if it where already deployed in order to make utility functions work
 	set(${package}_FOUND TRUE)
 	set(${package}_VERSION_STRING ${version})
+	#NOTE: for resolution of local path the variables in Debug mode do not exist by construction
+	#so the resolution is anytime made as if the local component is in release mode (because corresponding variables will exist)
 	resolve_External_Libs_Path(COMPLETE_LOCAL_SHARED_PATH "${local_shared}" Release)
 	resolve_External_Resources_Path(COMPLETE_LOCAL_BIN_PATH "${local_exe}" Release)
 	resolve_External_Resources_Path(COMPLETE_LOCAL_RESOURCE_PATH "${local_file}" Release)
@@ -3635,7 +3639,7 @@ endfunction(configure_Wrapper_Build_Variables)
 function(resolve_Wrapper_Language_Configuration CONFIGURED package version)
 	set(IS_CONFIGURED TRUE)
 	set(PACKAGE_SPECIFIC_BUILD_INFO_FILE ${CMAKE_BINARY_DIR}/Package_Build_Info.cmake)
-	file(WRITE "${PACKAGE_SPECIFIC_BUILD_INFO_FILE}" "")#reset the package specific build info (may obverwrite general info)
+	file(WRITE "${PACKAGE_SPECIFIC_BUILD_INFO_FILE}" "")#reset the package specific build info (may overwrite general info)
 	foreach(lang IN LISTS ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATIONS)
 		check_Language_Configuration_With_Arguments(SYSCHECK_RESULT LANG_SPECS PLATFORM_SPECS ${lang} ${package}_KNOWN_VERSION_${version}_LANGUAGE_CONFIGURATION_${lang}_ARGS Release)
 		#TODO STD need to add PLATFORM_SPECS ?
