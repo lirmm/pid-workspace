@@ -2596,16 +2596,16 @@ function(generate_OS_Variant_Symlinks package platform version install_dir)
 			return()
 		endif()
 	endif()
-	if(${package}_KNOWN_VERSION_${version}_CMAKE_FOLDER)
-		if(${package}_CMAKE_FOLDER)#cmake folder detected by the wrapper
+	if(${package}_KNOWN_VERSION_${version}_CMAKE_FOLDER)# managed version provide a CMake folder
+		if(${package}_CMAKE_FOLDER)#cmake folder detected by the system configuration wrapper
 			get_filename_component(CMAKE_FOLDER ${${package}_KNOWN_VERSION_${version}_CMAKE_FOLDER} NAME)
 			get_filename_component(PATH_TO_CMAKE ${${package}_KNOWN_VERSION_${version}_CMAKE_FOLDER} DIRECTORY)
 			file(MAKE_DIRECTORY ${install_dir}/${PATH_TO_CMAKE})
 			generate_OS_Variant_Symlink_For_Path(${install_dir}/${PATH_TO_CMAKE} ${CMAKE_FOLDER} "${${package}_CMAKE_FOLDER}")
 		endif()
 	endif()
-	if(${package}_KNOWN_VERSION_${version}_PKGCONFIG_FOLDER)
-		if(${package}_PKGCONFIG_FOLDER)#cmake folder detected by the wrapper
+	if(${package}_KNOWN_VERSION_${version}_PKGCONFIG_FOLDER)# managed version provide a pkgconfig folder
+		if(${package}_PKGCONFIG_FOLDER)#pkgconfig folder detected by the system configuration wrapper
 			get_filename_component(PKG_FOLDER ${${package}_KNOWN_VERSION_${version}_PKGCONFIG_FOLDER} NAME)
 			get_filename_component(PATH_TO_PKG ${${package}_KNOWN_VERSION_${version}_PKGCONFIG_FOLDER} DIRECTORY)
 			file(MAKE_DIRECTORY ${install_dir}/${PATH_TO_PKG})
