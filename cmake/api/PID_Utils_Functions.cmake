@@ -2854,29 +2854,26 @@ endfunction(create_Static_Lib_Extension)
 #
 # .. ifmode:: internal
 #
-#  .. |shared_Library_Needs_Soname| replace:: ``shared_Library_Needs_Soname``
-#  .. _shared_Library_Needs_Soname:
+#  .. |shared_Library_Has_Extension| replace:: ``shared_Library_Has_Extension``
+#  .. _shared_Library_Has_Extension:
 #
-#  shared_Library_Needs_Soname
+#  shared_Library_Has_Extension
 #  -----------------------------------
 #
-#   .. command:: shared_Library_Needs_Soname(NEEDS_SONAME library_path platform)
+#   .. command:: shared_Library_Has_Extension(HAS_EXT library_path platform)
 #
-#    Check whether a shared library needs to have a soname extension appended to its name.
+#    Check whether a shared library has an extension appended to its name.
 #
 #     :library_path: the path to the library.
 #     :platform: the target platform.
 #
-#     :NEEDS_SONAME: the output variable that is TRUE if the extension finish by a SONAME.
+#     :HAS_EXT: the output variable that is TRUE if the library path already has a file extension.
 #
-function(shared_Library_Needs_Soname NEEDS_SONAME library_path platform)
-  set(${NEEDS_SONAME} FALSE PARENT_SCOPE)
-  if(library_path MATCHES "^-l.*$")#OS dependency using standard library path => no need of soname extension
-    return()
-  endif()
+function(shared_Library_Has_Extension HAS_EXT library_path platform)
+  set(${HAS_EXT} TRUE PARENT_SCOPE)
 	extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI RES_INSTANCE RES_PLATFORM_BASE ${platform})
   get_filename_component(EXTENSION ${library_path} EXT)#get the longest extension of the file
-	if(RES_OS STREQUAL "macosx")
+	if(RES_OS STREQUAL "macos")
     set(target_extension "\\.dylib")
   elseif(RES_OS STREQUAL "windows")
     set(target_extension "\\.dll")
@@ -2888,8 +2885,8 @@ function(shared_Library_Needs_Soname NEEDS_SONAME library_path platform)
     # will not be considered as a library extension (e.g. example libusb-1.0)
     return()
   endif()
-  set(${NEEDS_SONAME} TRUE PARENT_SCOPE)
-endfunction(shared_Library_Needs_Soname)
+  set(${HAS_EXT} FALSE PARENT_SCOPE)
+endfunction(shared_Library_Has_Extension)
 
 #.rst:
 #
@@ -2953,23 +2950,34 @@ endfunction(create_Static_Lib_Path)
 #     :RET_PATH: the output variable that contains the path to shared library.
 #
 function(create_Shared_Lib_Path RET_PATH library_path platform soname suffix)
-  shared_Library_Needs_Soname(RESULT_SONAME ${library_path} ${platform})
-  # if it's not a path then construct it according to the platform
-  if(NOT library_path MATCHES "/" #not a path
-     AND NOT library_path MATCHES "^-l")#not an option
-    if(WIN32)
-      set(library_path lib/${library_path})
-    elseif(library_path MATCHES "^lib.*")#the lib prefix is used
-      set(library_path lib/${library_path})
-    else()#no library prefix
-      set(library_path lib/lib${library_path})
+  if(NOT library_path MATCHES "^-l")
+    #no containing folder means using "lib" folder by default
+    set(dir_prefix lib)
+    if(library_path MATCHES "/")
+      #it is a path
+      #deduce prefix (containing folder of the library) 
+      get_filename_component(CONTAINING_FOLDER ${library_path} DIRECTORY)
+      if(CONTAINING_FOLDER)
+        set(dir_prefix ${CONTAINING_FOLDER})
+        get_filename_component(LIB_FILE ${library_path} NAME)
+        set(library_path ${LIB_FILE})
+      endif()
     endif()
-  endif()
-  #applying the suffix
-  set(library_path ${library_path}${suffix})
-  if(RESULT_SONAME)#OK no extension defined we can apply
-    create_Shared_Lib_Extension(RES_EXT ${platform} "${soname}")#create the soname extension
-    set(library_path "${library_path}${RES_EXT}")
+    # Construct the path according to the platform  
+    if(WIN32)
+      set(library_path ${dir_prefix}/${library_path})
+    elseif(library_path MATCHES "^lib.*")#the lib prefix is used
+      set(library_path ${dir_prefix}/${library_path})
+    else()#no library prefix, adding the lib prefix automatically
+      set(library_path ${dir_prefix}/lib${library_path})
+    endif()
+    #applying the suffix (for debug libraries, e.g. "_d")
+    set(library_path ${library_path}${suffix})
+    shared_Library_Has_Extension(HAS_EXT ${library_path} ${platform})
+    if(NOT HAS_EXT)#OK no extension defined we can apply
+      create_Shared_Lib_Extension(RES_EXT ${platform} "${soname}")#create the soname extension
+      set(library_path "${library_path}${RES_EXT}")
+    endif()
   endif()
   set(${RET_PATH} ${library_path} PARENT_SCOPE)
 endfunction(create_Shared_Lib_Path)

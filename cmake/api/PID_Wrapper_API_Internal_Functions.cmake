@@ -2971,7 +2971,6 @@ function(set_Build_Info_For_Dependency prefix dep_package component)
 												RES_INCS RES_LIB_DIRS RES_DEFS RES_OPTS
 												RES_STD_C RES_STD_MAX_C RES_STD_CXX RES_STD_MAX_CXX
 												RES_LINKS RES_SHARED_LINKS RES_RESOURCES)
-		message("${dep_package} ${dep_component} agregate: ${RES_INCS}")
 		list(APPEND runtime_links ${RES_SHARED_LINKS})
 		list(APPEND links ${RES_LINKS})
 		list(APPEND includes ${RES_INCS})
