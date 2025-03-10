@@ -58,3 +58,10 @@ cmake_policy(SET CMP0058 NEW) #avoid ninja to warn about Policy CMP0058 if not s
 cmake_policy(SET CMP0064 NEW) #interpret TEST keyword in a if() command
 cmake_policy(SET CMP0087 NEW) #allow the use of generator expressions in install CODE|SCRIPT
 cmake_policy(SET CMP0091 NEW) #allow usage CMAKE_MSVC_RUNTIME_LIBRARY
+if(POLICY CMP0148)
+  cmake_policy(SET CMP0148 OLD) #keep using the old Python find scripts
+  #this could be changed in future version of PID when minimum version will be updated to min 3.27
+endif()
+if(POLICY CMP0146)
+  cmake_policy(SET CMP0146 OLD) #keep using the old FindCUDA script
+endif()
