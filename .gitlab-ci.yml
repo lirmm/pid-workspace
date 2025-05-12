@@ -65,11 +65,6 @@ stages:
     - pid
     - raspbian
 
-.selection_ubuntu16: &selection_ubuntu16
-  tags:
-    - pid
-    - x86_64_linux_stdc++11__ub16_gcc7__
-
 .selection_ubuntu18: &selection_ubuntu18
   tags:
     - pid
@@ -116,18 +111,6 @@ stages:
     - x86_64_windows_msvc
 
 ############ jobs description #############
-
-ubuntu16 external_use:
-  <<: *external_use
-  <<: *selection_ubuntu16
-
-ubuntu16 deploy:
-  <<: *deploy
-  <<: *selection_ubuntu16
-
-ubuntu16 create_and_build:
-  <<: *create_and_build
-  <<: *selection_ubuntu16
 
 ubuntu18 external_use:
   <<: *external_use_ros
