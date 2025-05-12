@@ -50,7 +50,7 @@ cmake_policy(SET CMP0009 NEW) #do not follow symlinks by default in file(GLOB RE
 cmake_policy(SET CMP0026 NEW) #avoid using the LOCATION property
 cmake_policy(SET CMP0037 NEW) #do not allow to redefine standard target such as clean or install
 cmake_policy(SET CMP0045 NEW) #allow to test if a target exist without a warning on a get_target_property
-cmake_policy(SET CMP0048 OLD) #allow to use a custom versionning system
+cmake_policy(SET CMP0048 NEW) #!!!!!!! allow to use a custom versionning system
 cmake_policy(SET CMP0053 NEW) #Simplify variable reference and escape sequence evaluation
 cmake_policy(SET CMP0054 NEW) #only KEYWORDS (without "") are considered as KEYWORDS in if() commands
 cmake_policy(SET CMP0057 NEW) #allow for if(... IN_LIST ...)  commands
