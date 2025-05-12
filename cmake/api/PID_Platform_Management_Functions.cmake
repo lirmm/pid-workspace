@@ -2536,6 +2536,7 @@ function(check_Package_Platform_Against_Current CHECK_OK package platform versio
   	set(LANGS_TO_CHECK ${${package}_LANGUAGE_CONFIGURATIONS})
     list(REMOVE_DUPLICATES LANGS_TO_CHECK)
   endif()
+  convert_Configuration_Expressions(${package}) #deal with configuration expressions formats
   foreach(lang IN LISTS LANGS_TO_CHECK) #if no specific check for configuration so simply reply TRUE
     is_Allowed_Language_Configuration(ALLOWED ${lang} ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS)
     if(NOT ALLOWED)

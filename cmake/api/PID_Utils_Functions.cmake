@@ -94,6 +94,11 @@ function(prepare_Configuration_Expression_Arguments config arguments possible_co
   set(all_args_set)
   set(argument_couples ${${arguments}})
   while(argument_couples)
+    list(LENGTH argument_couples SIZE_ARGS)
+    if(SIZE_ARGS LESS 2)#not an even number -> not a valid argument list
+      message(WARNING "[PID] DEBUG: Invalid argument list format for configuration ${config}: ${${arguments}}")
+      return()
+    endif()
     list(GET argument_couples 0 name)
     list(GET argument_couples 1 value)
     list(REMOVE_AT argument_couples 0 1)#update the list of arguments in parent scope
