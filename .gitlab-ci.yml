@@ -30,6 +30,14 @@ stages:
     - pid deploy package=opencv version=4.0.1
   interruptible: true
 
+.deploy_arch_: &deploy_arch
+  stage: deploy
+  script:
+    - pid deploy package=mytestpackage
+    - pid deploy package=open-phri version=1.0.4 release_only=false
+    - pid deploy package=opencv version=4.5.4
+  interruptible: true
+
 .external_use_: &external_use
   stage: external_use
   script:
@@ -149,7 +157,7 @@ archlinux external_use:
   <<: *selection_archlinux
 
 archlinux deploy:
-  <<: *deploy
+  <<: *deploy_arch
   <<: *selection_archlinux
 
 archlinux create_and_build:
