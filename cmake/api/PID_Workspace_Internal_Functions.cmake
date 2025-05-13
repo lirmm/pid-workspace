@@ -16,6 +16,10 @@
 #       You can find the complete license description on the official website           #
 #       of the CeCILL licenses family (http://www.cecill.info/index.en.html)            #
 #########################################################################################
+if(PID_WORKSPACE_INTERNAL_FUNCTIONS_INCLUDED)
+  return()
+endif()
+set(PID_WORKSPACE_INTERNAL_FUNCTIONS_INCLUDED TRUE)
 
 cmake_minimum_required(VERSION 3.19.8)
 
