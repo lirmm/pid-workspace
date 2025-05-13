@@ -35,7 +35,7 @@ stages:
   script:
     - pid deploy package=mytestpackage
     - pid deploy package=open-phri version=1.0.4 release_only=false
-    - pid deploy package=opencv version=4.5.4
+    # - pid deploy package=opencv version=4.5.4
   interruptible: true
 
 .external_use_: &external_use
