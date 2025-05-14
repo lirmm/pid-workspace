@@ -2903,8 +2903,11 @@ endfunction(check_Old_Binary_Config_Args)
 #    Convert the imported package description so that its arguments are correct
 #
 #      :package: The package for which a description has been imported
+#      :mode: mode fo rwhich the variables must be converted
 #
-function(convert_Configuration_Expressions package)
+function(convert_Configuration_Expressions package mode)
+
+get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 
 foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
   check_Old_Binary_Config_Args(OLD ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX})
@@ -2964,7 +2967,7 @@ if(res STREQUAL NOTFOUND)#file not found
 endif()
 
 # conversion of configuration expressions
-convert_Configuration_Expressions(${package})
+convert_Configuration_Expressions(${package} ${mode})
 
 # 1) checking global ABI compatibility
 is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${package} ${mode})

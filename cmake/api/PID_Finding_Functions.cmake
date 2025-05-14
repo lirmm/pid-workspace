@@ -788,7 +788,7 @@ endif()
 
 # NOTE: this is a trick to avoid any problem with old binary packages that have
 # a non consistent representation of configuration expression arguments
-convert_Configuration_Expressions(${package})
+convert_Configuration_Expressions(${package} ${CMAKE_BUILD_TYPE})
 
 foreach(a_component IN LISTS ${package}_COMPONENTS)
   set(${package}_${a_component}_FOUND TRUE CACHE INTERNAL "")
@@ -838,7 +838,7 @@ endif()
 
 # NOTE: this is a trick to avoid any problem with old binary packages that have
 # a non consistent representation of configuration expression arguments
-convert_Configuration_Expressions(${package})
+convert_Configuration_Expressions(${package} ${CMAKE_BUILD_TYPE})
 
 #checking that all requested components trully exist for this version
 foreach(requested_component IN LISTS list_of_components)
