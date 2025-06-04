@@ -1832,7 +1832,7 @@ function(platform_Configuration_Arguments_Already_Checked RES_INDEX config path_
   endif()
   list(LENGTH ${config}_arguments size_args_curr)
   file (STRINGS ${eval_input_file} PREVIOUS_CALLS)
-  foreach(call IN LISTS PREVIOUS_CALLS)#creae the variablkes locally
+  foreach(call IN LISTS PREVIOUS_CALLS)#create the variables locally
     if(call MATCHES "^([0-9]+) >>> (.*)$")
       #1) get all constraints arguments passed to the previous evaluation
       set(curr_idx ${CMAKE_MATCH_1})
@@ -1897,6 +1897,66 @@ function(platform_Configuration_Arguments_Already_Checked RES_INDEX config path_
     endif()
   endforeach()
 endfunction(platform_Configuration_Arguments_Already_Checked)
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_Updated_System_Configuration| replace:: ``check_Updated_System_Configuration``
+#  .. _check_Updated_System_Configuration:
+#
+#  check_Updated_System_Configuration
+#  ------------------------------------------------------
+#
+#   .. command:: check_Updated_System_Configuration(UPDATED config path_to_config output_vars_result_index)
+#
+#    Check whether the system configuration has been updated since last check.
+#
+#     :config: name of the system configuration.
+#     :path_to_config: path to the configuration check script installed in workspace.
+#     :output_vars_result_index: index of the file containing he ouptu variable for the configruation.
+#     :UPDATED: output variable that is TRUE if system configuration has been updated since last check, FALSE otherwise.
+#
+function(check_Updated_System_Configuration UPDATED config path_to_config output_vars_result_index)
+set(${UPDATED} FALSE PARENT_SCOPE)
+set(eval_result_file ${path_to_config}/build/output_vars_${output_vars_result_index}.cmake)
+include(${eval_result_file})#may set ${config}_CONFIG_FOUND to TRUE AND load returned variables
+set(vars_to_check)
+if(DEFINED ${config}_RPATH_RETURNED_VARIABLE)
+  list(APPEND vars_to_check ${${config}_RPATH_RETURNED_VARIABLE})
+endif()
+if(DEFINED ${config}_LIBRARIES_RETURNED_VARIABLE)
+  list(APPEND vars_to_check ${${config}_LIBRARIES_RETURNED_VARIABLE})
+endif()
+if(vars_to_check)#there are variables defining libraries whose date can be check
+  list(REMOVE_DUPLICATES vars_to_check)
+  set(file_list)
+  foreach(var IN LISTS vars_to_check)
+    list(APPEND file_list ${${var}})
+  endforeach()
+  if(NOT file_list)
+    return()
+  endif()
+  list(REMOVE_DUPLICATES file_list)
+  file(TIMESTAMP ${eval_result_file} REF_TIME "%s" UTC)
+  foreach(a_file IN LISTS file_list)
+    if(NOT EXISTS ${a_file})#file has been deleted (most probably because system package has been removed)
+      set(${UPDATED} TRUE PARENT_SCOPE)#considered as updated
+      return()
+    elseif(${a_file} IS_NEWER_THAN ${eval_result_file})#not sure file1 is strictly newer they can be of same date
+      file(TIMESTAMP ${a_file} SYSTEM_FILE_TIME "%s" UTC)
+      #they can have same date => check is striclty greater
+      if(SYSTEM_FILE_TIME GREATER REF_TIME)
+        set(${UPDATED} TRUE PARENT_SCOPE)
+        return()
+      endif()
+    endif()
+  endforeach()
+endif()
+endfunction(check_Updated_System_Configuration)
+
 
 #.rst:
 #
@@ -2074,8 +2134,15 @@ macro(evaluate_Platform_Configuration config path_to_config force_reeval)
       # if this is true no need to continue
       platform_Configuration_Arguments_Already_Checked(INDEX_MATCHING_ARGS ${config} ${path_to_config})
       if(DEFINED INDEX_MATCHING_ARGS)
-        set(need_reevaluate FALSE)
         set(result_index ${INDEX_MATCHING_ARGS})
+        # at this stage we do not need to reevaluate
+        # ONLY reason to reevaluate would be a change in the installed stuff
+        check_Updated_System_Configuration(UPDATED ${config} ${path_to_config} ${result_index})
+        if(UPDATED)#on libraries update => reevaluation takes place
+          reset_Already_Checked_Platform_Configuration_Arguments(${path_to_config})
+        else()
+          set(need_reevaluate FALSE)
+        endif()
       endif()
     endif()
   endif()
