@@ -4586,12 +4586,16 @@ set(list_of_bad_deps)
 #check that the files describing the dependencies are existing
 if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/share/Dep${package}.cmake
 OR NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/share/Dep${package}.cmake)
-  #simply reconfigure to get the dependencies
-  reconfigure_Package_Build(${package})
-  if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/share/Dep${package}.cmake
-    OR NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/share/Dep${package}.cmake)
-    message("[PID] WARNING : no dependency description found in package ${package}: cannot check version of its dependencies. The configuration of this package should fail at some point.")
-    return()
+  if(EXISTS ${WORKSPACE_DIR}/packages/${package})# the package is not binary only
+    #simply reconfigure to get the dependencies
+    reconfigure_Package_Build(${package})
+    if(NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/release/share/Dep${package}.cmake
+      OR NOT EXISTS ${WORKSPACE_DIR}/packages/${package}/build/debug/share/Dep${package}.cmake)  
+        message("[PID] WARNING : no dependency description found in package ${package}: cannot check version of its dependencies. The configuration of this package should fail at some point.")
+      return()
+    endif()
+  else()
+    return() #immediately exit without warning because nothing will be found in package source
   endif()
 endif()
 # loading variables describing dependencies
