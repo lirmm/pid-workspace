@@ -1943,8 +1943,10 @@ if(vars_to_check)#there are variables defining libraries whose date can be check
   file(TIMESTAMP ${eval_result_file} REF_TIME "%s" UTC)
   foreach(a_file IN LISTS file_list)
     if(NOT EXISTS ${a_file})#file has been deleted (most probably because system package has been removed)
-      set(${UPDATED} TRUE PARENT_SCOPE)#considered as updated
-      return()
+      if(IS_ABSOLUTE ${a_file}) #ensure it is not a pure system library name
+        set(${UPDATED} TRUE PARENT_SCOPE)#considered as updated
+        return()
+      endif()
     elseif(${a_file} IS_NEWER_THAN ${eval_result_file})#not sure file1 is strictly newer they can be of same date
       file(TIMESTAMP ${a_file} SYSTEM_FILE_TIME "%s" UTC)
       #they can have same date => check is striclty greater
