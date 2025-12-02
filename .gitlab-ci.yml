@@ -73,11 +73,6 @@ stages:
     - pid
     - raspbian
 
-.selection_ubuntu18: &selection_ubuntu18
-  tags:
-    - pid
-    - x86_64_linux_stdc++11__ub18_gcc9__
-
 .selection_ubuntu20: &selection_ubuntu20
   tags:
     - pid
@@ -119,18 +114,6 @@ stages:
     - x86_64_windows_msvc
 
 ############ jobs description #############
-
-ubuntu18 external_use:
-  <<: *external_use_ros
-  <<: *selection_ubuntu18
-
-ubuntu18 deploy:
-  <<: *deploy
-  <<: *selection_ubuntu18
-
-ubuntu18 create_and_build:
-  <<: *create_and_build
-  <<: *selection_ubuntu18
 
 ubuntu20 deploy:
   <<: *deploy
