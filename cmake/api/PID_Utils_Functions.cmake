@@ -1273,7 +1273,9 @@ function(install_Runtime_Symlink path_to_target path_to_rpath_folder rpath_sub_f
                     set(WORKSPACE_DIR ${WORKSPACE_DIR} CACHE INTERNAL \"\")
                     list(APPEND CMAKE_MODULE_PATH ${WORKSPACE_DIR}/cmake/api)
                     include(PID_Utils_Functions NO_POLICY_SCOPE)
-                    message(\"-- Installing: ${CMAKE_INSTALL_PREFIX}/${FULL_RPATH_DIR}/${A_FILE}\")
+                    if(${CMAKE_INSTALL_MESSAGE} STREQUAL \"ALWAYS\")
+                        message(\"-- Installing: ${CMAKE_INSTALL_PREFIX}/${FULL_RPATH_DIR}/${A_FILE}\")
+                    endif()
                     create_Symlink(${path_to_target} ${FULL_RPATH_DIR}/${A_FILE} WORKING_DIR ${CMAKE_INSTALL_PREFIX})
 	")# creating links "on the fly" when installing
 endfunction(install_Runtime_Symlink)

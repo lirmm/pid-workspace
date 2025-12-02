@@ -616,6 +616,12 @@ if(CHECK_GIT_REMOTES)
 	check_For_Branches("${ADDITIONAL_DEBUG_INFO}")
 endif()
 
+if(ADDITIONAL_DEBUG_INFO)
+  set(CMAKE_INSTALL_MESSAGE ALWAYS)
+else()
+  set(CMAKE_INSTALL_MESSAGE NEVER)
+endif()
+
 begin_Progress(${PROJECT_NAME} GLOBAL_PROGRESS_VAR) #managing the build from a global point of view
 
 endmacro(declare_Package)
