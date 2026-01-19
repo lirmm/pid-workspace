@@ -1555,18 +1555,47 @@ endfunction(parse_Package_Dependency_Version_Arguments)
 #     :all_versions: parent_scope variable containing the list of all versions.
 #     :from_version: lower bound of the version interval.
 #     :to_version: upper bound of the version interval.
+#     :package_type: string "NATIVE" or "EXTERNAL", to differenciate versions resolution
 #
 #     :IN_VERSIONS: the output variable containing the list of versions in the interval from...to.
 #
-function(get_Versions_In_Interval IN_VERSIONS all_versions from_version to_version)
+function(get_Versions_In_Interval IN_VERSIONS all_versions from_version to_version package_type)
 set(temp_list ${${all_versions}})
 set(result_list)
-  foreach(element IN LISTS temp_list)
+if(package_type STREQUAL "NATIVE")
+    # do not take into account the patch number because all patch are compatible
+    #so for TO constraint even greater patch numbers are valid 
+    get_Version_String_Numbers("${to_version}" MAJOR MINOR PATCH)
+    if(MINOR OR ${MINOR} EQUAL 0)
+      set(to_version ${MAJOR}.${MINOR})
+    else()
+      set(to_version ${MAJOR}.0)
+    endif()
+endif()
+
+foreach(element IN LISTS temp_list)
+  if(package_type STREQUAL "NATIVE")
+    set(to_test ${element})
+    # do not take into account the patch number because all patch are compatible
+   
+    if(element VERSION_GREATER_EQUAL from_version)
+      get_Version_String_Numbers("${element}" MAJOR MINOR PATCH)
+      if(MINOR OR ${MINOR} EQUAL 0)
+        set(to_test ${MAJOR}.${MINOR})
+      else()
+        set(to_test ${MAJOR}.0)
+      endif()
+      if(to_test VERSION_LESS_EQUAL to_version)
+        list(APPEND result_list ${element})
+      endif()
+    endif()
+  else()
     if(element VERSION_GREATER_EQUAL from_version
     AND element VERSION_LESS_EQUAL to_version)
       list(APPEND result_list ${element})
     endif()
-  endforeach()
+  endif()
+endforeach()
 set(${IN_VERSIONS} ${result_list} PARENT_SCOPE)
 endfunction(get_Versions_In_Interval)
 
@@ -1593,7 +1622,6 @@ endfunction(get_Versions_In_Interval)
 function(collect_Versions_From_Constraints INTERVAL_VERSIONS package from_version to_version)
 get_Package_Type(${package} PACK_TYPE)
 set(${INTERVAL_VERSIONS} PARENT_SCOPE)
-
 #get the official known version (those published)
 if(NOT DEFINED ${package}_PID_KNOWN_VERSION)
   set(DO_NOT_FIND_${package} TRUE)
@@ -1601,7 +1629,6 @@ if(NOT DEFINED ${package}_PID_KNOWN_VERSION)
   unset(DO_NOT_FIND_${package})
 endif()
 set(ALL_VERSIONS ${${package}_PID_KNOWN_VERSION})
-
 if(ALL_VERSIONS)
   list(REMOVE_DUPLICATES ALL_VERSIONS)
   #some corrective actions before calling functions to get version in interval
@@ -1611,7 +1638,7 @@ if(ALL_VERSIONS)
   if(NOT to_version)
     set(to_version 99999.99999.99999)
   endif()
-  get_Versions_In_Interval(IN_VERSIONS ALL_VERSIONS ${from_version} ${to_version})
+  get_Versions_In_Interval(IN_VERSIONS ALL_VERSIONS ${from_version} ${to_version} ${PACK_TYPE})
   set(${INTERVAL_VERSIONS} ${IN_VERSIONS} PARENT_SCOPE)
 endif()
 endfunction(collect_Versions_From_Constraints)
