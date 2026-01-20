@@ -84,21 +84,41 @@ if(PID_CROSSCOMPILATION)
     set(GCOV_EXECUTABLE ${PID_USE_CXX_COVERAGE} CACHE INTERNAL "" FORCE)
   endif()
 else()
-  find_program( GCOV_PATH gcov ) # for generating coverage traces
-  if(GCOV_PATH)
-    set(GCOV_EXECUTABLE ${GCOV_PATH} CACHE INTERNAL "" FORCE)
-  endif()
-  unset(GCOV_PATH CACHE)
+  # CHECK VALID COMPILER
+	if("${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
+		if("${CMAKE_CXX_COMPILER_VERSION}" VERSION_GREATER_EQUAL 3)
+      # Clang version must be 3.0.0 or greater to generate coverage reports
+      find_program(LLVMCOV_PATH llvm-cov) # for generating coverage traces
+       if(LLVMCOV_PATH)
+        set(GCOV_EXECUTABLE ${LLVMCOV_PATH} CACHE INTERNAL "" FORCE)
+      endif()
+      unset(LLVMCOV_PATH CACHE)
+		endif()
+	elseif(CMAKE_COMPILER_IS_GNUCXX)
+    find_program( GCOV_PATH gcov ) # for generating coverage traces
+    if(GCOV_PATH)
+      set(GCOV_EXECUTABLE ${GCOV_PATH} CACHE INTERNAL "" FORCE)
+    endif()
+    unset(GCOV_PATH CACHE)
+	endif()
 endif()
+
 if(GCOV_EXECUTABLE)
-  find_program( LCOV_PATH lcov ) # for generating HTML coverage reports
-  find_program( GENHTML_PATH genhtml ) #for generating HTML
-  if(LCOV_PATH AND GENHTML_PATH)
-    set(LCOV_EXECUTABLE ${LCOV_PATH} CACHE INTERNAL "" FORCE)
-    set(GENHTML_EXECUTABLE ${GENHTML_PATH} CACHE INTERNAL "" FORCE)
+  if("${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
+      if("${CMAKE_CXX_COMPILER_VERSION}" VERSION_GREATER_EQUAL 3)
+        set(LCOV_EXECUTABLE ${GCOV_EXECUTABLE} CACHE INTERNAL "" FORCE)
+        set(GENHTML_EXECUTABLE ${GCOV_EXECUTABLE} CACHE INTERNAL "" FORCE)
+      endif()
+  elseif(CMAKE_COMPILER_IS_GNUCXX)
+    find_program( LCOV_PATH lcov ) # for generating HTML coverage reports
+    find_program( GENHTML_PATH genhtml ) #for generating HTML
+    if(LCOV_PATH AND GENHTML_PATH)
+      set(LCOV_EXECUTABLE ${LCOV_PATH} CACHE INTERNAL "" FORCE)
+      set(GENHTML_EXECUTABLE ${GENHTML_PATH} CACHE INTERNAL "" FORCE)
+    endif()
+    unset(LCOV_PATH CACHE)
+    unset(GENHTML_PATH CACHE)
   endif()
-  unset(LCOV_PATH CACHE)
-  unset(GENHTML_PATH CACHE)
 endif()
 
 ####### searching for cppcheck (static checks tool) #######

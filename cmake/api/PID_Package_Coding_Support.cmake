@@ -49,15 +49,15 @@ if(CMAKE_BUILD_TYPE MATCHES Debug) # coverage is well generated in debug mode on
 	endif()
 
 	if(NOT GCOV_EXECUTABLE)
-		message("[PID] WARNING : gcov not found please install it to generate coverage reports.")
+		message("[PID] WARNING : gcov or equivmlent not found please install it to generate coverage reports.")
 	endif()
 
 	if(NOT LCOV_EXECUTABLE)
-		message("[PID] WARNING : lcov not found please install it to generate coverage reports.")
+		message("[PID] WARNING : lcov or equivalent not found please install it to generate coverage reports.")
 	endif()
 
 	if(NOT GENHTML_EXECUTABLE)
-		message("[PID] WARNING : genhtml not found please install it to generate coverage reports.")
+		message("[PID] WARNING : genhtml or equivalent not found please install it to generate coverage reports.")
 	endif()
 
 	if(NOT GCOV_EXECUTABLE OR NOT LCOV_EXECUTABLE OR NOT GENHTML_EXECUTABLE)
@@ -78,32 +78,42 @@ if(CMAKE_BUILD_TYPE MATCHES Debug) # coverage is well generated in debug mode on
 endif()
 
 if(BUILD_COVERAGE_REPORT AND PROJECT_RUN_TESTS)
-
-	set(CMAKE_CXX_FLAGS_DEBUG  "-g -O0 --coverage -fprofile-arcs -ftest-coverage" CACHE STRING "Flags used by the C++ compiler during coverage builds." FORCE)
-	set(CMAKE_C_FLAGS_DEBUG  "-g -O0 --coverage -fprofile-arcs -ftest-coverage" CACHE STRING "Flags used by the C compiler during coverage builds." FORCE)
-	set(CMAKE_EXE_LINKER_FLAGS_DEBUG "--coverage" CACHE STRING "Flags used for linking binaries during coverage builds." FORCE)
-	set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "--coverage" CACHE STRING "Flags used by the shared libraries linker during coverage builds."  FORCE)
+	
+	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	  # Flags spécifiques à Clang pour la couverture
+	  set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fprofile-instr-generate -fcoverage-mapping" CACHE STRING "Flags used by the C++ compiler during coverage builds." FORCE)
+	  set(CMAKE_C_FLAGS_DEBUG "-g -O0 -fprofile-instr-generate -fcoverage-mapping" CACHE STRING "Flags used by the C compiler during coverage builds." FORCE)
+	  set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fprofile-instr-generate" CACHE STRING "Flags used for linking binaries during coverage builds." FORCE)
+	  set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "-fprofile-instr-generate" CACHE STRING "Flags used by the shared libraries linker during coverage builds." FORCE)
+	else()
+	  # Flags pour GCC (si jamais tu reviens à GCC)
+	  set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fprofile-arcs -ftest-coverage" CACHE STRING "Flags used by the C++ compiler during coverage builds." FORCE)
+	  set(CMAKE_C_FLAGS_DEBUG "-g -O0 -fprofile-arcs -ftest-coverage" CACHE STRING "Flags used by the C compiler during coverage builds." FORCE)
+	  set(CMAKE_EXE_LINKER_FLAGS_DEBUG "--coverage" CACHE STRING "Flags used for linking binaries during coverage builds." FORCE)
+	  set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "--coverage" CACHE STRING "Flags used by the shared libraries linker during coverage builds." FORCE)
+	endif()
 	mark_as_advanced(CMAKE_CXX_FLAGS_DEBUG CMAKE_C_FLAGS_DEBUG CMAKE_EXE_LINKER_FLAGS_DEBUG CMAKE_SHARED_LINKER_FLAGS_DEBUG)
 
 	if(CMAKE_BUILD_TYPE MATCHES Debug)
 
 		set(coverage_dir "${CMAKE_BINARY_DIR}/share/coverage_report")
 
-    message("[PID] INFO : Allowing coverage checks ...")
-    # Setup coverage target
+		message("[PID] INFO : Allowing coverage checks ...")
+		# Setup coverage target
 		add_custom_target(coverage
-        COMMAND ${CMAKE_COMMAND}
-        -DWORKSPACE_DIR=${WORKSPACE_DIR}
-			  -DPROJECT_NAME=${PROJECT_NAME}
-        -DTARGET_SOURCE_DIR=${CMAKE_SOURCE_DIR}
-        -DTARGET_BINARY_DIR=${CMAKE_BINARY_DIR}
-        -DLCOV_EXECUTABLE=${LCOV_EXECUTABLE}
-        -DGENHTML_EXECUTABLE=${GENHTML_EXECUTABLE}
-        -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-        -DPARALLEL_JOBS_FLAG=${PARALLEL_JOBS_FLAG}
-        -P ${WORKSPACE_DIR}/cmake/commands/Generate_PID_Coverage.cmake
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-			COMMENT "Generating code coverage report."
+			COMMAND ${CMAKE_COMMAND}
+			-DWORKSPACE_DIR=${WORKSPACE_DIR}
+			-DPROJECT_NAME=${PROJECT_NAME}
+			-DTARGET_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+			-DTARGET_BINARY_DIR=${CMAKE_BINARY_DIR}
+			-DGCOV_EXECUTABLE=${GCOV_EXECUTABLE}
+			-DLCOV_EXECUTABLE=${LCOV_EXECUTABLE}
+			-DGENHTML_EXECUTABLE=${GENHTML_EXECUTABLE}
+			-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+			-DPARALLEL_JOBS_FLAG=${PARALLEL_JOBS_FLAG}
+			-P ${WORKSPACE_DIR}/cmake/commands/Generate_PID_Coverage.cmake
+				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+				COMMENT "Generating code coverage report."
 		)
 		### installing coverage report ###
 		install(DIRECTORY ${coverage_dir} DESTINATION ${${PROJECT_NAME}_INSTALL_SHARE_PATH})
@@ -115,12 +125,12 @@ else() #no coverage wanted or possible (no test defined), create a do nothing ru
 			COMMAND ${CMAKE_COMMAND} -E echo "[PID] WARNING : no coverage to perform !!"
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 		)
-    #reset compilation flags to default value
-    set(CMAKE_CXX_FLAGS_DEBUG  "-g" CACHE STRING "Flags used by the C++ compiler during coverage builds." FORCE)
-    set(CMAKE_C_FLAGS_DEBUG  "-g" CACHE STRING "Flags used by the C compiler during coverage builds." FORCE)
-    set(CMAKE_EXE_LINKER_FLAGS_DEBUG "" CACHE STRING "Flags used for linking binaries during coverage builds." FORCE)
-    set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "" CACHE STRING "Flags used by the shared libraries linker during coverage builds."  FORCE)
-    mark_as_advanced(CMAKE_CXX_FLAGS_DEBUG CMAKE_C_FLAGS_DEBUG CMAKE_EXE_LINKER_FLAGS_DEBUG CMAKE_SHARED_LINKER_FLAGS_DEBUG)
+		#reset compilation flags to default value
+		set(CMAKE_CXX_FLAGS_DEBUG  "-g" CACHE STRING "Flags used by the C++ compiler during coverage builds." FORCE)
+		set(CMAKE_C_FLAGS_DEBUG  "-g" CACHE STRING "Flags used by the C compiler during coverage builds." FORCE)
+		set(CMAKE_EXE_LINKER_FLAGS_DEBUG "" CACHE STRING "Flags used for linking binaries during coverage builds." FORCE)
+		set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "" CACHE STRING "Flags used by the shared libraries linker during coverage builds."  FORCE)
+		mark_as_advanced(CMAKE_CXX_FLAGS_DEBUG CMAKE_C_FLAGS_DEBUG CMAKE_EXE_LINKER_FLAGS_DEBUG CMAKE_SHARED_LINKER_FLAGS_DEBUG)
 	endif()
 endif()
 endfunction(generate_Coverage)
