@@ -80,32 +80,58 @@ if(gcov_name STREQUAL "llvm-cov")
 
 elseif(gcov_name STREQUAL "gcov")
 
-  set(coverage_info "${TARGET_BINARY_DIR}/lcovoutput.info")
-  set(coverage_cleaned "${TARGET_BINARY_DIR}/${PROJECT_NAME}_coverage")
+  if(LCOV_EXECUTABLE MATCHES "lcov")
 
-  execute_process(
-    COMMAND ${LCOV_EXECUTABLE} --base-directory ${TARGET_SOURCE_DIR} --directory ${TARGET_BINARY_DIR} --zerocounters #prepare coverage generation
-    WORKING_DIRECTORY ${TARGET_BINARY_DIR}
-  )
-  execute_process(
-    COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG} # Run tests
-    WORKING_DIRECTORY ${TARGET_BINARY_DIR}
-  )
-  execute_process(
-    COMMAND ${LCOV_EXECUTABLE} --base-directory ${TARGET_SOURCE_DIR} --directory ${TARGET_BINARY_DIR} --capture --output-file ${coverage_info} --no-external
-    WORKING_DIRECTORY ${TARGET_BINARY_DIR}
-  )
-  execute_process(
-    #configure the filter of output (remove everything that is not related to the libraries)
-    COMMAND ${LCOV_EXECUTABLE} --remove ${coverage_info} "/usr/*" "${WORKSPACE_DIR}/install/*" "${TARGET_SOURCE_DIR}/test/*" --output-file ${coverage_cleaned}
-    WORKING_DIRECTORY ${TARGET_BINARY_DIR}
-  )
-  execute_process(
-    COMMAND ${GENHTML_EXECUTABLE} -o ${coverage_dir} ${coverage_cleaned} #generating output
-    WORKING_DIRECTORY ${TARGET_BINARY_DIR}
-  )
+    set(coverage_info "${TARGET_BINARY_DIR}/lcovoutput.info")
+    set(coverage_cleaned "${TARGET_BINARY_DIR}/${PROJECT_NAME}_coverage")
 
-  file(REMOVE ${coverage_info} ${coverage_cleaned})
+    execute_process(
+      COMMAND ${LCOV_EXECUTABLE} --base-directory ${TARGET_SOURCE_DIR} --directory ${TARGET_BINARY_DIR} --zerocounters #prepare coverage generation
+      WORKING_DIRECTORY ${TARGET_BINARY_DIR}
+    )
+    execute_process(
+      COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG} # Run tests
+      WORKING_DIRECTORY ${TARGET_BINARY_DIR}
+    )
+    execute_process(
+      COMMAND ${LCOV_EXECUTABLE} --base-directory ${TARGET_SOURCE_DIR} --directory ${TARGET_BINARY_DIR} --capture --output-file ${coverage_info} --no-external
+      WORKING_DIRECTORY ${TARGET_BINARY_DIR}
+    )
+    execute_process(
+      #configure the filter of output (remove everything that is not related to the libraries)
+      COMMAND ${LCOV_EXECUTABLE} --remove ${coverage_info} "/usr/*" "${WORKSPACE_DIR}/install/*" "${TARGET_SOURCE_DIR}/test/*" --output-file ${coverage_cleaned}
+      WORKING_DIRECTORY ${TARGET_BINARY_DIR}
+    )
+    execute_process(
+      COMMAND ${GENHTML_EXECUTABLE} -o ${coverage_dir} ${coverage_cleaned} #generating output
+      WORKING_DIRECTORY ${TARGET_BINARY_DIR}
+    )
+
+    file(REMOVE ${coverage_info} ${coverage_cleaned})
+
+  elseif(LCOV_EXECUTABLE MATCHES "gcovr")
+    execute_process(
+      COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${CMAKE_MAKE_PROGRAM} test ${PARALLEL_JOBS_FLAG} # Run tests
+      WORKING_DIRECTORY ${TARGET_BINARY_DIR}
+    )
+
+    if(NOT EXISTS ${coverage_dir})
+      file(MAKE_DIRECTORY ${coverage_dir})
+    endif()
+    
+    execute_process(
+      COMMAND ${LCOV_EXECUTABLE}
+        -r ${TARGET_SOURCE_DIR}
+        --html
+        --html-details
+        --output ${coverage_dir}/index.html
+        --exclude="${TARGET_SOURCE_DIR}/test/.*"
+        --exclude="${WORKSPACE_DIR}/install/.*"
+        --exclude="/usr/.*"
+      WORKING_DIRECTORY ${TARGET_BINARY_DIR}
+    )
+
+  endif()
 
 endif()
 
