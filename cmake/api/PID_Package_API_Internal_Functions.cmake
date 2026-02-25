@@ -2186,6 +2186,24 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 	endif()
 endfunction(declare_Native_Package_Dependency)
 
+function(select_only_buildable dep_package possible_versions)
+load_And_Configure_Wrapper(LOADED ${dep_package} "${BUILD_RELEASE_ONLY}")
+if(NOT LOADED)
+	return()
+endif()
+get_Wrapper_Buildable_Versions(ALL_VERSIONS ${dep_package})
+set(final_list)
+if(ALL_VERSIONS)
+	foreach(version IN LISTS ${possible_versions})
+		list(FIND ALL_VERSIONS ${version} INDEX)
+		if(NOT INDEX EQUAL -1)
+			list(APPEND final_list ${version})	
+		endif()
+	endforeach()
+endif()
+set(${possible_versions} ${final_list} PARENT_SCOPE)
+endfunction(select_only_buildable)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -2214,6 +2232,7 @@ set_Dependency_Complete_Description(${dep_package} TRUE list_of_possible_version
 if(NOT list_of_possible_versions) # no version constraint specified
 	set(message_str "Input version of dependency ${dep_package} or use ANY.")
 else()#there are version specified
+	select_only_buildable(${dep_package} list_of_possible_versions)
 	fill_String_From_List(available_versions list_of_possible_versions ", ") #get available version as a string (used to print them)
 	set(message_str "Input version of dependency ${dep_package} among: ${available_versions}.")
 	list(LENGTH list_of_possible_versions SIZE)
