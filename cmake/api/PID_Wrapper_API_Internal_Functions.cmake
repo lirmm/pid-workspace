@@ -738,11 +738,11 @@ if(${PROJECT_NAME}_SYSTEM_CONFIGURATION_DEFINED)
 	file(APPEND ${path_to_file} "set(${PROJECT_NAME}_CONFIGURATION_DEPENDENCIES ${${PROJECT_NAME}_CONFIGURATION_DEPENDENCIES} CACHE INTERNAL \"\")\n")
 endif()
 #writing options that can be useful to control the build process
-file(APPEND ${path_to_file} "set(ENABLE_PARALLEL_BUILD ${ENABLE_PARALLEL_BUILD} CACHE INTERNAL \"\")\n")
-file(APPEND ${path_to_file} "set(ADDITIONAL_DEBUG_INFO ${ADDITIONAL_DEBUG_INFO} CACHE INTERNAL \"\")\n")
+file(APPEND ${path_to_file} "set(${PROJECT_NAME}_ENABLE_PARALLEL_BUILD ${ENABLE_PARALLEL_BUILD} CACHE INTERNAL \"\")\n")
+file(APPEND ${path_to_file} "set(${PROJECT_NAME}_ADDITIONAL_DEBUG_INFO ${ADDITIONAL_DEBUG_INFO} CACHE INTERNAL \"\")\n")
 # NOTE: at the moment there is no real interest for BUILD_RELEASE_ONLY because it will basically build the same thing in same mode
 # so we simply deactivate this function to avoid uneccessary rebuild of wrappers 
-file(APPEND ${path_to_file} "set(BUILD_RELEASE_ONLY OFF CACHE INTERNAL \"\")\n")
+file(APPEND ${path_to_file} "set(${PROJECT_NAME}_BUILD_RELEASE_ONLY OFF CACHE INTERNAL \"\")\n")
 
 #write version about user options
 file(APPEND ${path_to_file} "set(${PROJECT_NAME}_USER_OPTIONS ${${PROJECT_NAME}_USER_OPTIONS} CACHE INTERNAL \"\")\n")

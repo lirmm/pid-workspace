@@ -871,7 +871,7 @@ macro(manage_Current_Platform build_folder type)
         message("[PID] INFO : cleaning the build folder after major environment change")
         if(type STREQUAL "NATIVE")
   				hard_Clean_Package(${PROJECT_NAME})
-  				reconfigure_Package_Build(${PROJECT_NAME})#force reconfigure before running the build
+  				reconfigure_Package_Build(${PROJECT_NAME} ${BUILD_RELEASE_ONLY})#force reconfigure before running the build
         elseif(type STREQUAL "EXTERNAL")
           hard_Clean_Wrapper(${PROJECT_NAME})
       		reconfigure_Wrapper_Build(${PROJECT_NAME})

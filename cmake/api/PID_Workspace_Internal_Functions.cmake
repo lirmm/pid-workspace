@@ -2566,7 +2566,7 @@ if(NOT branch)# if the target branch branch is not integration then check that t
 endif()
 
 # check that version of dependencies exist
-check_For_Dependencies_Version(BAD_VERSION_OF_DEPENDENCIES ${package})
+check_For_Dependencies_Version(BAD_VERSION_OF_DEPENDENCIES ${package} OFF)
 if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
 	if(manage_deps)#the call asks to release the unreleased dependencies
 		set(unreleased_dependencies)
@@ -2589,7 +2589,7 @@ if(BAD_VERSION_OF_DEPENDENCIES)#there are unreleased dependencies
 				message("- dependency ${DEP_PACKAGE} version ${DEP_VERSION}")
 			endforeach()
 		else()
-			check_For_Dependencies_Version(BAD_VERSION_OF_DEPENDENCIES ${package})
+			check_For_Dependencies_Version(BAD_VERSION_OF_DEPENDENCIES ${package} OFF)
 		endif()
 	endif()
 
@@ -2914,13 +2914,13 @@ if(PACK_TYPE STREQUAL "NATIVE")
 	if(EXISTS ${WORKSPACE_DIR}/packages/${package}/build/Package_Build_Info.cmake)
 	 include(${WORKSPACE_DIR}/packages/${package}/build/Package_Build_Info.cmake NO_POLICY_SCOPE)#loading the wrapper description
 	endif()
-	deploy_Source_Native_Package(INSTALLED ${package} "${version_dirs}" FALSE ${${package}_BUILD_RELEASE_ONLY})
+	deploy_Source_Native_Package(INSTALLED ${package} "${version_dirs}" FALSE ${${package}_BUILT_RELEASE_ONLY})
 else()
 	message("[PID] INFO : launch the update of external package ${package} from its wrapper...")
 	if(EXISTS ${WORKSPACE_DIR}/wrappers/${package}/build/Build${package}.cmake)
 		include(${WORKSPACE_DIR}/wrappers/${package}/build/Build${package}.cmake NO_POLICY_SCOPE)#loading the wrapper description
 	endif()
-	deploy_Source_External_Package(INSTALLED ${package} "${version_dirs}" ${${package}_BUILD_RELEASE_ONLY})
+	deploy_Source_External_Package(INSTALLED ${package} "${version_dirs}" ${${package}_BUILT_RELEASE_ONLY})
 endif()
 if(NOT INSTALLED)
 	message("[PID] ERROR : cannot update ${package}.")

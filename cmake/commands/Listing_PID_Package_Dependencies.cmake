@@ -18,7 +18,7 @@
 #########################################################################################
 
 ###
-function(print_Current_Dependencies nb_tabs package path_to_write)
+function(print_Current_Dependencies nb_tabs package path_to_write release_only)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
 set(begin_string "")
 set(index ${nb_tabs})
@@ -32,7 +32,7 @@ endwhile()
 
 get_Package_Type(${package} PACK_TYPE)
 if(${PACK_TYPE} STREQUAL "NATIVE")
-	check_For_Dependencies_Version(unreleased_dependencies ${package})
+	check_For_Dependencies_Version(unreleased_dependencies ${package} ${release_only})
 else()
 	set(unreleased_dependencies)
 endif()
@@ -51,7 +51,7 @@ foreach(dep IN LISTS CURRENT_NATIVE_DEPENDENCY_${package}_DEPENDENCIES${VAR_SUFF
 	else()
 		message("${begin_string}${expr_to_write}")
 	endif()
-	print_Current_Dependencies(${index_plus} ${dep} "${path_to_write}")#recursion of dependencies with management of indent
+	print_Current_Dependencies(${index_plus} ${dep} "${path_to_write}" ${release_only})#recursion of dependencies with management of indent
 endforeach()
 #external dependencies
 foreach(dep IN LISTS CURRENT_NATIVE_DEPENDENCY_${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
@@ -64,7 +64,7 @@ foreach(dep IN LISTS CURRENT_NATIVE_DEPENDENCY_${package}_EXTERNAL_DEPENDENCIES$
 	else()
 		message("${begin_string}${expr_to_write}")
 	endif()
-	print_Current_Dependencies(${index_plus} ${dep} "${path_to_write}")#recursion of dependencies with management of indent
+	print_Current_Dependencies(${index_plus} ${dep} "${path_to_write}" ${release_only})#recursion of dependencies with management of indent
 endforeach()
 #external dependencies
 foreach(dep IN LISTS CURRENT_EXTERNAL_DEPENDENCY_${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
@@ -77,7 +77,7 @@ foreach(dep IN LISTS CURRENT_EXTERNAL_DEPENDENCY_${package}_EXTERNAL_DEPENDENCIE
 	else()
 		message("${begin_string}${expr_to_write}")
 	endif()
-	print_Current_Dependencies(${index_plus} ${dep} "${path_to_write}")#recursion of dependencies with management of indent
+	print_Current_Dependencies(${index_plus} ${dep} "${path_to_write}" ${release_only})#recursion of dependencies with management of indent
 endforeach()
 endfunction(print_Current_Dependencies)
 
@@ -127,6 +127,13 @@ if(DEFINED ENV{write_file})
 	unset(ENV{write_file})
 endif()
 
+if(CMAKE_BUILD_TYPE MATCHES Release)
+	set(do_release_only TRUE)
+else()
+	set(do_release_only FALSE)
+endif()
+
+
 if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 	include(${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 	get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${CMAKE_BUILD_TYPE})
@@ -159,7 +166,7 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 		endif()
 	endif()
 
-	check_For_Dependencies_Version(unreleased_dependencies ${PROJECT_NAME})
+	check_For_Dependencies_Version(unreleased_dependencies ${PROJECT_NAME} ${do_release_only})
 	set(DO_FLAT ${FLAT_PRESENTATION})
 	if(DO_FLAT MATCHES true) # presenting as a flat list without hierarchical dependencies
 		# CURRENT_NATIVE_DEPENDENCIES and CURRENT_EXTERNAL_DEPENDENCIES are used because these variables collect all direct and undirect dependencies
@@ -169,7 +176,7 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 		set(ext_deps ${CURRENT_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
 
 		foreach(dep IN LISTS ${native_deps})
-			check_For_Dependencies_Version(dep_unreleased_dependencies ${dep})
+			check_For_Dependencies_Version(dep_unreleased_dependencies ${dep} ${do_release_only})
 			list(APPEND unreleased_dependencies ${dep_unreleased_dependencies})
 		endforeach()
 
@@ -234,10 +241,10 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 			set(expr_to_write "+ ${dep}:  ${dep_version}${unreleased_text}")
 			if(WRITE_TO_FILE STREQUAL "true" OR WRITE_TO_FILE STREQUAL "TRUE" OR WRITE_TO_FILE STREQUAL "ON")
 				file(APPEND ${file_path} "${expr_to_write}\n")
-				print_Current_Dependencies(1 ${dep} "${file_path}")
+				print_Current_Dependencies(1 ${dep} "${file_path}" ${release_only})
 			else()
 				message("${expr_to_write}")
-				print_Current_Dependencies(1 ${dep} "")
+				print_Current_Dependencies(1 ${dep} "" ${release_only})
 			endif()
 		endforeach()
 
@@ -252,10 +259,10 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 			endif()
 			if(WRITE_TO_FILE STREQUAL "true" OR WRITE_TO_FILE STREQUAL "TRUE" OR WRITE_TO_FILE STREQUAL "ON")
 				file(APPEND ${file_path} "${expr_to_write}\n")
-				print_Current_Dependencies(1 ${dep} "${file_path}")
+				print_Current_Dependencies(1 ${dep} "${file_path}" ${release_only})
 			else()
 				message("${expr_to_write}")
-				print_Current_Dependencies(1 ${dep} "")
+				print_Current_Dependencies(1 ${dep} "" ${release_only})
 			endif()
 		endforeach()
 	endif()

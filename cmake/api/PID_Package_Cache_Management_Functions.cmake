@@ -955,25 +955,46 @@ endfunction(adjust_Languages_Standard_For_Imported_Component)
 #
 #     :dep_package: the name of the package to check.
 #
-#     :IS_DEPENDENCY: the output variable that is TRUE if dep_package is a dependency of the current package, FALSE otherwise.
+#     :IS_DEPENDENCY: the output variable that is TRUE if dep_package is a direct dependency of the current package, FALSE otherwise.
 #
 function(is_Package_Dependency IS_DEPENDENCY dep_package)
 set(${IS_DEPENDENCY} FALSE PARENT_SCOPE)
-if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})#there are dependencies to sreach in
-	list(FIND ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package} INDEX)
+if(${PROJECT_NAME}_ORDERED_DEPENDENCIES${USE_MODE_SUFFIX})#there are dependencies to sreach in
+	list(FIND ${PROJECT_NAME}_ORDERED_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package} INDEX)
 	if(NOT INDEX EQUAL -1) #package found in dependencies
 		set(${IS_DEPENDENCY} TRUE PARENT_SCOPE)
 		return()
 	endif()
 endif()
-if(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX})#there are external dependencies to sreach in
-	list(FIND ${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package} INDEX)
-	if(NOT INDEX EQUAL -1)#package found in dependencies
-		set(${IS_DEPENDENCY} TRUE PARENT_SCOPE)
-		return()
+endfunction(is_Package_Dependency)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |is_Dependency_Native| replace:: ``is_Dependency_Native``
+#  .. _is_Dependency_Native:
+#
+#  is_Dependency_Native
+#  ---------------------
+#
+#   .. command:: is_Dependency_Native(IS_NATIVE dep_package)
+#
+#   Check whether a dependency of the currently defined package is native or not.
+#
+#     :dep_package: the name of the dependency to check.
+#
+#     :IS_NATIVE: the output variable that is TRUE if dep_package is a direct native dependency of the current package, FALSE otherwise.
+#
+function(is_Dependency_Native IS_NATIVE dep_package)
+set(${IS_NATIVE} FALSE PARENT_SCOPE)
+if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})#there are dependencies to sreach in
+	list(FIND ${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package} INDEX)
+	if(NOT INDEX EQUAL -1) #package found in dependencies
+		set(${IS_NATIVE} TRUE PARENT_SCOPE)
 	endif()
 endif()
-endfunction(is_Package_Dependency)
+endfunction(is_Dependency_Native)
 
 #.rst:
 #
@@ -995,6 +1016,7 @@ endfunction(is_Package_Dependency)
 #     :list_of_components: the list of components that must belong to dep_package.
 #
 function(add_Package_Dependency_To_Cache dep_package version exact list_of_components)
+  append_Unique_In_Cache(${PROJECT_NAME}_ORDERED_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
   append_Unique_In_Cache(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
   append_Unique_In_Cache(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} "${list_of_components}")
 	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
@@ -1022,6 +1044,7 @@ endfunction(add_Package_Dependency_To_Cache)
 #     :list_of_components: the list of components that must belong to dep_package.
 #
 function(add_External_Package_Dependency_To_Cache dep_package version exact system list_of_components)
+  append_Unique_In_Cache(${PROJECT_NAME}_ORDERED_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
   append_Unique_In_Cache(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
   append_Unique_In_Cache(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} "${list_of_components}")
   set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
@@ -1287,6 +1310,8 @@ function(reset_Native_Package_Dependency_Cached_Variables_From_Use package mode 
     endif()
   endforeach()
   set(${package}_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
+
+  set(${package}_ORDERED_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
 endfunction(reset_Native_Package_Dependency_Cached_Variables_From_Use)
 
 #.rst:
@@ -1360,6 +1385,7 @@ function(reset_External_Package_Dependency_Cached_Variables_From_Use package mod
   endforeach()
   set(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
 
+  set(${package}_ORDERED_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
 endfunction(reset_External_Package_Dependency_Cached_Variables_From_Use)
 
 #.rst:
@@ -1449,6 +1475,8 @@ function(reset_Package_Description_Cached_Variables)
     reset_External_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${CMAKE_BUILD_TYPE} TRUE)
   endforeach()
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
+
+  set(${PROJECT_NAME}_ORDERED_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 
 	# component declaration must be reinitialized otherwise some problem (redundancy of declarations) would appear
 	foreach(a_component IN LISTS ${PROJECT_NAME}_COMPONENTS)
