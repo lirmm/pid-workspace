@@ -128,9 +128,9 @@ if(DEFINED ENV{write_file})
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES Release)
-	set(do_release_only TRUE)
+	set(release_only TRUE)
 else()
-	set(do_release_only FALSE)
+	set(release_only FALSE)
 endif()
 
 
@@ -166,7 +166,7 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 		endif()
 	endif()
 
-	check_For_Dependencies_Version(unreleased_dependencies ${PROJECT_NAME} ${do_release_only})
+	check_For_Dependencies_Version(unreleased_dependencies ${PROJECT_NAME} ${release_only})
 	set(DO_FLAT ${FLAT_PRESENTATION})
 	if(DO_FLAT MATCHES true) # presenting as a flat list without hierarchical dependencies
 		# CURRENT_NATIVE_DEPENDENCIES and CURRENT_EXTERNAL_DEPENDENCIES are used because these variables collect all direct and undirect dependencies
@@ -176,7 +176,7 @@ if(EXISTS ${CMAKE_BINARY_DIR}/share/Dep${PROJECT_NAME}.cmake)
 		set(ext_deps ${CURRENT_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}})
 
 		foreach(dep IN LISTS ${native_deps})
-			check_For_Dependencies_Version(dep_unreleased_dependencies ${dep} ${do_release_only})
+			check_For_Dependencies_Version(dep_unreleased_dependencies ${dep} ${release_only})
 			list(APPEND unreleased_dependencies ${dep_unreleased_dependencies})
 		endforeach()
 
