@@ -3048,3 +3048,68 @@ if(CMAKE_VERSION VERSION_LESS "${min_version}")
   return()
 endif()
 endmacro(check_External_Project_Required_CMake_Version)
+
+
+#.rst:
+#
+# .. ifmode:: script
+#
+#  .. |patch_CMake_Project_Min_Version| replace:: ``patch_CMake_Project_Min_Version``
+#  .. _patch_CMake_Project_Min_Version:
+#
+#  patch_CMake_Project_Min_Version
+#  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+#   .. command:: patch_CMake_Project_Min_Version(project_folder)
+#
+#     Automatically patch the project CMakeLists.txt
+#
+#     .. rubric:: Required parameters
+#
+#     :project_folder: Target external package that is a dependency of the currently built package, for which we want specific information. Used as a filter to get information only for a given dependency.
+#
+#     .. admonition:: Constraints
+#        :class: warning
+#
+#        - Must be used in deploy scripts defined in a wrapper.
+#
+#     .. admonition:: Effects
+#        :class: important
+#
+#         -  This function change the cmake_minimum_required constraint in the CMakeLists.txt contained in project folder
+#
+#     .. rubric:: Example
+#
+#     Example in eigen wrapper:
+#
+#     .. code-block:: cmake
+#        #... after install
+#        patch_CMake_Project_Min_Version(eigen-3.3.7)
+#
+function(patch_CMake_Project_Min_Version project_folder)
+set(target_file ${TARGET_BUILD_DIR}/${project_folder}/CMakeLists.txt)
+if(NOT EXISTS ${target_file})
+  finish_Progress(${GLOBAL_PROGRESS_VAR})
+  message(FATAL_ERROR "[PID] CRITICAL ERROR : when calling patch_CMake_Project_Min_Version, cannot find file ${target_file}. Check that given project_folder is correct.")
+endif()
+set(min_version 3.19.8)
+set(replacement "cmake_minimum_required(VERSION ${min_version})")
+
+file(READ "${target_file}" file_content)
+set(new_content "")
+string(REGEX REPLACE "\n" ";" lines "${file_content}")
+foreach(line IN LISTS lines)
+    if(line MATCHES "cmake_minimum_required")
+      string(REGEX REPLACE ".*cmake_minimum_required\\(VERSION ([0-9.]+).*$" "\\1" version "${line}")
+        if(version VERSION_LESS ${min_version})
+          set(new_content "${new_content}${replacement}\n")
+        else()
+          set(new_content "${new_content}${line}\n")
+        endif()
+    else()
+        set(new_content "${new_content}${line}\n")
+    endif()
+endforeach()
+file(WRITE "${target_file}" "${new_content}")
+
+endfunction(patch_CMake_Project_Min_Version)
