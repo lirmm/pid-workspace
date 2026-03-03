@@ -1667,7 +1667,8 @@ else()
 endif()
 
 ######## installing the package ##########
-set(target_install_folder ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package})
+set(target_install_folder ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${version})
+set(target_install_manifest ${target_install_folder}/share/Use${package}-${version}.cmake)
 # 1) creating the package root install folder
 if(NOT EXISTS ${target_install_folder})
   file(MAKE_DIRECTORY ${target_install_folder})
@@ -1723,63 +1724,41 @@ if (error_res_debug)
 endif()
 
 # 3) copying resulting folders into the install path in a cross platform way
-set(output_mode_rel)
-set(output_mode_deb)
 if(ADDITIONAL_DEBUG_INFO)
 	message("[PID] INFO : installing the binary package ${package} (version ${version}) into the workspace, please wait ...")
-else()
-  list(APPEND output_mode_rel ERROR_QUIET OUTPUT_QUIET)
-  list(APPEND output_mode_deb ERROR_QUIET OUTPUT_QUIET)
 endif()
 
-execute_process(
-  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${target_install_folder}
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-  ${output_mode_rel}
-)
+copy_Package_Install_Folder(${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${target_install_folder})
 if(NOT MISSING_DEBUG_VERSION)  #no debug archive to manage
-  execute_process(
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${target_install_folder}
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    ${output_mode_deb}
-  )
+  copy_Package_Install_Folder(${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${target_install_folder})
 endif()
 
-if (NOT EXISTS ${target_install_folder}/${version}/share/Use${package}-${version}.cmake)#install did not work well
+if (NOT EXISTS ${target_install_manifest})#install did not work well
 	#try again
-  execute_process(
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${target_install_folder}
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    ${output_mode_rel}
-  )
+  copy_Package_Install_Folder(${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY} ${target_install_folder})
   if(NOT MISSING_DEBUG_VERSION)  #no debug archive to manage
-    execute_process(
-      COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${target_install_folder}
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-      ${output_mode_deb}
-    )
+    copy_Package_Install_Folder(${CMAKE_BINARY_DIR}/share/${FOLDER_BINARY_DEBUG} ${target_install_folder})
   endif()
 
-	if (NOT EXISTS ${target_install_folder}/${version}/share/Use${package}-${version}.cmake)
+	if (NOT EXISTS ${target_install_manifest})
 		set(${INSTALLED} FALSE PARENT_SCOPE)
     message("[PID] WARNING : when installing binary package ${package}, cannot extract version folder from ${FOLDER_BINARY} and/or ${FOLDER_BINARY_DEBUG}.")
 		return()
-  else()
-    update_Workspace_For_Required_PID_Version(${package} ${target_install_folder}/${version})
 	endif()
 endif()
 
 if(release_only)
-  file(READ ${target_install_folder}/${version}/share/Use${package}-${version}.cmake USE_FILE_CONTENT)
+  file(READ ${target_install_manifest} USE_FILE_CONTENT)
   string(FIND "${USE_FILE_CONTENT}" "set(${package}_BUILT_RELEASE_ONLY" INDEX)
   if(INDEX EQUAL -1)# the use file does no contain the information (old type of use file)
-    file(WRITE ${target_install_folder}/${version}/share/Use${package}-${version}.cmake "set(${package}_BUILT_RELEASE_ONLY TRUE CACHE INTERNAL \"\")\n${USE_FILE_CONTENT}")
+    file(WRITE ${target_install_manifest} "set(${package}_BUILT_RELEASE_ONLY TRUE CACHE INTERNAL \"\")\n${USE_FILE_CONTENT}")
   else()# the use file contains the information so we need to fix it
     string(REPLACE "set(${package}_BUILT_RELEASE_ONLY FALSE" "set(${package}_BUILT_RELEASE_ONLY TRUE" NEW_USE_CONTENT "${USE_FILE_CONTENT}")
-    file(WRITE ${target_install_folder}/${version}/share/Use${package}-${version}.cmake "${NEW_USE_CONTENT}")
+    file(WRITE ${target_install_manifest} "${NEW_USE_CONTENT}")
   endif()
 endif()
 
+update_Workspace_For_Required_PID_Version(${package} ${target_install_folder})
 set(${INSTALLED} TRUE PARENT_SCOPE)
 message("[PID] INFO : binary package ${package} (version ${version}) has been installed into the workspace.")
 endfunction(download_And_Install_Binary_Native_Package)
@@ -2722,7 +2701,6 @@ file(DOWNLOAD ${download_url} ${CMAKE_BINARY_DIR}/share/release/${FILE_BINARY} S
 list(GET res 0 numeric_error)
 list(GET res 1 status)
 if(NOT numeric_error EQUAL 0)
-	set(${INSTALLED} FALSE PARENT_SCOPE)
 	message("[PID] ERROR : problem when downloading binary version ${version} of package ${package} from address ${download_url}: ${status}.")
 	return()
 endif()
@@ -2739,7 +2717,6 @@ if(NOT release_only)
   	list(GET res-dbg 0 numeric_error_dbg)
   	list(GET res-dbg 1 status_dbg)
   	if(NOT numeric_error_dbg EQUAL 0)#there is an error
-  		set(${INSTALLED} FALSE PARENT_SCOPE)
   		message("[PID] ERROR : problem when downloading binary version ${version} of package ${package} from address ${download_url_dbg} : ${status_dbg}.")
   		return()
   	endif()
@@ -2747,6 +2724,7 @@ if(NOT release_only)
 endif()
 ######## installing the external package ##########
 set(target_install_folder ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${version})
+set(target_install_manifest ${target_install_folder}/share/Use${package}-${version}.cmake)
 if(ADDITIONAL_DEBUG_INFO)
   message("[PID] INFO : decompressing the external binary package ${package}, please wait ...")
 endif()
@@ -2762,7 +2740,6 @@ if(NOT release_only)
           		ERROR_VARIABLE error_res_debug OUTPUT_QUIET)
 
   	if (error_res_debug)
-  		set(${INSTALLED} FALSE PARENT_SCOPE)
   		message("[PID] ERROR : cannot extract binary archives ${FILE_BINARY_DEBUG}.")
   		return()
   	endif()
@@ -2775,7 +2752,6 @@ execute_process(
 	ERROR_VARIABLE error_res OUTPUT_QUIET)
 
 if (error_res)
-	set(${INSTALLED} FALSE PARENT_SCOPE)
 	message("[PID] ERROR : cannot extract binary archives ${FILE_BINARY}.")
 	return()
 endif()
@@ -2784,29 +2760,29 @@ endif()
 if(ADDITIONAL_DEBUG_INFO)
 	message("[PID] INFO : installing the external binary package ${package} (version ${version}) into the workspace, please wait ...")
 endif()
-set(error_res "")
-set(error_res_debug "")
 
 set(error_output)
 if(NOT release_only)
   if(EXISTS download_url_dbg)
-    copy_Package_Install_Folder(error_res_debug ${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${target_install_folder} ${CMAKE_BINARY_DIR})
+    copy_Package_Install_Folder(${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${target_install_folder})
   endif()
 endif()
-copy_Package_Install_Folder(error_res ${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${target_install_folder} ${CMAKE_BINARY_DIR})
+copy_Package_Install_Folder(${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${target_install_folder})
 
-if(error_res_debug)
-  set(error_output "${error_res_debug}")
-endif()
-if(error_res)
-  set(error_output "${error_res}")
+if (NOT EXISTS ${target_install_folder}/share/Use${package}-${version}.cmake)#install did not work well
+  if(NOT release_only)
+    if(EXISTS download_url_dbg)
+      copy_Package_Install_Folder(${CMAKE_BINARY_DIR}/share/debug/${FOLDER_BINARY_DEBUG} ${target_install_folder})
+    endif()
+  endif()
+  copy_Package_Install_Folder(${CMAKE_BINARY_DIR}/share/release/${FOLDER_BINARY} ${target_install_folder})
+  if (NOT EXISTS ${target_install_manifest})
+    message("[PID] ERROR : cannot install folders ${FOLDER_BINARY} ${FOLDER_BINARY_DEBUG} to get binary version ${version} of package ${package}.")
+    return()
+	endif()
 endif()
 
-if (error_res OR error_res_debug)
-	set(${INSTALLED} FALSE PARENT_SCOPE)
-	message("[PID] ERROR : cannot extract folder from ${FOLDER_BINARY} ${FOLDER_BINARY_DEBUG} to get binary version ${version} of package ${package}. Reason=${error_output}")
-	return()
-endif()
+
 # 4) removing generated artifacts
 if(NOT release_only)
   if(EXISTS download_url_dbg)
@@ -2815,25 +2791,25 @@ if(NOT release_only)
 endif()
 file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/share/release)
 
-file(READ ${target_install_folder}/share/Use${package}-${version}.cmake USE_FILE_CONTENT)
+file(READ ${target_install_manifest} USE_FILE_CONTENT)
 string(FIND "${USE_FILE_CONTENT}" "set(${package}_BUILT_RELEASE_ONLY" INDEX)
 if(release_only)
   if(INDEX EQUAL -1)# the use file does no contain the information (old type of use file)
-    file(WRITE ${target_install_folder}/share/Use${package}-${version}.cmake "set(${package}_BUILT_RELEASE_ONLY TRUE CACHE INTERNAL \"\")\n${USE_FILE_CONTENT}")
+    file(WRITE ${target_install_manifest} "set(${package}_BUILT_RELEASE_ONLY TRUE CACHE INTERNAL \"\")\n${USE_FILE_CONTENT}")
   else()# the use file contains the information so we need to fix it
     string(REPLACE "set(${package}_BUILT_RELEASE_ONLY FALSE" "set(${package}_BUILT_RELEASE_ONLY TRUE" NEW_USE_CONTENT "${USE_FILE_CONTENT}")
-    file(WRITE ${target_install_folder}/share/Use${package}-${version}.cmake "${NEW_USE_CONTENT}")
+    file(WRITE ${target_install_manifest} "${NEW_USE_CONTENT}")
   endif()
 else()#case when both build mode have been deployed, need to ensure that the variable ${package}_BUILT_RELEASE_ONLY is correctly set
   if(INDEX EQUAL -1)# the use file does no contain the information (old type of use file)
-    file(WRITE ${target_install_folder}/share/Use${package}-${version}.cmake "set(${package}_BUILT_RELEASE_ONLY FALSE CACHE INTERNAL \"\")\n${USE_FILE_CONTENT}")
+    file(WRITE ${target_install_manifest} "set(${package}_BUILT_RELEASE_ONLY FALSE CACHE INTERNAL \"\")\n${USE_FILE_CONTENT}")
   else()
     string(REPLACE "set(${package}_BUILT_RELEASE_ONLY TRUE" "set(${package}_BUILT_RELEASE_ONLY FALSE" NEW_USE_CONTENT "${USE_FILE_CONTENT}")
     string(REPLACE "set(${package}_BUILT_RELEASE_ONLY ON" "set(${package}_BUILT_RELEASE_ONLY FALSE" NEW_USE_CONTENT "${NEW_USE_CONTENT}")#NOTE to avoid bugs when value ON is used (probably a problem at use file generation time)
-    file(WRITE ${target_install_folder}/share/Use${package}-${version}.cmake "${NEW_USE_CONTENT}")
+    file(WRITE ${target_install_manifest} "${NEW_USE_CONTENT}")
   endif()
 endif()
-update_Workspace_For_Required_PID_Version(${package} ${target_install_folder}/${version})
+update_Workspace_For_Required_PID_Version(${package} ${target_install_folder})
 set(${INSTALLED} TRUE PARENT_SCOPE)
 endfunction(download_And_Install_Binary_External_Package)
 
