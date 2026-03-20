@@ -83,6 +83,11 @@ stages:
     - pid
     - x86_64_linux_stdc++11__ub22_gcc11__
 
+.selection_ubuntu24: &selection_ubuntu24
+  tags:
+    - pid
+    - x86_64_linux_stdc++11__ub24_gcc13__
+
 .selection_archlinux_: &selection_archlinux
   tags:
     - pid
@@ -130,6 +135,14 @@ ubuntu22 deploy:
 ubuntu22 create_and_build:
   <<: *create_and_build
   <<: *selection_ubuntu22
+
+ubuntu24 deploy:
+  <<: *deploy
+  <<: *selection_ubuntu24
+
+ubuntu24 create_and_build:
+  <<: *create_and_build
+  <<: *selection_ubuntu24
 
 ubuntu22 external_use:
   <<: *external_use

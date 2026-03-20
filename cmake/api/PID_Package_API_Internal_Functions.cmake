@@ -2091,14 +2091,6 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 	if(all_possible_versions)
 		set(list_of_possible_versions ${all_possible_versions})
 		set(list_of_exact_versions ${all_exact_versions})
-		# foreach(ver IN LISTS all_possible_versions)
-		# 	normalize_Version_String(${ver} NORM_STR)
-		# 	list(APPEND list_of_possible_versions ${NORM_STR})
-		# endforeach()
-		# foreach(ver IN LISTS all_exact_versions)
-		# 	normalize_Version_String(${ver} NORM_STR)
-		# 	list(APPEND list_of_exact_versions ${NORM_STR})
-		# endforeach()
 		list(LENGTH list_of_possible_versions SIZE)
 		list(GET list_of_possible_versions 0 default_version) #by defaut this is the first element in the list that is taken
 	endif()
@@ -2152,7 +2144,6 @@ function(declare_Native_Package_Dependency dep_package optional all_possible_ver
 					finish_Progress(${GLOBAL_PROGRESS_VAR})
 					fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
 					message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
-					return()
 				endif()
 			else()
 				if(SIZE EQUAL 1)#no alternative a given version constraint must be satisfied
