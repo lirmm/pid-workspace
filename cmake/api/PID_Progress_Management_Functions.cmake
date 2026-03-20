@@ -92,6 +92,36 @@ endfunction(reset_Progress_File)
 #
 # .. ifmode:: internal
 #
+#  .. |include_progess_file| replace:: ``include_progess_file``
+#  .. _include_progess_file:
+#
+#  include_progess_file
+#  -------------------
+#
+#   .. command:: include_progess_file()
+#
+#    Load progress file in current context
+#
+#    :FILE_EXISTS: the output variable that is TRUE if file exist false otherwise
+#
+macro(include_progess_file FILE_EXISTS)
+set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
+if(EXISTS ${thefile})
+	include(${thefile} OPTIONAL RESULT_VARIABLE res)
+	if(NOT res)
+		file(READ ${thefile} content)
+		message(FATAL_ERROR "[PID] CRITICAL ERROR: progress file ${thefile} content is corrupted. This is probably due to a package generating bad information. Content is: \n--------------\n${content}\n--------------\n")
+	endif()
+	set(${FILE_EXISTS} TRUE)
+else()
+	set(${FILE_EXISTS} FALSE)
+endif()
+endmacro(include_progess_file)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
 #  .. |check_Progress_File_Last_Modification_Outdated| replace:: ``check_Progress_File_Last_Modification_Outdated``
 #  .. _check_Progress_File_Last_Modification_Outdated:
 #
@@ -106,10 +136,12 @@ endfunction(reset_Progress_File)
 #      :CONTEXT: The output variable that contains the context (build process of a package, execution of a script)
 #
 function(check_Progress_File_Last_Modification_Outdated OUTDATED CONTEXT)
-set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
-include (${thefile})
-set(${OUTDATED} TRUE PARENT_SCOPE)
+include_progess_file(exist)
 set(${CONTEXT} ${CURRENT_PROCESS_LAUNCHER} PARENT_SCOPE)
+set(${OUTDATED} TRUE PARENT_SCOPE)
+if(NOT exist)
+	return()
+endif()
 string(TIMESTAMP TIME_VAR "%Y-%j-%H-%M" UTC)
 string(REGEX REPLACE "^([0-9]+)-([0-9]+)-([0-9]+)-([0-9]+)$" "\\1;\\2;\\3;\\4" DATE_OF_NOW ${TIME_VAR})
 if(NOT DATE_OF_NOW STREQUAL TIME_VAR) # match found
@@ -223,9 +255,8 @@ endfunction(update_Progress_File)
 #      :external: if TRUE the managed package is an external package.
 #
 function(add_Managed_Package_In_Current_Process package version state external)
-set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
-if(EXISTS ${thefile})
-	include (${thefile})
+include_progess_file(exist)
+if(exist)
 	#updating variables
 	if(external)
 		list(APPEND MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS ${package})
@@ -270,44 +301,42 @@ endfunction(add_Managed_Package_In_Current_Process)
 #      :external: if TRUE package is an external package.
 #
 function(add_Chosen_Package_Version_In_Current_Process package requestor)
-set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
-if(EXISTS ${thefile})
-	include (${thefile})
-  set(version ${${package}_VERSION_STRING})
-  if(${package}_REQUIRED_VERSION_EXACT)
-    set(exact TRUE)
-  else()
-    set(exact FALSE)
-  endif()
-  if(${package}_REQUIRED_VERSION_SYSTEM)#the binary package version is the OS installed version
-    set(system TRUE)
-  else()
-    set(system FALSE)
-  endif()
+include_progess_file(exist)
+if(exist)
+	set(version ${${package}_VERSION_STRING})
+	if(${package}_REQUIRED_VERSION_EXACT)
+		set(exact TRUE)
+	else()
+		set(exact FALSE)
+	endif()
+	if(${package}_REQUIRED_VERSION_SYSTEM)#the binary package version is the OS installed version
+		set(system TRUE)
+	else()
+		set(system FALSE)
+	endif()
 	#updating variables
 	list(APPEND CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${package})
 	list(REMOVE_DUPLICATES CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS)
-  if(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS)#the variable already exists (i.e. a version has already been selected)
-    if(version VERSION_GREATER ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS)#update chosen version only if greater than current one
-      set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS "${version}")
-      list(APPEND ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS "${requestor}")
-	  list(REMOVE_DUPLICATES ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
-      set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
-      set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM "${system}")
-    elseif(version VERSION_EQUAL ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS AND exact)#the new version constraint is exact so set it
-      list(APPEND ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS "${requestor}")
-	  list(REMOVE_DUPLICATES ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
-      set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
-      set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM "${system}")
-    endif()
-  else()#not found already so simply set the variables without check
-    set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS "${version}")
-    set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS "${requestor}")
-    set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
-    set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM "${system}")
-  endif()
-  update_Progress_File()
-  return()
+	if(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS)#the variable already exists (i.e. a version has already been selected)
+		if(version VERSION_GREATER ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS)#update chosen version only if greater than current one
+		set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS "${version}")
+		list(APPEND ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS "${requestor}")
+		list(REMOVE_DUPLICATES ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
+		set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
+		set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM "${system}")
+		elseif(version VERSION_EQUAL ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS AND exact)#the new version constraint is exact so set it
+		list(APPEND ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS "${requestor}")
+		list(REMOVE_DUPLICATES ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
+		set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
+		set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM "${system}")
+		endif()
+	else()#not found already so simply set the variables without check
+		set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS "${version}")
+		set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS "${requestor}")
+		set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
+		set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM "${system}")
+	endif()
+	update_Progress_File()
 endif()
 endfunction(add_Chosen_Package_Version_In_Current_Process)
 
@@ -331,16 +360,14 @@ endfunction(add_Chosen_Package_Version_In_Current_Process)
 #      :package: the name of package.
 #
 function(remove_Chosen_Package_Version_In_Current_Process package requestor)
-set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
-if(EXISTS ${thefile})
-	include (${thefile})
+include_progess_file(exist)
+if(exist)
 	#updating variables
 	if(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
 		list(REMOVE_ITEM ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS "${requestor}")
 		list(REMOVE_ITEM CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${package})
 	endif()
 	update_Progress_File()
-	return()
 endif()
 endfunction(remove_Chosen_Package_Version_In_Current_Process)
 
@@ -364,12 +391,10 @@ endfunction(remove_Chosen_Package_Version_In_Current_Process)
 #    Mark the current process has having performed an update of contribution spaces.
 #
 function(set_Contribution_Spaces_Updated_In_Current_Process)
-set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
-if(EXISTS ${thefile})
-	include (${thefile})
+include_progess_file(exist)
+if(exist)
   set(CONTRIBUTION_SPACES_UPDATED TRUE)
   update_Progress_File()
-  return()
 endif()
 endfunction(set_Contribution_Spaces_Updated_In_Current_Process)
 
@@ -389,12 +414,10 @@ endfunction(set_Contribution_Spaces_Updated_In_Current_Process)
 #    Mark the current process has having performed an evaluation of current host configuration 
 #
 function(set_Host_Configuration_Evaluated_In_Current_Process)
-set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
-if(EXISTS ${thefile})
-	include (${thefile})
+include_progess_file(exist)
+if(exist)
   set(HOST_CONFIGURATION_UPDATED TRUE)
   update_Progress_File()
-  return()
 endif()
 endfunction(set_Host_Configuration_Evaluated_In_Current_Process)
 
@@ -419,10 +442,9 @@ endfunction(set_Host_Configuration_Evaluated_In_Current_Process)
 #      :RESULT: the output variable that is TRUE if host configuration has been evaluated FALSE otherwise.
 #
 function(check_Host_Configuration_Evaluated_In_Current_Process RESULT)
-set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 set(${RESULT} FALSE PARENT_SCOPE) #not already managed of no file exists
-if(EXISTS ${thefile})
-	include (${thefile})
+include_progess_file(exist)
+if(exist)
   set(${RESULT} ${HOST_CONFIGURATION_UPDATED} PARENT_SCOPE) #not already managed of no file exists
 endif()
 endfunction(check_Host_Configuration_Evaluated_In_Current_Process)
@@ -444,10 +466,9 @@ endfunction(check_Host_Configuration_Evaluated_In_Current_Process)
 #      :RESULT: the output variable that is TRUE if contribution spaces have been updated false otherwise.
 #
 function(check_Contribution_Spaces_Updated_In_Current_Process RESULT)
-set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 set(${RESULT} FALSE PARENT_SCOPE) #not already managed of no file exists
-if(EXISTS ${thefile})
-	include (${thefile})
+include_progess_file(exist)
+if(exist)
   set(${RESULT} ${CONTRIBUTION_SPACES_UPDATED} PARENT_SCOPE) #not already managed of no file exists
 endif()
 endfunction(check_Contribution_Spaces_Updated_In_Current_Process)
@@ -473,9 +494,8 @@ endfunction(check_Contribution_Spaces_Updated_In_Current_Process)
 #      :RESULT: the output variable that is TRUE if the given package version has already been managed in current build process.
 #
 function(check_Package_Version_Managed_In_Current_Process package version RESULT)
-set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
-if(EXISTS ${thefile})
-	include (${thefile})
+include_progess_file(exist)
+if(exist)
 	list(FIND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
 	if(NOT FOUND EQUAL -1)# native package is already managed
 		list(FIND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${version}" FOUND)
@@ -517,9 +537,8 @@ endfunction(check_Package_Version_Managed_In_Current_Process)
 #      :RESULT: the output variable that contains the string telling what is the build state of the given package. If build has been successful its value is "SUCCESS", if it failed its value is "FAILED", in other situation its value is "UNKNOWN".
 #
 function(check_Package_Version_State_In_Current_Process package version RESULT)
-set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
-if(EXISTS ${thefile})
-	include (${thefile})
+include_progess_file(exist)
+if(exist)
 	list(FIND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
 	if(NOT FOUND EQUAL -1)# native package already managed
 		list(FIND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${version}" FOUND)
@@ -560,9 +579,8 @@ endfunction(check_Package_Version_State_In_Current_Process)
 #      :RESULT: the output variable that is TRUE if the given package has already been managed in current build process.
 #
 function(check_Package_Managed_In_Current_Process package RESULT)
-set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
-if(EXISTS ${thefile})
-	include (${thefile})
+include_progess_file(exist)
+if(exist)
 	list(FIND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
 	if(NOT FOUND EQUAL -1)# package already managed
 		set(${RESULT} TRUE PARENT_SCOPE) #MANAGED !!
@@ -604,9 +622,8 @@ function(get_Chosen_Version_In_Current_Process VERSION REQUESTORS IS_EXACT IS_SY
 set(${VERSION} PARENT_SCOPE)
 set(${IS_EXACT} FALSE PARENT_SCOPE)
 set(${IS_SYSTEM} FALSE PARENT_SCOPE)
-set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
-if(EXISTS ${thefile})
-	include (${thefile})
+include_progess_file(exist)
+if(exist)
   	list(FIND CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${package} FOUND)
 	if(NOT FOUND EQUAL -1)# there is a chosen version for that package
 		set(${VERSION} ${${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS} PARENT_SCOPE)
@@ -641,9 +658,8 @@ endfunction(get_Chosen_Version_In_Current_Process)
 #
 function(get_Dependency_Resolution_Path_For OUT_STR package mode)
 set(${OUT_STR} PARENT_SCOPE)
-set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
-if(EXISTS ${thefile})
-	include (${thefile})
+include_progess_file(exist)
+if(exist)
 	get_Dependency_Resolution_Path_For_Impl_Recurse(VAR ${package} "0" ${mode})
 	set(${OUT_STR} ${VAR} PARENT_SCOPE)
 endif()
@@ -857,9 +873,8 @@ endfunction(some_Packages_Managed_Last_Time)
 #   Print information about the packages managed in last build process.
 #
 function (print_Managed_Packages)
-set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
-if(EXISTS ${thefile})
-	include (${thefile})
+include_progess_file(exist)
+if(exist)
 	foreach(pack IN LISTS MANAGED_PACKAGES_IN_CURRENT_PROCESS)
 		set(TO_PRINT "${pack}, versions :")
 		foreach(vers IN LISTS ${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
