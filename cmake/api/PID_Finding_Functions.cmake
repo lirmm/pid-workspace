@@ -1673,7 +1673,7 @@ endfunction(reset_Packages_Finding_Variables)
 #    ${package}_DEPENDENCY_${dependency}_REQUIRED		# TRUE if package is required FALSE otherwise (QUIET MODE)
 #    ${package}_DEPENDENCY_${dependency}_VERSION		# version if a version if specified
 #    ${package}_DEPENDENCY_${dependency}_VERSION_EXACT	# TRUE if exact version is required
-#    ${package}_DEPENDENCY_${dependency}_COMPONENTS	# list of components
+#    ${package}_DEPENDENCY_${dependency}_REQUIRED_COMPONENTS	# list of components
 #
 #     :package: the name of package that has dependencies.
 #     :dependency: the name of the native package that is a dependency of package
@@ -1701,7 +1701,7 @@ if(${dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been found (pre
 						EXACT
 						MODULE
 						REQUIRED
-						${${package}_DEPENDENCY_${dependency}_COMPONENTS${VAR_SUFFIX}}
+						${${package}_DEPENDENCY_${dependency}_REQUIRED_COMPONENTS${VAR_SUFFIX}}
 					)
 				endif()
 				return()
@@ -1720,7 +1720,7 @@ if(${dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been found (pre
 						${VERSION_TO_FIND}
 						MODULE
 						REQUIRED
-						${${package}_DEPENDENCY_${dependency}_COMPONENTS${VAR_SUFFIX}}
+						${${package}_DEPENDENCY_${dependency}_REQUIRED_COMPONENTS${VAR_SUFFIX}}
 					)
 				else()
 					return() # nothing to do more, the current used version is compatible with everything
@@ -1743,7 +1743,7 @@ else()#the dependency has not been already found
 				EXACT
 				MODULE
 				REQUIRED
-				${${package}_DEPENDENCY_${dependency}_COMPONENTS${VAR_SUFFIX}}
+				${${package}_DEPENDENCY_${dependency}_REQUIRED_COMPONENTS${VAR_SUFFIX}}
 			)
 
 		else()
@@ -1752,7 +1752,7 @@ else()#the dependency has not been already found
 				${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}
 				MODULE
 				REQUIRED
-				${${package}_DEPENDENCY_${dependency}_COMPONENTS${VAR_SUFFIX}}
+				${${package}_DEPENDENCY_${dependency}_REQUIRED_COMPONENTS${VAR_SUFFIX}}
 			)
 		endif()
 	else() # not version specified
@@ -1760,7 +1760,7 @@ else()#the dependency has not been already found
 			${dependency}
 			MODULE
 			REQUIRED
-			${${package}_DEPENDENCY_${dependency}_COMPONENTS${VAR_SUFFIX}}
+			${${package}_DEPENDENCY_${dependency}_REQUIRED_COMPONENTS${VAR_SUFFIX}}
 		)
 	endif()
 endif()
@@ -1820,7 +1820,7 @@ if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been f
 						EXACT
 						MODULE
 						REQUIRED
-						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${VAR_SUFFIX}}
+						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_REQUIRED_COMPONENTS${VAR_SUFFIX}}
 					)
 				endif()
 				return()
@@ -1839,7 +1839,7 @@ if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been f
 						${VERSION_TO_FIND}
 						MODULE
 						REQUIRED
-						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${VAR_SUFFIX}}
+						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_REQUIRED_COMPONENTS${VAR_SUFFIX}}
 					)
 				else()
 					return() # nothing to do more, the current used version is compatible with everything
@@ -1867,7 +1867,7 @@ else()#the dependency has not been already found
 				EXACT
 				MODULE
 				REQUIRED
-				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${VAR_SUFFIX}}
+				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_REQUIRED_COMPONENTS${VAR_SUFFIX}}
 			)
 		else()
 			find_package_resolved(
@@ -1875,7 +1875,7 @@ else()#the dependency has not been already found
 				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}
 				MODULE
 				REQUIRED
-				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${VAR_SUFFIX}}
+				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_REQUIRED_COMPONENTS${VAR_SUFFIX}}
 			)
 		endif()
 	else()# finding without any specific constraint (version or os variant)
@@ -1883,7 +1883,7 @@ else()#the dependency has not been already found
 			${external_dependency}
 			MODULE
 			REQUIRED
-			${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_COMPONENTS${VAR_SUFFIX}}
+			${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_REQUIRED_COMPONENTS${VAR_SUFFIX}}
 		)
 	endif()
 endif()

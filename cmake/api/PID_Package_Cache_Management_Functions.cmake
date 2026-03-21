@@ -996,61 +996,6 @@ if(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX})#there are dependencies to sre
 endif()
 endfunction(is_Dependency_Native)
 
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |add_Package_Dependency_To_Cache| replace:: ``add_Package_Dependency_To_Cache``
-#  .. _add_Package_Dependency_To_Cache:
-#
-#  add_Package_Dependency_To_Cache
-#  -------------------------------
-#
-#   .. command:: add_Package_Dependency_To_Cache(dep_package version exact list_of_components)
-#
-#   Set adequate cache variables of currently defined package when defining a native package dependency.
-#
-#     :dep_package: the name of the native package that IS the dependency.
-#     :version: the version constraint on dep_package (may be empty string if no version constraint applies).
-#     :exact: if TRUE the version constraint is exact.
-#     :list_of_components: the list of components that must belong to dep_package.
-#
-function(add_Package_Dependency_To_Cache dep_package version exact list_of_components)
-  append_Unique_In_Cache(${PROJECT_NAME}_ORDERED_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
-  append_Unique_In_Cache(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
-  append_Unique_In_Cache(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} "${list_of_components}")
-	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
-endfunction(add_Package_Dependency_To_Cache)
-
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |add_External_Package_Dependency_To_Cache| replace:: ``add_External_Package_Dependency_To_Cache``
-#  .. _add_External_Package_Dependency_To_Cache:
-#
-#  add_External_Package_Dependency_To_Cache
-#  ----------------------------------------
-#
-#   .. command:: add_External_Package_Dependency_To_Cache(dep_package version exact system list_of_components)
-#
-#   Set adequate cache variables of currently defined package when defining an external package dependency.
-#
-#     :dep_package: the name of the external package that IS the dependency.
-#     :version: the version constraint on dep_package (may be empty string if no version constraint applies).
-#     :exact: if TRUE the version constraint is exact.
-#     :system: if TRUE the version constraint targets the OS installed version.
-#     :list_of_components: the list of components that must belong to dep_package.
-#
-function(add_External_Package_Dependency_To_Cache dep_package version exact system list_of_components)
-  append_Unique_In_Cache(${PROJECT_NAME}_ORDERED_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
-  append_Unique_In_Cache(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
-  append_Unique_In_Cache(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} "${list_of_components}")
-  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
-  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_SYSTEM${USE_MODE_SUFFIX} ${system} CACHE INTERNAL "")#false by definition since no version constraint
-endfunction(add_External_Package_Dependency_To_Cache)
 
 #.rst:
 #
@@ -1287,12 +1232,9 @@ function(reset_Native_Package_Dependency_Cached_Variables_From_Use package mode 
   set(${package}_ALIASES CACHE INTERNAL "")
 
   foreach(ext_dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
-    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_ALL_POSSIBLE_VERSIONS${VAR_SUFFIX} CACHE INTERNAL "")
-    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_ALL_EXACT_VERSIONS${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_EXACT${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_SYSTEM${VAR_SUFFIX} CACHE INTERNAL "")
-    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_COMPONENTS${VAR_SUFFIX}  CACHE INTERNAL "")
     if(recursive)
       reset_External_Package_Dependency_Cached_Variables_From_Use(${ext_dep} ${mode} TRUE)#recursion !!
     endif()
@@ -1300,11 +1242,8 @@ function(reset_Native_Package_Dependency_Cached_Variables_From_Use package mode 
   set(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} CACHE INTERNAL "")
 
   foreach(nat_dep IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
-    set(${package}_DEPENDENCY_${nat_dep}_ALL_POSSIBLE_VERSIONS${VAR_SUFFIX} CACHE INTERNAL "")
-    set(${package}_DEPENDENCY_${nat_dep}_ALL_EXACT_VERSIONS${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_DEPENDENCY_${nat_dep}_VERSION${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_DEPENDENCY_${nat_dep}_VERSION_EXACT${VAR_SUFFIX} CACHE INTERNAL "")
-    set(${package}_DEPENDENCY_${nat_dep}_COMPONENTS${VAR_SUFFIX} CACHE INTERNAL "")
     if(recursive)
       reset_Native_Package_Dependency_Cached_Variables_From_Use(${nat_dep} ${mode} TRUE)#recursion !!
     endif()
@@ -1373,12 +1312,9 @@ function(reset_External_Package_Dependency_Cached_Variables_From_Use package mod
   set(${package}_ALIASES${VAR_SUFFIX} CACHE INTERNAL "")
 
   foreach(ext_dep IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
-    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_ALL_POSSIBLE_VERSIONS${VAR_SUFFIX} CACHE INTERNAL "")
-    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_ALL_EXACT_VERSIONS${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_EXACT${VAR_SUFFIX} CACHE INTERNAL "")
     set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_VERSION_SYSTEM${VAR_SUFFIX} CACHE INTERNAL "")
-    set(${package}_EXTERNAL_DEPENDENCY_${ext_dep}_COMPONENTS${VAR_SUFFIX}  CACHE INTERNAL "")
     if(recursive)
       reset_External_Package_Dependency_Cached_Variables_From_Use(${ext_dep} ${mode} TRUE)#recursion !!
     endif()
@@ -1456,9 +1392,8 @@ function(reset_Package_Description_Cached_Variables)
     reset_Version_Strings_Recursive(${dep_package})#reset resolved version
     set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
     set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_${${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_REQUIRED_COMPONENTS${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_OPTIONAL${VAR_SUFFIX} CACHE INTERNAL "")
     reset_Native_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${CMAKE_BUILD_TYPE} TRUE)
   endforeach()
 	set(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
@@ -1468,10 +1403,8 @@ function(reset_Package_Description_Cached_Variables)
     reset_Version_Strings_Recursive(${dep_package})#reset resolved version
     set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
     set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_COMPONENTS${USE_MODE_SUFFIX} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")
-		set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_SYSTEM${USE_MODE_SUFFIX} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REQUIRED_COMPONENTS${VAR_SUFFIX} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_OPTIONAL${VAR_SUFFIX} CACHE INTERNAL "")
     reset_External_Package_Dependency_Cached_Variables_From_Use(${dep_package} ${CMAKE_BUILD_TYPE} TRUE)
   endforeach()
 	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} CACHE INTERNAL "")
@@ -1495,42 +1428,150 @@ function(reset_Package_Description_Cached_Variables)
 	set(${PROJECT_NAME}_ALIASES CACHE INTERNAL "")
 endfunction(reset_Package_Description_Cached_Variables)
 
+
 #.rst:
 #
 # .. ifmode:: internal
 #
-#  .. |set_Dependency_Complete_Description| replace:: ``set_Dependency_Complete_Description``
-#  .. _set_Dependency_Complete_Description:
+#  .. |add_Package_Dependency_To_Cache| replace:: ``add_Package_Dependency_To_Cache``
+#  .. _add_Package_Dependency_To_Cache:
 #
-#  set_Dependency_Complete_Description
-#  -----------------------------------
+#  add_Package_Dependency_To_Cache
+#  -------------------------------
 #
-#   .. command:: set_Dependency_Complete_Description(dep_package external possible_versions exact_versions)
+#   .. command:: add_Package_Dependency_To_Cache(dep_package version exact list_of_components)
 #
-#   setting internal cache variables used to memorize all possible versions for a given dependency (for documentation purpose only).
+#   Setting internal cache variables used to memorize all constraints for a given dependency.
 #
 #     :dep_package: the name of the external package dependency.
 #     :external: if TRUE dep_package is an external package, otherwise it is a native package.
-#     :possible_versions: the name of the variable that contains the list of possible version for that dependency.
-#     :possible_versions: the name of the variable that contains the list of exact versions among possible ones for that dependency.
+#     :optional: if TRUE dep_package is optional, otherwise it is required.
+#     :possible_versions: variable that contains the list of possible version for that dependency.
+#     :exact_versions: variable that contains the list of exact versions among possible ones for that dependency.
+#     :list_of_components: variable that contains the list of required components contained in this dependency.
 #
-function(set_Dependency_Complete_Description dep_package external possible_versions exact_versions)
-if(external)
-  if(possible_versions AND ${possible_versions})
-    set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX} ${${possible_versions}} CACHE INTERNAL "")
-    if(exact_versions AND ${exact_versions})
-      set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS${USE_MODE_SUFFIX} ${${exact_versions}} CACHE INTERNAL "")
-    endif()
-  endif()
-else()#for native packages use another set of variables
-  if(possible_versions AND ${possible_versions})
-    set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX} ${${possible_versions}} CACHE INTERNAL "")
-    if(exact_versions AND ${exact_versions})
-      set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS${USE_MODE_SUFFIX} ${${exact_versions}} CACHE INTERNAL "")
-    endif()
-  endif()
+function(add_Package_Dependency_To_Cache dep_package external optional possible_versions exact_versions list_of_components)
+append_Unique_In_Cache(${PROJECT_NAME}_ORDERED_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
+if(NOT optional)
+  set(optional FALSE)
 endif()
-endfunction(set_Dependency_Complete_Description)
+if(external)
+  append_Unique_In_Cache(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
+  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_OPTIONAL${USE_MODE_SUFFIX} ${optional} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX} ${possible_versions} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS${USE_MODE_SUFFIX} ${exact_versions} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REQUIRED_COMPONENTS${USE_MODE_SUFFIX} ${list_of_components} CACHE INTERNAL "")
+  init_dependency_version_selection_option(${dep_package} TRUE ${optional} "${possible_versions}")
+else()#for native packages use another set of variables
+  append_Unique_In_Cache(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
+  set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_OPTIONAL${USE_MODE_SUFFIX} ${optional} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX} ${possible_versions} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS${USE_MODE_SUFFIX} ${exact_versions} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_REQUIRED_COMPONENTS${USE_MODE_SUFFIX} ${list_of_components} CACHE INTERNAL "")
+  init_dependency_version_selection_option(${dep_package} FALSE ${optional} "${possible_versions}")
+endif()
+endfunction(add_Package_Dependency_To_Cache)
+
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |get_Dependency_Requirements| replace:: ``get_Dependency_Requirements``
+#  .. _get_Dependency_Requirements:
+#
+#  get_Dependency_Requirements
+#  -------------------------------
+#
+#   .. command:: get_Dependency_Requirements(OUT_VERSIONS OUT_EXACT OUT_COMPS OUT_OPT dep_package external)
+#
+#   Retrieve memorized local constraints for a given dependency.
+#
+#     :dep_package: the name of the external package dependency.
+#     :external: if TRUE dep_package is an external package, otherwise it is a native package.
+#
+#     :OUT_VERSIONS: output variable that contains possible version for the dependency
+#     :OUT_EXACT: output variable that contains possible EXACT version for the dependency
+#     :OUT_COMPS: output variable that contains required components for the dependency
+#     :OUT_OPT: output variable that is TRUE if dependency is optional, FALSE otherwise
+#
+function(get_Dependency_Requirements OUT_VERSIONS OUT_EXACT OUT_COMPS OUT_OPT dep_package external)
+if(external)
+  set(${OUT_VERSIONS} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX}} PARENT_SCOPE)
+  set(${OUT_EXACT} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS${USE_MODE_SUFFIX}} PARENT_SCOPE)
+  set(${OUT_COMPS} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REQUIRED_COMPONENTS${USE_MODE_SUFFIX}} PARENT_SCOPE)
+  set(${OUT_OPT} ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_OPTIONAL${USE_MODE_SUFFIX}} PARENT_SCOPE)
+else()
+  set(${OUT_VERSIONS} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_POSSIBLE_VERSIONS${USE_MODE_SUFFIX}} PARENT_SCOPE)
+  set(${OUT_EXACT} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_ALL_EXACT_VERSIONS${USE_MODE_SUFFIX}} PARENT_SCOPE)
+  set(${OUT_COMPS} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_REQUIRED_COMPONENTS${USE_MODE_SUFFIX}} PARENT_SCOPE)
+  set(${OUT_OPT} ${${PROJECT_NAME}_DEPENDENCY_${dep_package}_OPTIONAL${USE_MODE_SUFFIX}} PARENT_SCOPE)
+endif()
+endfunction(get_Dependency_Requirements)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |select_Dependency_Version| replace:: ``select_Dependency_Version``
+#  .. _select_Dependency_Version:
+#
+#  select_Dependency_Version
+#  -------------------------------
+#
+#   .. command:: select_Dependency_Version(dep_package version exact list_of_components)
+#
+#   Setting internal cache variables that memorize choice of a version for a given dependency, prior to its finding.
+#
+#     :dep_package: the name of the external package dependency.
+#     :external: if TRUE dep_package is an external package, otherwise it is a native package.
+#     :version: selected version
+#     :exact: TRUE if the version must be exact, FALSE otherwise.
+#     :system: TRUE if the version must be system version, FALSE otherwise.
+#
+function(select_Dependency_Version dep_package external version exact system)
+if(external)
+  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
+  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_SYSTEM${USE_MODE_SUFFIX} ${system} CACHE INTERNAL "")#false by definition since no version constraint
+else()
+  set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
+endif()
+endfunction(select_Dependency_Version)
+
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |add_External_Package_Dependency_To_Cache| replace:: ``add_External_Package_Dependency_To_Cache``
+#  .. _add_External_Package_Dependency_To_Cache:
+#
+#  add_External_Package_Dependency_To_Cache
+#  ----------------------------------------
+#
+#   .. command:: add_External_Package_Dependency_To_Cache(dep_package version exact system list_of_components)
+#
+#   Set adequate cache variables of currently defined package when defining an external package dependency.
+#
+#     :dep_package: the name of the external package that IS the dependency.
+#     :version: the version constraint on dep_package (may be empty string if no version constraint applies).
+#     :exact: if TRUE the version constraint is exact.
+#     :system: if TRUE the version constraint targets the OS installed version.
+#     :list_of_components: the list of components that must belong to dep_package.
+#
+function(add_External_Package_Dependency_To_Cache dep_package version exact system list_of_components)
+  append_Unique_In_Cache(${PROJECT_NAME}_ORDERED_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
+  append_Unique_In_Cache(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
+  append_Unique_In_Cache(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_REQUIRED_COMPONENTS${USE_MODE_SUFFIX} "${list_of_components}")
+  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
+  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_SYSTEM${USE_MODE_SUFFIX} ${system} CACHE INTERNAL "")#false by definition since no version constraint
+endfunction(add_External_Package_Dependency_To_Cache)
+
 
 #.rst:
 #
@@ -2629,7 +2670,7 @@ if(EXTERNAL_DEPS)
     file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${DEP_NAME}_VERSION_EXACT${VAR_SUFFIX} ${DEP_EXACT} CACHE INTERNAL \"\")\n")
     file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${DEP_NAME}_VERSION_SYSTEM${VAR_SUFFIX} ${DEP_SYSTEM} CACHE INTERNAL \"\")\n")
     #component are only defined for direct dependencies, if any defined for such a dependency
-    file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${DEP_NAME}_COMPONENTS${VAR_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${DEP_NAME}_COMPONENTS${VAR_SUFFIX}} CACHE INTERNAL \"\")\n")
+    file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCY_${DEP_NAME}_REQUIRED_COMPONENTS${VAR_SUFFIX} ${${package}_EXTERNAL_DEPENDENCY_${DEP_NAME}_REQUIRED_COMPONENTS${VAR_SUFFIX}} CACHE INTERNAL \"\")\n")
   endforeach()
 
   file(APPEND ${file} "set(${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX} ${USED_DEPS} CACHE INTERNAL \"\")\n")
@@ -2651,7 +2692,7 @@ if(NATIVE_DEPS)
   	file(APPEND ${file} "set(${package}_DEPENDENCY_${DEP_NAME}_VERSION${VAR_SUFFIX} ${DEP_VERSION} CACHE INTERNAL \"\")\n")
     file(APPEND ${file} "set(${package}_DEPENDENCY_${DEP_NAME}_VERSION_EXACT${VAR_SUFFIX} ${DEP_EXACT} CACHE INTERNAL \"\")\n")
     #component are only defined for direct dependencies, if any defined for such a dependency
-  	file(APPEND ${file} "set(${package}_DEPENDENCY_${DEP_NAME}_COMPONENTS${VAR_SUFFIX} ${${package}_DEPENDENCY_${DEP_NAME}_COMPONENTS${VAR_SUFFIX}} CACHE INTERNAL \"\")\n")
+  	file(APPEND ${file} "set(${package}_DEPENDENCY_${DEP_NAME}_REQUIRED_COMPONENTS${VAR_SUFFIX} ${${package}_DEPENDENCY_${DEP_NAME}_REQUIRED_COMPONENTS${VAR_SUFFIX}} CACHE INTERNAL \"\")\n")
   endforeach()
 
   file(APPEND ${file} "set(${package}_DEPENDENCIES${VAR_SUFFIX} ${USED_DEPS} CACHE INTERNAL \"\")\n")
