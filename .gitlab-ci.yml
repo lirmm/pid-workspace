@@ -22,6 +22,14 @@ stages:
     - sh -c "! ./pid info package=foobar2" # assert failure
   interruptible: true
 
+.deploy_simple: &deploy_simple
+  stage: deploy
+  script:
+    - pid deploy package=mytestpackage
+    - pid deploy package=robocop-core version=1.2 release_only=false
+    - pid deploy package=opencv version=4.0.1
+  interruptible: true
+
 .deploy_: &deploy
   stage: deploy
   script:
@@ -179,7 +187,7 @@ debian external_use:
   <<: *selection_debian
 
 debian deploy:
-  <<: *deploy
+  <<: *deploy_simple
   <<: *selection_debian
 
 debian create_and_build:
