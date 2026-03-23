@@ -2223,7 +2223,16 @@ function(init_dependency_version_selection_option dep_package external optional 
 			set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}")
 		endif()
 	endif()
-	#2) corrective actions for next runs
+	#2) forced system dependencies cheking
+	package_Must_Be_System(FORCED ${dep_package})
+	if(FORCED) #force use of the system dependency
+		if(SIZE EQUAL 1)
+			set(${dep_package}_ALTERNATIVE_VERSION_USED "SYSTEM" CACHE INTERNAL "" FORCE)
+		else()
+			set(${dep_package}_ALTERNATIVE_VERSION_USED "SYSTEM" CACHE STRING "${message_str}" FORCE)
+		endif()
+	endif()
+	#3) corrective actions for next runs
 	if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED)#SPECIAL CASE: no value set by user (i.e. error of the user)!!
 		if(optional)#hopefully the dependency is optional so we can force its deactivation
 			set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}" FORCE)#explicitlty deactivate the optional dependency (corrective action)
@@ -2247,31 +2256,28 @@ function(init_dependency_version_selection_option dep_package external optional 
 				endif()
 			elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")
 				if(external)
-					set(need_reset FALSE)
-					check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${PROJECT_NAME} "${dep_package}" ${CMAKE_BUILD_TYPE})
-					if(NOT RESULT_OK OR NOT ${PROJECT_NAME}_${dep_package}_VERSION)
-						set(need_reset TRUE)
-					else()
-						list(FIND possible_versions ${${PROJECT_NAME}_${dep_package}_VERSION} INDEX)
-						if(INDEX EQUAL -1)#no possible version found -> bad input of the user or dependent build
-							set(need_reset TRUE)
+					if(NOT FORCED)
+						#means that the "SYSTEM" has been set by the user
+						test_System_Configuration_Available(AVAILABLE ${dep_package})
+						if(NOT AVAILABLE)
+							message("[PID] WARNING: SYSTEM version constraint given by user for dependency ${dep_package} is not possible ... fixing to default version (${default_version}).")
+							#simply reset the description to first found
+							if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
+								set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
+							else()#many possible versions now !!
+								set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
+							endif()
+							return()
 						endif()
 					endif()
-					if(need_reset)
-						#reset all information about the system variant to enforce a good resolution
-						reset_Platform_Configuration_Cache_Variables(${dep_package})
-						unset(${PROJECT_NAME}_${dep_package}_VERSION CACHE)
-						unset(${dep_package}_VERSION CACHE)#FOR COMPATIBILITY
-						unset(${dep_package}_VERSION_STRING CACHE)
-						unset(${dep_package}_REQUIRED_VERSION_EXACT CACHE)
-						unset(${dep_package}_REQUIRED_VERSION_SYSTEM CACHE)
-						remove_Chosen_Package_Version_In_Current_Process(${dep_package} ${PROJECT_NAME})#this is necessary as check_Platform_Configuration may have generated a choice that is finally invalid
-						message("[PID] WARNING: SYSTEM version constraint given by user for dependency ${dep_package} is not possible ... fixing to default version (${default_version}).")
-						#simply reset the description to first found
-						if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
-							set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
-						else()#many possible versions now !!
-							set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
+					#otherwise we ned to check that the system version is in the ossible range
+					list(FIND possible_versions ${${PROJECT_NAME}_${dep_package}_VERSION} INDEX)
+					if(INDEX EQUAL -1)#no possible version found -> bad input of the user or dependent build
+						if(optional)
+							set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}" FORCE)#explicitlty deactivate the optional dependency (corrective action)
+							message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated because its system variant has been chosen but does not belong to the allowed version range.")
+						else()
+							message(FATAL_ERROR "[PID] CRITICAL ERROR : dependency ${dep_package} for package ${PROJECT_NAME} is forced to be system variant (${${dep_package}_VERSION}) but does not belong to the allowed version range.")
 						endif()
 					endif()
 				else()
@@ -2295,7 +2301,21 @@ function(init_dependency_version_selection_option dep_package external optional 
 			endif()
 		else()
 			if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")
-				if(NOT external)
+				if(external)
+					if(NOT FORCED)
+						#means that the "SYSTEM" has been set by the user
+						test_System_Configuration_Available(AVAILABLE ${dep_package})
+						if(NOT AVAILABLE)
+							message("[PID] WARNING: SYSTEM version constraint given by user for dependency ${dep_package} is not possible ... fixing to default version (${default_version}).")
+							#simply reset the description to first found
+							if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
+								set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
+							else()#many possible versions now !!
+								set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
+							endif()
+						endif()
+					endif()
+				else()
 					message("[PID] WARNING: SYSTEM version constraint given by user for dependency ${dep_package} is not possible because this package is native ... fixing to default version (ANY).")
 					set(${dep_package}_ALTERNATIVE_VERSION_USED ANY CACHE STRING "${message_str}" FORCE)
 				endif()

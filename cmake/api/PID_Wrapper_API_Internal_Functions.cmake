@@ -1243,7 +1243,7 @@ endfunction(add_External_Package_Dependency_To_Wrapper)
 #
 #   .. command:: declare_Wrapped_External_Dependency(NEED_EXIT dep_package optional list_of_versions exact_versions list_of_components)
 #
-#    Define a dependency between the currenlty defined version of the external package and another external package. Internal counterpart of declare_PID_Wrapper_External_Dependency.
+#    Define a dependency between the currently defined version of the external package and another external package. Internal counterpart of declare_PID_Wrapper_External_Dependency.
 #
 #      :dep_package: the name of external package that is the dependency.
 #      :optional: if TRUE the dependency is optional.
@@ -1299,31 +1299,35 @@ endif()
 #1.B) creating the user cache entries
 if(NOT list_of_versions) # no version constraint specified
 	### setting default cache variable that user can directly manage "by-hand" ###
-	if(optional)
-		#set the cache option, NONE by default
-		set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}")
-	else()#dependency is not optional so any version can be used
-		set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED "ANY" CACHE STRING "${message_str}")#no message since nothing to say to the user
-	endif()
+	set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED "ANY" CACHE STRING "${message_str}")#no message since nothing to say to the user
 else()#there are version(s) specified
-	if(optional)
-		# since dependency is optional, we simply just do not use it by default to avoid unresolvable configuration
-		set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}.")#initial value set to unused
-	else() #version of a required dependency
-		if(SIZE EQUAL 1)#no alternative a given version constraint must be satisfied
-			set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)#do not show the variable to the user
-		else() #we can choose among many versions, use the first specified by default
-			set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}")
-		endif()
+	if(SIZE EQUAL 1)#no alternative a given version constraint must be satisfied
+		set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)#do not show the variable to the user
+	else() #we can choose among many versions, use the first specified by default
+		set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}")
 	endif()
 endif()
 
+package_Must_Be_System(FORCED ${dep_package})
+if(FORCED) #force use of the system dependency
+	if(SIZE EQUAL 1)
+		set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED "SYSTEM" CACHE INTERNAL "" FORCE)
+	else()
+		set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED "SYSTEM" CACHE STRING "${message_str}" FORCE)
+	endif()
+endif()
+### TODO HERE ####
 ### 2) check and set the value of the user cache entry dependening on constraints coming from the build context (dependent build or classical build) #####
 set(USE_EXACT FALSE)
 set(chosen_version_for_selection)
 # check if a version of this dependency is required by another package used in the current build process and memorize this version
 get_Chosen_Version_In_Current_Process(REQUIRED_VERSION VERSION_REQUESTORS IS_EXACT IS_SYSTEM ${dep_package})
 if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
+	if(FORCED AND NOT IS_SYSTEM)
+		message("[PID] INFO : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is forced to be system but. But incompatible Non OS version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
+		set(${NEED_EXIT} TRUE PARENT_SCOPE)
+		return()
+	endif()
 	if(list_of_versions) #list of possible versions is constrained
 		#finding the best compatible version, if any (otherwise returned "version" variable is empty)
 		find_Best_Compatible_Version(force_version TRUE ${dep_package} ${REQUIRED_VERSION} "${IS_EXACT}" "${IS_SYSTEM}" "${list_of_versions}" "${exact_versions}")
@@ -1380,30 +1384,34 @@ else()#classical build => perform only corrective actions if cache variable is n
 		endif()
 
 	else()#OK the variable has a value
-		if(list_of_versions)#there is a constraint on usable versions
-			if(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#the value in cache was previously ANY but user added a list of versions in the meantime
-				if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
-					set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
-				else()
-					set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
-				endif()
-			else()#the value is a version, check if this version is allowed
-				list(FIND list_of_versions ${${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-				if(INDEX EQUAL -1 )#no possible version found -> bad input of the user
-					#simply reset the description to first found
+		if(NOT ${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")
+			if(list_of_versions)#there is a constraint on usable versions
+				if(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#the value in cache was previously ANY but user added a list of versions in the meantime
 					if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
 						set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
-					else()#many possible versions now !!
+					else()
 						set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
+					endif()
+				else()#the value is a version, check if this version is allowed
+					list(FIND list_of_versions ${${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+					if(INDEX EQUAL -1 )#no possible version found -> bad input of the user
+						#simply reset the description to first found
+						if(SIZE EQUAL 1)#only one possible version => no more provide it to to user
+							set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE INTERNAL "" FORCE)
+						else()#many possible versions now !!
+							set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${message_str}" FORCE)
+						endif()
 					endif()
 				endif()
 			endif()
 		endif()
 	endif()
-	if(exact_versions)
-		list(FIND exact_versions ${${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
-		if(NOT INDEX EQUAL -1 )
-			set(USE_EXACT TRUE)
+	if(NOT ${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")
+		if(exact_versions)
+			list(FIND exact_versions ${${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
+			if(NOT INDEX EQUAL -1 )
+				set(USE_EXACT TRUE)
+			endif()
 		endif()
 	endif()
 endif()
@@ -3754,7 +3762,7 @@ elseif(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SY
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : dependency ${dep_package} is defined with SYSTEM version but this version cannot be found on OS.")
 	endif()
-	#need to detect the version in order to pas it to add_External_Package_Dependency_To_Cache
+	#need to detect the version in order to pass it to add_External_Package_Dependency_To_Cache
 	add_External_Package_Dependency_To_Cache(${dep_package} "${${package}_${dep_package}_VERSION}" TRUE TRUE "${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS}") #set the dependency
 elseif(${prefix}_DEPENDENCY_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")# any version can be used so for now no contraint
 	add_External_Package_Dependency_To_Cache(${dep_package} "" FALSE FALSE "${${prefix}_DEPENDENCY_${dep_package}_COMPONENTS}")

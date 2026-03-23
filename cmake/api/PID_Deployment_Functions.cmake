@@ -2979,12 +2979,21 @@ endforeach()
 # Manage external package dependencies => need to check direct external dependencies
 foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #check that version of these dependencies is OK
   if(${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX})#there is a specific version to target (should be most common case)
+    package_Must_Be_System(FORCED ${dep_pack})
     get_Chosen_Version_In_Current_Process(REQUIRED_VERSION VERSION_REQUESTORS IS_EXACT IS_SYSTEM ${dep_pack})
   	if(REQUIRED_VERSION)#if a version of the same package is already required then check their compatibility
       get_Compatible_Version(IS_COMPATIBLE TRUE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} ${IS_SYSTEM} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}" "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_SYSTEM${VAR_SUFFIX}}" "${VERSION_REQUESTORS}" "${package}")
       if(NOT IS_COMPATIBLE)
         fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
         message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}, and this version is not compatible with version ${REQUIRED_VERSION} already used by packages: ${RES_REQ}.")
+        return()
+      elseif(FORCED AND NOT SYSTEM)
+        message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}, but SYSTEM version is forced.")
+        return()
+      endif()
+    elseif(FORCED)
+      if(NOT ${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX} VERSION_EQUAL ${PROJECT_NAME}_${dep_pack}_VERSION)
+        message("[PID] ERROR : package ${package} uses external package ${dep_pack} with version ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}, but SYSTEM version is forced and system version is ${${PROJECT_NAME}_${dep_pack}_VERSION}.")
         return()
       endif()
     endif()
@@ -3017,6 +3026,99 @@ endif()
 
 set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(configure_Binary_Package)
+
+
+macro(remove_System_Dependency_Choice package)
+  reset_Platform_Configuration_Cache_Variables(${dep_package})
+  unset(${PROJECT_NAME}_${dep_package}_VERSION CACHE)
+  unset(${dep_package}_VERSION CACHE)#FOR COMPATIBILITY
+  unset(${dep_package}_VERSION_STRING CACHE)
+  unset(${dep_package}_REQUIRED_VERSION_EXACT CACHE)
+  unset(${dep_package}_REQUIRED_VERSION_SYSTEM CACHE)
+  remove_Chosen_Package_Version_In_Current_Process(${dep_package} ${PROJECT_NAME})#this is necessary as check_Platform_Configuration may have generated a choice that is finally invalid
+endmacro(remove_System_Dependency_Choice)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |test_System_Configuration_Available| replace:: ``test_System_Configuration_Available``
+#  .. _test_System_Configuration_Available:
+#
+#  test_System_Configuration_Available
+#  -------------------------------------
+#
+#   .. command:: test_System_Configuration_Available(AVAILABLE package)
+#
+#    Tell whether a wrapper defines a platform configuration
+#
+#      :package: the name of the given package.
+#
+#      :AVAILABLE: the output variable that is TRUE if the platform configuration exists, FALSE otherwise
+#
+function(test_System_Configuration_Available AVAILABLE package)
+  set(${AVAILABLE} FALSE PARENT_SCOPE)
+  #ensure the package has a way to test for configuration dependencies
+  install_System_Configuration_Check(PATH_TO_CONFIG ${package})
+  if(NOT PATH_TO_CONFIG)
+    message(WARNING "[PID] WARNING : package ${package} has been forced to be a system dependency BUT ${package} wrapper does not provide the system configuration required to manage ${package} as a system dependency. Automatic fix: ${package} will be used as a NORMAL dependency. If you need system deployment for ${package}, the corresponding system configuration must be befined in ${package} wrapper.")
+    return()
+  endif()
+  #OK there is one but the system version is maybe not correctly managed in PID wrapper
+  check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${PROJECT_NAME} "${package}" ${CMAKE_BUILD_TYPE})
+	if(NOT RESULT_OK OR NOT ${PROJECT_NAME}_${package}_VERSION)
+    message(WARNING "[PID] WARNING : package ${package} has been forced to be a system dependency BUT system dependency cannot be found or installed in the system. Automatic fix: ${package} will be used as a NORMAL dependency. A fix for founding the system dependency, setting its version or to automatically install it should be added to ${package} wrapper to solve the problem.")
+    remove_System_Dependency_Choice(${package})
+    return()
+	endif()
+  set(${AVAILABLE} TRUE PARENT_SCOPE)
+endfunction(test_System_Configuration_Available)
+
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |package_Must_Be_System| replace:: ``package_Must_Be_System``
+#  .. _package_Must_Be_System:
+#
+#  package_Must_Be_System
+#  -------------------------------------
+#
+#   .. command:: package_Must_Be_System(FORCED package)
+#
+#    Tell whether a package dependency must be resolved as a system dependency
+#
+#      :package: the name of the given package that is the dependency.
+#
+#      :FORCED: the output variable that is TRUE if dependency is resolved as a system dependency, FALSE otherwise
+#
+function(package_Must_Be_System FORCED package)
+set(${FORCED} FALSE PARENT_SCOPE)
+get_Package_Type(${package} PACK_TYPE)
+if(NOT PACK_TYPE STREQUAL "EXTERNAL")
+	return()
+endif()
+set(try_force FALSE)
+#check if the package system version is forced from the global workspace option
+if(FORCED_SYSTEM_DEPENDENCIES)
+	if(FORCED_SYSTEM_DEPENDENCIES STREQUAL "ALL")
+		set(try_force TRUE)
+	else()
+		list(FIND FORCED_SYSTEM_DEPENDENCIES ${package} INDEX)
+		if(NOT INDEX EQUAL -1)
+			set(try_force TRUE)
+		endif()
+	endif()
+endif()
+if(try_force)
+  test_System_Configuration_Available(AVAILABLE ${package})
+  if(NOT AVAILABLE)
+    return()
+  endif()
+endif()
+set(${FORCED} ${try_force} PARENT_SCOPE)
+endfunction(package_Must_Be_System)
+
 
 #############################################################################################
 ############################### functions for frameworks ####################################
@@ -3061,7 +3163,7 @@ endif()
 endfunction(deploy_Framework_Repository)
 
 #############################################################################################
-############################### functions for frameworks ####################################
+############################### functions for environments ####################################
 #############################################################################################
 
 #.rst:

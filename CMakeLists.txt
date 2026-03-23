@@ -40,6 +40,7 @@ if(DIR_NAME STREQUAL "build")
 	option(SHOW_WRAPPERS_BUILD_OUTPUT "Force to always display the wrappers build output (only shown on error by default)" OFF)
 	set(LIMITED_JOBS_PACKAGES "" CACHE STRING "List of packages to build with only one job")
 	option(FORCE_DUAL_MODE "Force all build and deployment to be made in dual mode -Release and Debug" OFF)
+	set(FORCED_SYSTEM_DEPENDENCIES "" CACHE STRING "Force build and deployment to use system dependencies when possible (set a list of packages or use 'ALL' to target all external packages or let empty to let the package resolutionn to decide)")
 	mark_as_advanced(IN_CI_PROCESS)
 	set(PACKAGE_BINARY_INSTALL_DIR ${CMAKE_SOURCE_DIR}/install CACHE INTERNAL "")
 	# write the configuration file to memorize at global scope (in build folder) the global workspace configuration information

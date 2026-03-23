@@ -487,7 +487,8 @@ macro(reset_Profiles)
   # then perform manage platform/plugins to detect all languages features and plugins (automatically done by rerun in subfolder)
   # need to set the definitions used in evalutaion of profile specific configuration
   fill_String_From_List(res_str LIMITED_JOBS_PACKAGES " ")
-  set(args -DWORKSPACE_DIR=${WORKSPACE_DIR} -DIN_CI_PROCESS=${IN_CI_PROCESS} -DPACKAGE_BINARY_INSTALL_DIR=${PACKAGE_BINARY_INSTALL_DIR} -DLIMITED_JOBS_PACKAGES="${res_str}")
+  fill_String_From_List(res_str FORCED_SYSTEM_DEPENDENCIES " ")
+  set(args -DWORKSPACE_DIR=${WORKSPACE_DIR} -DIN_CI_PROCESS=${IN_CI_PROCESS} -DPACKAGE_BINARY_INSTALL_DIR=${PACKAGE_BINARY_INSTALL_DIR} -DLIMITED_JOBS_PACKAGES="${res_str}" -DFORCED_SYSTEM_DEPENDENCIES="${FORCED_SYSTEM_DEPENDENCIES}")
 
   # write the configuration file to memorize choices for next configuration (and for user editing)
   write_Profiles_Description_File()
