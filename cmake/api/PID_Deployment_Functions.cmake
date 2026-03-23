@@ -1665,7 +1665,6 @@ if(NOT release_only)
 else()
   set(MISSING_DEBUG_VERSION TRUE)
 endif()
-
 ######## installing the package ##########
 set(target_install_folder ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${package}/${version})
 set(target_install_manifest ${target_install_folder}/share/Use${package}-${version}.cmake)
@@ -1742,7 +1741,7 @@ if (NOT EXISTS ${target_install_manifest})#install did not work well
 
 	if (NOT EXISTS ${target_install_manifest})
 		set(${INSTALLED} FALSE PARENT_SCOPE)
-    message("[PID] WARNING : when installing binary package ${package}, cannot extract version folder from ${FOLDER_BINARY} and/or ${FOLDER_BINARY_DEBUG}.")
+    message("[PID] WARNING : when installing binary package ${package}, cannot extract install manifest from ${FOLDER_BINARY} and/or ${FOLDER_BINARY_DEBUG}.")
 		return()
 	endif()
 endif()
