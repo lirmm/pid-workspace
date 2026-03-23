@@ -27,6 +27,7 @@ stages:
   script:
     - pid deploy package=mytestpackage
     - pid deploy package=robocop-core version=1.2 release_only=false
+    - pid deploy package=robocop-qp-app-utils release_only=false
     - pid deploy package=opencv version=4.0.1
   interruptible: true
 
@@ -35,6 +36,7 @@ stages:
   script:
     - pid deploy package=mytestpackage
     - pid deploy package=robocop-core version=1.2 release_only=false
+    - pid deploy package=robocop-qp-app-utils release_only=false
     # - pid deploy package=opencv version=4.5.4
   interruptible: true
 
