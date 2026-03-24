@@ -438,7 +438,7 @@ function(upload_File ERROR file url)
         )
         list(GET result 0 RES)
         if(NOT RES EQUAL 0)#error -> abort
-            list(GET output 1 RES)
+            list(GET result 1 RES)
             set(${ERROR} ${RES} PARENT_SCOPE)
         endif()
     endif()
@@ -700,6 +700,7 @@ function(extract_Package_ID_Version_From_JSON ERROR FOUND registry package input
        GET "${${input}}" "${index}")
   if(NOT err_info STREQUAL NOTFOUND
     OR pack_info STREQUAL NOTFOUND)
+    message("[PID] ERROR: cannot get data for package ${package} in registry ${registry}: given json string ('${${input}}') or index ('${index}') in invalid")
     set(${ERROR} TRUE PARENT_SCOPE)
     #no component description at index
     return()
@@ -793,12 +794,12 @@ function(extract_Package_All_Versions_From_JSON ERROR registry package input)
   if(NOT err_info STREQUAL NOTFOUND
     OR all_pack_versions STREQUAL NOTFOUND)
     # problem retrieving the ID -> invalid
-    message("[PID] ERROR: cannot get versions for package $[package} in registry ${registry}")
+    message("[PID] ERROR: cannot get available versions for package ${package} in registry ${registry}")
     set(${ERROR} TRUE PARENT_SCOPE)
     return()
   endif()
 
-  # from here I get an array of version  like:
+  # from here I get an array of versions like:
   # [
   #   {
   #     "created_at" : "2023-03-10T16:47:37.867Z",
@@ -807,6 +808,7 @@ function(extract_Package_All_Versions_From_JSON ERROR registry package input)
   #     "version" : "0.0.2-ghtuhguthg"
   #   }
   # ] 
+  #NOTE: array may be empty
   set(index 0)
   set(more_to_extract TRUE)
   while(more_to_extract)
@@ -1040,6 +1042,9 @@ function(update_Registry_Info registry package)
   )
   extract_Package_All_Versions_From_JSON(ERROR ${registry} ${package} json_list)
   if(ERROR)
+    if(ADDITIONAL_DEBUG_INFO)
+      message("[PID] WARNING: registry update process aborted because no version found for package ${package} in registry ${registry} !")
+    endif()
     reset_Found_Package_IDs()
   endif()
 endfunction(update_Registry_Info)
@@ -1277,7 +1282,7 @@ function(upload_Binary_Version UPLOADED package version native registry)
       endif()
     endwhile()
 
-    if(NOT LOCKED)#no need to put again a lock
+    if(NOT LOCKED)#no need to put again a lock if already locked
       upload_File(ERROR_REASON ${target_lock} ${target_url_lock})
       if(ERROR_REASON)
           message("[PID] ERROR: cannot upload package ${package} version ${version} for platform ${CURRENT_PLATFORM}. Reason: ${ERROR_REASON}. ABORTING.")
@@ -1297,6 +1302,12 @@ function(upload_Binary_Version UPLOADED package version native registry)
     endforeach()
     if(NOT package_id)
       message("[PID] ERROR: cannot upload package ${package} version ${version} for platform ${CURRENT_PLATFORM}. There is a problem getting information from the package registry ${registry}. This may be due to a connection problem or to an internal BUG. Please contact PID developers.")
+      if(ADDITIONAL_DEBUG_INFO)
+        message("  Binary versions available: ")
+        foreach(id IN LISTS ALL_IDS_FOUND)
+          message(" - ${${id}_VERSION} platform: ${${id}_PLATFORM}")
+        endforeach()
+      endif()
       return()
     endif()
     #update file list for the given package
@@ -1304,9 +1315,9 @@ function(upload_Binary_Version UPLOADED package version native registry)
     if(NEED_DELETE_LOCK) #then need to remove the previous lock
       remove_Remote_File(${registry} ${package_id} ${lockfile_name})
       upload_File(ERROR_REASON ${target_lock} ${target_url_lock})
-       if(ERROR_REASON)
-          message("[PID] ERROR: cannot upload package ${package} version ${version} for platform ${CURRENT_PLATFORM}. Reason: ${ERROR_REASON}. ABORTING.")
-          return()
+      if(ERROR_REASON)
+        message("[PID] ERROR: cannot upload package ${package} version ${version} for platform ${CURRENT_PLATFORM}. Reason: ${ERROR_REASON}. ABORTING.")
+        return()
       endif()
     endif()
     #we can suppress the files contained in the package registry

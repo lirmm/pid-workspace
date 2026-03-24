@@ -140,11 +140,10 @@ endif()
 
 #2) clean generate and copy files according to project documentation
 
-#TODO manage lock (add a temporary lock file to the package registry to avoid problems with framework looking at registry
 set(bin_versions_to_document ${KNOWN_VERSIONS})
 if(include_installer)
 	if(NOT TARGET_REGISTRY)
-		message(WARNING "[PID] ERROR: cannot publish binaries for ${TARGET_PACKAGE}. Maybe this is due to th fact that the framework you are using does not define a registry for binaries")
+		message(WARNING "[PID] ERROR: cannot publish binaries for ${TARGET_PACKAGE}. Maybe this is due to the fact that the framework you are using does not define a registry for binaries")
 		set(include_installer FALSE)
 	else()
 		check_CURL(AVAILABLE)
