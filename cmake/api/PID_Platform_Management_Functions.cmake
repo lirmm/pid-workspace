@@ -2633,12 +2633,8 @@ function(check_Package_Platform_Against_Current CHECK_OK package platform versio
   is_Compatible_With_Current_ABI(COMPATIBLE ${package} Release)
   if(NOT COMPATIBLE)
     set(${CHECK_OK} FALSE PARENT_SCOPE)
-    unload_Binary_Package_Install_Manifest(${package})
-    return()
   endif()
-
   unload_Binary_Package_Install_Manifest(${package})
-
 endfunction(check_Package_Platform_Against_Current)
 
 

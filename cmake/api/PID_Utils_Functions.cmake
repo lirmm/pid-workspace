@@ -183,7 +183,6 @@ function(compare_Current_Configuration_Check_Args_With_Previous INCLUDED argumen
     set(is_arg_found FALSE)
     #evaluate values of the argument so that we can compare it
     parse_Configuration_Expression_Argument_Value(ARG_VAL_LIST "${arg_value}")
-
     foreach(iter RANGE 0 ${last_elem_index_mem} 2)
       list(GET constraints_couples ${iter} constraint_name)
       if(constraint_name STREQUAL arg_name)#argument with same value found
@@ -193,18 +192,20 @@ function(compare_Current_Configuration_Check_Args_With_Previous INCLUDED argumen
         list(GET constraints_couples ${value_iter} constraint_value)
         parse_Configuration_Expression_Argument_Value(CONSTRAINT_VAL_LIST "${constraint_value}")
         #second : do the comparison between the value of both arguments (memorized and checked one)
-        foreach(arg_list_val IN LISTS ARG_VAL_LIST)#Note: for list we siply check if the value to check belongs to the list, we do not check strict equality between lists
-          if(NOT arg_list_val IN_LIST CONSTRAINT_VAL_LIST)
+        foreach(arg_val IN LISTS ARG_VAL_LIST)#Note: for list we siply check if the value to check belongs to the list, we do not check strict equality between lists
+          list(FIND CONSTRAINT_VAL_LIST ${arg_val} INDEX)
+          if(INDEX EQUAL -1)
             #we can immediately return => not same check because value of the same argument differs
             return()
           endif()
         endforeach()
-      endif()
-      if(NOT is_arg_found)
-        #if argument not found in memorized constraints then the current check is not the same as previous one
-        return()
+        break()
       endif()
     endforeach()
+    if(NOT is_arg_found)
+      #if argument not found in memorized constraints then the current check is not the same as previous one
+      return()
+    endif()
   endwhile()
   set(${INCLUDED} TRUE PARENT_SCOPE)
 endfunction(compare_Current_Configuration_Check_Args_With_Previous)
