@@ -44,7 +44,7 @@ include(PID_Package_Cache_Management_Functions NO_POLICY_SCOPE)
 #
 #   .. command:: get_Available_Binary_Package_Versions(package LIST_OF_VERSIONS LIST_OF_VERSION_PLATFORM)
 #
-#    Get the list of versions of a given package that conforms to current platform constraints and for which a binary archive is available.
+#    Get the list of versions of a given package for which a binary archive is available.
 #
 #      :package: The name of the package.
 #
@@ -57,12 +57,9 @@ function(get_Available_Binary_Package_Versions package LIST_OF_VERSIONS LIST_OF_
 set(available_binary_package_version)
 foreach(ref_version IN LISTS ${package}_REFERENCES)
 	foreach(ref_platform IN LISTS ${package}_REFERENCE_${ref_version})
-		check_Package_Platform_Against_Current(BINARY_OK ${package} ${ref_platform} ${ref_version})#will return TRUE if the platform conforms to current one
-    if(BINARY_OK)
-			list(APPEND available_binary_package_version "${ref_version}")
-			list(APPEND available_binary_package_version_with_platform "${ref_version}/${ref_platform}")
-			# need to test for following platform because many instances may match
-		endif()
+    list(APPEND available_binary_package_version "${ref_version}")
+    list(APPEND available_binary_package_version_with_platform "${ref_version}/${ref_platform}")
+    # need to test for following platform because many instances may match
 	endforeach()
 endforeach()
 if(NOT available_binary_package_version)
@@ -84,16 +81,16 @@ endfunction(get_Available_Binary_Package_Versions)
 #  select_Platform_Binary_For_Version
 #  ----------------------------------
 #
-#   .. command:: select_Platform_Binary_For_Version(version list_of_bin_with_platform RES_FOR_PLATFORM)
+#   .. command:: select_Platform_Binary_For_Version(package version list_of_bin_with_platform RES_FOR_PLATFORM)
 #
 #    Select the version passed as argument in the list of binary versions of a package and get corresponding platform.
-#
+#      :package: the name of the package
 #      :version: The selected version.
 #      :list_of_bin_with_platform: list of available version+platform for a package (returned from get_Available_Binary_Package_Versions). All these archives are supposed to be binary compatible with current platform.
 #
 #      :RES_FOR_PLATFORM: the output variable that contains the platform to use.
 #
-function(select_Platform_Binary_For_Version version list_of_bin_with_platform RES_FOR_PLATFORM)
+function(select_Platform_Binary_For_Version package version list_of_bin_with_platform RES_FOR_PLATFORM)
 set(chosen_platform)
 if(list_of_bin_with_platform)
   get_Platform_Variables(INSTANCE instance_name)# detect the instance name used for current platform
@@ -102,14 +99,19 @@ if(list_of_bin_with_platform)
       set(bin_platform_name ${CMAKE_MATCH_1})
       extract_Info_From_Platform(RES_ARCH RES_BITS RES_OS RES_ABI res_instance res_base_name ${bin_platform_name})
       if(instance_name AND res_instance STREQUAL instance_name)#the current platform is an instance so verify that binary archive is for this instance
-        # This is the best choice we can do because there is a perfect match of platform instances
-        set(${RES_FOR_PLATFORM} ${bin_platform_name} PARENT_SCOPE)
-        return()
+        check_Package_Platform_Against_Current(BINARY_OK ${package} ${bin_platform_name} ${version})#will return TRUE if the platform conforms to current one
+        if(BINARY_OK)
+          # This is the best choice we can do because there is a perfect match of platform instances
+          set(chosen_platform ${bin_platform_name})
+          break()
+        endif()
       else()
         if(NOT chosen_platform)
-          set(chosen_platform ${bin_platform_name})#memorize the first in list, it will be selected by default
-        elseif((NOT instance_name) AND (NOT res_instance))# if the current workspace has no instance specified, prefer a binary archive that is agnostic of instance, if any provided
-          set(chosen_platform ${bin_platform_name})#memorize this archive because it is agnostic of platform instance
+          check_Package_Platform_Against_Current(BINARY_OK ${package} ${bin_platform_name} ${version})#will return TRUE if the platform conforms to current one
+          if(BINARY_OK)
+            # This is the best choice we can do because there is a perfect match of platform instances
+            set(chosen_platform ${bin_platform_name})#memorize the first in list, it will be selected by default (avoid too numerous checks)
+          endif()
         endif()
       endif()
 		endif()
