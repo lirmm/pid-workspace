@@ -1169,7 +1169,7 @@ endfunction(test_Symbols_Compatibility)
 #
 #   Get Sonames and symbols required by the libraries coming from a configuration.
 #
-#     :binary_config_args_var: the variable containing the list if arguments of a configuration.
+#     :binary_config_args_var: the variable containing the list of arguments of a configuration.
 #
 #     :SONAME: the output variable that contains sonames required by the configuration.
 #     :SYMBOLS: the output variable that contains symbols required by the configuration.
@@ -1233,12 +1233,12 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
   get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
   # testing for languages standard libraries SO versions and symbols
   foreach(lang IN LISTS ${package}_LANGUAGE_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
-    #get SONAME and SYMBOLS coming from language configuration
-    #WARNING Note: use same arguments as binary (soname and symbol are not used to directly check validity of the configuration) !!
+    #WARNING Note: use same arguments as binary (soname and symbol are not used to directly check validity of the configuration so it will not cause troubles) !!
     check_Language_Configuration_With_Arguments(SYSCHECK_RESULT LANG_SPECS TARGET_PLATFORM_SPECS ${lang} ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX} ${mode})
-    #get SONAME and SYMBOLS coming from package configuration
+    #get SONAME and SYMBOLS coming from language configuration
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS LANG_SPECS)
-    get_Soname_Symbols_Values(PACKAGE_SONAME PACKAGE_SYMBOLS PACKAGE_SPECS)
+    #get SONAME and SYMBOLS coming from package configuration
+    get_Soname_Symbols_Values(PACKAGE_SONAME PACKAGE_SYMBOLS ${package}_LANGUAGE_CONFIGURATION_${lang}_ARGS${VAR_SUFFIX})
     #from here we have the value to compare with
     if(PACKAGE_SONAME)#package defines constraints on SONAMES
       test_Soname_Compatibility(SONAME_COMPATIBLE PACKAGE_SONAME PLATFORM_SONAME)
@@ -1264,12 +1264,13 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
 
   # testing sonames and symbols of libraries coming from platform configurations used by package
   foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
-    #get SONAME and SYMBOLS coming from platform configuration
+    #get evaluation of current platform configuration
     #WARNING Note: use same arguments as binary package !!
     check_Platform_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${package} ${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX} ${mode})
+    #get SONAME and SYMBOLS coming from platform configuration
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS PLATFORM_SPECS)
     #get SONAME and SYMBOLS coming from package configuration
-    get_Soname_Symbols_Values(PACKAGE_SONAME PACKAGE_SYMBOLS PACKAGE_SPECS)
+    get_Soname_Symbols_Values(PACKAGE_SONAME PACKAGE_SYMBOLS ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX})
     #from here we have the value to compare with
     if(PACKAGE_SONAME)#package defines constraints on SONAMES
       test_Soname_Compatibility(SONAME_COMPATIBLE PACKAGE_SONAME PLATFORM_SONAME)
