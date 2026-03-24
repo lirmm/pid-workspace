@@ -47,7 +47,7 @@ elseif(CURRENT_PLATFORM_OS STREQUAL "freebsd")
 elseif(CURRENT_PLATFORM_OS STREQUAL "linux")
   #on linuxwe need to detect the distribution, if any
   find_program(PATH_TO_LSB NAMES lsb_release NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH)
-  if(NOT PATH_TO_LSB AND CURRENT_PACKAGING_SYSTEM_EXE)#try to install lsb_release based on the identified package manager
+  if(NOT PATH_TO_LSB AND CURRENT_PACKAGING_SYSTEM_CMD_INSTALL)#try to install lsb_release based on the identified package manager
     set(package_name)
     if(CURRENT_PACKAGING_SYSTEM STREQUAL APT)
       execute_System_Packaging_Command(lsb-release)

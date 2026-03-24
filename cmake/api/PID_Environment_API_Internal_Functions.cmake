@@ -120,6 +120,12 @@ function(reset_Environment_Description)
   # variable to manage generator in use
   set(${PROJECT_NAME}_GENERATOR_TOOLSET CACHE INTERNAL "")
   set(${PROJECT_NAME}_GENERATOR_PLATFORM CACHE INTERNAL "")
+  set(${PROJECT_NAME}_PACKAGER CACHE INTERNAL "")
+  set(${PROJECT_NAME}_PACKAGER_EXE CACHE INTERNAL "")
+  set(${PROJECT_NAME}_PACKAGER_INSTALL_CMD CACHE INTERNAL "")
+  set(${PROJECT_NAME}_PACKAGER_UPDATE_CMD CACHE INTERNAL "")
+  set(${PROJECT_NAME}_PACKAGER_UPGRADE_CMD CACHE INTERNAL "")
+  set(${PROJECT_NAME}_PACKAGER_NONROOT CACHE INTERNAL "")
   # specific for crosscompilation
   set(${PROJECT_NAME}_TARGET_SYSROOT CACHE INTERNAL "")
   set(${PROJECT_NAME}_TARGET_STAGING CACHE INTERNAL "")
@@ -653,7 +659,7 @@ endfunction(load_Environment)
 #
 #   .. command:: generate_Environment_Inputs_File(environment)
 #
-#     Configure the target environment in orderto get the filedescribing its inputs.
+#     Configure the target environment in order to get the file describing its inputs.
 #
 #      :environment: the name of the target environment.
 #
@@ -1126,6 +1132,16 @@ if(DEFINED ${dep_toolset_prefix}_HOST_COMPILER)
 endif()
 endfunction(check_Toolset_Conflict_And_Merge)
 
+macro(check_set_imported_variable prefix var_name environment topic_message)
+if(${prefix}_${var_name})
+  if(${PROJECT_NAME}_${var_name})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : ${topic_message} in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_${var_name}}")
+  endif()
+  set(${PROJECT_NAME}_${var_name} ${${prefix}_${var_name}} CACHE INTERNAL "")
+  set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
+endif()
+endmacro(check_set_imported_variable)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -1143,7 +1159,7 @@ endfunction(check_Toolset_Conflict_And_Merge)
 #      :environment: the name of the dependency.
 #
 function(import_Solution_From_Dependency environment)
-set(prefix ${environment}_${LAST_RUN_HASHCODE})
+  set(prefix ${environment}_${LAST_RUN_HASHCODE})
   if(${prefix}_CROSSCOMPILATION)
     set(${PROJECT_NAME}_CROSSCOMPILATION ${${prefix}_CROSSCOMPILATION} CACHE INTERNAL "")
     if(NOT ${PROJECT_NAME}_TARGET_SYSROOT AND ${prefix}_TARGET_SYSROOT)#only if value not set at upper level !
@@ -1208,63 +1224,13 @@ set(prefix ${environment}_${LAST_RUN_HASHCODE})
                     "${${prefix}_EXTRA_${tool}_PLUGIN_ON_DEMAND}"
       )
   endforeach()
-
-  if(${prefix}_LINKER)
-    if(${PROJECT_NAME}_LINKER)
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : the system linker in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_LINKER}")
-      return()
-    endif()
-    set(${PROJECT_NAME}_LINKER ${${prefix}_LINKER} CACHE INTERNAL "")
-    set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
-  endif()
-  if(${prefix}_AR)
-    if(${PROJECT_NAME}_AR)
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : the system archiver in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_AR}")
-      return()
-    endif()
-    set(${PROJECT_NAME}_AR ${${prefix}_AR} CACHE INTERNAL "")
-    set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
-  endif()
-  if(${prefix}_NM)
-    if(${PROJECT_NAME}_NM)
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : the system naming tool in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_NM}")
-      return()
-    endif()
-    set(${PROJECT_NAME}_NM ${${prefix}_NM} CACHE INTERNAL "")
-    set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
-  endif()
-  if(${prefix}_RANLIB)
-    if(${PROJECT_NAME}_RANLIB)
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : the system static libraries creator tool in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_RANLIB}")
-      return()
-    endif()
-    set(${PROJECT_NAME}_RANLIB ${${prefix}_RANLIB} CACHE INTERNAL "")
-    set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
-  endif()
-  if(${prefix}_OBJDUMP)
-    if(${PROJECT_NAME}_OBJDUMP)
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : the system objdump tool in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_OBJDUMP}")
-      return()
-    endif()
-    set(${PROJECT_NAME}_OBJDUMP ${${prefix}_OBJDUMP} CACHE INTERNAL "")
-    set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
-  endif()
-  if(${prefix}_OBJCOPY)
-    if(${PROJECT_NAME}_OBJCOPY)
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : the system objcopy tool in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_OBJCOPY}")
-      return()
-    endif()
-    set(${PROJECT_NAME}_OBJCOPY ${${prefix}_OBJCOPY} CACHE INTERNAL "")
-    set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
-  endif()
-  if(${prefix}_RPATH)
-    if(${PROJECT_NAME}_RPATH)
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : the system rpath edition tool in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_RPATH}")
-      return()
-    endif()
-    set(${PROJECT_NAME}_RPATH ${${prefix}_RPATH} CACHE INTERNAL "")
-    set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
-  endif()
+  check_set_imported_variable(${prefix} "LINKER" ${environment} "system linker")
+  check_set_imported_variable(${prefix} "AR" ${environment} "system archiver")
+  check_set_imported_variable(${prefix} "NM" ${environment} "system naming tool")
+  check_set_imported_variable(${prefix} "RANLIB" ${environment} "system static libraries creator tool")
+  check_set_imported_variable(${prefix} "OBJDUMP" ${environment} "system objdump tool")
+  check_set_imported_variable(${prefix} "OBJCOPY" ${environment} "system objcopy tool")
+  check_set_imported_variable(${prefix} "RPATH" ${environment} "system rpath edition tool")
 
   if(${prefix}_INCLUDE_DIRS)
     append_Unique_In_Cache(${PROJECT_NAME}_INCLUDE_DIRS "${${prefix}_INCLUDE_DIRS}")
@@ -1295,20 +1261,18 @@ set(prefix ${environment}_${LAST_RUN_HASHCODE})
     set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
   endif()
 
-  if(${prefix}_GENERATOR_TOOLSET)#may overwrite user choice
-    if(${PROJECT_NAME}_GENERATOR_TOOLSET)
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : the geneator toolset in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_GENERATOR_TOOLSET}")
-      return()
-    endif()
-    set(${PROJECT_NAME}_GENERATOR_TOOLSET ${${prefix}_GENERATOR_TOOLSET} CACHE INTERNAL "")
-  endif()
-  if(${prefix}_GENERATOR_PLATFORM)#may overwrite user choice
-    if(${PROJECT_NAME}_GENERATOR_PLATFORM)
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : the geneator platform in use cannot be set by environment ${environment} because it is already set to ${${PROJECT_NAME}_GENERATOR_PLATFORM}")
-      return()
-    endif()
-    set(${PROJECT_NAME}_GENERATOR_PLATFORM ${${prefix}_GENERATOR_PLATFORM} CACHE INTERNAL "")
-  endif()
+  #CMake generator related
+  check_set_imported_variable(${prefix} "GENERATOR_TOOLSET" ${environment} "generator toolset")
+  check_set_imported_variable(${prefix} "GENERATOR_PLATFORM" ${environment} "generator platform")
+
+  #packager related
+  check_set_imported_variable(${prefix} "PACKAGER" ${environment} "packager")
+  check_set_imported_variable(${prefix} "PACKAGER_EXE" ${environment} "packager command")
+  check_set_imported_variable(${prefix} "PACKAGER_INSTALL_OPTS" ${environment} "packager install options")
+  check_set_imported_variable(${prefix} "PACKAGER_UPDATE_OPTS" ${environment} "packager update options")
+  check_set_imported_variable(${prefix} "PACKAGER_UPGRADE_OPTS" ${environment} "packager upgrade options")
+  check_set_imported_variable(${prefix} "PACKAGER_NONROOT" ${environment} "packager nonroot forced status")
+
 endfunction(import_Solution_From_Dependency)
 
 #.rst:
@@ -1894,7 +1858,7 @@ endfunction(deduce_Platform_Variables)
 #
 #   .. command:: generate_Environment_Toolchain_File(index)
 #
-#   Create the toochain file for the current environment projec. It is used to configure the workspace.
+#   Create the toochain file for the current environment project. It is used to configure the workspace.
 #
 function(generate_Environment_Toolchain_File)
   set(description_file ${CMAKE_BINARY_DIR}/PID_Toolchain.cmake)
@@ -2042,7 +2006,15 @@ function(generate_Environment_Toolchain_File)
   if(${PROJECT_NAME}_RPATH)
     file(APPEND ${description_file} "set(PID_USE_RPATH_UTILITY ${${PROJECT_NAME}_RPATH} CACHE INTERNAL \"\" FORCE)\n")
   endif()
-
+  if(${PROJECT_NAME}_PACKAGER)
+    file(APPEND ${description_file} "set(PID_USE_PACKAGER ${${PROJECT_NAME}_PACKAGER} CACHE INTERNAL \"\" FORCE)\n")
+    file(APPEND ${description_file} "set(PID_USE_PACKAGER_EXE ${${PROJECT_NAME}_PACKAGER_EXE} CACHE INTERNAL \"\" FORCE)\n")
+    file(APPEND ${description_file} "set(PID_USE_PACKAGER_INSTALL_CMD ${${PROJECT_NAME}_PACKAGER_INSTALL_CMD} CACHE INTERNAL \"\" FORCE)\n")
+    file(APPEND ${description_file} "set(PID_USE_PACKAGER_UPDATE_CMD ${${PROJECT_NAME}_PACKAGER_UPDATE_CMD} CACHE INTERNAL \"\" FORCE)\n")
+    file(APPEND ${description_file} "set(PID_USE_PACKAGER_UPGRADE_CMD ${${PROJECT_NAME}_PACKAGER__UPGRADE_OPTS} CACHE INTERNAL \"\" FORCE)\n")
+    file(APPEND ${description_file} "set(PID_USE_PACKAGER_NONROOT ${${PROJECT_NAME}_PACKAGER_NONROOT} CACHE INTERNAL \"\" FORCE)\n")
+  endif()
+  
   if(${PROJECT_NAME}_CROSSCOMPILATION)
     # avoid problem with try_compile when cross compiling
     file(APPEND ${description_file} "set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY CACHE INTERNAL \"\" FORCE)\n")
@@ -2275,13 +2247,21 @@ endfunction(add_Language_Toolset)
 #     :module_flags: list of flags to add when linking a module library
 #     :static_flags: list of flags to add when linking a static library
 #     :shared_flags: list of flags to add when linking a shared library
+#     :packager: name of the packager
+#     :pkg_exe: command or absolute path to program used by packager 
+#     :pkg_install_cmd: command argument to install a package
+#     :pkg_update_cmd: command argument to update the environment
+#     :pkg_upgrade_cmd: command argument to upgrade the environment
+#     :pkg_nonroot: true if packager must be used as non root user
 #
 function(set_System_Wide_Configuration gen_toolset gen_platform
                                        sysroot staging
                                        linker ar ranlib nm objdump objcopy rpath
                                        inc_dirs lib_dirs prog_dirs
                                        exe_flags module_flags static_flags shared_flags
-                                      )
+                                       packager pkg_exe pkg_install_cmd pkg_update_cmd pkg_upgrade_cmd pkg_nonroot
+    )
+
   #manage generator toolsets
   if(gen_toolset)
     set(${PROJECT_NAME}_GENERATOR_TOOLSET ${gen_toolset} CACHE INTERNAL "")
@@ -2342,6 +2322,16 @@ function(set_System_Wide_Configuration gen_toolset gen_platform
   endif()
   if(shared_flags)
     append_Unique_In_Cache(${PROJECT_NAME}_SHARED_LINKER_FLAGS "${shared_flags}")
+  endif()
+
+
+  if(packager)
+    set(${PROJECT_NAME}_PACKAGER ${packager} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_PACKAGER_EXE ${pkg_exe} CACHE INTERNAL "")
+    set(${PROJECT_NAME}_PACKAGER_INSTALL_CMD "${pkg_install_cmd}" CACHE INTERNAL "")
+    set(${PROJECT_NAME}_PACKAGER_UPDATE_CMD "${pkg_update_cmd}" CACHE INTERNAL "")
+    set(${PROJECT_NAME}_PACKAGER_UPGRADE_CMD "${pkg_upgrade_cmd}" CACHE INTERNAL "")
+    set(${PROJECT_NAME}_PACKAGER_NONROOT ${pkg_nonroot} CACHE INTERNAL "")
   endif()
   set(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION TRUE CACHE INTERNAL "")
 endfunction(set_System_Wide_Configuration)
@@ -2599,6 +2589,14 @@ if(${PROJECT_NAME}_SYSTEM_WIDE_CONFIGURATION)
   file(APPEND ${file} "set(${prefix}_LIBRARY_DIRS ${${PROJECT_NAME}_LIBRARY_DIRS} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${prefix}_INCLUDE_DIRS ${${PROJECT_NAME}_INCLUDE_DIRS} CACHE INTERNAL \"\")\n")
   file(APPEND ${file} "set(${prefix}_PROGRAM_DIRS ${${PROJECT_NAME}_PROGRAM_DIRS} CACHE INTERNAL \"\")\n")
+  #packager related
+  file(APPEND ${file} "set(${prefix}_PACKAGER ${${PROJECT_NAME}_PACKAGER} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_PACKAGER_EXE ${${PROJECT_NAME}_PACKAGER_EXE} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_PACKAGER_INSTALL_CMD ${${PROJECT_NAME}_PACKAGER_INSTALL_CMD} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_PACKAGER_UPDATE_CMD ${${PROJECT_NAME}_PACKAGER_UPDATE_CMD} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_PACKAGER_UPGRADE_CMD ${${PROJECT_NAME}_PACKAGER_UPGRADE_CMD} CACHE INTERNAL \"\")\n")
+  file(APPEND ${file} "set(${prefix}_PACKAGER_NONROOT ${${PROJECT_NAME}_PACKAGER_NONROOT} CACHE INTERNAL \"\")\n")
+  
 endif()
 
 file(APPEND ${file} "set(${prefix}_LANGUAGES ${${PROJECT_NAME}_LANGUAGES} CACHE INTERNAL \"\")\n")
@@ -2823,6 +2821,24 @@ function(print_Evaluated_Environment environment)
     endif()
     if(${prefix}_PROGRAM_DIRS)
       message("- system program directories: ${${prefix}_PROGRAM_DIRS}")
+    endif()
+    if(${prefix}_PACKAGER)
+      message("- packager: ${${prefix}_PACKAGER}")
+    endif()
+    if(${prefix}_PACKAGER_EXE)
+      message("- packager: ${${prefix}_PACKAGER_EXE}")
+    endif()
+    if(${prefix}_PACKAGER_INSTALL_CMD)
+      message("- packager: ${${prefix}_PACKAGER_INSTALL_CMD}")
+    endif()
+    if(${prefix}_PACKAGER_UPDATE_CMD)
+      message("- packager: ${${prefix}_PACKAGER_UPDATE_CMD}")
+    endif()
+    if(${prefix}_PACKAGER_UPGRADE_CMD)
+      message("- packager: ${${prefix}_PACKAGER_UPGRADE_CMD}")
+    endif()
+    if(${prefix}_PACKAGER_NONROOT)
+      message("- packager: ${${prefix}_PACKAGER_NONROOT}")
     endif()
   endif()
 

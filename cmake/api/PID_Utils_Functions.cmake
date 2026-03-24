@@ -497,12 +497,12 @@ endmacro(execute_OS_Command)
 function(execute_System_Packaging_Command)
   set(sys_pack_commands)
   if(NOT ARGN)#no parameters it is an update/upgrade command
-    if(CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS)
-      set(sys_pack_commands CURRENT_PACKAGING_SYSTEM_EXE_UPDATE_OPTIONS)
+    if(CURRENT_PACKAGING_SYSTEM_CMD_UPDATE)
+      set(sys_pack_commands CURRENT_PACKAGING_SYSTEM_CMD_UPDATE)
     endif()
-    list(APPEND sys_pack_commands CURRENT_PACKAGING_SYSTEM_EXE_UPGRADE_OPTIONS)
+    list(APPEND sys_pack_commands CURRENT_PACKAGING_SYSTEM_CMD_UPGRADE)
   else()
-    set(sys_pack_commands CURRENT_PACKAGING_SYSTEM_EXE_OPTIONS)
+    set(sys_pack_commands CURRENT_PACKAGING_SYSTEM_CMD_INSTALL)
   endif()
   foreach(command IN LISTS sys_pack_commands)
     if(IN_CI_PROCESS)
@@ -512,14 +512,14 @@ function(execute_System_Packaging_Command)
           OUTPUT_VARIABLE process_output
           ERROR_VARIABLE process_output
           RESULT_VARIABLE result
-          COMMAND sudo -u builduser ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN}
+          COMMAND sudo -u builduser ${${command}} ${ARGN}
         )
       else()#directly use the root user
         execute_process(
           OUTPUT_VARIABLE process_output
           ERROR_VARIABLE process_output
           RESULT_VARIABLE result
-          COMMAND ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN}
+          COMMAND ${${command}} ${ARGN}
         )
       endif()
       # In CI only print on error (ADDITIONAL_DEBUG_INFO is always set)
@@ -538,14 +538,14 @@ function(execute_System_Packaging_Command)
         execute_process(
           ${OUTPUT_MODE}
           RESULT_VARIABLE result
-          COMMAND ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN}
+          COMMAND ${${command}} ${ARGN}
         )
       else()
         #need to have super user privileges except in CI where sudo is forbidden
         execute_process(
           ${OUTPUT_MODE}
           RESULT_VARIABLE result
-          COMMAND sudo ${CURRENT_PACKAGING_SYSTEM_EXE} ${${command}} ${ARGN}
+          COMMAND sudo ${${command}} ${ARGN}
         )
       endif()
       if(NOT result EQUAL 0 AND OUTPUT_MODE)

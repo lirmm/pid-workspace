@@ -603,6 +603,11 @@ endmacro(build_PID_Environment)
 #     :MODULE_FLAGS ...: the output variable containing the link flags for modules.
 #     :STATIC_FLAGS ...: the output variable containing the link flags for static libraries.
 #     :SHARED_FLAGS ...: the output variable containing the link flags for shared libraries.
+#     :PACKAGER: ...: the output variable containing the packager name.
+#     :PKG_EXE: ...: the output variable containing the package command or path to program.
+#     :PKG_INSTALL: ...: the output variable containing the packager install command.
+#     :PKG_UPDATE: ...: the output variable containing the packager update command.
+#     :PKG_UPGRADE: ...: the output variable containing the packager upgrade command.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -623,8 +628,8 @@ endmacro(build_PID_Environment)
 #        get_Configured_Environment_Tool(SYSTEM LINKER path_to_linker EXE_FLAGS flags_for_exe)
 #
 function(get_Configured_Environment_Tool)
-  set(options SYSTEM)
-  set(monoValueArgs FLAGS EXE_FLAGS MODULE_FLAGS STATIC_FLAGS SHARED_FLAGS SYSROOT STAGING LANGUAGE COMPILER HOST_COMPILER TOOLCHAIN_ID INTERPRETER NM OBJDUMP OBJCOPY LIBRARY AR RANLIB LINKER GEN_TOOLSET GEN_PLATFORM PROGRAM_DIRS LIBRARY_DIRS INCLUDE_DIRS)
+  set(options SYSTEM PKG_NONROOT)
+  set(monoValueArgs FLAGS EXE_FLAGS MODULE_FLAGS STATIC_FLAGS SHARED_FLAGS SYSROOT STAGING LANGUAGE COMPILER HOST_COMPILER TOOLCHAIN_ID INTERPRETER NM OBJDUMP OBJCOPY LIBRARY AR RANLIB LINKER GEN_TOOLSET GEN_PLATFORM PROGRAM_DIRS LIBRARY_DIRS INCLUDE_DIRS PACKAGER PKG_EXE PKG_INSTALL PKG_UPDATE PKG_UPGRADE)
   cmake_parse_arguments(GET_CONF_ENV_TOOL "${options}" "${monoValueArgs}" "" ${ARGN})
 
   if(NOT GET_CONF_ENV_TOOL_LANGUAGE AND NOT GET_CONF_ENV_TOOL_SYSTEM)
@@ -689,6 +694,26 @@ function(get_Configured_Environment_Tool)
     if(GET_CONF_ENV_TOOL_SHARED_FLAGS)
       set(${GET_CONF_ENV_TOOL_SHARED_FLAGS} ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} PARENT_SCOPE)
     endif()
+     if(GET_CONF_ENV_TOOL_PACKAGER)
+      set(${GET_CONF_ENV_TOOL_PACKAGER} ${${PROJECT_NAME}_PACKAGER} PARENT_SCOPE)
+    endif()
+     if(GET_CONF_ENV_TOOL_PKG_EXE)
+      set(${GET_CONF_ENV_TOOL_PKG_EXE} ${${PROJECT_NAME}_PACKAGER_EXE} PARENT_SCOPE)
+    endif()
+     if(GET_CONF_ENV_TOOL_PKG_INSTALL)
+      set(${GET_CONF_ENV_TOOL_PKG_INSTALL} ${${PROJECT_NAME}_PACKAGER_INSTALL_CMD} PARENT_SCOPE)
+    endif()
+     if(GET_CONF_ENV_TOOL_PKG_UPDATE)
+      set(${GET_CONF_ENV_TOOL_PKG_UPDATE} ${${PROJECT_NAME}_PACKAGER_UPDATE_CMD} PARENT_SCOPE)
+    endif()
+    if(GET_CONF_ENV_TOOL_PKG_UPGRADE)
+      set(${GET_CONF_ENV_TOOL_PKG_UPGRADE} ${${PROJECT_NAME}_PACKAGER_UPGRADE_CMD} PARENT_SCOPE)
+    endif()
+    if(GET_CONF_ENV_TOOL_PKG_NONROOT)
+      set(${GET_CONF_ENV_TOOL_PKG_NONROOT} ${${PROJECT_NAME}_PACKAGER_NONROOT} PARENT_SCOPE)
+    endif()
+
+         
   else()#get information about a specific language
     set(lang ${GET_CONF_ENV_TOOL_LANGUAGE})
     set(configured_toolset ${PROJECT_NAME}_${lang}_TOOLSET_0)
@@ -791,6 +816,12 @@ endfunction(get_Configured_Environment_Tool)
 #     :LIBRARY_DIRS ...: list of path to library dirs (for SYSTEM).
 #     :CONFIGURATION ...: list of required platform configurations (for EXTRA).
 #     :PLUGIN [ON_DEMAND] [ BEFORE_DEPS ...] [BEFORE_COMPS ...] [DURING_COMPS ...] [AFTER_COMPS ...]: plugin script to call at specific package configuration times. ON_DEMAND specifies that the plugin will execute only if the environment is explicitely required by the package.
+#     :PACKAGER: ...: the packager name.
+#     :PKG_EXE: ...: the packager command or path to program.
+#     :PKG_INSTALL: ...: the packager install command.
+#     :PKG_UPDATE: ...: the packager update command.
+#     :PKG_UPGRADE: ...: the packager upgrade command.
+#     :PKG_NONROOT: ...: tell if the packager must be run as non root.
 #
 #     .. admonition:: Constraints
 #        :class: warning
@@ -814,9 +845,9 @@ endfunction(get_Configured_Environment_Tool)
 #                                   PLUGIN AFTER use_pkg-config.cmake)
 #
 function(configure_Environment_Tool)
-  set(options SYSTEM EXE MODULE STATIC SHARED CURRENT)
-  set(monoValueArgs EXTRA PROGRAM CONFIGURATION SYSROOT STAGING LANGUAGE COMPILER HOST_COMPILER TOOLCHAIN_ID INTERPRETER NM OBJDUMP OBJCOPY AR RANLIB LINKER GEN_TOOLSET GEN_PLATFORM COVERAGE RPATH)
-  set(multiValueArgs PLUGIN FLAGS PROGRAM_DIRS LIBRARY_DIRS INCLUDE_DIRS LIBRARY)
+  set(options SYSTEM EXE MODULE STATIC SHARED CURRENT PKG_NONROOT)
+  set(monoValueArgs EXTRA PROGRAM CONFIGURATION SYSROOT STAGING LANGUAGE COMPILER HOST_COMPILER TOOLCHAIN_ID INTERPRETER NM OBJDUMP OBJCOPY AR RANLIB LINKER GEN_TOOLSET GEN_PLATFORM COVERAGE RPATH PACKAGER PKG_EXE)
+  set(multiValueArgs PLUGIN FLAGS PROGRAM_DIRS LIBRARY_DIRS INCLUDE_DIRS LIBRARY PKG_INSTALL PKG_UPDATE PKG_UPGRADE)
   cmake_parse_arguments(CONF_ENV_TOOL "${options}" "${monoValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if(NOT CONF_ENV_TOOL_LANGUAGE AND NOT CONF_ENV_TOOL_SYSTEM AND NOT CONF_ENV_TOOL_EXTRA)
@@ -903,6 +934,12 @@ function(configure_Environment_Tool)
       set(${PROJECT_NAME}_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS}" CACHE INTERNAL "")
       set(${PROJECT_NAME}_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}" CACHE INTERNAL "")
       set(${PROJECT_NAME}_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS}" CACHE INTERNAL "")
+      set(${PROJECT_NAME}_PACKAGER ${CURRENT_PACKAGING_SYSTEM} CACHE INTERNAL "")
+      set(${PROJECT_NAME}_PACKAGER_EXE ${CURRENT_PACKAGING_SYSTEM_EXE} CACHE INTERNAL "")
+      set(${PROJECT_NAME}_PACKAGER_INSTALL_CMD "${CURRENT_PACKAGING_SYSTEM_CMD_INSTALL}" CACHE INTERNAL "")
+      set(${PROJECT_NAME}_PACKAGER_UPDATE_CMD "${CURRENT_PACKAGING_SYSTEM_CMD_UPDATE}" CACHE INTERNAL "")
+      set(${PROJECT_NAME}_PACKAGER_UPGRADE_CMD "${CURRENT_PACKAGING_SYSTEM_CMD_UPGRADE}" CACHE INTERNAL "")
+      set(${PROJECT_NAME}_PACKAGER_NONROOT ${CURRENT_PACKAGING_SYSTEM_FORCE_NON_ROOT_USER} CACHE INTERNAL "")
     endif()
 
     set(exe_flags)
@@ -942,6 +979,7 @@ function(configure_Environment_Tool)
         "${CONF_ENV_TOOL_NM}"   "${CONF_ENV_TOOL_OBJDUMP}" "${CONF_ENV_TOOL_OBJCOPY}" "${CONF_ENV_TOOL_RPATH}"
         "${CONF_ENV_TOOL_INCLUDE_DIRS}"   "${CONF_ENV_TOOL_LIBRARY_DIRS}" "${CONF_ENV_TOOL_PROGRAM_DIRS}"
         "${exe_flags}" "${module_flags}" "${static_flags}" "${shared_flags}"
+        "${CONF_ENV_TOOL_PACKAGER}" "${CONF_ENV_TOOL_PKG_EXE}" "${CONF_ENV_TOOL_PKG_INSTALL}" "${CONF_ENV_TOOL_PKG_UPDATE}" "${CONF_ENV_TOOL_PKG_UPGRADE}" "${CONF_ENV_TOOL_PKG_NONROOT}"
     )
 
   elseif(CONF_ENV_TOOL_EXTRA)#extra tool defined
