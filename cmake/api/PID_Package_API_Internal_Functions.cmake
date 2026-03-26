@@ -1189,7 +1189,6 @@ else()#native
 			set(message_versions "Exact version already required is ${${dep_package}_REQUIRED_VERSION_EXACT}")
 		endif()
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding versions constraints. Search ended when trying to satisfy version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} coming from package ${PROJECT_NAME}. ${message_versions}. Try to put this dependency as first dependency in your CMakeLists.txt in order to force its version constraint before any other.")
-		return()
 	elseif(${dep_package}_FOUND${USE_MODE_SUFFIX})
 		if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")#do not propagate choice if none made
 			add_Chosen_Package_Version_In_Current_Process(${dep_package} ${PROJECT_NAME})

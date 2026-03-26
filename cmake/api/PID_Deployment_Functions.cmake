@@ -144,6 +144,78 @@ endfunction(generate_Wrapper_Reference_File)
 ################ external) in the workspace #################################################
 #############################################################################################
 
+
+function(resolve_dependency_conflict package dependency first_time)
+  set(required_by_info)
+  foreach(pack IN LISTS RESOLVE_PACKAGE_DEPENDENCIES_REQUIRED_BY)
+    if(pack STREQUAL package)
+      break()
+    endif()
+    set(new_pack_info "${pack} (${${pack}_VERSION_STRING})")
+    if(required_by_info)
+      set(required_by_info "${required_by_info} -> ${new_pack_info}")
+    else()
+      set(required_by_info "${new_pack_info}")
+    endif()
+  endforeach()
+  if(NOT required_by_info)#empty because it is a direct dependency
+    set(required_by_info "${PROJECT_NAME} (${${PROJECT_NAME}_VERSION})")
+  endif()
+
+  message("[PID] WARNING : package ${package} (${${package}_VERSION_STRING}) required by ${required_by_info} has a conflicting dependency:")
+  get_Package_Type(${dependency} PACK_TYPE)
+  if(PACK_TYPE STREQUAL "EXTERNAL")
+    if(${package}_EXTERNAL_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX})
+      set(str "with version ${${package}_EXTERNAL_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}")
+    else()
+      set(str "without version constraint")
+    endif()
+  else()
+    if(${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX})
+      set(str "with version ${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}")
+    else()
+      set(str "without version constraint")
+    endif()
+  endif()
+  get_Dependency_Resolution_Path_For(requirement_tree ${dependency} ${mode})
+  message("- ${dependency} is required ${str}. Already required by: ${requirement_tree}")
+  
+  if(NOT first_time)# we are currently trying to reinstall the same package !!
+    finish_Progress(${GLOBAL_PROGRESS_VAR})
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : Impossible to solve conflicting dependencies for package ${package}. Try to solve these problems by setting adequate versions to dependencies.")
+  else()#OK first time package is resolved during the build process
+    message("[PID] INFO: rebuild package ${package} version ${${package}_VERSION_STRING}...")
+    get_Package_Type(${package} PACK_TYPE)
+    set(INSTALL_OK)
+    # reinstall by forcing rebuild of the package => the rebuild will automatically manage and resolve dependencies with current global build constraints
+    if(PACK_TYPE STREQUAL "EXTERNAL")
+      install_External_Package(INSTALL_OK ${package} TRUE TRUE "${release_only}")
+    elseif(PACK_TYPE STREQUAL "NATIVE")
+      install_Native_Package(INSTALL_OK ${package} TRUE "${release_only}")
+    endif()
+    if(INSTALL_OK)
+      set(${package}_FIND_VERSION_SYSTEM ${${package}_REQUIRED_VERSION_SYSTEM})#using the memorized contraint on version to set adeqautely which variant (OS or PID) to use
+      if(${package}_REQUIRED_VERSION_EXACT)
+        set(exact_str "EXACT")
+      else()
+        set(exact_str "")
+      endif()
+      find_package_resolved(${package} ${${package}_VERSION_STRING} ${exact_str} REQUIRED)#find again the package but this time we impose as constraint the specific version searched
+      if(NOT ${package}_FOUND${VAR_SUFFIX})
+        finish_Progress(${GLOBAL_PROGRESS_VAR})
+        if(${package}_REQUIRED_VERSION_SYSTEM)
+          set(os_str "OS ")
+        endif()
+        message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} with ${os_str}version ${${package}_VERSION_STRING} cannot be found after its redeployment ! No known solution can automatically be found to this problem. Aborting.")
+      endif()
+      resolve_Package_Dependencies(${package} ${mode} FALSE "${release_only}")#resolving again the dependencies on same package by recursion
+    else()# cannot do much more about that !!
+      finish_Progress(${GLOBAL_PROGRESS_VAR})
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} has conflicting dependencies and the target version ${${package}_VERSION_STRING} cannot be rebuilt !")
+    endif()
+  endif()
+endfunction(resolve_dependency_conflict)
+
 #.rst:
 #
 # .. ifmode:: internal
@@ -241,8 +313,6 @@ if(list_of_unresolved_configs)
   endif()
 endif()
 ################## management of external packages : for both external and native packages ##################
-set(list_of_conflicting_dependencies)
-
 # 1) managing external package dependencies (the list of dependent packages is defined as ${package}_EXTERNAL_DEPENDENCIES)
 # - locating dependent external packages in the workspace and configuring their build variables recursively
 foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
@@ -275,7 +345,9 @@ foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
       resolve_Package_Dependencies(${dep_ext_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
     endif()
   elseif(NOT IS_VERSION_COMPATIBLE OR NOT IS_ABI_COMPATIBLE)#the dependency version is not compatible with previous constraints set by other packages
-    list(APPEND list_of_conflicting_dependencies ${dep_ext_pack})#try to reinstall it from sources if possible, simply add it to the list of packages to install
+    #try to reinstall it from sources if possible, simply add it to the list of packages to install
+    resolve_dependency_conflict(${package} ${dep_ext_pack} ${first_time})
+    return()
   else()#OK resolution took place and is OK
     add_Chosen_Package_Version_In_Current_Process(${dep_ext_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
     set_Dependency_Temporary_Optimization_Variables(${dep_ext_pack} ${${dep_ext_pack}_VERSION_STRING} "${${dep_ext_pack}_REQUIRED_VERSION_SYSTEM}" ${mode})
@@ -320,7 +392,8 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
         message("[PID] WARNING : dependency ${dep_pack} version ${${package}_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} required by package ${package} is not binary compatible with current platform.")
       endif()
     endif()
-    list(APPEND list_of_conflicting_dependencies ${dep_pack})
+    resolve_dependency_conflict(${package} ${dep_pack} "${first_time}")
+    return()
 	else()# resolution took place and is OK
     add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
     set_Dependency_Temporary_Optimization_Variables(${dep_pack} ${${dep_pack}_VERSION_STRING} "${${dep_pack}_REQUIRED_VERSION_SYSTEM}" ${mode})
@@ -328,77 +401,6 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
   endif()
 endforeach()
 
-if(list_of_conflicting_dependencies)#the package has conflicts in its dependencies
-  set(required_by_info)
-  foreach(pack IN LISTS RESOLVE_PACKAGE_DEPENDENCIES_REQUIRED_BY)
-    if(pack STREQUAL package)
-      break()
-    endif()
-    set(new_pack_info "${pack} (${${pack}_VERSION_STRING})")
-    if(required_by_info)
-      set(required_by_info "${required_by_info} -> ${new_pack_info}")
-    else()
-      set(required_by_info "${new_pack_info}")
-    endif()
-  endforeach()
-  if(NOT required_by_info)#empty because it is a direct dependency
-    set(required_by_info "${PROJECT_NAME} (${${PROJECT_NAME}_VERSION})")
-  endif()
-
-  message("[PID] WARNING : package ${package} (${${package}_VERSION_STRING}) required by ${required_by_info} has conflicting dependencies:")
-  foreach(dep IN LISTS list_of_conflicting_dependencies)
-    get_Package_Type(${dep} PACK_TYPE)
-    if(PACK_TYPE STREQUAL "EXTERNAL")
-      if(${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX})
-        set(str "with version ${${package}_EXTERNAL_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
-      else()
-        set(str "without version constraint")
-      endif()
-    else()
-      if(${package}_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX})
-        set(str "with version ${${package}_DEPENDENCY_${dep}_VERSION${VAR_SUFFIX}}")
-      else()
-        set(str "without version constraint")
-      endif()
-    endif()
-    get_Dependency_Resolution_Path_For(requirement_tree ${dep} ${mode})
-    message("-- dependency ${dep} is required ${str}. Already required by: ${requirement_tree}")
-  endforeach()
-  if(NOT first_time)# we are currently trying to reinstall the same package !!
-    finish_Progress(${GLOBAL_PROGRESS_VAR})
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : Impossible to solve conflicting dependencies for package ${package}. Try to solve these problems by setting adequate versions to dependencies.")
-  else()#OK first time package is resolved during the build process
-    message("[PID] INFO: rebuild package ${package} version ${${package}_VERSION_STRING}...")
-    get_Package_Type(${package} PACK_TYPE)
-    set(INSTALL_OK)
-    # reinstall by forcing rebuild of the package => the rebuild will automatically manage and resolve dependencies with current global build constraints
-    if(PACK_TYPE STREQUAL "EXTERNAL")
-      install_External_Package(INSTALL_OK ${package} TRUE TRUE "${release_only}")
-    elseif(PACK_TYPE STREQUAL "NATIVE")
-      install_Native_Package(INSTALL_OK ${package} TRUE "${release_only}")
-    endif()
-    if(INSTALL_OK)
-      set(${package}_FIND_VERSION_SYSTEM ${${package}_REQUIRED_VERSION_SYSTEM})#using the memorized contraint on version to set adeqautely which variant (OS or PID) to use
-      if(${package}_REQUIRED_VERSION_EXACT)
-        set(exact_str "EXACT")
-      else()
-        set(exact_str "")
-      endif()
-      find_package_resolved(${package} ${${package}_VERSION_STRING} ${exact_str} REQUIRED)#find again the package but this time we impose as constraint the specific version searched
-      if(NOT ${package}_FOUND${VAR_SUFFIX})
-        finish_Progress(${GLOBAL_PROGRESS_VAR})
-        if(${package}_REQUIRED_VERSION_SYSTEM)
-          set(os_str "OS ")
-        endif()
-        message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} with ${os_str}version ${${package}_VERSION_STRING} cannot be found after its redeployment ! No known solution can automatically be found to this problem. Aborting.")
-      endif()
-      resolve_Package_Dependencies(${package} ${mode} FALSE "${release_only}")#resolving again the dependencies on same package
-    else()# cannot do much more about that !!
-      finish_Progress(${GLOBAL_PROGRESS_VAR})
-      message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} has conflicting dependencies and the target version ${${package}_VERSION_STRING} cannot be rebuilt !")
-    endif()
-  endif()
-endif()
 list(POP_BACK RESOLVE_PACKAGE_DEPENDENCIES_REQUIRED_BY)
 endfunction(resolve_Package_Dependencies)
 
