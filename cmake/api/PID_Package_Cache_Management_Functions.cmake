@@ -1521,27 +1521,41 @@ endfunction(get_Dependency_Requirements)
 #  select_Dependency_Version
 #  -------------------------------
 #
-#   .. command:: select_Dependency_Version(dep_package version exact list_of_components)
+#   .. command:: select_Dependency_Version(requiring_package dep_package version exact list_of_components)
 #
 #   Setting internal cache variables that memorize choice of a version for a given dependency, prior to its finding.
 #
+#     :requiring_package: the name of the package requiring the dependency.
 #     :dep_package: the name of the external package dependency.
 #     :external: if TRUE dep_package is an external package, otherwise it is a native package.
 #     :version: selected version
 #     :exact: TRUE if the version must be exact, FALSE otherwise.
 #     :system: TRUE if the version must be system version, FALSE otherwise.
 #
-function(select_Dependency_Version dep_package external version exact system)
+function(select_Dependency_Version requiring_package dep_package external version exact system)
 if(external)
-  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
-  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_SYSTEM${USE_MODE_SUFFIX} ${system} CACHE INTERNAL "")#false by definition since no version constraint
+  set(${requiring_package}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
+	set(${requiring_package}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
+  set(${requiring_package}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_SYSTEM${USE_MODE_SUFFIX} ${system} CACHE INTERNAL "")#false by definition since no version constraint
 else()
-  set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
-	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
+  set(${requiring_package}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} ${version} CACHE INTERNAL "")
+	set(${requiring_package}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} ${exact} CACHE INTERNAL "")#false by definition since no version constraint
 endif()
 endfunction(select_Dependency_Version)
 
+function(unselect_Dependency dep_package external)
+if(external)
+  remove_From_Cache(${PROJECT_NAME}_EXTERNAL_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
+  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")#false by definition since no version constraint
+  set(${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_SYSTEM${USE_MODE_SUFFIX} CACHE INTERNAL "")#false by definition since no version constraint
+else()
+  remove_From_Cache(${PROJECT_NAME}_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
+  set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX} CACHE INTERNAL "")
+	set(${PROJECT_NAME}_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX} CACHE INTERNAL "")#false by definition since no version constraint
+endif()
+remove_From_Cache(${PROJECT_NAME}_ORDERED_DEPENDENCIES${USE_MODE_SUFFIX} ${dep_package})
+endfunction(unselect_Dependency)
 
 #.rst:
 #

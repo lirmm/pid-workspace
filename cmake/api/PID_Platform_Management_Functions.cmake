@@ -1359,7 +1359,7 @@ endfunction(generate_Platform_Configuration_Expression_For_Dependency)
 #
 #    Check whether the given configuration constraint (= configuration name + arguments) conforms to target platform. This function is used in source scripts.
 #
-#     :package: the pakcage that requires the the configuration.
+#     :package: the package that requires the configuration.
 #     :config: the configuration expression (may contain arguments).
 #     :mode: the current build mode.
 #

@@ -1077,21 +1077,22 @@ if(REQUIRED_VERSION) #the package is already used as a dependency in the current
 else()
 	if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
 		#checking if the selected version is forced to be exact
-		if(NOT ${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")
+		if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")
+			set(USE_EXACT TRUE)#if system it is always exact
+		else()
 			if(exact_versions)
 				list(FIND exact_versions ${${dep_package}_ALTERNATIVE_VERSION_USED} INDEX)
 				if(NOT INDEX EQUAL -1 )
 					set(USE_EXACT TRUE)
 				endif()
 			endif()
-		else()#if system it is always exact
-			set(USE_EXACT TRUE)
 		endif()
 	endif()
 endif()
 
 ### 3) setting internal cache variable used to generate the use file and to resolve find operations
 if(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "NONE")
+	unselect_Dependency(${dep_package})
 	return() #exlpicilty deactivated by user => do not resolve
 elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")#the system version has been selected => need to perform specific actions
 	#need to check the equivalent OS configuration to get the OS installed version
@@ -1099,13 +1100,12 @@ elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")#the system ver
 	if(NOT RESULT_OK OR NOT ${PROJECT_NAME}_${dep_package}_VERSION)
 		finish_Progress(${GLOBAL_PROGRESS_VAR})
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${dep_package} is defined with SYSTEM version but it cannot be found on OS.")
-		return()
 	endif()
-	select_Dependency_Version(${dep_package} TRUE "${${PROJECT_NAME}_${dep_package}_VERSION}" TRUE TRUE) #set the dependency
+	select_Dependency_Version(${PROJECT_NAME} ${dep_package} TRUE "${${PROJECT_NAME}_${dep_package}_VERSION}" TRUE TRUE) #set the dependency
 elseif(${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "ANY")# any version can be used so for now no contraint
-	select_Dependency_Version(${dep_package} ${external} "" FALSE FALSE)
+	select_Dependency_Version(${PROJECT_NAME} ${dep_package} ${external} "" FALSE FALSE)
 else()#a version is specified by the user OR the dependent build process has automatically set it
-	select_Dependency_Version(${dep_package} ${external} "${${dep_package}_ALTERNATIVE_VERSION_USED}" ${USE_EXACT} FALSE) #set the dependency
+	select_Dependency_Version(${PROJECT_NAME} ${dep_package} ${external} "${${dep_package}_ALTERNATIVE_VERSION_USED}" ${USE_EXACT} FALSE) #set the dependency
 endif()
 
 
