@@ -2047,6 +2047,7 @@ function(produce_Package_Static_Site_Content package only_bin framework version 
   if(EXISTS ${TARGET_ALL_BINARIES})
     set(DO_NOT_FIND_${package} TRUE)
     include_Find_File(${package})
+	unset(DO_NOT_FIND_${package})
     set(versions_to_allow ${${package}_PID_KNOWN_VERSION})
     list(APPEND versions_to_allow ${version})
     list(REMOVE_ITEM versions_to_allow 0.0.0)

@@ -1336,6 +1336,75 @@ set(${IS_COMPATIBLE} TRUE PARENT_SCOPE)
 endfunction(is_External_Version_Compatible_With_Previous_Constraints)
 
 
+#.rst:
+#
+# .. ifmode:: internal
+#
+#  .. |check_version_compatibility| replace:: ``check_version_compatibility``
+#  .. _check_version_compatibility:
+#
+#  check_version_compatibility
+#  --------------------------------------------------------
+#
+#   .. command:: check_version_compatibility(COMPATIBLE package external version_to_test possible_versions exact_versions)
+#
+#    Check if a version of an external package is compatible with previous version contrainsts that apply to the current build. This function is used during dependencies version resolutionn process.
+#
+#     :package: the name of package to check.
+#     :external: TRUE if package is external, false otherwise.
+#     :version_to_test: version of the package that must belong ot be compatible with possible_versions.
+#     :possible_versions: list of possible version for the given package
+#     :exact_versions: list of exact version among possible versions
+#
+#     :COMPATIBLE: the output variable that is TRUE if the version is compatible, FALSE otherwise.
+#
+function(check_version_compatibility COMPATIBLE package external version_to_test possible_versions exact_versions)
+
+list(FIND possible_versions ${version_to_test} INDEX)
+if(NOT INDEX EQUAL -1) #exact version found, always version compatible
+	set(${COMPATIBLE} TRUE PARENT_SCOPE)
+	return()
+endif()
+#from here the version does not belong to listed possible versions
+if(external)
+	#remove exact versions
+	if(exact_versions)
+		list(REMOVE possible_versions ${exact_versions})
+	endif()
+	set(DO_NOT_FIND_${package} TRUE)
+    include_Find_File(${package})#just include the find file to get information about compatible versions, do not "find for real" in install tree
+    unset(DO_NOT_FIND_${package})
+	foreach(reference IN LISTS possible_versions)
+		is_Compatible_External_Version(IS_COMPATIBLE ${package} ${reference} ${version_to_test})
+		if(IS_COMPATIBLE)
+			set(${COMPATIBLE} TRUE PARENT_SCOPE)
+			return()
+		endif()
+	endforeach()
+else()
+	get_Version_String_Numbers("${version_to_test}.0" major minor patch)
+	foreach(reference IN LISTS possible_versions)
+		set(test_exact FALSE)
+		if(exact_versions)
+			list(FIND exact_versions ${reference} INDEX)
+			if(NOT INDEX EQUAL -1)
+				set(test_exact TRUE)
+			endif()
+		endif()
+		if(test_exact)
+			is_Exact_Compatible_Version(IS_COMPATIBLE ${major} ${minor} ${reference})
+		else()
+			is_Compatible_Version(IS_COMPATIBLE ${major} ${minor} ${reference})
+		endif()
+		if(IS_COMPATIBLE)
+			set(${COMPATIBLE} TRUE PARENT_SCOPE)
+			return()
+		endif()
+	endforeach()
+endif()
+set(${COMPATIBLE} FALSE PARENT_SCOPE)
+endfunction(check_version_compatibility)
+
 ##############################################################################################################
 ############### API functions for managing cache variables bound to package dependencies #####################
 ##############################################################################################################
