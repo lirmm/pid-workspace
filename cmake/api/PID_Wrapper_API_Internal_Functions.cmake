@@ -3769,18 +3769,49 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 			endif()
 		endif()
 		message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent package ${dep_package} regarding versions constraints. Search ended when trying to satisfy version ${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}} coming from package ${PROJECT_NAME}. ${message_versions}. Try to put this dependency as first dependency in your CMakeLists.txt in order to force its version constraint before any other.")
-		return()
 	elseif(${dep_package}_FOUND${VAR_SUFFIX})#dependency has been found in workspace after resolution
-		add_Chosen_Package_Version_In_Current_Process(${dep_package} ${package})#report the choice made to global build process
-		#set the variables used at build time
-		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD ${${dep_package}_VERSION_STRING} CACHE INTERNAL "")
-		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD_IS_SYSTEM ${${dep_package}_REQUIRED_VERSION_SYSTEM} CACHE INTERNAL "")
 		if(NOT IS_ABI_COMPATIBLE)#need to force reinstall if binary package ABI is not compatible with current platform ones
 			#from here we can add it to versions to install to force reinstall
 			add_To_Install_External_Package_Specification(${dep_package} "${${dep_package}_VERSION_STRING}" ${${dep_package}_REQUIRED_VERSION_EXACT} ${${dep_package}_REQUIRED_VERSION_SYSTEM})
+		else()
+			add_Chosen_Package_Version_In_Current_Process(${dep_package} ${package})#report the choice made to global build process
+			#set the variables used at build time
+			set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD ${${dep_package}_VERSION_STRING} CACHE INTERNAL "")
+			set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD_IS_SYSTEM ${${dep_package}_REQUIRED_VERSION_SYSTEM} CACHE INTERNAL "")
+			resolve_Package_Dependencies(${dep_package} Release TRUE "${BUILD_RELEASE_ONLY}")
+			resolve_preuse(${package} ${dep_package} Release FALSE)
+			return()
 		endif()
 	endif()
-
+	# from here dependency needs to be installed
+	# 1) resolving dependencies of required external packages versions (different versions can be required at the same time)
+	install_External_Package(INSTALL_OK ${dep_package} FALSE FALSE "${BUILD_RELEASE_ONLY}")
+	if(NOT INSTALL_OK)
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external package: ${dep_package}. This bug is maybe due to bad referencing of this package. Please have a look in workspace contribution spaces and try to fond ReferExternal${dep_package}.cmake file references subfolders.")
+		return()
+	endif()
+	resolve_External_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${PROJECT_NAME} ${dep_package} Release)#launch again the resolution
+	if(NOT ${dep_package}_FOUND)#this time the package must be found since installed => internal BUG in PID
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_package}. This is an internal bug maybe due to a bad find file for ${dep_package}.")
+		return()
+	elseif(NOT IS_VERSION_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${dep_package} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${dep_package}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_package}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${VAR_SUFFIX}}.")
+		return()
+	elseif(NOT IS_ABI_COMPATIBLE)
+		finish_Progress(${GLOBAL_PROGRESS_VAR})
+		message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent external package ${dep_package} with an ABI compatible with current platform. This may mean that you have no access to ${dep_package} wrapper and no binary package for ${dep_package} match current platform ABI")
+		return()
+	else()#OK resolution took place !!
+		#set the variables used at build time
+		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD ${${dep_package}_VERSION_STRING} CACHE INTERNAL "")
+		set(${prefix}_DEPENDENCY_${dep_package}_VERSION_USED_FOR_BUILD_IS_SYSTEM ${${dep_package}_REQUIRED_VERSION_SYSTEM} CACHE INTERNAL "")
+		add_Chosen_Package_Version_In_Current_Process(${dep_package} ${package})#memorize chosen version in progress file to share this information with dependent packages
+	endif()
+	resolve_Package_Dependencies(${dep_package} Release TRUE "${BUILD_RELEASE_ONLY}")
+	resolve_preuse(${package} ${dep_package} Release FALSE)
 endif()
 endfunction(resolve_Wrapper_Dependency)
 
@@ -3811,46 +3842,6 @@ function(resolve_Wrapper_Dependencies package version os_variant)
 	# and we now try to find these dependencies in workspace
 	foreach(dep_package IN LISTS ${prefix}_DEPENDENCIES)#among all dependencies that have been specified
 		resolve_Wrapper_Dependency(${package} ${version} ${dep_package} ${os_variant})
-	endforeach()
-
-	# from here only direct dependencies have been satisfied if they are present in the workspace, otherwise they need to be installed
-	# 1) resolving dependencies of required external packages versions (different versions can be required at the same time)
-	# we get the set of all packages undirectly required
-	foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES)#contains only used dependencies
-		need_Install_External_Package(MUST_BE_INSTALLED MUST_BE_FOUND ${dep_pack})
-		if(MUST_BE_INSTALLED)
-			install_External_Package(INSTALL_OK ${dep_pack} FALSE FALSE "${BUILD_RELEASE_ONLY}")
-			if(NOT INSTALL_OK)
-				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to install external package: ${dep_pack}. This bug is maybe due to bad referencing of this package. Please have a look in workspace contribution spaces and try to fond ReferExternal${dep_pack}.cmake file references subfolders.")
-				return()
-			endif()
-		endif()
-		if(MUST_BE_FOUND)
-			resolve_External_Package_Dependency(IS_VERSION_COMPATIBLE IS_ABI_COMPATIBLE ${prefix} ${dep_pack} Release)#launch again the resolution
-			if(NOT ${dep_pack}_FOUND)#this time the package must be found since installed => internal BUG in PID
-				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] INTERNAL ERROR : impossible to find installed external package ${dep_pack}. This is an internal bug maybe due to a bad find file for ${dep_ext_pack}.")
-				return()
-			elseif(NOT IS_VERSION_COMPATIBLE)#this time there is really nothing to do since package has been installed so it therically already has all its dependencies compatible (otherwise there is simply no solution)
-				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find compatible versions of dependent external package ${dep_pack} regarding versions constraints. Search ended when trying to satisfy version coming from package ${PROJECT_NAME}. All required versions are : ${${dep_pack}_ALL_REQUIRED_VERSIONS}, Exact version already required is ${${dep_pack}_REQUIRED_VERSION_EXACT}, Last exact version required is ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}}.")
-				return()
-			elseif(NOT IS_ABI_COMPATIBLE)
-				finish_Progress(${GLOBAL_PROGRESS_VAR})
-				message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent external package ${dep_pack} with an ABI compatible with current platform. This may mean that you have no access to ${dep_pack} wrapper and no binary package for ${dep_pack} match current platform ABI")
-				return()
-			else()#OK resolution took place !!
-				#set the variables used at build time
-				set(${prefix}_DEPENDENCY_${dep_pack}_VERSION_USED_FOR_BUILD ${${dep_pack}_VERSION_STRING} CACHE INTERNAL "")
-				set(${prefix}_DEPENDENCY_${dep_pack}_VERSION_USED_FOR_BUILD_IS_SYSTEM ${${dep_pack}_REQUIRED_VERSION_SYSTEM} CACHE INTERNAL "")
-				add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
-				resolve_Package_Dependencies(${dep_pack} Release TRUE "${BUILD_RELEASE_ONLY}")#recursion : resolving dependencies for each external package dependency
-			endif()
-		else()#no need to be installed -> already found
-			resolve_Package_Dependencies(${dep_pack} Release TRUE "${BUILD_RELEASE_ONLY}")
-		endif()
-		resolve_preuse(${package} ${dep_pack} Release FALSE)
 	endforeach()
 endfunction(resolve_Wrapper_Dependencies)
 

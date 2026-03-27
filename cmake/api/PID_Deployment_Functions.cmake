@@ -194,13 +194,13 @@ function(resolve_dependency_conflict package dependency first_time)
       install_Native_Package(INSTALL_OK ${package} TRUE "${release_only}")
     endif()
     if(INSTALL_OK)
-      set(${package}_FIND_VERSION_SYSTEM ${${package}_REQUIRED_VERSION_SYSTEM})#using the memorized contraint on version to set adeqautely which variant (OS or PID) to use
       if(${package}_REQUIRED_VERSION_EXACT)
         set(exact_str "EXACT")
       else()
         set(exact_str "")
       endif()
-      find_package_resolved(${package} ${${package}_VERSION_STRING} ${exact_str} REQUIRED)#find again the package but this time we impose as constraint the specific version searched
+      #using the memorized contraint on version to set adeqautely which variant (OS or PID) to use
+      find_package_resolved(${package} "${${package}_REQUIRED_VERSION_SYSTEM}" ${${package}_VERSION_STRING} ${exact_str} REQUIRED)#find again the package but this time we impose as constraint the specific version searched
       if(NOT ${package}_FOUND${VAR_SUFFIX})
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         if(${package}_REQUIRED_VERSION_SYSTEM)
@@ -291,13 +291,14 @@ if(list_of_unresolved_configs)
       install_Native_Package(INSTALL_OK ${package} TRUE "${release_only}")
     endif()
     if(INSTALL_OK)
-      set(${package}_FIND_VERSION_SYSTEM ${${package}_REQUIRED_VERSION_SYSTEM})#using the memorized contraint on version to set adeqautely which variant (OS or PID) to use
+      set(${package}_FIND_VERSION_SYSTEM )
       if(${package}_REQUIRED_VERSION_EXACT)
         set(exact_str "EXACT")
       else()
         set(exact_str "")
       endif()
-      find_package_resolved(${package} ${${package}_VERSION_STRING} ${exact_str} REQUIRED)#find again the package but this time we impose as constraint the specific version searched
+      #using the memorized contraint on version to set adeqautely which variant (OS or PID) to use
+      find_package_resolved(${package} "${${package}_REQUIRED_VERSION_SYSTEM}" ${${package}_VERSION_STRING} ${exact_str} REQUIRED)#find again the package but this time we impose as constraint the specific version searched
       if(NOT ${package}_FOUND${VAR_SUFFIX})
         finish_Progress(${GLOBAL_PROGRESS_VAR})
         if(${package}_REQUIRED_VERSION_SYSTEM)
@@ -341,7 +342,7 @@ foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
       message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent external package ${dep_ext_pack} with an ABI compatible with current platform. This may mean there is no wrapper for ${package} and no available binary package is compliant with current platform ABI.")
     else()#OK resolution took place !!
       add_Chosen_Package_Version_In_Current_Process(${dep_ext_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
-      set_Dependency_Temporary_Optimization_Variables(${dep_ext_pack} ${${dep_ext_pack}_VERSION_STRING} "${${dep_ext_pack}_REQUIRED_VERSION_SYSTEM}" ${mode})
+      set_Dependency_Temporary_Optimization_Variables(${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
       resolve_Package_Dependencies(${dep_ext_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
     endif()
   elseif(NOT IS_VERSION_COMPATIBLE OR NOT IS_ABI_COMPATIBLE)#the dependency version is not compatible with previous constraints set by other packages
@@ -350,7 +351,7 @@ foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
     return()
   else()#OK resolution took place and is OK
     add_Chosen_Package_Version_In_Current_Process(${dep_ext_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
-    set_Dependency_Temporary_Optimization_Variables(${dep_ext_pack} ${${dep_ext_pack}_VERSION_STRING} "${${dep_ext_pack}_REQUIRED_VERSION_SYSTEM}" ${mode})
+    set_Dependency_Temporary_Optimization_Variables(${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
     resolve_Package_Dependencies(${dep_ext_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
   endif()
 endforeach()
@@ -380,7 +381,7 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
       message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent native package ${dep_pack} with an ABI compatible with current platform. This may mean you have no access to ${package} repository and no available binary package is compliant with current platform ABI.")
     else()#OK resolution took place !!
       add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
-      set_Dependency_Temporary_Optimization_Variables(${dep_pack} ${${dep_pack}_VERSION_STRING} "${${dep_pack}_REQUIRED_VERSION_SYSTEM}" ${mode})
+      set_Dependency_Temporary_Optimization_Variables(${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
       resolve_Package_Dependencies(${dep_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
     endif()
   elseif(NOT IS_VERSION_COMPATIBLE OR NOT IS_ABI_COMPATIBLE)#package binary found in install tree but is not compatible !
@@ -396,7 +397,7 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
     return()
 	else()# resolution took place and is OK
     add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
-    set_Dependency_Temporary_Optimization_Variables(${dep_pack} ${${dep_pack}_VERSION_STRING} "${${dep_pack}_REQUIRED_VERSION_SYSTEM}" ${mode})
+    set_Dependency_Temporary_Optimization_Variables(${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
     resolve_Package_Dependencies(${dep_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each package dependency
   endif()
 endforeach()

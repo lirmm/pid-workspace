@@ -41,16 +41,22 @@ set(PID_PACKAGE_FINDING_FUNCTIONS_INCLUDED TRUE)
 #  find_package_resolved
 #  ---------------------
 #
-#   .. command:: find_package_resolved(deployment_unit ...)
+#   .. command:: find_package_resolved(deployment_unit os_variant ...)
 #
 #    Do a find_package only if the find file is known in workspace. May update contribution spaces if file is unknown.
 #
 #     :deployment_unit: the name of the deployment unit to find.
+#     :os_variant: TRUE if the os variant search is required
 #     :...: other arguments to pass to find_package
 #
-macro(find_package_resolved deployment_unit)
+macro(find_package_resolved deployment_unit os_variant)
   resolve_Path_To_Find_File(PATH_KNOWN ${deployment_unit})
   if(PATH_KNOWN)
+	if(os_variant)#the OS version is required
+		set(${deployment_unit}_FIND_VERSION_SYSTEM TRUE)
+	else()
+		set(${deployment_unit}_FIND_VERSION_SYSTEM FALSE)
+	endif()
     find_package(${deployment_unit} ${ARGN})
   endif()
   set(PATH_KNOWN)
@@ -1487,47 +1493,6 @@ endforeach()
 set(${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} CACHE INTERNAL "")
 endfunction(reset_To_Install_Packages)
 
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |need_Install_Native_Package| replace:: ``need_Install_Native_Package``
-#  .. _need_Install_Native_Package:
-#
-#  need_Install_Native_Package
-#  ---------------------------
-#
-#   .. command:: need_Install_Native_Package(INSTALL FIND package)
-#
-#    Tell whether a native package must be installed in current process.
-#
-#     :package: the name of the given native package.
-#
-#     :INSTALL: the output variable that is TRUE if given native package must be installed.
-#     :FIND: the output variable that is TRUE if given external package must be found.
-#
-function(need_Install_Native_Package INSTALL FIND package)
-  list(FIND ${PROJECT_NAME}_TOINSTALL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
-  if(INDEX EQUAL -1)#package not found in list of packages to install
-  	set(${INSTALL} FALSE PARENT_SCOPE)
-  	set(${FIND} FALSE PARENT_SCOPE)
-  else()
-	if(${package}_FOUND${USE_MODE_SUFFIX})
-		set(${INSTALL} FALSE PARENT_SCOPE)
-
-		resolve_Required_Native_Package_Version(RESOLUTION_OK MINIMUM_VERSION IS_EXACT ${package})
-		# MINIMUM_VERSION will be empty if the version already selected is compatible
-		if(MINIMUM_VERSION AND MINIMUM_VERSION VERSION_GREATER ${package}_VERSION_STRING)
-			set(${INSTALL} TRUE PARENT_SCOPE)
-		endif()
-
-		set(${FIND} TRUE PARENT_SCOPE)
-		return()
-	endif()
-  	set(${INSTALL} TRUE PARENT_SCOPE)
-	set(${FIND} TRUE PARENT_SCOPE)
-  endif()
-endfunction(need_Install_Native_Package)
 
 #.rst:
 #
@@ -1563,11 +1528,11 @@ else()#package already required as "to install"
 		if(INDEX EQUAL -1)#version not already required => adding it to required versions
 			append_Unique_In_Cache(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}")
 			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} "${version_exact}" CACHE INTERNAL "")
-      set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_SYSTEM${USE_MODE_SUFFIX} "${os_variant}" CACHE INTERNAL "")
+      		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_SYSTEM${USE_MODE_SUFFIX} "${os_variant}" CACHE INTERNAL "")
 		elseif(version_exact) #if this version was previously not exact it becomes exact if exact is required
 			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} TRUE CACHE INTERNAL "")
-      set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_SYSTEM${USE_MODE_SUFFIX} "${os_variant}" CACHE INTERNAL "")
-    endif()
+			set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_SYSTEM${USE_MODE_SUFFIX} "${os_variant}" CACHE INTERNAL "")
+		endif()
 	else()#no version specified => simply add the version constraint
 		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_VERSIONS${USE_MODE_SUFFIX} "${version}" CACHE INTERNAL "")
 		set(${PROJECT_NAME}_TOINSTALL_EXTERNAL_${package}_${version}_EXACT${USE_MODE_SUFFIX} "${version_exact}" CACHE INTERNAL "")
@@ -1651,50 +1616,6 @@ endforeach()
 unset(${PROJECT_NAME}_ALL_USED_PACKAGES CACHE)
 endfunction(reset_Found_Native_Packages)
 
-#.rst:
-#
-# .. ifmode:: internal
-#
-#  .. |need_Install_External_Package| replace:: ``need_Install_External_Package``
-#  .. _need_Install_External_Package:
-#
-#  need_Install_External_Package
-#  -----------------------------
-#
-#   .. command:: need_Install_External_Package(NEED FIND package)
-#
-#    Tell whether a package must be installed in current process.
-#
-#     :package: the name of the given external package.
-#
-#     :NEED: the output variable that is TRUE if given external package must be installed.
-#     :FIND: the output variable that is TRUE if given external package must be found.
-#
-function(need_Install_External_Package NEED FIND package)
-  list(FIND ${PROJECT_NAME}_TOINSTALL_EXTERNAL_PACKAGES${USE_MODE_SUFFIX} ${package} INDEX)
-  if(INDEX EQUAL -1)#package not found in list of packages to install
-  	set(${NEED} FALSE PARENT_SCOPE)
-  	set(${FIND} FALSE PARENT_SCOPE)
-  else()
-	if(${package}_FOUND${USE_MODE_SUFFIX})
-		set(${NEED} FALSE PARENT_SCOPE)
-
-		resolve_Required_External_Package_Version(VERSION_POSSIBLE SELECTED IS_EXACT IS_SYSTEM ${package})
-		# SELECTED will be an empty string if the version already selected is compatible
-		if(NOT VERSION_POSSIBLE)
-			finish_Progress(${GLOBAL_PROGRESS_VAR})
-			message(FATAL_ERROR "[PID] CRITICAL ERROR :in ${PROJECT_NAME}, impossible to find a compatible version for dependency ${package}")
-		elseif(NOT SELECTED STREQUAL "" AND NOT SELECTED VERSION_EQUAL ${package}_VERSION_STRING)
-			set(${NEED} TRUE PARENT_SCOPE)
-		endif()
-
-		set(${FIND} TRUE PARENT_SCOPE)
-		return()
-	endif()
-  	set(${NEED} TRUE PARENT_SCOPE)
-	set(${FIND} TRUE PARENT_SCOPE)
-  endif()
-endfunction(need_Install_External_Package)
 
 #.rst:
 #
@@ -1765,7 +1686,7 @@ if(${dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been found (pre
 				if(NEED_REFIND)
 					# OK installing the exact version instead
 					find_package_resolved(
-						${dependency}
+						${dependency} FALSE
 						${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}
 						EXACT
 						MODULE
@@ -1785,7 +1706,7 @@ if(${dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been found (pre
 			if(COMPATIBLE_VERSION)
 				if(VERSION_TO_FIND)
 					find_package_resolved(
-						${dependency}
+						${dependency} FALSE
 						${VERSION_TO_FIND}
 						MODULE
 						REQUIRED
@@ -1807,7 +1728,7 @@ else()#the dependency has not been already found
 
 		if(${package}_DEPENDENCY_${dependency}_VERSION_EXACT${VAR_SUFFIX}) #an exact version has been specified
 			find_package_resolved(
-				${dependency}
+				${dependency} FALSE
 				${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}
 				EXACT
 				MODULE
@@ -1817,7 +1738,7 @@ else()#the dependency has not been already found
 
 		else()
 			find_package_resolved(
-				${dependency}
+				${dependency} FALSE
 				${${package}_DEPENDENCY_${dependency}_VERSION${VAR_SUFFIX}}
 				MODULE
 				REQUIRED
@@ -1826,7 +1747,7 @@ else()#the dependency has not been already found
 		endif()
 	else() # not version specified
 		find_package_resolved(
-			${dependency}
+			${dependency} FALSE
 			MODULE
 			REQUIRED
 			${${package}_DEPENDENCY_${dependency}_REQUIRED_COMPONENTS${VAR_SUFFIX}}
@@ -1869,7 +1790,13 @@ function(resolve_External_Package_Dependency VERSION_COMPATIBLE ABI_COMPATIBLE p
 set(${VERSION_COMPATIBLE} TRUE PARENT_SCOPE)
 set(${ABI_COMPATIBLE} TRUE PARENT_SCOPE)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
+package_Must_Be_System(FORCED ${external_dependency})
 if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
+	if(FORCED AND NOT ${external_dependency}_BUILT_OS_VARIANT)
+		#we can immediately conclude that the package is binary incompatible
+		set(${ABI_COMPATIBLE} FALSE PARENT_SCOPE)
+		return()
+	endif()
 	if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}) # a specific version is required
 		if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT${VAR_SUFFIX}) #an exact version is required
 			is_Exact_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE NEED_REFIND
@@ -1877,14 +1804,9 @@ if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been f
 																		${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}) # will be incompatible if a different exact version already required OR if another major version required OR if another minor version greater than the one of exact version
 			if(IS_COMPATIBLE)
 				if(NEED_REFIND)
-					if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_SYSTEM${VAR_SUFFIX})#the OS version is required
-						set(${external_dependency}_FIND_VERSION_SYSTEM TRUE)
-					else()
-						set(${external_dependency}_FIND_VERSION_SYSTEM FALSE)
-					endif()
 					# OK need to find the exact version instead
 					find_package_resolved(
-						${external_dependency}
+						${external_dependency} "${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_SYSTEM${VAR_SUFFIX}}"
 						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}
 						EXACT
 						MODULE
@@ -1892,10 +1814,14 @@ if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been f
 						${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_REQUIRED_COMPONENTS${VAR_SUFFIX}}
 					)
 				endif()
+				if(FORCED AND NOT ${external_dependency}_BUILT_OS_VARIANT)
+					set(${ABI_COMPATIBLE} FALSE PARENT_SCOPE)
+					return()
+				endif()
 				return()
 			else() #not compatible
 				set(${VERSION_COMPATIBLE} FALSE PARENT_SCOPE)
-					return()
+				return()
 			endif()
 		else()#not an exact version required
 			is_External_Version_Compatible_With_Previous_Constraints (
@@ -1904,7 +1830,7 @@ if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been f
 			if(COMPATIBLE_VERSION)
 				if(VERSION_TO_FIND)
 					find_package_resolved(
-						${external_dependency}
+						${external_dependency} "${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_SYSTEM${VAR_SUFFIX}}"
 						${VERSION_TO_FIND}
 						MODULE
 						REQUIRED
@@ -1912,6 +1838,10 @@ if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been f
 					)
 				else()
 					return() # nothing to do more, the current used version is compatible with everything
+				endif()
+				if(FORCED AND NOT ${external_dependency}_BUILT_OS_VARIANT)
+					set(${ABI_COMPATIBLE} FALSE PARENT_SCOPE)
+					return()
 				endif()
 			else()
 				set(${VERSION_COMPATIBLE} FALSE PARENT_SCOPE)
@@ -1922,16 +1852,10 @@ if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been f
 		return()#by default the version is compatible (no constraints) so return (no need to change the version currently in use)
 	endif()
 else()#the dependency has not been already found
-	if(	${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX})
-
+	if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX})
 		if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT${VAR_SUFFIX}) #an exact version has been specified
-			if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_SYSTEM${VAR_SUFFIX})#the OS version is required
-				set(${external_dependency}_FIND_VERSION_SYSTEM TRUE)
-			else()
-				set(${external_dependency}_FIND_VERSION_SYSTEM FALSE)
-			endif()
 			find_package_resolved(
-				${external_dependency}
+				${external_dependency} "${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_SYSTEM${VAR_SUFFIX}}"
 				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}
 				EXACT
 				MODULE
@@ -1940,7 +1864,7 @@ else()#the dependency has not been already found
 			)
 		else()
 			find_package_resolved(
-				${external_dependency}
+				${external_dependency}  "${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_SYSTEM${VAR_SUFFIX}}"
 				${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}
 				MODULE
 				REQUIRED
@@ -1949,7 +1873,7 @@ else()#the dependency has not been already found
 		endif()
 	else()# finding without any specific constraint (version or os variant)
 		find_package_resolved(
-			${external_dependency}
+			${external_dependency}  "${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_SYSTEM${VAR_SUFFIX}}"
 			MODULE
 			REQUIRED
 			${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_REQUIRED_COMPONENTS${VAR_SUFFIX}}
@@ -1958,6 +1882,11 @@ else()#the dependency has not been already found
 endif()
 #last step : check STD C++ ABI compatibility
 if(${external_dependency}_FOUND${VAR_SUFFIX})
+	# message("FORCED: ${FORCED} ${external_dependency}_BUILT_OS_VARIANT: ${${external_dependency}_BUILT_OS_VARIANT}")
+  	if(FORCED AND NOT ${external_dependency}_BUILT_OS_VARIANT)
+		set(${ABI_COMPATIBLE} FALSE PARENT_SCOPE)
+		return()
+	endif()
   is_Compatible_With_Current_ABI(IS_ABI_COMPATIBLE ${external_dependency} ${mode})
   set(${ABI_COMPATIBLE} ${IS_ABI_COMPATIBLE} PARENT_SCOPE)
   #warning => the binary package has been built with an incompatible C++ ABI
@@ -2210,11 +2139,6 @@ if(${package}_FIND_VERSION_EXACT)
 else()
   set(is_exact FALSE)
 endif()
-if(${package}_FIND_VERSION_SYSTEM)#this variable is specific to PID
-  set(is_system TRUE)
-else()
-  set(is_system FALSE)
-endif()
 
 check_Directory_Exists(EXIST ${EXTERNAL_PACKAGE_${package}_SEARCH_PATH})
 if(EXIST)
@@ -2233,24 +2157,17 @@ if(EXIST)
 		reset_External_Package_Dependency_Cached_Variables_From_Use(${package} ${CMAKE_BUILD_TYPE} FALSE)
 		# NOTE: a priori no need to apply conversion here since external package use files use an API that automatically 
 		# parse the configurations arguments
+		
 		include(${${package}_ROOT_DIR}/share/Use${package}-${VERSION_TO_USE}.cmake  OPTIONAL)#using the generated Use<package>-<version>.cmake file to get adequate version information about components
-		if(is_system)# an OS variant is required
-			if(NOT ${package}_BUILT_OS_VARIANT)#the binary package is NOT an OS variant
-				unset(${package}_ROOT_DIR CACHE)
-				exit_And_Manage_Install_Requirement_For_External(${package} "[PID] WARNING: the required OS variant version (${VERSION_TO_USE}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
-			endif()
-		# else even if an OS variant is not required, an OS variant can be used
-		# NOTE: most of external package do not provide a debug built binary but this binary can be used in debug build of pid packages
-		# so we have no check to perform contrarily to native packages
-		endif()
-		set(${package}_FOUND${VAR_SUFFIX} TRUE CACHE INTERNAL "")
+		
 		#add the undirectly used packages as well
+		set(${package}_FOUND${VAR_SUFFIX} TRUE CACHE INTERNAL "")
     	append_Unique_In_Cache(${PROJECT_NAME}_ALL_USED_EXTERNAL_PACKAGES ${package})
 		if(${package}_FIND_VERSION)
 			if(is_exact)
 				set(${package}_ALL_REQUIRED_VERSIONS CACHE INTERNAL "") #unset all the other required version
 				set(${package}_REQUIRED_VERSION_EXACT "${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}" CACHE INTERNAL "")
-				if(is_system)
+				if(${package}_FIND_VERSION_SYSTEM)
 					set(${package}_REQUIRED_VERSION_SYSTEM TRUE CACHE INTERNAL "")
 				else()
 					set(${package}_REQUIRED_VERSION_SYSTEM FALSE CACHE INTERNAL "")
@@ -2260,9 +2177,9 @@ if(EXIST)
 			endif()
 		endif()
 	else()#no adequate version found
-    	exit_And_Manage_Install_Requirement_For_External(${package} "[PID] WARNING : the required version(${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}) of external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
+    	exit_And_Manage_Install_Requirement_For_External(${package} "[PID] WARNING : the required version(${${package}_FIND_VERSION_MAJOR}.${${package}_FIND_VERSION_MINOR}.${${package}_FIND_VERSION_PATCH}) of external package ${package} cannot be found in the workspace." ${is_exact} ${${package}_FIND_VERSION_SYSTEM})
 	endif()
 else() #if the directory does not exist it means the external package cannot be found
-  exit_And_Manage_Install_Requirement_For_External(${package} "[PID] INFO : the required external package ${package} cannot be found in the workspace." ${is_exact} ${is_system})
+  exit_And_Manage_Install_Requirement_For_External(${package} "[PID] INFO : the required external package ${package} cannot be found in the workspace." ${is_exact} ${${package}_FIND_VERSION_SYSTEM})
 endif()
 endmacro(finding_External_Package)

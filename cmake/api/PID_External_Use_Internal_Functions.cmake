@@ -595,9 +595,8 @@ function(manage_Dependent_PID_Native_Package DEPLOYED package possible_versions 
     set(release_only FALSE)
   endif()
   if(NOT ${package}_FOUND${VAR_SUFFIX})
-    set(${package}_FIND_VERSION_SYSTEM FALSE)
     #find first time !!
-    find_package_resolved(${package} ${used_version} ${used_exact})
+    find_package_resolved(${package} FALSE ${used_version} ${used_exact})
     if(NOT ${package}_FOUND${VAR_SUFFIX})
       #NOTE: need to deploy the paclkage into workspace
       set(ENV{manage_progress} FALSE)#NOTE using specific argument to avoid deleting the curently used global progress file
@@ -610,7 +609,7 @@ function(manage_Dependent_PID_Native_Package DEPLOYED package possible_versions 
       endif()
       unset(ENV{manage_progress})
       #find again
-      find_package_resolved(${package} ${used_version} ${used_exact} REQUIRED)
+      find_package_resolved(${package} FALSE ${used_version} ${used_exact} REQUIRED)
     endif()
     add_Chosen_Package_Version_In_Current_Process(${package} ${PROJECT_NAME})# report the choice made to global build process
   endif()
@@ -744,12 +743,7 @@ function(manage_Dependent_PID_External_Package DEPLOYED package possible_version
       endif()
       unset(ENV{manage_progress})
       #find to see if deployment process went well
-      if(used_system)
-        set(${package}_FIND_VERSION_SYSTEM TRUE)
-      else()
-        set(${package}_FIND_VERSION_SYSTEM FALSE)
-      endif()
-      find_package_resolved(${package} ${used_version} ${used_exact} REQUIRED)
+      find_package_resolved(${package} "${used_system}" ${used_version} ${used_exact} REQUIRED)
     endif()
     add_Chosen_Package_Version_In_Current_Process(${package} ${PROJECT_NAME})# report the choice made to global build process
   endif()
