@@ -1102,6 +1102,7 @@ endmacro(declare_Current_Version_Unavailable)
 #
 function(declare_Wrapped_Platform_Configuration NEED_EXIT platform configurations options)
 	set(${NEED_EXIT} FALSE PARENT_SCOPE)
+	set(DO_NOT_MEMORIZE_CONFIG_PACKAGE TRUE)
 	if(platform)# if a platform constraint applies
 		set(target_curr_platform)
 		foreach(plat IN LISTS platform)
@@ -1112,18 +1113,23 @@ function(declare_Wrapped_Platform_Configuration NEED_EXIT platform configuration
 			endif()
 		endforeach()
 		if(NOT target_curr_platform)#nothing more to do
+			unset(DO_NOT_MEMORIZE_CONFIG_PACKAGE)
 			return()
 		endif()
 		foreach(config IN LISTS configurations)
 			parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")#need to parse the configuration strings to extract arguments (if any)
 			if(NOT CONFIG_NAME)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
+				unset(DO_NOT_MEMORIZE_CONFIG_PACKAGE)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
 			endif()
+			
 			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS ${PROJECT_NAME} "${config}" Release)
+			
 			set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
 			if(NOT RESULT_OK)
 				set(${NEED_EXIT} TRUE PARENT_SCOPE)
+				unset(DO_NOT_MEMORIZE_CONFIG_PACKAGE)
 				message("[PID] ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satisfy configuration ${config}!")
 				return()
 			endif()
@@ -1143,6 +1149,7 @@ function(declare_Wrapped_Platform_Configuration NEED_EXIT platform configuration
 					set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
 				else()
 					finish_Progress(${GLOBAL_PROGRESS_VAR})
+					unset(DO_NOT_MEMORIZE_CONFIG_PACKAGE)
 					message(FATAL_ERROR "[PID] CRITICAL ERROR : unknown problem with configuration check ${config}.")
 				endif()
 			endif()
@@ -1157,13 +1164,14 @@ function(declare_Wrapped_Platform_Configuration NEED_EXIT platform configuration
 			parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
 			if(NOT CONFIG_NAME)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
+				unset(DO_NOT_MEMORIZE_CONFIG_PACKAGE)
 				message(FATAL_ERROR "[PID] CRITICAL ERROR : configuration check ${config} is ill formed.")
-				return()
 			endif()
 			set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
 			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS ${PROJECT_NAME} "${config}" Release)
 			if(NOT RESULT_OK)
 				set(${NEED_EXIT} TRUE PARENT_SCOPE)
+				unset(DO_NOT_MEMORIZE_CONFIG_PACKAGE)
 				message("[PID] ERROR : ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION} cannot satisfy configuration ${config} with current platform!")
 				return()
 			endif()
@@ -1179,6 +1187,7 @@ function(declare_Wrapped_Platform_Configuration NEED_EXIT platform configuration
 			parse_Configuration_Expression(CONFIG_NAME CONFIG_ARGS "${config}")
 			if(NOT CONFIG_NAME)
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
+				unset(DO_NOT_MEMORIZE_CONFIG_PACKAGE)
 				message(FATAL_ERROR "[PID] ERROR : configuration check ${config} is ill formed. Configuration being optional it is skipped automatically.")
 			endif()
 			check_Platform_Configuration(RESULT_OK CONFIG_NAME CONSTRAINTS ${PROJECT_NAME} "${config}" Release)
@@ -1189,6 +1198,7 @@ function(declare_Wrapped_Platform_Configuration NEED_EXIT platform configuration
 					set(${CONFIG_NAME}_AVAILABLE FALSE CACHE INTERNAL "")#even if configuration check with previous arguments was OK reset it to test with new arguments
 				else()
 					finish_Progress(${GLOBAL_PROGRESS_VAR})
+					unset(DO_NOT_MEMORIZE_CONFIG_PACKAGE)
 					message(FATAL_ERROR "[PID] CRITICAL ERROR : unknown problem with configuration check ${config}.")
 				endif()
 			endif()
@@ -1199,6 +1209,7 @@ function(declare_Wrapped_Platform_Configuration NEED_EXIT platform configuration
 			endif()
 		endforeach()
 	endif()
+	unset(DO_NOT_MEMORIZE_CONFIG_PACKAGE)
 	#this fix is to provide global configuration variables that match the last check (in current wrapper context)
 	#of the configuration.
 	feed_Configuration_Resulting_Variables_For_Wrapper(${PROJECT_NAME} ${CURRENT_MANAGED_VERSION})

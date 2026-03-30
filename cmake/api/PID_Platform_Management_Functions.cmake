@@ -1266,7 +1266,9 @@ function(is_Compatible_With_Current_ABI COMPATIBLE package mode)
   foreach(config IN LISTS ${package}_PLATFORM_CONFIGURATIONS${VAR_SUFFIX})#for each symbol used by the binary
     #get evaluation of current platform configuration
     #WARNING Note: use same arguments as binary package !!
+    set(DO_NOT_MEMORIZE_CONFIG_PACKAGE TRUE)
     check_Platform_Configuration_With_Arguments(SYSCHECK_RESULT PLATFORM_SPECS ${package} ${config} ${package}_PLATFORM_CONFIGURATION_${config}_ARGS${VAR_SUFFIX} ${mode})
+    unset(DO_NOT_MEMORIZE_CONFIG_PACKAGE)
     #get SONAME and SYMBOLS coming from platform configuration
     get_Soname_Symbols_Values(PLATFORM_SONAME PLATFORM_SYMBOLS PLATFORM_SPECS)
     #get SONAME and SYMBOLS coming from package configuration
@@ -1541,8 +1543,9 @@ function(check_Platform_Configuration_With_Arguments CHECK_OK BINARY_CONTRAINTS 
   set(${config_name}_VERSION_STRING ${${package}_${config_name}_VERSION} CACHE INTERNAL "")
   set(${config_name}_REQUIRED_VERSION_EXACT ${${package}_${config_name}_VERSION} CACHE INTERNAL "")
   set(${config_name}_REQUIRED_VERSION_SYSTEM TRUE CACHE INTERNAL "")
-  add_Chosen_Package_Version_In_Current_Process(${config_name} ${package})#force the use of an os variant
-
+  if(NOT DO_NOT_MEMORIZE_CONFIG_PACKAGE)
+    add_Chosen_Package_Version_In_Current_Process(${config_name} ${package})#force the use of an os variant
+  endif()
   #return the complete set of binary contraints
   set(bin_constraints ${${config_name}_REQUIRED_CONSTRAINTS} ${${config_name}_IN_BINARY_CONSTRAINTS})
   get_Configuration_Expression_Resulting_Constraints(ALL_CONSTRAINTS ${config_name} bin_constraints)
