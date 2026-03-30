@@ -301,6 +301,12 @@ endfunction(add_Managed_Package_In_Current_Process)
 #      :external: if TRUE package is an external package.
 #
 function(add_Chosen_Package_Version_In_Current_Process package requestor)
+if(package STREQUAL requestor)
+	# situation may happen when a wrapper is evaluated as a system version 
+	# it evaluates the system configuration corresponding to itself then call add_Chosen_Package_Version_In_Current_Process
+	# avoid further infinite loop !!
+	return()
+endif()
 include_progess_file(exist)
 if(exist)
 	set(version ${${package}_VERSION_STRING})
@@ -318,17 +324,12 @@ if(exist)
 	list(APPEND CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${package})
 	list(REMOVE_DUPLICATES CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS)
 	if(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS)#the variable already exists (i.e. a version has already been selected)
-		if(version VERSION_GREATER ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS)#update chosen version only if greater than current one
-		set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS "${version}")
-		list(APPEND ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS "${requestor}")
-		list(REMOVE_DUPLICATES ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
-		set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
-		set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM "${system}")
-		elseif(version VERSION_EQUAL ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS AND exact)#the new version constraint is exact so set it
-		list(APPEND ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS "${requestor}")
-		list(REMOVE_DUPLICATES ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
-		set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
-		set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM "${system}")
+		if(version VERSION_GREATER_EQUAL ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS)#update chosen version only if greater than current one
+			set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS "${version}")
+			list(APPEND ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS "${requestor}")
+			list(REMOVE_DUPLICATES ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
+			set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT "${exact}")
+			set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM "${system}")
 		endif()
 	else()#not found already so simply set the variables without check
 		set(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS "${version}")
@@ -647,21 +648,29 @@ endfunction(get_Chosen_Version_In_Current_Process)
 #  get_Dependency_Resolution_Path_For
 #  -------------------------------------
 #
-#   .. command:: get_Dependency_Resolution_Path_For(OUT_STR package mode)
+#   .. command:: get_Dependency_Resolution_Path_For(REQ_TREE REQ_VERS REQ_EXACT REQ_SYS package mode)
 #
 #    Get a printable string representing all possible path that were used to resolve a dependency
 #
 #      :package: the name of the given package that is the dependency.
 #      :mode: the considered build mode
 #
-#      :OUT_STR: the output variable that contains the tree of path leading the dependency resolution, as a string 
+#      :REQ_TREE: the output variable that contains the tree of path leading the dependency resolution, as a string 
+#      :REQ_VERS: the output variable that contains the current version required by the previously evaluated requirements.
+#      :REQ_EXACT: the output variable that is TRUE if exact version already required.
+#      :REQ_SYS: the output variable that is TRUE if system version already required.
 #
-function(get_Dependency_Resolution_Path_For OUT_STR package mode)
-set(${OUT_STR} PARENT_SCOPE)
+function(get_Dependency_Resolution_Path_For REQ_TREE REQ_VERS REQ_EXACT REQ_SYS package mode)
+set(${REQ_TREE} PARENT_SCOPE)
+set(${REQ_VERS} PARENT_SCOPE)
+set(${REQ_SYS} PARENT_SCOPE)
 include_progess_file(exist)
 if(exist)
-	get_Dependency_Resolution_Path_For_Impl_Recurse(VAR ${package} "0" ${mode})
-	set(${OUT_STR} ${VAR} PARENT_SCOPE)
+	get_Dependency_Resolution_Path_For_Impl_Recurse(TREE ${package} "0" ${mode})
+	set(${REQ_TREE} ${TREE} PARENT_SCOPE)
+	set(${REQ_VERS} ${${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS} PARENT_SCOPE)
+	set(${REQ_EXACT} ${${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_EXACT} PARENT_SCOPE)
+	set(${REQ_SYS} ${${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_IS_SYSTEM} PARENT_SCOPE)
 endif()
 endfunction(get_Dependency_Resolution_Path_For)
 
@@ -704,16 +713,16 @@ endfunction(get_Spaces_To_Print)
 #  get_Dependency_Resolution_Path_For_Impl_Recurse
 #  -----------------------------------------------
 #
-#   .. command:: get_Dependency_Resolution_Path_For_Impl_Recurse(OUT_STR package nb_tabs mode)
+#   .. command:: get_Dependency_Resolution_Path_For_Impl_Recurse(OUT_TREE package nb_tabs mode)
 #
 #    Get a printable string describing a tree of all packages requiring the given package as a dependency
 #
 #      :package: the package that is the dependency
 #	   :nb_tabs: number of tabulations to print as prefix of the dependency tree
 #      :mode: the considered build mode
-#      :OUT_STR: the output variable that contains the printable string
+#      :OUT_TREE: the output variable that contains the tree of path leading the dependency resolution, as a string 
 #
-function(get_Dependency_Resolution_Path_For_Impl_Recurse OUT_STR package nb_tabs mode)
+function(get_Dependency_Resolution_Path_For_Impl_Recurse OUT_TREE package nb_tabs mode)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
 set(final_str "")
 set(package_marker "+--")
@@ -758,11 +767,11 @@ if(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
 			endif()
 		endif()
 		set(TO_APPEND)
-		get_Dependency_Resolution_Path_For_Impl_Recurse(TO_APPEND ${req} "${NEXT_REQUESTOR_INDENT}" ${mode})
-		set(final_str "${final_str}${requirer_dep}${TO_APPEND}")
+		get_Dependency_Resolution_Path_For_Impl_Recurse(TREE_TO_APPEND ${req} "${NEXT_REQUESTOR_INDENT}" ${mode})
+		set(final_str "${final_str}${requirer_dep}${TREE_TO_APPEND}")
 	endforeach()
 endif()
-set(${OUT_STR} ${final_str} PARENT_SCOPE)
+set(${OUT_TREE} ${final_str} PARENT_SCOPE)
 endfunction(get_Dependency_Resolution_Path_For_Impl_Recurse)
 
 ###########################################################################################

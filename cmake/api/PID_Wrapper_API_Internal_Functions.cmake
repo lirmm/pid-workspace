@@ -1337,7 +1337,7 @@ if(REQUIRED_VERSION) #the package is already used as a dependency in the current
 					set(str "version")
 				endif()
 				if(RES_REQ STREQUAL PROJECT_NAME)
-					message("[PID] INFO : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible ${str} ${REQUIRED_VERSION} has been requested locally.")
+					message("[PID] INFO : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible ${str} ${REQUIRED_VERSION} has been requested by user.")
 				else()
 					message("[PID] INFO : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible ${str} ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
 				endif()
