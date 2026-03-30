@@ -1329,11 +1329,17 @@ if(REQUIRED_VERSION) #the package is already used as a dependency in the current
 				message("[PID] INFO :  In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is optional and has been automatically deactivated as its version (${force_version}) is not compatible with version ${REQUIRED_VERSION} previously required by other packages.")
 			else()#this is to ensure that on a dependent build an adequate version has been chosen from the list of possible versions
 				fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
-				if(RES_REQ STREQUAL PROJECT_NAME)
-					#specific case : the dependncy has been previously requested (directly or undirectly) as an OS dependency
-					message("[PID] INFO : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible OS version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
+				if(IS_SYSTEM)
+					set(str "OS version")
+				elseif(IS_EXACT)
+					set(str "exact version")
 				else()
-					message("[PID] INFO : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
+					set(str "version")
+				endif()
+				if(RES_REQ STREQUAL PROJECT_NAME)
+					message("[PID] INFO : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible ${str} ${REQUIRED_VERSION} has been requested locally.")
+				else()
+					message("[PID] INFO : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible ${str} ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
 				endif()
 				set(${NEED_EXIT} TRUE PARENT_SCOPE)
 				return()
@@ -1951,15 +1957,17 @@ function(generate_External_Use_File_For_Version package version platform os_vari
 	file(APPEND ${file_for_version} "#description of external package ${package} dependencies for version ${version}\n")
 	foreach(dependency IN LISTS ${package}_KNOWN_VERSION_${version}_DEPENDENCIES)#do the description for each dependency
 		set(selected_version ${${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSION_USED_FOR_BUILD})
+		set(CONSTRAINT "")#not an exact version
 		if(${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSIONS_EXACT)
 			list(FIND ${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSIONS_EXACT ${selected_version} INDEX)
-			if(INDEX EQUAL -1)
-				set(STR_EXACT "")#not an exact version
-			else()
-				set(STR_EXACT "EXACT ")
+			if(NOT INDEX EQUAL -1)
+				set(CONSTRAINT "EXACT ")
 			endif()
 		endif()
-		file(APPEND ${file_for_version} "declare_PID_External_Package_Dependency(PACKAGE ${package} EXTERNAL ${dependency} ${EXACT_STR}VERSION ${selected_version})\n")
+		if(${package}_KNOWN_VERSION_${version}_DEPENDENCY_${dependency}_VERSION_USED_FOR_BUILD_IS_SYSTEM)
+			set(CONSTRAINT "${CONSTRAINT}SYSTEM ")
+		endif()
+		file(APPEND ${file_for_version} "declare_PID_External_Package_Dependency(PACKAGE ${package} EXTERNAL ${dependency} ${CONSTRAINT}VERSION ${selected_version})\n")
 	endforeach()
 
 	# manage generation of component description
