@@ -349,7 +349,6 @@ foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
       message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent external package ${dep_ext_pack} with an ABI compatible with current platform. This may mean there is no wrapper for ${package} and no available binary package is compliant with current platform ABI.")
     else()#OK resolution took place !!
       add_Chosen_Package_Version_In_Current_Process(${dep_ext_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
-      set_Dependency_Temporary_Optimization_Variables(${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
       resolve_Package_Dependencies(${dep_ext_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
     endif()
   elseif(NOT IS_VERSION_COMPATIBLE OR NOT IS_ABI_COMPATIBLE)#the dependency version is not compatible with previous constraints set by other packages
@@ -358,7 +357,6 @@ foreach(dep_ext_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX})
     return()
   else()#OK resolution took place and is OK
     add_Chosen_Package_Version_In_Current_Process(${dep_ext_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
-    set_Dependency_Temporary_Optimization_Variables(${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
     resolve_Package_Dependencies(${dep_ext_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
   endif()
 endforeach()
@@ -388,7 +386,6 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
       message(FATAL_ERROR "[PID] CRITICAL ERROR : impossible to find a version of dependent native package ${dep_pack} with an ABI compatible with current platform. This may mean you have no access to ${package} repository and no available binary package is compliant with current platform ABI.")
     else()#OK resolution took place !!
       add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
-      set_Dependency_Temporary_Optimization_Variables(${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
       resolve_Package_Dependencies(${dep_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each external package dependency
     endif()
   elseif(NOT IS_VERSION_COMPATIBLE OR NOT IS_ABI_COMPATIBLE)#package binary found in install tree but is not compatible !
@@ -404,11 +401,10 @@ foreach(dep_pack IN LISTS ${package}_DEPENDENCIES${VAR_SUFFIX})
     return()
 	else()# resolution took place and is OK
     add_Chosen_Package_Version_In_Current_Process(${dep_pack} ${package})#memorize chosen version in progress file to share this information with dependent packages
-    set_Dependency_Temporary_Optimization_Variables(${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
     resolve_Package_Dependencies(${dep_pack} ${mode} TRUE "${release_only}")#recursion : resolving dependencies for each package dependency
   endif()
 endforeach()
-
+set_Dependency_Temporary_Optimization_Variables(${package} ${${package}_VERSION_STRING} "${${package}_REQUIRED_VERSION_SYSTEM}" ${mode})
 list(POP_BACK RESOLVE_PACKAGE_DEPENDENCIES_REQUIRED_BY)
 endfunction(resolve_Package_Dependencies)
 
@@ -3045,17 +3041,6 @@ endif()
 set(${RESULT} TRUE PARENT_SCOPE)
 endfunction(configure_Binary_Package)
 
-
-macro(remove_System_Dependency_Choice package)
-  reset_Platform_Configuration_Cache_Variables(${dep_package})
-  unset(${PROJECT_NAME}_${dep_package}_VERSION CACHE)
-  unset(${dep_package}_VERSION CACHE)#FOR COMPATIBILITY
-  unset(${dep_package}_VERSION_STRING CACHE)
-  unset(${dep_package}_REQUIRED_VERSION_EXACT CACHE)
-  unset(${dep_package}_REQUIRED_VERSION_SYSTEM CACHE)
-  remove_Chosen_Package_Version_In_Current_Process(${dep_package} ${PROJECT_NAME})#this is necessary as check_Platform_Configuration may have generated a choice that is finally invalid
-endmacro(remove_System_Dependency_Choice)
-
 #.rst:
 #
 # .. ifmode:: internal
@@ -3086,7 +3071,6 @@ function(test_System_Configuration_Available AVAILABLE package)
   check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${PROJECT_NAME} "${package}" ${CMAKE_BUILD_TYPE})
 	if(NOT RESULT_OK OR NOT ${PROJECT_NAME}_${package}_VERSION)
     message(WARNING "[PID] WARNING : package ${package} has been forced to be a system dependency BUT system dependency cannot be found or installed in the system. Automatic fix: ${package} will be used as a NORMAL dependency. A fix for founding the system dependency, setting its version or to automatically install it should be added to ${package} wrapper to solve the problem.")
-    remove_System_Dependency_Choice(${package})
     return()
 	endif()
   set(${AVAILABLE} TRUE PARENT_SCOPE)
