@@ -488,7 +488,8 @@ macro(reset_Profiles)
   # need to set the definitions used in evalutaion of profile specific configuration
   fill_String_From_List(res_str LIMITED_JOBS_PACKAGES " ")
   fill_String_From_List(res_str FORCED_SYSTEM_DEPENDENCIES " ")
-  set(args -DWORKSPACE_DIR=${WORKSPACE_DIR} -DIN_CI_PROCESS=${IN_CI_PROCESS} -DPACKAGE_BINARY_INSTALL_DIR=${PACKAGE_BINARY_INSTALL_DIR} -DLIMITED_JOBS_PACKAGES="${res_str}" -DFORCED_SYSTEM_DEPENDENCIES="${FORCED_SYSTEM_DEPENDENCIES}")
+  fill_String_From_List(res_str AVOID_SYSTEM_DEPENDENCIES " ")
+  set(args -DWORKSPACE_DIR=${WORKSPACE_DIR} -DIN_CI_PROCESS=${IN_CI_PROCESS} -DPACKAGE_BINARY_INSTALL_DIR=${PACKAGE_BINARY_INSTALL_DIR} -DLIMITED_JOBS_PACKAGES="${res_str}" -DFORCED_SYSTEM_DEPENDENCIES="${FORCED_SYSTEM_DEPENDENCIES}" -DAVOID_SYSTEM_DEPENDENCIES="${AVOID_SYSTEM_DEPENDENCIES}")
 
   # write the configuration file to memorize choices for next configuration (and for user editing)
   write_Profiles_Description_File()
