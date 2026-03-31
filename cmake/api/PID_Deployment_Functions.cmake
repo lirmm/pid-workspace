@@ -2095,7 +2095,7 @@ set(${DEPLOYED} FALSE PARENT_SCOPE)
 # go to package source and find all version matching the pattern of min_version : if exact taking min_version, otherwise taking the greatest version number
 save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package} TRUE)
 update_Wrapper_Repository(UPDATED ${package})#update wrapper repository
-load_And_Configure_Wrapper(LOADED ${package} ${release_only})
+load_And_Configure_Wrapper(LOADED ${package} "${release_only}")
 if(NOT LOADED)
   restore_Repository_Context(${package} TRUE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
@@ -2125,7 +2125,7 @@ list(FIND already_installed_versions ${RES_VERSION} INDEX)
 if(INDEX EQUAL -1) # selected version is not excluded from deploy process
   check_Package_Version_State_In_Current_Process(${package} ${RES_VERSION} RES)
 	if(RES STREQUAL "UNKNOWN" OR RES STREQUAL "PROBLEM") # this package version has not been build since last command OR this package version has FAILED TO be deployed from binary during current process
-  	build_And_Install_External_Package_Version(ALL_IS_OK ${package} ${RES_VERSION} "${is_system}" ${release_only})
+  	build_And_Install_External_Package_Version(ALL_IS_OK ${package} ${RES_VERSION} "${is_system}" "${release_only}")
   	if(NOT ALL_IS_OK) # this package version has FAILED TO be built during current process
   		set(${DEPLOYED} FALSE PARENT_SCOPE)
   		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" TRUE)
