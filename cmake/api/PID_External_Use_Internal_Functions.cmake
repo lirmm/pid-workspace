@@ -567,7 +567,8 @@ function(manage_Dependent_PID_Native_Package DEPLOYED package possible_versions 
 			if(NOT force_version)#the build context is a dependent build and no compatible version has been found
         set(CMAKE_BUILD_TYPE ${previous_mode})#NOTE: to avoid any bug due to mode change in calling project
         fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
-				message("[PID] ERROR : In ${PROJECT_NAME}, dependency ${package} is used with possible versions: ${list_of_possible_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
+        fill_String_From_List(available_versions possible_versions ", ") #get available version as a string (used to print them)
+				message("[PID] ERROR : In ${PROJECT_NAME}, dependency ${package} is used with possible versions: ${available_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
         return()
       else()
         set(used_version ${force_version})
@@ -683,8 +684,7 @@ function(manage_Dependent_PID_External_Package DEPLOYED package possible_version
   if(REQUIRED_VERSION) #the package is already used as a dependency in the current build process so we need to reuse the version already specified or use a compatible one instead
     if(used_system AND NOT IS_SYSTEM)
       set(CMAKE_BUILD_TYPE ${previous_mode})#NOTE: to avoid any bug due to mode change in calling project
-      message("[PID] ERROR : In ${PROJECT_NAME} dependency ${package} is required to be system version while a NON system version is already required by other dependencies.")
-      return()
+      message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME} dependency ${package} is required to be system version while a NON system version is already required by other dependencies.")
     endif()
     if(list_of_possible_versions) #list of possible versions is constrained
   		#finding the best compatible version, if any (otherwise returned "version" variable is empty)
@@ -692,8 +692,8 @@ function(manage_Dependent_PID_External_Package DEPLOYED package possible_version
   		if(NOT force_version)#the build context is a dependent build and no compatible version has been found
         set(CMAKE_BUILD_TYPE ${previous_mode})#NOTE: to avoid any bug due to mode change in calling project
         fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
-				message("[PID] ERROR : In ${PROJECT_NAME}, dependency ${package} is used with possible versions: ${list_of_possible_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
-				return()
+				fill_String_From_List(available_versions possible_versions ", ") #get available version as a string (used to print them)
+				message(FATAL_ERROR "[PID] CRITICAL ERROR : In ${PROJECT_NAME}, dependency ${package} is used with possible versions: ${available_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
   		else()#a version is forced
         set(used_version ${force_version})
   		endif()

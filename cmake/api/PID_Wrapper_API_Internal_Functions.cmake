@@ -1337,7 +1337,7 @@ if(REQUIRED_VERSION) #the package is already used as a dependency in the current
 		if(NOT force_version)#the build context is a dependent build and no compatible version has been found
 			if(optional)#hopefully the dependency is optional so we can deactivate it
 				set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${message_str}" FORCE)
-				message("[PID] INFO :  In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is optional and has been automatically deactivated as its version (${force_version}) is not compatible with version ${REQUIRED_VERSION} previously required by other packages.")
+				message("[PID] INFO : In ${PROJECT_NAME} version ${CURRENT_MANAGED_VERSION}, dependency ${dep_package} is optional and has been automatically deactivated as its version (${force_version}) is not compatible with version ${REQUIRED_VERSION} previously required by other packages.")
 			else()#this is to ensure that on a dependent build an adequate version has been chosen from the list of possible versions
 				fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
 				if(IS_SYSTEM)

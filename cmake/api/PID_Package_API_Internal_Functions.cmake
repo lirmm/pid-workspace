@@ -1043,12 +1043,20 @@ if(REQUIRED_VERSION) #the package is already used as a dependency in the current
 				message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated as its version (${force_version}) is not compatible with version ${REQUIRED_VERSION} previously required by other packages.")
 			else()#this is to ensure that on a dependent build an adequate version has been chosen from the list of possible versions
 				finish_Progress(${GLOBAL_PROGRESS_VAR})
+				if(IS_SYSTEM)
+					set(str "OS version")
+				elseif(IS_EXACT)
+					set(str "exact version")
+				else()
+					set(str "version")
+				endif()
 				fill_String_From_List(RES_REQ VERSION_REQUESTORS ", ")
+				fill_String_From_List(available_versions possible_versions ", ") #get available version as a string (used to print them)
 				if(RES_REQ STREQUAL PROJECT_NAME)
 					#specific case : the dependency has been previously requested (directly or undirectly) as an OS dependency
-					message(FATAL_ERROR "[PID] INFO : In ${PROJECT_NAME}, dependency ${dep_package} is used with possible versions: ${available_versions}, but incompatible OS version ${REQUIRED_VERSION} has been previously required in the build process. Ask developpers of ${dep_package} wrapper to provide a receipe for this version or ask them to update the contribution space where ${dep_package} is referenced.")
+					message(FATAL_ERROR "[PID] INFO : In ${PROJECT_NAME}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible ${str} ${REQUIRED_VERSION} is required locally.")
 				else()
-					message(FATAL_ERROR "[PID] INFO : In ${PROJECT_NAME}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible version ${REQUIRED_VERSION} is already used in packages: ${RES_REQ}.")
+					message(FATAL_ERROR "[PID] INFO : In ${PROJECT_NAME}, dependency ${dep_package} is used with possible versions: ${available_versions}. But incompatible ${str} ${REQUIRED_VERSION} is already required by packages: ${RES_REQ}.")
 				endif()
 			endif()
 		else()#a version is forced
