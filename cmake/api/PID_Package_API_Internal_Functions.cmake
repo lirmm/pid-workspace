@@ -2195,9 +2195,6 @@ function(init_dependency_version_selection_option dep_package external optional 
 	if(NOT possible_versions) # no version constraint specified
 		set(message_str "Input a version of dependency ${dep_package} or use ANY to let the system decide.")
 	elseif(SIZE GREATER 1)#there are version specified
-		if(external)
-			select_only_buildable(${dep_package} possible_versions)
-		endif()
 		fill_String_From_List(available_versions possible_versions ", ") #get available version as a string (used to print them)
 		set(message_str "Input a version compatible with any of: ${available_versions}.")
 	else()
@@ -2238,20 +2235,28 @@ function(init_dependency_version_selection_option dep_package external optional 
 						#means that the "SYSTEM" has been set by the user
 						test_System_Configuration_Available(AVAILABLE ${dep_package})
 						if(NOT AVAILABLE)
-							message("[PID] WARNING: SYSTEM version constraint given by user for dependency ${dep_package} is not possible ... fixing to default version (${default_version}).")
+							message(WARNING "[PID] WARNING: SYSTEM version constraint given by user for dependency ${dep_package} is not possible ... fixing to default version (${default_version}).")
 							#simply reset the description to first found
 							set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${${dep_package}_SELECTION_MESSAGE}" FORCE)
 							return()
 						endif()
-					endif()
-					#otherwise we ned to check that the system version is in the ossible range
-					check_version_compatibility(COMPATIBLE ${dep_package} ${external} ${${PROJECT_NAME}_${dep_package}_VERSION} "${possible_versions}" "${exact_versions}")
-					if(NOT COMPATIBLE)#no possible version found -> bad input of the user or dependent build
-						if(optional)
-							set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${${dep_package}_SELECTION_MESSAGE}" FORCE)#explicitlty deactivate the optional dependency (corrective action)
-							message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated because its system variant has been chosen but does not belong to the allowed version range.")
-						else()
-							message(FATAL_ERROR "[PID] CRITICAL ERROR : dependency ${dep_package} for package ${PROJECT_NAME} is forced to be system variant (${${dep_package}_VERSION}) but does not belong to the allowed version range.")
+						check_version_compatibility(COMPATIBLE ${dep_package} ${external} ${${PROJECT_NAME}_${dep_package}_VERSION} "${possible_versions}" "${exact_versions}")
+						if(NOT COMPATIBLE)#no possible version found -> bad input of the user or dependent build
+							message(WARNING "[PID] WARNING: SYSTEM version constraint given by user for dependency ${dep_package} is not possible ... fixing to default version (${default_version}).")
+							#simply reset the description to first found
+							set(${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${${dep_package}_SELECTION_MESSAGE}" FORCE)
+							return()
+						endif()
+					else()
+						#otherwise we ned to check that the system version is in the ossible range
+						check_version_compatibility(COMPATIBLE ${dep_package} ${external} ${${PROJECT_NAME}_${dep_package}_VERSION} "${possible_versions}" "${exact_versions}")
+						if(NOT COMPATIBLE)#no possible version found -> bad input of the user or dependent build
+							if(optional)
+								set(${dep_package}_ALTERNATIVE_VERSION_USED "NONE" CACHE STRING "${${dep_package}_SELECTION_MESSAGE}" FORCE)#explicitlty deactivate the optional dependency (corrective action)
+								message("[PID] WARNING : dependency ${dep_package} for package ${PROJECT_NAME} is optional and has been automatically deactivated because its system variant has been chosen but does not belong to the allowed version range.")
+							else()
+								message(FATAL_ERROR "[PID] CRITICAL ERROR : dependency ${dep_package} for package ${PROJECT_NAME} is forced to be system variant (${${dep_package}_VERSION}) but does not belong to the allowed version range.")
+							endif()
 						endif()
 					endif()
 				else()
