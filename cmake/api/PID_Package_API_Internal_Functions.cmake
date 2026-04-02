@@ -2283,7 +2283,7 @@ function(init_dependency_version_selection_option dep_package external optional 
 			endif()
 		endif()
 	endif()
-endfunction(init_dependency_version_selection_option )
+endfunction(init_dependency_version_selection_option)
 
 
 
