@@ -2993,7 +2993,7 @@ endforeach()
 # Manage external package dependencies => need to check direct external dependencies
 foreach(dep_pack IN LISTS ${package}_EXTERNAL_DEPENDENCIES${VAR_SUFFIX}) #check that version of these dependencies is OK
   if(${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX})#there is a specific version to target (should be most common case)
-    package_Must_Be_System(FORCED ${dep_pack})
+    package_Must_Be_System(FORCED ${dep_pack} ${mode})
     get_Chosen_Version_In_Current_Process(REQUIRED_VERSION VERSION_REQUESTORS IS_EXACT IS_SYSTEM ${dep_pack})
   	if(REQUIRED_VERSION)#if a version of the same package is already required then check their compatibility
       get_Compatible_Version(IS_COMPATIBLE TRUE ${dep_pack} ${REQUIRED_VERSION} ${IS_EXACT} ${IS_SYSTEM} ${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION${VAR_SUFFIX}} "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_EXACT${VAR_SUFFIX}}" "${${package}_EXTERNAL_DEPENDENCY_${dep_pack}_VERSION_SYSTEM${VAR_SUFFIX}}" "${VERSION_REQUESTORS}" "${package}")
@@ -3051,24 +3051,34 @@ endfunction(configure_Binary_Package)
 #  test_System_Configuration_Available
 #  -------------------------------------
 #
-#   .. command:: test_System_Configuration_Available(AVAILABLE package)
+#   .. command:: test_System_Configuration_Available(AVAILABLE package mode)
 #
-#    Tell whether a wrapper defines a platform configuration
+#    Tell whether a wrapper defines a platform configuration for package and if yes, check that package can be resolved on current platform
 #
 #      :package: the name of the given package.
+#      :mode: current build mode.
 #
 #      :AVAILABLE: the output variable that is TRUE if the platform configuration exists, FALSE otherwise
 #
-function(test_System_Configuration_Available AVAILABLE package)
+function(test_System_Configuration_Available AVAILABLE package mode)
   set(${AVAILABLE} FALSE PARENT_SCOPE)
+  check_Configuration_Temporary_Optimization_Variables(CHECK_ALREADY_MADE CHECK_SUCCESS BIN_CONSTRAINTS RES_INDEX ${package} empty ${mode})
+  if(CHECK_ALREADY_MADE)#same check has already been made, we want to avoid redoing them unecessarily
+    #check already made so no need to report it to user
+    set(${AVAILABLE} ${CHECK_SUCCESS} PARENT_SCOPE)
+    return()
+  endif()
   #ensure the package has a way to test for configuration dependencies
   install_System_Configuration_Check(PATH_TO_CONFIG ${package})
   if(NOT PATH_TO_CONFIG)
     message(WARNING "[PID] WARNING : package ${package} has been forced to be a system dependency BUT ${package} wrapper does not provide the system configuration required to manage ${package} as a system dependency. Automatic fix: ${package} will be used as a NORMAL dependency. If you need system deployment for ${package}, the corresponding system configuration must be befined in ${package} wrapper.")
     return()
   endif()
+  
   #OK there is one but the system version is maybe not correctly managed in PID wrapper
+  set(DO_NOT_MEMORIZE_CONFIG_PACKAGE TRUE)
   check_Platform_Configuration(RESULT_OK CONFIG_NAME CONFIG_CONSTRAINTS ${PROJECT_NAME} "${package}" ${CMAKE_BUILD_TYPE})
+  unset(DO_NOT_MEMORIZE_CONFIG_PACKAGE)
 	if(NOT RESULT_OK OR NOT ${PROJECT_NAME}_${package}_VERSION)
     message(WARNING "[PID] WARNING : package ${package} has been forced to be a system dependency BUT system dependency cannot be found or installed in the system. Automatic fix: ${package} will be used as a NORMAL dependency. A fix for founding the system dependency, setting its version or to automatically install it should be added to ${package} wrapper to solve the problem.")
     return()
@@ -3091,10 +3101,11 @@ endfunction(test_System_Configuration_Available)
 #    Tell whether a package dependency must be resolved as a system dependency
 #
 #      :package: the name of the given package that is the dependency.
+#      :mode: current build mode.
 #
 #      :FORCED: the output variable that is TRUE if dependency is resolved as a system dependency, FALSE otherwise
 #
-function(package_Must_Be_System FORCED package)
+function(package_Must_Be_System FORCED package mode)
 set(${FORCED} FALSE PARENT_SCOPE)
 get_Package_Type(${package} PACK_TYPE)
 if(NOT PACK_TYPE STREQUAL "EXTERNAL")
@@ -3119,7 +3130,7 @@ if(AVOID_SYSTEM_DEPENDENCIES)#avoid forced if required
   endif()
 endif()
 if(try_force)
-  test_System_Configuration_Available(AVAILABLE ${package})
+  test_System_Configuration_Available(AVAILABLE ${package} ${mode})
   if(NOT AVAILABLE)
     return()
   endif()

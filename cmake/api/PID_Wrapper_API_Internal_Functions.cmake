@@ -1296,7 +1296,7 @@ function(init_wrapper_dependency_version_selection_option ERROR dep_package opti
 		set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED ${default_version} CACHE STRING "${${CURRENT_MANAGED_VERSION}_${dep_package}_SELECTION_MESSAGE}")
 	endif()
 	#2) forced system dependencies cheking
-	package_Must_Be_System(FORCED ${dep_package})
+	package_Must_Be_System(FORCED ${dep_package} ${CMAKE_BUILD_TYPE})
 	if(FORCED) #force use of the system dependency
 		set(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED "SYSTEM" CACHE STRING "${${CURRENT_MANAGED_VERSION}_${dep_package}_SELECTION_MESSAGE}" FORCE)
 	endif()
@@ -1315,7 +1315,7 @@ function(init_wrapper_dependency_version_selection_option ERROR dep_package opti
 			elseif(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")
 				if(NOT FORCED)
 					#means that the "SYSTEM" has been set by the user
-					test_System_Configuration_Available(AVAILABLE ${dep_package})
+					test_System_Configuration_Available(AVAILABLE ${dep_package} ${CMAKE_BUILD_TYPE})
 					if(NOT AVAILABLE)
 						message("[PID] WARNING: SYSTEM version constraint given by user for dependency ${dep_package} is not possible ... fixing to default version (${default_version}).")
 						#simply reset the description to first found
@@ -1352,7 +1352,7 @@ function(init_wrapper_dependency_version_selection_option ERROR dep_package opti
 			if(${CURRENT_MANAGED_VERSION}_${dep_package}_ALTERNATIVE_VERSION_USED STREQUAL "SYSTEM")
 				if(NOT FORCED)
 					#means that the "SYSTEM" has been set by the user or memorized from previous forced state
-					test_System_Configuration_Available(AVAILABLE ${dep_package})
+					test_System_Configuration_Available(AVAILABLE ${dep_package} ${CMAKE_BUILD_TYPE})
 					if(NOT AVAILABLE)
 						message("[PID] WARNING: SYSTEM version constraint given by user for dependency ${dep_package} is not possible ... fixing to default version (${default_version}).")
 						#simply reset the description to first found

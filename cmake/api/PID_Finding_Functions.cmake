@@ -1777,7 +1777,7 @@ function(resolve_External_Package_Dependency VERSION_COMPATIBLE ABI_COMPATIBLE p
 set(${VERSION_COMPATIBLE} TRUE PARENT_SCOPE)
 set(${ABI_COMPATIBLE} TRUE PARENT_SCOPE)
 get_Mode_Variables(TARGET_SUFFIX VAR_SUFFIX ${mode})
-package_Must_Be_System(FORCED ${external_dependency})
+package_Must_Be_System(FORCED ${external_dependency} ${mode})
 if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been found (previously found in iteration or recursion, not possible to import it again)
 	if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}) # a specific version is required
 		if(${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_EXACT${VAR_SUFFIX}) #an exact version is required
