@@ -69,21 +69,13 @@ stages:
     - cd test_external_use/build && cmake -DPATH_TO_PID_WS="../../.." .. && make
     - cd ../../..
     - echo "[PID] Testing external use of a collection of PID packages using system install"
-    - pid deploy package=pid-log version=3.1.5
+    - pid deploy package=pid-log version=3.1.10
     - cd tmp && git clone git@gite.lirmm.fr:pid/tests/test_system_install.git && cd ..
-    - pid sysinstall package=pid-log version=3.1.5 folder=`pwd`/tmp/test_system_install/install
+    - pid sysinstall package=pid-log version=3.1.10 folder=`pwd`/tmp/test_system_install/install
     - export LD_LIBRARY_PATH=`pwd`/tmp/test_system_install/install/lib
     - export PATH=`pwd`/tmp/test_system_install/install/bin:$PATH
     - export RUNTIME_RESOURCE_PATH=`pwd`/tmp/test_system_install/install/share/runtime_resources
     - cd tmp/test_system_install/build && cmake .. && make
-  interruptible: true
-
-.external_use_ros: &external_use_ros
-  stage: external_use
-  script:
-    - source /opt/ros/melodic/setup.bash
-    - mkdir tmp && cd tmp && git clone git@gite.lirmm.fr:pid/tests/test_external_use_deploy.git
-    - cd test_external_use_deploy/build && cmake -DPATH_TO_PID_WS="../../.." -DTEST_DIRECT_SYSTEM_DEPLOYMENT=ON .. && make
   interruptible: true
 
 ############ patterns for platforms selection #############
