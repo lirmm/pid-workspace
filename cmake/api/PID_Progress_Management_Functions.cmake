@@ -207,14 +207,7 @@ set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
 reset_Progress_File()#reset the file but keep its header
 # updating information about managed packages
 file(APPEND ${thefile} "set(MANAGED_PACKAGES_IN_CURRENT_PROCESS ${MANAGED_PACKAGES_IN_CURRENT_PROCESS})\n")
-file(APPEND ${thefile} "set(MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS ${MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS})\n")
 foreach(pack IN LISTS MANAGED_PACKAGES_IN_CURRENT_PROCESS)
-  file(APPEND ${thefile} "set(${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS ${${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS})\n")
-  foreach(vers IN LISTS ${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
-    file(APPEND ${thefile} "set(${pack}_${vers}_STATE_IN_CURRENT_PROCESS ${${pack}_${vers}_STATE_IN_CURRENT_PROCESS})\n")
-  endforeach()
-endforeach()
-foreach(pack IN LISTS MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS)
   file(APPEND ${thefile} "set(${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS ${${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS})\n")
   foreach(vers IN LISTS ${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
     file(APPEND ${thefile} "set(${pack}_${vers}_STATE_IN_CURRENT_PROCESS ${${pack}_${vers}_STATE_IN_CURRENT_PROCESS})\n")
@@ -258,22 +251,14 @@ function(add_Managed_Package_In_Current_Process package version state external)
 include_progess_file(exist)
 if(exist)
 	#updating variables
-	if(external)
-		list(APPEND MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS ${package})
-		list(REMOVE_DUPLICATES MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS)
-		list(APPEND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${version}")
-		list(REMOVE_DUPLICATES ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
-		set(${package}_${version}_STATE_IN_CURRENT_PROCESS ${state})
-	else()
-		list(APPEND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package})
-		list(REMOVE_DUPLICATES MANAGED_PACKAGES_IN_CURRENT_PROCESS)
-		if(version)
-			get_Version_String_Numbers(${version} major minor patch)
-			if(DEFINED major)# valid version string
-				list(APPEND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${version}")
-				list(REMOVE_DUPLICATES ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
-				set(${package}_${version}_STATE_IN_CURRENT_PROCESS ${state})
-			endif()
+	list(APPEND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package})
+	list(REMOVE_DUPLICATES MANAGED_PACKAGES_IN_CURRENT_PROCESS)
+	if(version)
+		get_Version_String_Numbers(${version} major minor patch)
+		if(DEFINED major)# valid version string
+			list(APPEND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${version}")
+			list(REMOVE_DUPLICATES ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
+			set(${package}_${version}_STATE_IN_CURRENT_PROCESS ${state})
 		endif()
 	endif()
   	update_Progress_File()
@@ -348,29 +333,29 @@ endfunction(add_Chosen_Package_Version_In_Current_Process)
 #
 # .. ifmode:: internal
 #
-#  .. |remove_Chosen_Package_Version_In_Current_Process| replace:: ``remove_Chosen_Package_Version_In_Current_Process``
+#  .. |remove_Package_Version_States_In_Current_Process| replace:: ``remove_Package_Version_States_In_Current_Process``
 #  .. _remove_Chosen_Package_Version_In_Current_Process:
 #
-#  remove_Chosen_Package_Version_In_Current_Process
+#  remove_Package_Version_States_In_Current_Process
 #  ------------------------------------------------
 #
-#   .. command:: remove_Chosen_Package_Version_In_Current_Process(package requestor)
+#   .. command:: remove_Package_Version_States_In_Current_Process(package)
 #
-#    Remove the chosen version for a given package chosen by a given requestor package.
+#    Remove memorized information in the current build/deploy process about version for a given package.
 #
 #      :package: the name of package.
 #
-function(remove_Chosen_Package_Version_In_Current_Process package requestor)
+function(remove_Package_Version_States_In_Current_Process package)
 include_progess_file(exist)
 if(exist)
 	#updating variables
-	if(${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS)
-		list(REMOVE_ITEM ${package}_CHOSEN_VERSION_IN_CURRENT_PROCESS_REQUESTORS "${requestor}")
-		list(REMOVE_ITEM CHOSEN_PACKAGES_VERSION_IN_CURRENT_PROCESS ${package})
-	endif()
+	foreach(version IN LISTS ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
+		set(${package}_${version}_STATE_IN_CURRENT_PROCESS)
+	endforeach()
+	set(${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
 	update_Progress_File()
 endif()
-endfunction(remove_Chosen_Package_Version_In_Current_Process)
+endfunction(remove_Package_Version_States_In_Current_Process)
 
 
 
@@ -504,15 +489,6 @@ if(exist)
 			set(${RESULT} TRUE PARENT_SCOPE) #MANAGED !!
 			return()
 		endif()
-	else() #it may be an external package
-		list(FIND MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
-		if(NOT FOUND EQUAL -1)# package already managed
-			list(FIND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS ${version} FOUND)
-			if(NOT FOUND EQUAL -1)# version of this package already managed
-				set(${RESULT} TRUE PARENT_SCOPE) #MANAGED !!
-				return()
-			endif()
-		endif()
 	endif()
 endif()
 set(${RESULT} FALSE PARENT_SCOPE) #not already managed of no file exists
@@ -541,20 +517,11 @@ function(check_Package_Version_State_In_Current_Process package version RESULT)
 include_progess_file(exist)
 if(exist)
 	list(FIND MANAGED_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
-	if(NOT FOUND EQUAL -1)# native package already managed
+	if(NOT FOUND EQUAL -1)# package already managed
 		list(FIND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS "${version}" FOUND)
 		if(NOT FOUND EQUAL -1)# version of this package already managed
 			set(${RESULT} ${${package}_${version}_STATE_IN_CURRENT_PROCESS} PARENT_SCOPE) #not already managed or no file exists
 			return()
-		endif()
-	else() #it may be an external package
-		list(FIND MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
-		if(NOT FOUND EQUAL -1)# package already managed
-			list(FIND ${package}_MANAGED_VERSIONS_IN_CURRENT_PROCESS ${version} FOUND)
-			if(NOT FOUND EQUAL -1)# version of this package already managed
-				set(${RESULT} ${${package}_${version}_STATE_IN_CURRENT_PROCESS} PARENT_SCOPE) #not already managed of no file exists
-				return()
-			endif()
 		endif()
 	endif()
 endif()
@@ -586,13 +553,7 @@ if(exist)
 	if(NOT FOUND EQUAL -1)# package already managed
 		set(${RESULT} TRUE PARENT_SCOPE) #MANAGED !!
 		return()
-  else() #it may be an external package
-  	list(FIND MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS ${package} FOUND)
-  	if(NOT FOUND EQUAL -1)# package already managed
-  		set(${RESULT} TRUE PARENT_SCOPE) #MANAGED !!
-  		return()
   	endif()
-  endif()
 endif()
 set(${RESULT} FALSE PARENT_SCOPE) #not already managed of no file exists
 endfunction(check_Package_Managed_In_Current_Process)
@@ -862,7 +823,7 @@ endfunction(finish_Progress)
 function(some_Packages_Managed_Last_Time DEPLOYED)
 set(${DEPLOYED} FALSE PARENT_SCOPE)
 set(thefile ${WORKSPACE_DIR}/build/pid_progress.cmake)
-if(EXISTS ${thefile} AND (MANAGED_PACKAGES_IN_CURRENT_PROCESS OR MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS))
+if(EXISTS ${thefile} AND MANAGED_PACKAGES_IN_CURRENT_PROCESS)
 	set(${DEPLOYED} TRUE PARENT_SCOPE)
 endif()
 endfunction(some_Packages_Managed_Last_Time)
@@ -885,13 +846,6 @@ function (print_Managed_Packages)
 include_progess_file(exist)
 if(exist)
 	foreach(pack IN LISTS MANAGED_PACKAGES_IN_CURRENT_PROCESS)
-		set(TO_PRINT "${pack}, versions :")
-		foreach(vers IN LISTS ${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
-			string(CONCAT TO_PRINT ${TO_PRINT} " ${vers}(${${pack}_${vers}_STATE_IN_CURRENT_PROCESS})")
-		endforeach()
-		message("${TO_PRINT}")
-	endforeach()
-	foreach(pack IN LISTS MANAGED_EXTERNAL_PACKAGES_IN_CURRENT_PROCESS)
 		set(TO_PRINT "${pack}, versions :")
 		foreach(vers IN LISTS ${pack}_MANAGED_VERSIONS_IN_CURRENT_PROCESS)
 			string(CONCAT TO_PRINT ${TO_PRINT} " ${vers}(${${pack}_${vers}_STATE_IN_CURRENT_PROCESS})")

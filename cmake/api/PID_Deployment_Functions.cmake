@@ -314,6 +314,7 @@ if(list_of_unresolved_configs)
         message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} with ${os_str}version ${${package}_VERSION_STRING} cannot be found after its redeployment ! No known solution can automatically be found to this problem. Aborting.")
       endif()
       resolve_Package_Dependencies(${package} ${mode} FALSE "${release_only}")#resolving again the dependencies on same package
+      return()
     else()# cannot do much more about that !!
       finish_Progress(${GLOBAL_PROGRESS_VAR})
       message(FATAL_ERROR "[PID] CRITICAL ERROR : package ${package} has unresolved platform requirements and its target version ${${package}_VERSION_STRING} cannot be rebuilt (see previous outputs) !")
@@ -2097,6 +2098,7 @@ save_Repository_Context(CURRENT_COMMIT SAVED_CONTENT ${package} TRUE)
 update_Wrapper_Repository(UPDATED ${package})#update wrapper repository
 load_And_Configure_Wrapper(LOADED ${package} "${release_only}")
 if(NOT LOADED)
+  message("[PID] WARNING: cannot load the wrapper of ${package}. Stopping deployment !")
   restore_Repository_Context(${package} TRUE ${CURRENT_COMMIT} ${SAVED_CONTENT})
 	return()
 endif()
@@ -2127,7 +2129,6 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
 	if(RES STREQUAL "UNKNOWN" OR RES STREQUAL "PROBLEM") # this package version has not been build since last command OR this package version has FAILED TO be deployed from binary during current process
   	build_And_Install_External_Package_Version(ALL_IS_OK ${package} ${RES_VERSION} "${is_system}" "${release_only}")
   	if(NOT ALL_IS_OK) # this package version has FAILED TO be built during current process
-  		set(${DEPLOYED} FALSE PARENT_SCOPE)
   		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "FAIL" TRUE)
   	else() #SUCCESS because last correct version already built
   		if(ADDITIONAL_DEBUG_INFO)
@@ -2137,9 +2138,8 @@ if(INDEX EQUAL -1) # selected version is not excluded from deploy process
   		add_Managed_Package_In_Current_Process(${package} ${RES_VERSION} "SUCCESS" TRUE)
   	endif()
   else()
-    if(RES STREQUAL "FAIL") # this package version has FAILED TO be built during current process
-			set(${DEPLOYED} FALSE PARENT_SCOPE)
-		else() #SUCCESS because last correct version already built
+    if(NOT RES STREQUAL "FAIL") # this package version has FAILED TO be built during current process
+      #SUCCESS because last correct version already built
 			if(ADDITIONAL_DEBUG_INFO)
 				message("[PID] INFO : package ${package} version ${RES_VERSION} is deployed ...")
 			endif()
@@ -2429,6 +2429,9 @@ if(NOT REPOSITORY_IN_WORKSPACE)# if the external wrapper repository does not ly 
 	endif()
 endif()
 
+if(FORCE_REBUILD)
+  remove_Package_Version_States_In_Current_Process(${package})
+endif()
 #now deploy
 if(NO_VERSION)
 	deploy_Source_External_Package(SOURCE_DEPLOYED ${package} "" "${release_only}")
