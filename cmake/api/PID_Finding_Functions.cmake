@@ -1283,7 +1283,7 @@ endfunction(is_Exact_External_Version_Compatible_With_Previous_Constraints)
 #  is_External_Version_Compatible_With_Previous_Constraints
 #  --------------------------------------------------------
 #
-#   .. command:: is_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE VERSION_TO_FIND package version)
+#   .. command:: is_External_Version_Compatible_With_Previous_Constraints(IS_COMPATIBLE package version)
 #
 #    Check if a version of an external package is compatible with previous version contrainsts that apply to the current build. This function is used during dependencies version resolutionn process.
 #
@@ -1295,7 +1295,6 @@ endfunction(is_Exact_External_Version_Compatible_With_Previous_Constraints)
 function(is_External_Version_Compatible_With_Previous_Constraints IS_COMPATIBLE  package version)
 
 set(${IS_COMPATIBLE} FALSE PARENT_SCOPE)
-set(${VERSION_TO_FIND} PARENT_SCOPE)
 # 1) testing compatibility from current required version with a previous exact version constraint (current is compatible )
 if(${package}_REQUIRED_VERSION_EXACT)#an exact version is already required
   if(NOT ${package}_REQUIRED_VERSION_EXACT VERSION_EQUAL version)#not compatible if versions are not exactly the same
@@ -1807,7 +1806,7 @@ if(${external_dependency}_FOUND${VAR_SUFFIX}) #the dependency has already been f
 			if(COMPATIBLE_VERSION)
 				find_package_resolved(
 					${external_dependency} "${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION_SYSTEM${VAR_SUFFIX}}"
-					${VERSION_TO_FIND}
+					${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_VERSION${VAR_SUFFIX}}
 					MODULE
 					REQUIRED
 					${${package}_EXTERNAL_DEPENDENCY_${external_dependency}_REQUIRED_COMPONENTS${VAR_SUFFIX}}
