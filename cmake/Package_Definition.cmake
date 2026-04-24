@@ -1239,17 +1239,6 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
-	if(ENABLE_SANITIZERS)
-		if(SANITIZE_ADDRESS)
-			add_Sanitizer_Flags_If_Available(ADDRESS internal_compiler_options internal_link_flags)
-		endif()
-		if(SANITIZE_LEAK)
-			add_Sanitizer_Flags_If_Available(LEAK internal_compiler_options internal_link_flags)
-		endif()
-		if(SANITIZE_UNDEFINED)
-			add_Sanitizer_Flags_If_Available(UNDEFINED internal_compiler_options internal_link_flags)
-		endif()
-	endif()
   # manage options and eventually adjust language standard in use
   adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
                                         internal_compiler_options exported_compiler_options
@@ -1284,17 +1273,6 @@ if(type MATCHES "APP" OR type MATCHES "EXAMPLE" OR type MATCHES "TEST")
 elseif(type MATCHES "PYTHON")#declare a python package
 	declare_Python_Component(${comp_name} ${dir_name})
 else() #it is a library
-	if(ENABLE_SANITIZERS)
-		if(SANITIZE_ADDRESS)
-			add_Sanitizer_Flags_If_Available(ADDRESS internal_compiler_options exported_link_flags)
-		endif()
-		if(SANITIZE_LEAK)
-			add_Sanitizer_Flags_If_Available(LEAK internal_compiler_options exported_link_flags)
-		endif()
-		if(SANITIZE_UNDEFINED)
-			add_Sanitizer_Flags_If_Available(UNDEFINED internal_compiler_options exported_link_flags)
-		endif()
-	endif()
   adjust_Languages_Standards_Description(ERR MESS C_STD_USED CXX_STD_USED INTERN_OPTS EXPORT_OPTS
                                         internal_compiler_options exported_compiler_options
                                         "${DECLARE_PID_COMPONENT_C_STANDARD}"

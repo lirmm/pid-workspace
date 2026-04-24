@@ -63,7 +63,6 @@ option(ENABLE_PARALLEL_BUILD "Package is built with optimum number of jobs with 
 option(BUILD_DEPENDENT_PACKAGES "the build will leads to the rebuild of its dependent package that lies in the workspace as source packages" ON)
 option(ADDITIONAL_DEBUG_INFO "Getting more info on debug mode or more PID messages (hidden by default)" OFF)
 option(BUILD_STATIC_CODE_CHECKING_REPORT "running static checks on libraries and applications, if tests are run then additionnal static code checking tests are automatically added." OFF)
-option(ENABLE_SANITIZERS "Enable the sanitizers on the package's components" OFF)
 option(WARNINGS_AS_ERRORS "Generating errors when warnings are notified" OFF)
 option(REQUIRED_PACKAGES_AUTOMATIC_UPDATE "Package will try to install new version when configuring" OFF)
 option(CHECK_GIT_REMOTES "Package checks validity of remotes when configured (can increase build time)" OFF)
@@ -78,17 +77,6 @@ list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS RUN_TESTS_IN_DEBUG)
 
 CMAKE_DEPENDENT_OPTION(BUILD_COVERAGE_REPORT "Package build a coverage report in debug mode" ON "BUILD_AND_RUN_TESTS;RUN_TESTS_IN_DEBUG" OFF)
 list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS BUILD_COVERAGE_REPORT)
-
-CMAKE_DEPENDENT_OPTION(SANITIZE_ADDRESS "Enable the address sanitizer" ON "ENABLE_SANITIZERS" OFF)
-CMAKE_DEPENDENT_OPTION(SANITIZE_LEAK "Enable the memory leak sanitizer" ON "ENABLE_SANITIZERS" OFF)
-CMAKE_DEPENDENT_OPTION(SANITIZE_UNDEFINED "Enable the undefined behavior sanitizer" ON "ENABLE_SANITIZERS" OFF)
-list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS SANITIZE_ADDRESS)
-list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS SANITIZE_LEAK)
-list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS SANITIZE_UNDEFINED)
-
-if(ENABLE_SANITIZERS AND NOT SANITIZE_ADDRESS AND NOT SANITIZE_LEAK AND NOT SANITIZE_UNDEFINED)
-  message("[PID] WARNING : ENABLE_SANITIZERS is ON but all sanitizers are OFF")
-endif()
 
 list(APPEND INTERNAL_OR_DEPENDENT_OPTIONS TARGET_CONTRIBUTION_SPACE)
 
@@ -219,10 +207,6 @@ function(set_Mode_Specific_Options_From_Global)
   write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} ENABLE_PARALLEL_BUILD BOOL managed_options)
   write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} BUILD_DEPENDENT_PACKAGES BOOL managed_options)
   write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} TARGET_CONTRIBUTION_SPACE STRING managed_options)
-  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} ENABLE_SANITIZERS BOOL managed_options)
-  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} SANITIZE_ADDRESS BOOL managed_options)
-  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} SANITIZE_LEAK BOOL managed_options)
-  write_Cache_Option_Line_If_Not_Managed(${OPTIONS_FILE} SANITIZE_UNDEFINED BOOL managed_options)
   unset(INTERNAL_OR_DEPENDENT_OPTIONS CACHE)
 endfunction(set_Mode_Specific_Options_From_Global)
 

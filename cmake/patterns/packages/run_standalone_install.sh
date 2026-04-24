@@ -2,7 +2,6 @@
 pkgconfig=
 install=
 tests=off
-sanitizers=off
 examples=off
 upgrade=off
 build_type=both
@@ -15,7 +14,6 @@ print_usage() {
     echo "  -i|--install      path                Install the package inside the given path"
     echo "  -p|--pkg-config   on|off              Generate pkg-config files                    (off or last value)"
     echo "  -t|--tests        on|off              Build and run the package tests              (off)"
-    echo "  -s|--sanitizers   on|off              Build the package with sanitizers enabled    (off)"
     echo "  -e|--examples     on|off              Build the package example applications       (off)"
     echo "  -b|--build-type   both|debug|release  Build the package in release, debug of both  (both)"
     echo "  -c|--add-cs       url                 Git URL of the contribution space to add. Multiple CS can be added"
@@ -62,12 +60,6 @@ do
         ;;
         -t|--tests)
         tests="$2"
-        validate_boolean $1 $2
-        shift # past argument
-        shift # past value
-        ;;
-        -s|--sanitizers)
-        sanitizers="$2"
         validate_boolean $1 $2
         shift # past argument
         shift # past value
@@ -128,7 +120,6 @@ echo "Installing $package_name using:"
 echo "  pkg-config: $pkgconfig"
 echo "  install: $install"
 echo "  tests: $tests"
-echo "  sanitizers: $sanitizers"
 echo "  examples: $examples"
 echo "  build-type: $build_type"
 echo "  upgrade: $upgrade"
@@ -222,7 +213,6 @@ cmake_options="$cmake_options -DBUILD_STATIC_CODE_CHECKING_REPORT=OFF"
 cmake_options="$cmake_options -DGENERATE_INSTALLER=OFF"
 cmake_options="$cmake_options -DWORKSPACE_DIR=$workspace_root_path"
 cmake_options="$cmake_options -DBUILD_AND_RUN_TESTS=${tests^^}"
-cmake_options="$cmake_options -DENABLE_SANITIZERS=${sanitizers^^}"
 cmake_options="$cmake_options -DBUILD_EXAMPLES=${examples^^}"
 cmake_options="$cmake_options -DBUILD_RELEASE_ONLY=${release_only}"
 
