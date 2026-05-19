@@ -1810,7 +1810,7 @@ if(GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE)#only direct dependencies can be targett
   endif()
   set(ext_package_root ${WORKSPACE_DIR}/install/${CURRENT_PLATFORM}/${GET_EXTERNAL_DEPENDENCY_INFO_PACKAGE}/${dep_version})
   if(GET_EXTERNAL_DEPENDENCY_INFO_COMPONENT)#only direct component dependencies can be targetted
-    set(prefix ${prefix}_COMPONENT_${GET_EXTERNAL_DEPENDENCY_INFO_COMPONENT})#refine the prefix !!
+    set(prefix ${prefix}_${GET_EXTERNAL_DEPENDENCY_INFO_COMPONENT})#refine the prefix !!
     set(component_info ${GET_EXTERNAL_DEPENDENCY_INFO_COMPONENT})
   endif()
 elseif(GET_EXTERNAL_DEPENDENCY_INFO_COMPONENT)#NOTE: COMPONENT must be used together with PACKAGE
