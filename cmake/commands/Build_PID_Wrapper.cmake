@@ -121,7 +121,7 @@ if(${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSIONS) #check that the target version exi
   endif()
   if(NOT ${TARGET_EXTERNAL_PACKAGE}_KNOWN_VERSION_${version}_CONFIGURE_OK)
 	finish_Progress(${GLOBAL_PROGRESS_VAR})
-    message(FATAL_ERROR "[PID] CRITICAL ERROR : ${TARGET_EXTERNAL_PACKAGE} external package version ${version} cannot be built because its configuration cannot be performed. Run configrue command to understand why (e.g. dependency problem)")
+    message(FATAL_ERROR "[PID] CRITICAL ERROR : ${TARGET_EXTERNAL_PACKAGE} external package version ${version} cannot be built because its configuration cannot be performed. Run configure command to understand why (e.g. dependency problem)")
     return()
   endif()
 else()
