@@ -3875,7 +3875,7 @@ if(NOT unused) #if the dependency is really used (in case it were optional and u
 	elseif(${dep_package}_FOUND${VAR_SUFFIX})#dependency has been found in workspace after resolution
 		if(NOT IS_ABI_COMPATIBLE)#need to force reinstall if binary package ABI is not compatible with current platform ones
 			#from here we can add it to versions to install to force reinstall
-			add_To_Install_External_Package_Specification(${dep_package} "${${dep_package}_VERSION_STRING}" ${${dep_package}_REQUIRED_VERSION_EXACT} ${${dep_package}_REQUIRED_VERSION_SYSTEM})
+			add_To_Install_External_Package_Specification(${dep_package} "${${dep_package}_VERSION_STRING}" "${${dep_package}_REQUIRED_VERSION_EXACT}" "${${dep_package}_REQUIRED_VERSION_SYSTEM}")
 		else()
 			add_Chosen_Package_Version_In_Current_Process(${dep_package} ${package})#report the choice made to global build process
 			#set the variables used at build time

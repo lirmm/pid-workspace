@@ -1490,7 +1490,7 @@ endfunction(reset_To_Install_Packages)
 #  add_To_Install_External_Package_Specification
 #  ---------------------------------------------
 #
-#   .. command:: add_To_Install_External_Package_Specification(package version version_exact)
+#   .. command:: add_To_Install_External_Package_Specification(package version version_exact os_variant)
 #
 #    Mark a given external package version as "to be installed".
 #
