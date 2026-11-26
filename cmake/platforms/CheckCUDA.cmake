@@ -104,24 +104,19 @@ set(CUDA_STD_SYMBOLS CACHE INTERNAL "")#no symbol version in cuda library
 # Check which arch can be computed depending on the version of NVCC
 # reference is https://en.wikipedia.org/wiki/CUDA
 set(possible_CUDA_archs )
-if(CUDA_VERSION VERSION_LESS "8.0")#CUDA not really managed under version 6
-  message("[PID] WARNING: CUDA version ${CUDA_VERSION} is not supported. Support start from CUDA 8.0 !")
-else()
-  #starting from version 8.0 listing available architectures
-  set(possible_CUDA_archs  "2.0" "2.1" "3.0" "3.2" "3.5" "5.0" "5.2" "6.0" "6.1" "6.2")
-  if(CUDA_VERSION VERSION_GREATER_EQUAL "9.0")
-    list(APPEND possible_CUDA_archs "7.0" "7.2")
-    list(REMOVE_ITEM possible_CUDA_archs "2.0" "2.1") #support for archs < 3.0 is deprecated
-  endif()
-  if(CUDA_VERSION VERSION_GREATER_EQUAL "10.0")
-    list(APPEND possible_CUDA_archs "7.5")
-  endif()
-  if(CUDA_VERSION VERSION_GREATER_EQUAL "11.0")
-    list(APPEND possible_CUDA_archs "8.0")
-    list(REMOVE_ITEM possible_CUDA_archs "2.0" "2.1" "3.0" "3.2" "3.5" "5.0") #support for archs < 5.2 is deprecated
-  endif()
+execute_process(
+      COMMAND "${CMAKE_CUDA_COMPILER}" --list-gpu-code
+      OUTPUT_VARIABLE CUDA_SUPPORTED_CODES
+      RESULT_VARIABLE CUDA_QUERY_RESULT
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      )
+if(NOT CUDA_QUERY_RESULT EQUAL 0)
+  message("[PID] ERROR: Failed to query supported CUDA architectures.")
 endif()
+string(REGEX MATCHALL "sm_[0-9]+[a-z]*" possible_CUDA_archs "${CUDA_SUPPORTED_CODES}")
+string(REGEX REPLACE "sm_" "" possible_CUDA_archs "${possible_CUDA_archs}")
 set(AVAILABLE_CUDA_ARCHS ${possible_CUDA_archs} CACHE INTERNAL "")
+
 if(used_CUDA_ARCH) #target architecture has been specified using environment
   set(DEFAULT_CUDA_ARCH ${used_CUDA_ARCH} CACHE INTERNAL "")#default arch is greater available
 else()
