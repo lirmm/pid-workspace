@@ -1135,7 +1135,7 @@ if(external)
 			resolve_Package_Dependencies(${dep_package} ${CMAKE_BUILD_TYPE} TRUE "${BUILD_RELEASE_ONLY}") #resolve dependencies
 			return()
 		else()#force reinstall
-			add_To_Install_External_Package_Specification(${dep_package} "${${dep_package}_VERSION_STRING}" TRUE TRUE)
+			add_To_Install_External_Package_Specification(${dep_package} "${${dep_package}_VERSION_STRING}" TRUE "${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_SYSTEM${USE_MODE_SUFFIX}}")
 		endif()#else need to reinstall the package anyway because it is not compatible with current platform
 	else()#not found
 		add_To_Install_External_Package_Specification(${dep_package} "${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_EXACT${USE_MODE_SUFFIX}}" "${${PROJECT_NAME}_EXTERNAL_DEPENDENCY_${dep_package}_VERSION_SYSTEM${USE_MODE_SUFFIX}}")
