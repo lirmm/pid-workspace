@@ -103,7 +103,7 @@ set(CUDA_STD_SYMBOLS CACHE INTERNAL "")#no symbol version in cuda library
 
 # Check which arch can be computed depending on the version of NVCC
 # reference is https://en.wikipedia.org/wiki/CUDA
-set(possible_CUDA_archs )
+set(possible_CUDA_codes )
 execute_process(
       COMMAND "${CMAKE_CUDA_COMPILER}" --list-gpu-code
       OUTPUT_VARIABLE CUDA_SUPPORTED_CODES
@@ -113,9 +113,15 @@ execute_process(
 if(NOT CUDA_QUERY_RESULT EQUAL 0)
   message("[PID] ERROR: Failed to query supported CUDA architectures.")
 endif()
-string(REGEX MATCHALL "sm_[0-9]+[a-z]*" possible_CUDA_archs "${CUDA_SUPPORTED_CODES}")
-string(REGEX REPLACE "sm_" "" possible_CUDA_archs "${possible_CUDA_archs}")
-set(AVAILABLE_CUDA_ARCHS ${possible_CUDA_archs} CACHE INTERNAL "")
+string(REGEX MATCHALL "sm_[0-9]+[a-z]*" possible_CUDA_codes "${CUDA_SUPPORTED_CODES}")
+string(REGEX REPLACE "sm_" "" possible_CUDA_codes "${possible_CUDA_codes}")
+set(AVAILABLE_CUDA_ARCHS_DOTTED)
+foreach(code IN LISTS possible_CUDA_codes)          # cuda_codes = 35;37;50;...;86;87
+  math(EXPR major "${code} / 10")
+  math(EXPR minor "${code} % 10")
+  list(APPEND AVAILABLE_CUDA_ARCHS_DOTTED "${major}.${minor}")
+endforeach()
+set(AVAILABLE_CUDA_ARCHS ${AVAILABLE_CUDA_ARCHS_DOTTED} CACHE INTERNAL "")
 
 if(used_CUDA_ARCH) #target architecture has been specified using environment
   set(DEFAULT_CUDA_ARCH ${used_CUDA_ARCH} CACHE INTERNAL "")#default arch is greater available
